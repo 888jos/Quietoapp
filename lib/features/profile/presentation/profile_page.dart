@@ -8,7 +8,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_card.dart';
 import '../../../core/ui/app_scaffold.dart';
-import '../../player/player_providers.dart';
+import '../../../core/services/storage_providers.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});

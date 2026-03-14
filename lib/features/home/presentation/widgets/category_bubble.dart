@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/models/category_model.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
 
 class CategoryBubble extends StatelessWidget {
   final CategoryModel category;
@@ -24,23 +23,28 @@ class CategoryBubble extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: AppColors.accent,
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.cardSurface,
                 shape: BoxShape.circle,
+                border: Border.all(color: AppColors.accent, width: 1.5),
               ),
               child: Center(
                 child: Text(
                   category.emoji,
-                  style: const TextStyle(fontSize: 24),
+                  style: const TextStyle(fontSize: 32),
                 ),
               ),
             ),
             const SizedBox(height: AppConstants.spacingXs),
             Text(
               category.name,
-              style: AppTextStyles.caption,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

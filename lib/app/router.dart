@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../core/theme/app_colors.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/explore/presentation/explore_page.dart';
@@ -104,10 +105,10 @@ class _SplashDeciderState extends State<_SplashDecider> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF0D1F1A),
+      backgroundColor: AppColors.background,
       body: Center(
         child: CircularProgressIndicator(
-          color: Color(0xFF7CAE9E),
+          color: AppColors.accent,
         ),
       ),
     );

@@ -40,7 +40,7 @@ class PlayerPage extends ConsumerWidget {
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Iconsax.arrow_left_2,
-                        color: AppColors.parchment),
+                        color: AppColors.textPrimary),
                   ),
                   const Spacer(),
                   Text('Méditation', style: AppTextStyles.bodyMedium),
@@ -55,12 +55,12 @@ class PlayerPage extends ConsumerWidget {
                 width: 220,
                 height: 220,
                 decoration: BoxDecoration(
-                  color: AppColors.sageDim,
+                  color: AppColors.accentDim,
                   borderRadius:
                       BorderRadius.circular(AppConstants.radiusXl),
                 ),
                 child: const Icon(Iconsax.music,
-                    size: 80, color: AppColors.sage),
+                    size: 80, color: AppColors.accent),
               ),
 
               const SizedBox(height: AppConstants.spacingXl),
@@ -131,10 +131,10 @@ class _ProgressBar extends StatelessWidget {
       children: [
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AppColors.sage,
-            inactiveTrackColor: AppColors.sageDim,
-            thumbColor: AppColors.sage,
-            overlayColor: AppColors.sageDim,
+            activeTrackColor: AppColors.accent,
+            inactiveTrackColor: AppColors.accentDim,
+            thumbColor: AppColors.accent,
+            overlayColor: AppColors.accentDim,
             trackHeight: 3,
             thumbShape:
                 const RoundSliderThumbShape(enabledThumbRadius: 6),
@@ -185,7 +185,7 @@ class _PlayerControls extends StatelessWidget {
         IconButton(
           onPressed: onBackward,
           icon: const Icon(Iconsax.backward_15_seconds,
-              color: AppColors.parchment, size: 32),
+              color: AppColors.textPrimary, size: 32),
         ),
         const SizedBox(width: AppConstants.spacingXl),
 
@@ -196,20 +196,20 @@ class _PlayerControls extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: const BoxDecoration(
-              color: AppColors.sage,
+              color: AppColors.accent,
               shape: BoxShape.circle,
             ),
             child: isLoading
                 ? const Padding(
                     padding: EdgeInsets.all(20),
                     child: CircularProgressIndicator(
-                        color: AppColors.bgForest, strokeWidth: 2),
+                        color: AppColors.background, strokeWidth: 2),
                   )
                 : Icon(
                     isPlaying
                         ? Iconsax.pause
                         : Iconsax.play,
-                    color: AppColors.bgForest,
+                    color: AppColors.background,
                     size: 32,
                   ),
           ),
@@ -220,7 +220,7 @@ class _PlayerControls extends StatelessWidget {
         IconButton(
           onPressed: onForward,
           icon: const Icon(Iconsax.forward_15_seconds,
-              color: AppColors.parchment, size: 32),
+              color: AppColors.textPrimary, size: 32),
         ),
       ],
     );

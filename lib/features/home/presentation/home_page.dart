@@ -47,7 +47,7 @@ class HomePage extends ConsumerWidget {
                     Text(
                       AppConstants.appName,
                       style: AppTextStyles.titleLarge.copyWith(
-                        color: AppColors.sage,
+                        color: AppColors.accent,
                       ),
                     ),
                     Text(greeting, style: AppTextStyles.bodyMedium),

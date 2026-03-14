@@ -55,12 +55,12 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ### Couleurs
 | Token | Hex | Usage |
 |---|---|---|
-| `bgForest` | `#0D1F1A` | Fond principal |
-| `cardForest` | `#1A2E27` | Surface des cartes |
-| `sage` | `#7CAE9E` | Accent principal, CTA |
-| `sageDim` | `#267CAE9E` | Éléments subtils (15% opacité) |
-| `parchment` | `#F5F0E8` | Texte principal |
-| `parchmentMuted` | `#99F5F0E8` | Texte secondaire (60% opacité) |
+| `background` | `#0A1628` | Fond principal — bleu nuit |
+| `cardSurface` | `#0D2137` | Surface des cartes |
+| `accent` | `#5CE0D8` | Accent principal, CTA — turquoise |
+| `accentDim` | `#265CE0D8` | Éléments subtils (15% opacité) |
+| `textPrimary` | `#FFFFFF` | Texte principal |
+| `textMuted` | `#99FFFFFF` | Texte secondaire (60% opacité) |
 
 ### Thème
 - Dark only — pas de mode clair

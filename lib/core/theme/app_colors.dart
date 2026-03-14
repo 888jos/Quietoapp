@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
 abstract final class AppColors {
-  /// Fond principal de l'app
-  static const bgForest = Color(0xFF0D1F1A);
+  /// Fond principal — bleu nuit
+  static const background = Color(0xFF0A1628);
 
   /// Surface des cartes
-  static const cardForest = Color(0xFF1A2E27);
+  static const cardSurface = Color(0xFF0D2137);
 
-  /// Accent principal
-  static const sage = Color(0xFF7CAE9E);
+  /// Accent principal — turquoise
+  static const accent = Color(0xFF5CE0D8);
 
-  /// Sage à 15% d'opacité — éléments subtils
-  static const sageDim = Color(0x267CAE9E);
+  /// Accent à 15% d'opacité — éléments subtils
+  static const accentDim = Color(0x265CE0D8);
 
   /// Texte principal
-  static const parchment = Color(0xFFF5F0E8);
+  static const textPrimary = Color(0xFFFFFFFF);
 
   /// Texte secondaire (60% opacité)
-  static const parchmentMuted = Color(0x99F5F0E8);
+  static const textMuted = Color(0x99FFFFFF);
 
   /// Couleur d'erreur
   static const error = Color(0xFFE07070);

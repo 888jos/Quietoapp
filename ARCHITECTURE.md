@@ -53,7 +53,7 @@ UI (ConsumerWidget)
 
 ## Règles d'architecture
 
-1. **Zéro hardcode** — toutes les couleurs viennent de `AppColors`, tous les styles de `AppTextStyles`, toutes les valeurs de `AppConstants`.
+1. **Zéro hardcode** — toutes les couleurs viennent de `AppColors` (`background`, `cardSurface`, `accent`, `textPrimary`…), tous les styles de `AppTextStyles`, toutes les valeurs de `AppConstants`.
 2. **Zéro logique dans les widgets** — les widgets lisent des providers et affichent. Toute logique va dans un `Notifier` ou un `Repository`.
 3. **Navigation centralisée** — toutes les routes sont définies dans `app/router.dart`. On utilise `context.go()` / `context.push()` avec les constantes `AppRoutes`.
 4. **ConsumerWidget** — utiliser `ConsumerWidget` (pas `StatefulWidget` + `ref`) pour éviter les rebuilds inutiles.

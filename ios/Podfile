@@ -39,5 +39,15 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      if target.name == 'PurchasesHybridCommon'
+        conditions = config.build_settings['SWIFT_ACTIVE_COMPILATION_CONDITIONS']
+        if conditions.is_a?(Array)
+          conditions << 'PURCHASES_HYBRID_COMMON_USE_SK1' unless conditions.include?('PURCHASES_HYBRID_COMMON_USE_SK1')
+        else
+          config.build_settings['SWIFT_ACTIVE_COMPILATION_CONDITIONS'] = ['$(inherited)', 'PURCHASES_HYBRID_COMMON_USE_SK1']
+        end
+      end
+    end
   end
 end

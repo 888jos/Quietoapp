@@ -20,7 +20,7 @@ class HomeShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgForest,
+      backgroundColor: AppColors.background,
       body: child,
       bottomNavigationBar: _QuijetoNav(currentIndex: _currentIndex(context)),
     );
@@ -36,9 +36,9 @@ class _QuijetoNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.cardForest,
+        color: AppColors.cardSurface,
         border: Border(
-          top: BorderSide(color: AppColors.sageDim, width: 1),
+          top: BorderSide(color: AppColors.accentDim, width: 1),
         ),
       ),
       child: SafeArea(
@@ -104,14 +104,14 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               isActive ? iconActive : icon,
-              color: isActive ? AppColors.sage : AppColors.parchmentMuted,
+              color: isActive ? AppColors.accent : AppColors.textMuted,
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: AppTextStyles.caption.copyWith(
-                color: isActive ? AppColors.sage : AppColors.parchmentMuted,
+                color: isActive ? AppColors.accent : AppColors.textMuted,
               ),
             ),
           ],

@@ -4,7 +4,7 @@ import 'app_colors.dart';
 abstract final class AppTextStyles {
   static const _base = TextStyle(
     fontFamily: 'SF Pro Display',
-    color: AppColors.parchment,
+    color: AppColors.textPrimary,
     letterSpacing: 0,
   );
 
@@ -41,7 +41,7 @@ abstract final class AppTextStyles {
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.5,
-    color: AppColors.parchmentMuted,
+    color: AppColors.textMuted,
   );
 
   /// Label bouton
@@ -55,7 +55,7 @@ abstract final class AppTextStyles {
   static final caption = _base.copyWith(
     fontSize: 12,
     fontWeight: FontWeight.w400,
-    color: AppColors.parchmentMuted,
+    color: AppColors.textMuted,
     height: 1.4,
   );
 
@@ -63,6 +63,6 @@ abstract final class AppTextStyles {
   static final badge = _base.copyWith(
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: AppColors.sage,
+    color: AppColors.accent,
   );
 }

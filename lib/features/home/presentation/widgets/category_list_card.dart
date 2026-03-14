@@ -20,7 +20,7 @@ class CategoryListCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.cardForest,
+          color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(AppConstants.radiusMd),
         ),
         padding: const EdgeInsets.all(AppConstants.spacingMd),
@@ -30,7 +30,7 @@ class CategoryListCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: const BoxDecoration(
-                color: AppColors.sageDim,
+                color: AppColors.accentDim,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -69,7 +69,7 @@ class CategoryListCard extends StatelessWidget {
             const SizedBox(width: AppConstants.spacingXs),
             const Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.sage,
+              color: AppColors.accent,
               size: 20,
             ),
           ],

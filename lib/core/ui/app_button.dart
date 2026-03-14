@@ -41,7 +41,7 @@ class AppButton extends StatelessWidget {
             onTap: isDisabled ? null : onTap,
             borderRadius:
                 BorderRadius.circular(AppConstants.radiusLg),
-            splashColor: AppColors.sageDim,
+            splashColor: AppColors.accentDim,
             child: Container(
               padding: const EdgeInsets.symmetric(
                 vertical: AppConstants.spacingMd,
@@ -50,7 +50,7 @@ class AppButton extends StatelessWidget {
               decoration: variant == AppButtonVariant.secondary
                   ? BoxDecoration(
                       border: Border.all(
-                          color: AppColors.sage, width: 1.5),
+                          color: AppColors.accent, width: 1.5),
                       borderRadius: BorderRadius.circular(
                           AppConstants.radiusLg),
                     )
@@ -66,7 +66,7 @@ class AppButton extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppColors.bgForest,
+                        color: AppColors.background,
                       ),
                     ),
                     const SizedBox(width: AppConstants.spacingSm),
@@ -88,14 +88,14 @@ class AppButton extends StatelessWidget {
   }
 
   Color get _backgroundColor => switch (variant) {
-        AppButtonVariant.primary => AppColors.sage,
+        AppButtonVariant.primary => AppColors.accent,
         AppButtonVariant.secondary => Colors.transparent,
         AppButtonVariant.ghost => Colors.transparent,
       };
 
   Color get _foregroundColor => switch (variant) {
-        AppButtonVariant.primary => AppColors.bgForest,
-        AppButtonVariant.secondary => AppColors.sage,
-        AppButtonVariant.ghost => AppColors.parchmentMuted,
+        AppButtonVariant.primary => AppColors.background,
+        AppButtonVariant.secondary => AppColors.accent,
+        AppButtonVariant.ghost => AppColors.textMuted,
       };
 }

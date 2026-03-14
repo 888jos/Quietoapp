@@ -23,12 +23,12 @@ class AppCard extends StatelessWidget {
     final radius = borderRadius ?? AppConstants.radiusMd;
 
     return Material(
-      color: color ?? AppColors.cardForest,
+      color: color ?? AppColors.cardSurface,
       borderRadius: BorderRadius.circular(radius),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(radius),
-        splashColor: AppColors.sageDim,
+        splashColor: AppColors.accentDim,
         child: Padding(
           padding: padding ??
               const EdgeInsets.all(AppConstants.spacingMd),

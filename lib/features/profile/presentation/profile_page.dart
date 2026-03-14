@@ -99,7 +99,7 @@ class _StatCard extends StatelessWidget {
         children: [
           Text(value,
               style: AppTextStyles.displayLarge
-                  .copyWith(color: AppColors.sage)),
+                  .copyWith(color: AppColors.accent)),
           Text(label, style: AppTextStyles.bodyMedium),
         ],
       ),

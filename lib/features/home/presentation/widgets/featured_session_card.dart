@@ -23,10 +23,10 @@ class FeaturedSessionCard extends StatelessWidget {
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.cardForest,
+          color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(AppConstants.radiusLg),
           border: const Border(
-            left: BorderSide(color: AppColors.sage, width: 4),
+            left: BorderSide(color: AppColors.accent, width: 4),
           ),
         ),
         padding: const EdgeInsets.all(AppConstants.spacingMd),
@@ -47,7 +47,7 @@ class FeaturedSessionCard extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.access_time_rounded,
-                  color: AppColors.parchmentMuted,
+                  color: AppColors.textMuted,
                   size: 16,
                 ),
                 const SizedBox(width: AppConstants.spacingXs),

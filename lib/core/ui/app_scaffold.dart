@@ -25,7 +25,7 @@ class AppScaffold extends StatelessWidget {
         padding != null ? Padding(padding: padding!, child: body) : body;
 
     return Scaffold(
-      backgroundColor: AppColors.bgForest,
+      backgroundColor: AppColors.background,
       appBar: appBar,
       body: content,
       bottomNavigationBar: bottomNavigationBar,

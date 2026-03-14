@@ -76,9 +76,9 @@ class _SearchField extends ConsumerWidget {
       decoration: InputDecoration(
         hintText: 'Rechercher une séance...',
         hintStyle: AppTextStyles.bodyMedium,
-        prefixIcon: const Icon(Icons.search, color: AppColors.parchmentMuted),
+        prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
         filled: true,
-        fillColor: AppColors.cardForest,
+        fillColor: AppColors.cardSurface,
         border: OutlineInputBorder(
           borderRadius:
               BorderRadius.circular(AppConstants.radiusMd),

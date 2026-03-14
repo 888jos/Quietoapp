@@ -28,9 +28,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
             content: Text(
               'Achat impossible. Réessayez.',
               style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.parchment),
+                  .copyWith(color: AppColors.textPrimary),
             ),
-            backgroundColor: AppColors.cardForest,
+            backgroundColor: AppColors.cardSurface,
           ),
         );
       }
@@ -71,7 +71,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
                   child: Row(
                     children: [
                       const Icon(Icons.check_circle_rounded,
-                          color: AppColors.sage, size: 20),
+                          color: AppColors.accent, size: 20),
                       const SizedBox(width: AppConstants.spacingMd),
                       Expanded(
                         child: Text(p, style: AppTextStyles.bodyLarge),

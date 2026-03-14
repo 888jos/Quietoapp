@@ -27,7 +27,7 @@ class CategoryBubble extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: const BoxDecoration(
-                color: AppColors.sage,
+                color: AppColors.accent,
                 shape: BoxShape.circle,
               ),
               child: Center(

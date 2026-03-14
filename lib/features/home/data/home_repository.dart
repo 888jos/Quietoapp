@@ -8,10 +8,9 @@ class HomeRepository {
     return [
       CategoryModel(
         id: 'stress',
-        name: 'Gestion du stress',
-        emoji: '🌊',
-        description:
-            'Apaisez votre mental et trouvez le calme intérieur.',
+        name: 'Stress',
+        emoji: '😤',
+        description: 'Apaisez votre mental et trouvez le calme intérieur.',
         sessions: [
           const SessionModel(
             id: 'stress_1',
@@ -52,8 +51,7 @@ class HomeRepository {
           const SessionModel(
             id: 'sleep_2',
             title: 'Visualisation apaisante',
-            description:
-                'Voyage mental dans un lieu calme et sécurisant.',
+            description: 'Voyage mental dans un lieu calme et sécurisant.',
             durationMinutes: 20,
             audioFile: 'sleep_visualization.mp3',
             categoryId: 'sleep',
@@ -63,15 +61,14 @@ class HomeRepository {
       ),
       CategoryModel(
         id: 'focus',
-        name: 'Concentration',
+        name: 'Focus',
         emoji: '🎯',
         description: 'Affûtez votre attention et boostez votre clarté.',
         sessions: [
           const SessionModel(
             id: 'focus_1',
             title: 'Pleine conscience 5 min',
-            description:
-                'Ancrez-vous dans le moment présent rapidement.',
+            description: 'Ancrez-vous dans le moment présent rapidement.',
             durationMinutes: 5,
             audioFile: 'focus_mindfulness_5.mp3',
             categoryId: 'focus',
@@ -80,7 +77,7 @@ class HomeRepository {
             id: 'focus_2',
             title: 'Méditation pomodoro',
             description:
-                'Allez entrez en focus profond avant une session de travail.',
+                'Entrez en focus profond avant une session de travail.',
             durationMinutes: 10,
             audioFile: 'focus_pomodoro.mp3',
             categoryId: 'focus',
@@ -91,14 +88,13 @@ class HomeRepository {
       CategoryModel(
         id: 'anxiety',
         name: 'Anxiété',
-        emoji: '💚',
+        emoji: '💭',
         description: 'Libérez l\'inquiétude et retrouvez votre ancrage.',
         sessions: [
           const SessionModel(
             id: 'anxiety_1',
             title: 'Technique du 5-4-3-2-1',
-            description:
-                'Revenez dans le présent avec vos 5 sens.',
+            description: 'Revenez dans le présent avec vos 5 sens.',
             durationMinutes: 8,
             audioFile: 'anxiety_54321.mp3',
             categoryId: 'anxiety',
@@ -106,8 +102,7 @@ class HomeRepository {
           const SessionModel(
             id: 'anxiety_2',
             title: 'Méditation de l\'arbre',
-            description:
-                'Enracinez-vous comme un arbre face à la tempête.',
+            description: 'Enracinez-vous comme un arbre face à la tempête.',
             durationMinutes: 12,
             audioFile: 'anxiety_tree.mp3',
             categoryId: 'anxiety',
@@ -115,6 +110,125 @@ class HomeRepository {
           ),
         ],
       ),
+      CategoryModel(
+        id: 'breathing',
+        name: 'Respiration',
+        emoji: '🌬️',
+        description: 'Retrouvez l\'équilibre par le souffle conscient.',
+        sessions: [
+          const SessionModel(
+            id: 'breathing_1',
+            title: 'Cohérence cardiaque',
+            description:
+                'Synchronisez votre respiration pour équilibrer le système nerveux.',
+            durationMinutes: 5,
+            audioFile: 'breathing_coherence.mp3',
+            categoryId: 'breathing',
+          ),
+          const SessionModel(
+            id: 'breathing_2',
+            title: 'Respiration boîte',
+            description:
+                'La technique des forces spéciales pour retrouver le calme.',
+            durationMinutes: 10,
+            audioFile: 'breathing_box.mp3',
+            categoryId: 'breathing',
+            isPremium: true,
+          ),
+        ],
+      ),
+      CategoryModel(
+        id: 'confidence',
+        name: 'Confiance',
+        emoji: '💪',
+        description: 'Renforcez l\'estime de soi et votre puissance intérieure.',
+        sessions: [
+          const SessionModel(
+            id: 'confidence_1',
+            title: 'Affirmations positives',
+            description:
+                'Reprogrammez vos croyances limitantes en douceur.',
+            durationMinutes: 7,
+            audioFile: 'confidence_affirmations.mp3',
+            categoryId: 'confidence',
+          ),
+          const SessionModel(
+            id: 'confidence_2',
+            title: 'Visualisation du succès',
+            description:
+                'Projetez-vous dans la version la plus accomplie de vous-même.',
+            durationMinutes: 12,
+            audioFile: 'confidence_success.mp3',
+            categoryId: 'confidence',
+            isPremium: true,
+          ),
+        ],
+      ),
+      CategoryModel(
+        id: 'mindfulness',
+        name: 'Pleine conscience',
+        emoji: '🧘',
+        description: 'Habitez pleinement l\'instant présent.',
+        sessions: [
+          const SessionModel(
+            id: 'mindfulness_1',
+            title: 'Scan des sensations',
+            description:
+                'Explorez votre corps avec une attention bienveillante.',
+            durationMinutes: 10,
+            audioFile: 'mindfulness_scan.mp3',
+            categoryId: 'mindfulness',
+          ),
+          const SessionModel(
+            id: 'mindfulness_2',
+            title: 'Méditation du miroir',
+            description: 'Observez vos pensées sans jugement ni attachement.',
+            durationMinutes: 15,
+            audioFile: 'mindfulness_mirror.mp3',
+            categoryId: 'mindfulness',
+            isPremium: true,
+          ),
+        ],
+      ),
+      CategoryModel(
+        id: 'news',
+        name: 'Actualité',
+        emoji: '🌍',
+        description: 'Restez ancré face au flux d\'informations quotidien.',
+        sessions: [
+          const SessionModel(
+            id: 'news_1',
+            title: 'Détox numérique',
+            description:
+                'Déconnectez votre esprit du bruit informationnel.',
+            durationMinutes: 8,
+            audioFile: 'news_detox.mp3',
+            categoryId: 'news',
+          ),
+          const SessionModel(
+            id: 'news_2',
+            title: 'Ancrage face à l\'incertitude',
+            description:
+                'Trouvez la sérénité malgré un monde en constante évolution.',
+            durationMinutes: 12,
+            audioFile: 'news_grounding.mp3',
+            categoryId: 'news',
+            isPremium: true,
+          ),
+        ],
+      ),
     ];
+  }
+
+  /// Retourne la séance mise en avant du jour.
+  SessionModel fetchFeaturedSession() {
+    return const SessionModel(
+      id: 'sleep_1',
+      title: 'Détente du soir',
+      description: 'Une méditation douce pour préparer votre endormissement.',
+      durationMinutes: 10,
+      audioFile: 'sleep_evening.mp3',
+      categoryId: 'sleep',
+    );
   }
 }

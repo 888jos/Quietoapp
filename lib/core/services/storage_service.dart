@@ -17,6 +17,15 @@ class StorageService {
     await _prefs.setBool(AppConstants.prefOnboardingDone, true);
   }
 
+  // ── User profile ─────────────────────────────────────
+
+  String get firstName =>
+      _prefs.getString(AppConstants.prefUserFirstName) ?? '';
+
+  Future<void> setFirstName(String name) async {
+    await _prefs.setString(AppConstants.prefUserFirstName, name);
+  }
+
   // ── Progress ─────────────────────────────────────────
 
   UserProgressModel loadProgress() {

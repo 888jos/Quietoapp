@@ -12,6 +12,7 @@ abstract final class AppConstants {
   // ── SharedPreferences keys ───────────────────────────
   static const prefOnboardingDone = 'onboarding_done';
   static const prefSessionProgress = 'session_progress';
+  static const prefUserFirstName = 'user_first_name';
 
   // ── Audio ────────────────────────────────────────────
   static const audioBasePath = 'assets/audio/';

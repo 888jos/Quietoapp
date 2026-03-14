@@ -11,11 +11,11 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Bouton "Passer" disponible dès la slide 1
 - Redirige vers Home après completion
 
-### Home
-- Liste des catégories de méditation
-- Chaque catégorie affiche ses séances avec durée
-- Badge "Premium" sur les séances payantes
-- Tap sur une séance → PlayerPage
+### Home ✅
+- Header : logo "Quieto" + salutation personnalisée "Bonjour, [prénom]" (via StorageService)
+- Scroll horizontal de bulles de catégories ("Programmes disponibles") → `/category/:id`
+- Carte "Séance du jour" mise en avant (large, bordure sage) → PlayerPage
+- Liste verticale de toutes les catégories (emoji, nom, description, nb séances) → `/category/:id`
 
 ### Explorer
 - Grille 2 colonnes de toutes les catégories
@@ -41,10 +41,14 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 
 | Catégorie | Emoji | Séances gratuites | Séances premium |
 |---|---|---|---|
-| Gestion du stress | 🌊 | Respiration 4-7-8 (5min) | Body scan (15min) |
+| Stress | 😤 | Respiration 4-7-8 (5min) | Body scan (15min) |
 | Sommeil | 🌙 | Détente du soir (10min) | Visualisation (20min) |
-| Concentration | 🎯 | Pleine conscience (5min) | Méditation pomodoro (10min) |
-| Anxiété | 💚 | Technique 5-4-3-2-1 (8min) | Méditation de l'arbre (12min) |
+| Focus | 🎯 | Pleine conscience (5min) | Méditation pomodoro (10min) |
+| Anxiété | 💭 | Technique 5-4-3-2-1 (8min) | Méditation de l'arbre (12min) |
+| Respiration | 🌬️ | Cohérence cardiaque (5min) | Respiration boîte (10min) |
+| Confiance | 💪 | Affirmations positives (7min) | Visualisation du succès (12min) |
+| Pleine conscience | 🧘 | Scan des sensations (10min) | Méditation du miroir (15min) |
+| Actualité | 🌍 | Détox numérique (8min) | Ancrage face à l'incertitude (12min) |
 
 ## Design system
 

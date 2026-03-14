@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
 import '../../core/services/storage_service.dart';
+import '../../core/services/storage_providers.dart';
 import '../home/home_providers.dart';
 import 'data/player_repository.dart';
 
@@ -167,10 +168,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 }
 
 // ── Provider factory ──────────────────────────────────
-
-final storageServiceProvider = Provider<StorageService>((ref) {
-  throw UnimplementedError('Override in ProviderScope');
-});
 
 final playerProvider = StateNotifierProvider.family<PlayerNotifier,
     PlayerState, String>((ref, sessionId) {

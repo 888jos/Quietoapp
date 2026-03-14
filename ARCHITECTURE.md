@@ -8,14 +8,23 @@ Quieto suit une **architecture feature-first** avec une séparation stricte entr
 lib/
 ├── app/              # Racine de l'app (routing, shell de navigation)
 ├── core/             # Partagé entre toutes les features
-│   ├── config/       # Constantes globales
+│   ├── config/       # Constantes globales (AppConstants, AppRoutes)
 │   ├── models/       # Entités de données (immuables)
-│   ├── services/     # Services techniques (storage, etc.)
+│   ├── services/     # Services techniques (StorageService, storage_providers)
 │   ├── theme/        # Design system (couleurs, typographie, thème)
 │   └── ui/           # Composants réutilisables (AppButton, AppCard…)
 └── features/         # Domaines métier
     ├── onboarding/
     ├── home/
+    │   ├── data/
+    │   │   └── home_repository.dart
+    │   ├── presentation/
+    │   │   ├── home_page.dart
+    │   │   └── widgets/
+    │   │       ├── category_bubble.dart
+    │   │       ├── featured_session_card.dart
+    │   │       └── category_list_card.dart
+    │   └── home_providers.dart
     ├── explore/
     ├── player/
     ├── profile/
@@ -72,5 +81,5 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 
 /player/:sessionId   (hors shell, plein écran)
 /paywall             (hors shell)
-/category/:id        (hors shell — à implémenter)
+/category/:id        (hors shell — à implémenter via CategoryDetailPage)
 ```

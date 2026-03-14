@@ -14,7 +14,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ### Home ✅
 - Header : logo "Quieto" + salutation personnalisée "Bonjour, [prénom]" (via StorageService)
 - Scroll horizontal de bulles de catégories ("Programmes disponibles") → `/category/:id`
-- Carte "Séance du jour" mise en avant (large, bordure sage) → PlayerPage
+- Carte "Priorité du moment" mise en avant (Actualité 🌍, bordure accent) → `/category/actualite`
 - Liste verticale de toutes les catégories (emoji, nom, description, nb séances) → `/category/:id`
 
 ### Explorer

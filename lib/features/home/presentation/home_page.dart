@@ -17,16 +17,10 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categories = ref.watch(categoriesProvider);
-    final featuredSession = ref.watch(featuredSessionProvider);
     final firstName = ref.watch(userFirstNameProvider);
 
     final greeting =
         firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName';
-
-    final featuredCategoryName = categories
-        .where((c) => c.id == featuredSession.categoryId)
-        .map((c) => c.name)
-        .firstOrNull ?? '';
 
     return AppScaffold(
       body: SafeArea(
@@ -108,10 +102,12 @@ class HomePage extends ConsumerWidget {
                     Text('Priorité du moment', style: AppTextStyles.titleLarge),
                     const SizedBox(height: AppConstants.spacingMd),
                     FeaturedSessionCard(
-                      session: featuredSession,
-                      categoryName: featuredCategoryName,
+                      emoji: '🌍',
+                      categoryName: 'Actualité & Surcharge mentale',
+                      subtitle: 'Le monde est bruyant. Quieto est ta pause.',
+                      durationLabel: '8 séances disponibles',
                       onTap: () => context.push(
-                        AppRoutes.playerPath(featuredSession.id),
+                        AppRoutes.categoryPath('actualite'),
                       ),
                     ),
                   ],

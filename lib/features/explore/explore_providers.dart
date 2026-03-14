@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../app/router.dart';
 import '../../core/models/category_model.dart';
 import '../../core/services/storage_providers.dart';
 import 'data/explore_repository.dart';
@@ -26,6 +27,20 @@ final categoryProgressProvider =
   final completed =
       category.sessions.where((s) => progress.isCompleted(s.id)).length;
   return (completed: completed, total: category.sessions.length);
+});
+
+/// Calcule la route de destination quand l'utilisateur tape sur une catégorie.
+/// Premium + non abonné → /paywall. Sinon → /category/:id.
+final categoryRouteProvider =
+    Provider.family<String, String>((ref, categoryId) {
+  final category = ref.watch(categoryByIdProvider(categoryId));
+  if (category == null || !category.isPremium) {
+    return AppRoutes.categoryPath(categoryId);
+  }
+  final isSubscribed = ref.watch(subscriptionProvider);
+  return isSubscribed
+      ? AppRoutes.categoryPath(categoryId)
+      : AppRoutes.paywall;
 });
 
 final searchQueryProvider = StateProvider<String>((ref) => '');

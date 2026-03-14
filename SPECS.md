@@ -69,7 +69,8 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 
 ## Monétisation
 
-- Modèle freemium : 1 séance gratuite par catégorie
+- Modèle freemium : 1 catégorie gratuite (🧘 Découverte), toutes les autres requièrent un abonnement
+- Badge "New !" sur la catégorie Actualité (bubble + list card)
 - Abonnement mensuel : 4,99 € / mois
 - Intégration RevenueCat (`purchases_flutter`)
 - Entitlement : `premium`

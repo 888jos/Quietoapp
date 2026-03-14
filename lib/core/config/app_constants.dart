@@ -13,6 +13,7 @@ abstract final class AppConstants {
   static const prefOnboardingDone = 'onboarding_done';
   static const prefSessionProgress = 'session_progress';
   static const prefUserFirstName = 'user_first_name';
+  static const prefIsPremium = 'is_premium';
 
   // ── Audio ────────────────────────────────────────────
   static const audioBasePath = 'assets/audio/';

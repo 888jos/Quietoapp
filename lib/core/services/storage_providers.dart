@@ -6,3 +6,9 @@ import 'storage_service.dart';
 final storageServiceProvider = Provider<StorageService>((ref) {
   throw UnimplementedError('storageServiceProvider must be overridden in ProviderScope');
 });
+
+/// Statut d'abonnement de l'utilisateur.
+/// false par défaut — sera connecté à RevenueCat ultérieurement.
+final subscriptionProvider = Provider<bool>((ref) {
+  return ref.watch(storageServiceProvider).isPremium;
+});

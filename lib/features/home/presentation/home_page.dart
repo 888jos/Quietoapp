@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../home_providers.dart';
+import '../../explore/explore_providers.dart';
 import 'widgets/category_bubble.dart';
 import 'widgets/category_list_card.dart';
 import 'widgets/featured_session_card.dart';
@@ -77,7 +77,7 @@ class HomePage extends ConsumerWidget {
                         itemBuilder: (context, i) => CategoryBubble(
                           category: categories[i],
                           onTap: () => context.push(
-                            AppRoutes.categoryPath(categories[i].id),
+                            ref.read(categoryRouteProvider(categories[i].id)),
                           ),
                         ),
                       ),
@@ -107,7 +107,7 @@ class HomePage extends ConsumerWidget {
                       subtitle: 'Le monde est bruyant. Quieto est ta pause.',
                       durationLabel: '8 séances disponibles',
                       onTap: () => context.push(
-                        AppRoutes.categoryPath('actualite'),
+                        ref.read(categoryRouteProvider('actualite')),
                       ),
                     ),
                   ],
@@ -144,7 +144,7 @@ class HomePage extends ConsumerWidget {
                 itemBuilder: (context, i) => CategoryListCard(
                   category: categories[i],
                   onTap: () => context.push(
-                    AppRoutes.categoryPath(categories[i].id),
+                    ref.read(categoryRouteProvider(categories[i].id)),
                   ),
                 ),
               ),

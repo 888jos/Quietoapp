@@ -70,7 +70,7 @@ UI (ConsumerWidget)
 ## Modèles de données
 
 ### CategoryModel
-Regroupe un ensemble de `SessionModel`. Calculée (totalMinutes, isPremium) à partir de ses sessions.
+Regroupe un ensemble de `SessionModel`. Champs clés : `isPremium` (bool — accès abonnement requis), `isNew` (bool — badge "New !"), `totalMinutes` (calculé).
 
 ### SessionModel
 Unité de contenu : une séance de méditation avec son fichier audio, sa durée, et son statut premium.

@@ -4,12 +4,64 @@ import '../../../core/models/session_model.dart';
 class ExploreRepository {
   List<CategoryModel> fetchCategories() {
     return [
+      // ── Gratuit ───────────────────────────────────────
+      CategoryModel(
+        id: 'decouverte',
+        name: 'Découverte de la méditation',
+        emoji: '🧘',
+        description:
+            'Commence ton voyage vers la pleine conscience. Des séances simples pour découvrir la méditation.',
+        isPremium: false,
+        isNew: false,
+        sessions: [
+          const SessionModel(
+            id: 'decouverte_1',
+            title: 'Ma première méditation',
+            description:
+                'Une introduction douce pour ceux qui n\'ont jamais médité.',
+            durationMinutes: 5,
+            audioFile: 'decouverte_first.mp3',
+            categoryId: 'decouverte',
+          ),
+          const SessionModel(
+            id: 'decouverte_2',
+            title: 'La respiration consciente',
+            description:
+                'Découvre comment le souffle peut calmer le mental en quelques minutes.',
+            durationMinutes: 7,
+            audioFile: 'decouverte_breath.mp3',
+            categoryId: 'decouverte',
+          ),
+          const SessionModel(
+            id: 'decouverte_3',
+            title: 'Observer sans juger',
+            description:
+                'Apprends à accueillir tes pensées sans t\'y attacher.',
+            durationMinutes: 6,
+            audioFile: 'decouverte_observe.mp3',
+            categoryId: 'decouverte',
+          ),
+          const SessionModel(
+            id: 'decouverte_4',
+            title: 'Le moment présent',
+            description:
+                'Entraîne-toi à revenir ici et maintenant, encore et encore.',
+            durationMinutes: 8,
+            audioFile: 'decouverte_present.mp3',
+            categoryId: 'decouverte',
+          ),
+        ],
+      ),
+
+      // ── Premium ───────────────────────────────────────
       CategoryModel(
         id: 'actualite',
         name: 'Actualité & Surcharge mentale',
         emoji: '🌍',
         description:
             'Apprends à décrocher du flux d\'informations. Retrouve la clarté dans un monde qui s\'emballe.',
+        isPremium: true,
+        isNew: true,
         sessions: [
           const SessionModel(
             id: 'actualite_1',
@@ -64,6 +116,8 @@ class ExploreRepository {
         emoji: '😤',
         description:
             'Libère la pression accumulée au quotidien. Des séances courtes pour revenir à toi rapidement.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'stress_1',
@@ -119,6 +173,8 @@ class ExploreRepository {
         emoji: '🌙',
         description:
             'Prépare ton corps et ton esprit au repos. Endors-toi plus facilement, dors plus profondément.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'sleep_1',
@@ -174,6 +230,8 @@ class ExploreRepository {
         emoji: '🎯',
         description:
             'Entraîne ton attention pour être pleinement présent. Moins de distraction, plus d\'efficacité.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'focus_1',
@@ -229,6 +287,8 @@ class ExploreRepository {
         emoji: '🌬️',
         description:
             'Utilise ta respiration comme outil de régulation. Simple, puissant, accessible partout.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'breathing_1',
@@ -285,6 +345,8 @@ class ExploreRepository {
         emoji: '💭',
         description:
             'Accueille et apaise les pensées qui débordent. Reprends le contrôle sur ton mental.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'anxiety_1',
@@ -297,8 +359,7 @@ class ExploreRepository {
           const SessionModel(
             id: 'anxiety_2',
             title: 'Méditation de l\'arbre',
-            description:
-                'Enracine-toi comme un arbre face à la tempête.',
+            description: 'Enracine-toi comme un arbre face à la tempête.',
             durationMinutes: 12,
             audioFile: 'anxiety_tree.mp3',
             categoryId: 'anxiety',
@@ -340,6 +401,8 @@ class ExploreRepository {
         emoji: '💪',
         description:
             'Renforce ta confiance intérieure jour après jour. Avance avec clarté et assurance.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'confidence_1',
@@ -396,6 +459,8 @@ class ExploreRepository {
         emoji: '🧘',
         description:
             'Reviens au moment présent. Observe sans juger, ressens sans résister.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'mindfulness_1',
@@ -409,8 +474,7 @@ class ExploreRepository {
           const SessionModel(
             id: 'mindfulness_2',
             title: 'Méditation du miroir',
-            description:
-                'Observe tes pensées sans jugement ni attachement.',
+            description: 'Observe tes pensées sans jugement ni attachement.',
             durationMinutes: 15,
             audioFile: 'mindfulness_mirror.mp3',
             categoryId: 'mindfulness',

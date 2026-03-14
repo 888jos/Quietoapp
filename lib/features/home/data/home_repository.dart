@@ -7,10 +7,59 @@ class HomeRepository {
   List<CategoryModel> fetchCategories() {
     return [
       CategoryModel(
+        id: 'decouverte',
+        name: 'Découverte de la méditation',
+        emoji: '🧘',
+        description:
+            'Commence ton voyage vers la pleine conscience. Des séances simples pour découvrir la méditation.',
+        isPremium: false,
+        isNew: false,
+        sessions: [
+          const SessionModel(
+            id: 'decouverte_1',
+            title: 'Ma première méditation',
+            description:
+                'Une introduction douce pour ceux qui n\'ont jamais médité.',
+            durationMinutes: 5,
+            audioFile: 'decouverte_first.mp3',
+            categoryId: 'decouverte',
+          ),
+          const SessionModel(
+            id: 'decouverte_2',
+            title: 'La respiration consciente',
+            description:
+                'Découvre comment le souffle peut calmer le mental en quelques minutes.',
+            durationMinutes: 7,
+            audioFile: 'decouverte_breath.mp3',
+            categoryId: 'decouverte',
+          ),
+          const SessionModel(
+            id: 'decouverte_3',
+            title: 'Observer sans juger',
+            description:
+                'Apprends à accueillir tes pensées sans t\'y attacher.',
+            durationMinutes: 6,
+            audioFile: 'decouverte_observe.mp3',
+            categoryId: 'decouverte',
+          ),
+          const SessionModel(
+            id: 'decouverte_4',
+            title: 'Le moment présent',
+            description:
+                'Entraîne-toi à revenir ici et maintenant, encore et encore.',
+            durationMinutes: 8,
+            audioFile: 'decouverte_present.mp3',
+            categoryId: 'decouverte',
+          ),
+        ],
+      ),
+      CategoryModel(
         id: 'stress',
         name: 'Stress',
         emoji: '😤',
         description: 'Apaisez votre mental et trouvez le calme intérieur.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'stress_1',
@@ -38,6 +87,8 @@ class HomeRepository {
         name: 'Sommeil',
         emoji: '🌙',
         description: 'Préparez votre corps et votre esprit au repos.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'sleep_1',
@@ -64,6 +115,8 @@ class HomeRepository {
         name: 'Focus',
         emoji: '🎯',
         description: 'Affûtez votre attention et boostez votre clarté.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'focus_1',
@@ -90,6 +143,8 @@ class HomeRepository {
         name: 'Anxiété',
         emoji: '💭',
         description: 'Libérez l\'inquiétude et retrouvez votre ancrage.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'anxiety_1',
@@ -115,6 +170,8 @@ class HomeRepository {
         name: 'Respiration',
         emoji: '🌬️',
         description: 'Retrouvez l\'équilibre par le souffle conscient.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'breathing_1',
@@ -142,6 +199,8 @@ class HomeRepository {
         name: 'Confiance',
         emoji: '💪',
         description: 'Renforcez l\'estime de soi et votre puissance intérieure.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'confidence_1',
@@ -169,6 +228,8 @@ class HomeRepository {
         name: 'Pleine conscience',
         emoji: '🧘',
         description: 'Habitez pleinement l\'instant présent.',
+        isPremium: true,
+        isNew: false,
         sessions: [
           const SessionModel(
             id: 'mindfulness_1',
@@ -195,6 +256,8 @@ class HomeRepository {
         name: 'Actualité',
         emoji: '🌍',
         description: 'Restez ancré face au flux d\'informations quotidien.',
+        isPremium: true,
+        isNew: true,
         sessions: [
           const SessionModel(
             id: 'actualite_1',

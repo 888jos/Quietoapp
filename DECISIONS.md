@@ -63,3 +63,21 @@
 **Décision** : Organisation par domaine métier, pas par type de fichier.
 
 **Pourquoi** : Plus scalable que layer-first quand le nombre de features grandit. Chaque feature est auto-contenue et peut être développée / supprimée indépendamment.
+
+---
+
+## ADR-008 — Système free/premium par catégorie entière
+
+**Décision** : Une seule catégorie gratuite (🧘 Découverte). Toutes les autres sont premium. Pas de cadenas — le paywall s'affiche au tap.
+
+**Pourquoi** : Modèle plus simple qu'un mix sessions gratuites/premium par catégorie. La catégorie Découverte offre une vraie valeur introductive aux non-abonnés sans fragmenter le contenu premium.
+
+**Implémentation** : `categoryRouteProvider(categoryId)` dans `explore_providers.dart` calcule la destination (detail ou paywall). Zéro logique dans les widgets — ils lisent seulement le provider et appellent `context.push`. `subscriptionProvider` dans `storage_providers.dart` lit SharedPreferences ; sera remplacé par RevenueCat (ADR-005).
+
+---
+
+## ADR-009 — Badge "New !" sur Actualité uniquement
+
+**Décision** : `CategoryModel.isNew` (bool) contrôle l'affichage du badge. Seule la catégorie Actualité a `isNew: true` pour le MVP.
+
+**Pourquoi** : Mettre en avant le contenu le plus actuel sans surcharger l'UI. Le badge est un signal éditorial, pas un indicateur technique.

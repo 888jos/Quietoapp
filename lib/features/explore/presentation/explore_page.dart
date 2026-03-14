@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/models/category_model.dart';
 import '../../../core/theme/app_colors.dart';
@@ -51,13 +50,16 @@ class ExplorePage extends ConsumerWidget {
                   childAspectRatio: 1.1,
                 ),
                 itemCount: categories.length,
-                itemBuilder: (_, i) =>
-                    _CategoryGridCard(category: categories[i]),
+                itemBuilder: (context, i) => _CategoryGridCard(
+                  category: categories[i],
+                  onTap: () => context.go(
+                    ref.read(categoryRouteProvider(categories[i].id)),
+                  ),
+                ),
               ),
             ),
             const SliverPadding(
-              padding:
-                  EdgeInsets.only(bottom: AppConstants.spacingXl),
+              padding: EdgeInsets.only(bottom: AppConstants.spacingXl),
             ),
           ],
         ),
@@ -80,8 +82,7 @@ class _SearchField extends ConsumerWidget {
         filled: true,
         fillColor: AppColors.cardSurface,
         border: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(AppConstants.radiusMd),
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
           borderSide: BorderSide.none,
         ),
         contentPadding: const EdgeInsets.symmetric(
@@ -95,20 +96,19 @@ class _SearchField extends ConsumerWidget {
 
 class _CategoryGridCard extends StatelessWidget {
   final CategoryModel category;
+  final VoidCallback onTap;
 
-  const _CategoryGridCard({required this.category});
+  const _CategoryGridCard({required this.category, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      onTap: () =>
-          context.push(AppRoutes.categoryPath(category.id)),
+      onTap: onTap,
       borderRadius: AppConstants.radiusLg,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(category.emoji,
-              style: const TextStyle(fontSize: 36)),
+          Text(category.emoji, style: const TextStyle(fontSize: 36)),
           const SizedBox(height: AppConstants.spacingSm),
           Text(
             category.name,

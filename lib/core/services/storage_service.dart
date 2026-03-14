@@ -26,6 +26,17 @@ class StorageService {
     await _prefs.setString(AppConstants.prefUserFirstName, name);
   }
 
+  // ── Subscription ─────────────────────────────────
+
+  bool get isPremium =>
+      _prefs.getBool(AppConstants.prefIsPremium) ?? false;
+
+  Future<void> setIsPremium(bool value) async {
+    try {
+      await _prefs.setBool(AppConstants.prefIsPremium, value);
+    } catch (_) {}
+  }
+
   // ── Progress ─────────────────────────────────────────
 
   UserProgressModel loadProgress() {

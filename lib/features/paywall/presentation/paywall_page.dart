@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -47,6 +48,17 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           padding: const EdgeInsets.all(AppConstants.spacingLg),
           child: Column(
             children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: GestureDetector(
+                  onTap: () => context.pop(),
+                  child: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.textPrimary,
+                    size: 22,
+                  ),
+                ),
+              ),
               const Spacer(),
               const Text('✨', style: TextStyle(fontSize: 72)),
               const SizedBox(height: AppConstants.spacingLg),

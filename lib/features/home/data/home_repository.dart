@@ -191,28 +191,28 @@ class HomeRepository {
         ],
       ),
       CategoryModel(
-        id: 'news',
+        id: 'actualite',
         name: 'Actualité',
         emoji: '🌍',
         description: 'Restez ancré face au flux d\'informations quotidien.',
         sessions: [
           const SessionModel(
-            id: 'news_1',
+            id: 'actualite_1',
             title: 'Détox numérique',
             description:
                 'Déconnectez votre esprit du bruit informationnel.',
             durationMinutes: 8,
-            audioFile: 'news_detox.mp3',
-            categoryId: 'news',
+            audioFile: 'actualite_detox.mp3',
+            categoryId: 'actualite',
           ),
           const SessionModel(
-            id: 'news_2',
+            id: 'actualite_2',
             title: 'Ancrage face à l\'incertitude',
             description:
                 'Trouvez la sérénité malgré un monde en constante évolution.',
             durationMinutes: 12,
-            audioFile: 'news_grounding.mp3',
-            categoryId: 'news',
+            audioFile: 'actualite_grounding.mp3',
+            categoryId: 'actualite',
             isPremium: true,
           ),
         ],

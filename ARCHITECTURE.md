@@ -26,6 +26,14 @@ lib/
     │   │       └── category_list_card.dart
     │   └── home_providers.dart
     ├── explore/
+    │   ├── data/
+    │   │   └── explore_repository.dart
+    │   ├── presentation/
+    │   │   ├── explore_page.dart
+    │   │   ├── category_detail_page.dart
+    │   │   └── widgets/
+    │   │       └── session_card.dart
+    │   └── explore_providers.dart
     ├── player/
     ├── profile/
     └── paywall/
@@ -81,5 +89,5 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 
 /player/:sessionId   (hors shell, plein écran)
 /paywall             (hors shell)
-/category/:id        (hors shell — à implémenter via CategoryDetailPage)
+/category/:categoryId  (hors shell — CategoryDetailPage)
 ```

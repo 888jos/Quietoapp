@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../core/theme/app_colors.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/home/presentation/home_page.dart';
+import '../features/explore/presentation/category_detail_page.dart';
 import '../features/explore/presentation/explore_page.dart';
 import '../features/player/presentation/player_page.dart';
 import '../features/profile/presentation/profile_page.dart';
@@ -47,6 +48,15 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.paywall,
       builder: (context, state) => const PaywallPage(),
+    ),
+
+    // ── Category detail (hors shell) ─────────────────
+    GoRoute(
+      path: AppRoutes.category,
+      builder: (context, state) {
+        final categoryId = state.pathParameters['categoryId']!;
+        return CategoryDetailPage(categoryId: categoryId);
+      },
     ),
 
     // ── Player (hors shell) ───────────────────────────

@@ -81,6 +81,6 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - [ ] Téléchargement hors-ligne
 - [ ] Notifications de rappel de méditation
 - [ ] Statistiques avancées (streak, graphe hebdomadaire)
-- [ ] CategoryDetailPage complète
+- [x] CategoryDetailPage complète
 - [ ] Favoris
 - [ ] Mode paysage pour le player

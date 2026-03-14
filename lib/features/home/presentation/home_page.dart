@@ -93,7 +93,7 @@ class HomePage extends ConsumerWidget {
               ),
             ),
 
-            // ── Séance du jour ────────────────────────────────
+            // ── Priorité du moment ────────────────────────────────
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
                 AppConstants.spacingMd,
@@ -105,7 +105,7 @@ class HomePage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Séance du jour', style: AppTextStyles.titleLarge),
+                    Text('Priorité du moment', style: AppTextStyles.titleLarge),
                     const SizedBox(height: AppConstants.spacingMd),
                     FeaturedSessionCard(
                       session: featuredSession,

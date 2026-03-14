@@ -36,7 +36,7 @@ class CategoryListCard extends StatelessWidget {
               child: Center(
                 child: Text(
                   category.emoji,
-                  style: const TextStyle(fontSize: 22),
+                  style: const TextStyle(fontSize: 28),
                 ),
               ),
             ),

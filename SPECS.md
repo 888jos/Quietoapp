@@ -14,7 +14,8 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ### Home ✅
 - Header : logo "Quieto" + salutation personnalisée "Bonjour, [prénom]" (via StorageService)
 - Scroll horizontal de bulles de catégories ("Programmes disponibles") → `/category/:id`
-- Carte "Priorité du moment" mise en avant (Actualité 🌍, bordure accent) → `/category/actualite`
+  - Actualité en 1ère position, Découverte exclue (mise en avant via FeaturedSessionCard)
+- Carte "Priorité du moment" mise en avant (Découverte 🧘, 3 séances, bordure accent) → `/category/decouverte`
 - Liste verticale de toutes les catégories (emoji, nom, description, nb séances) → `/category/:id`
 
 ### Explorer
@@ -39,16 +40,17 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 
 ## Catégories de contenu (MVP)
 
-| Catégorie | Emoji | Séances gratuites | Séances premium |
+| Catégorie | Emoji | Premium | Séances |
 |---|---|---|---|
-| Stress | 😤 | Respiration 4-7-8 (5min) | Body scan (15min) |
-| Sommeil | 🌙 | Détente du soir (10min) | Visualisation (20min) |
-| Focus | 🎯 | Pleine conscience (5min) | Méditation pomodoro (10min) |
-| Anxiété | 💭 | Technique 5-4-3-2-1 (8min) | Méditation de l'arbre (12min) |
-| Respiration | 🌬️ | Cohérence cardiaque (5min) | Respiration boîte (10min) |
-| Confiance | 💪 | Affirmations positives (7min) | Visualisation du succès (12min) |
-| Pleine conscience | 🧘 | Scan des sensations (10min) | Méditation du miroir (15min) |
-| Actualité | 🌍 | Détox numérique (8min) | Ancrage face à l'incertitude (12min) |
+| Découverte | 🧘 | Non (gratuit) | Ma première méditation (5min), Observer sans juger (6min), Le moment présent (8min) |
+| Stress | 😤 | Oui | Respiration 4-7-8 (5min), Body scan (15min) |
+| Sommeil | 🌙 | Oui | Détente du soir (10min), Visualisation (20min) |
+| Focus | 🎯 | Oui | Pleine conscience (5min), Méditation pomodoro (10min) |
+| Anxiété | 💭 | Oui | Technique 5-4-3-2-1 (8min), Méditation de l'arbre (12min) |
+| Respiration | 🌬️ | Oui | Cohérence cardiaque (5min), Respiration boîte (10min) |
+| Confiance | 💪 | Oui | Affirmations positives (7min), Visualisation du succès (12min) |
+| Pleine conscience | 🧘 | Oui | Scan des sensations (10min), Méditation du miroir (15min) |
+| Actualité | 🌍 | Oui (isNew: true) | Détox numérique (8min), Ancrage face à l'incertitude (12min) |
 
 ## Design system
 
@@ -70,7 +72,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ## Monétisation
 
 - Modèle freemium : 1 catégorie gratuite (🧘 Découverte), toutes les autres requièrent un abonnement
-- Badge "New !" sur la catégorie Actualité (bubble + list card)
+- Badge "New !" sur la catégorie Actualité : `FeaturedSessionCard` (home) + `CategoryListCard` (home liste)
 - Abonnement mensuel : 4,99 € / mois
 - Intégration RevenueCat (`purchases_flutter`)
 - Entitlement : `premium`

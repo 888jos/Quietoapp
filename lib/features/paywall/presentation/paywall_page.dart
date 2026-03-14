@@ -60,7 +60,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
                 ),
               ),
               const Spacer(),
-              const Text('✨', style: TextStyle(fontSize: 72)),
+              const Text('✨', style: TextStyle(fontSize: 88)),
               const SizedBox(height: AppConstants.spacingLg),
               Text(
                 'Quieto Premium',

@@ -9,7 +9,14 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
 });
 
 final categoriesProvider = Provider<List<CategoryModel>>((ref) {
-  return ref.watch(homeRepositoryProvider).fetchCategories();
+  final all = ref
+      .watch(homeRepositoryProvider)
+      .fetchCategories()
+      .where((c) => c.id != 'decouverte')
+      .toList();
+  final actualite = all.where((c) => c.id == 'actualite').toList();
+  final rest = all.where((c) => c.id != 'actualite').toList();
+  return [...actualite, ...rest];
 });
 
 final featuredSessionProvider = Provider<SessionModel>((ref) {

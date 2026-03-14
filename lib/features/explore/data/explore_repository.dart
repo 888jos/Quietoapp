@@ -24,15 +24,6 @@ class ExploreRepository {
             categoryId: 'decouverte',
           ),
           const SessionModel(
-            id: 'decouverte_2',
-            title: 'La respiration consciente',
-            description:
-                'Découvre comment le souffle peut calmer le mental en quelques minutes.',
-            durationMinutes: 7,
-            audioFile: 'decouverte_breath.mp3',
-            categoryId: 'decouverte',
-          ),
-          const SessionModel(
             id: 'decouverte_3',
             title: 'Observer sans juger',
             description:

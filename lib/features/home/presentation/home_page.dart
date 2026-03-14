@@ -102,12 +102,12 @@ class HomePage extends ConsumerWidget {
                     Text('Priorité du moment', style: AppTextStyles.titleLarge),
                     const SizedBox(height: AppConstants.spacingMd),
                     FeaturedSessionCard(
-                      emoji: '🌍',
-                      categoryName: 'Actualité & Surcharge mentale',
-                      subtitle: 'Le monde est bruyant. Quieto est ta pause.',
-                      durationLabel: '8 séances disponibles',
+                      emoji: '🧘',
+                      categoryName: 'Découverte de la méditation',
+                      subtitle: 'Commence ton voyage vers la pleine conscience.',
+                      durationLabel: '3 séances disponibles',
                       onTap: () => context.push(
-                        ref.read(categoryRouteProvider('actualite')),
+                        ref.read(categoryRouteProvider('decouverte')),
                       ),
                     ),
                   ],

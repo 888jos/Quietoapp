@@ -61,7 +61,7 @@ class CategoryDetailPage extends ConsumerWidget {
                     // Emoji + title
                     Text(
                       category.emoji,
-                      style: const TextStyle(fontSize: 48),
+                      style: const TextStyle(fontSize: 60),
                     ),
                     const SizedBox(height: AppConstants.spacingSm),
                     Text(category.name, style: AppTextStyles.displayLarge),

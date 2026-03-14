@@ -9,6 +9,7 @@ class FeaturedSessionCard extends StatelessWidget {
   final String subtitle;
   final String durationLabel;
   final VoidCallback onTap;
+  final bool isNew;
 
   const FeaturedSessionCard({
     super.key,
@@ -17,39 +18,68 @@ class FeaturedSessionCard extends StatelessWidget {
     required this.subtitle,
     required this.durationLabel,
     required this.onTap,
+    this.isNew = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(AppConstants.radiusLg),
-          border: const Border(
-            left: BorderSide(color: AppColors.accent, width: 4),
-          ),
-        ),
-        padding: const EdgeInsets.all(AppConstants.spacingMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 32)),
-            const SizedBox(height: AppConstants.spacingXs),
-            Text(categoryName, style: AppTextStyles.titleMedium),
-            const SizedBox(height: AppConstants.spacingXs),
-            Text(
-              subtitle,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textMuted,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+              border: const Border(
+                left: BorderSide(color: AppColors.accent, width: 4),
               ),
             ),
-            const SizedBox(height: AppConstants.spacingMd),
-            Text(durationLabel, style: AppTextStyles.caption),
-          ],
-        ),
+            padding: const EdgeInsets.all(AppConstants.spacingMd),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 40)),
+                const SizedBox(height: AppConstants.spacingXs),
+                Text(categoryName, style: AppTextStyles.titleMedium),
+                const SizedBox(height: AppConstants.spacingXs),
+                Text(
+                  subtitle,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: AppConstants.spacingMd),
+                Text(durationLabel, style: AppTextStyles.caption),
+              ],
+            ),
+          ),
+          if (isNew)
+            Positioned(
+              top: -8,
+              right: AppConstants.spacingSm,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingSm,
+                  vertical: 3,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.accent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text(
+                  'New !',
+                  style: TextStyle(
+                    color: AppColors.background,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

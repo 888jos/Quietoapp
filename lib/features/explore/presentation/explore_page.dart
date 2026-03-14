@@ -108,7 +108,7 @@ class _CategoryGridCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(category.emoji, style: const TextStyle(fontSize: 36)),
+          Text(category.emoji, style: const TextStyle(fontSize: 44)),
           const SizedBox(height: AppConstants.spacingSm),
           Text(
             category.name,

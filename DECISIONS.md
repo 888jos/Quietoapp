@@ -78,6 +78,17 @@
 
 ## ADR-009 — Badge "New !" sur Actualité uniquement
 
-**Décision** : `CategoryModel.isNew` (bool) contrôle l'affichage du badge. Seule la catégorie Actualité a `isNew: true` pour le MVP.
+**Décision** : `CategoryModel.isNew` (bool) contrôle l'affichage du badge. Seule la catégorie Actualité a `isNew: true` pour le MVP. Le badge s'affiche sur `FeaturedSessionCard` (home "Priorité du moment") et `CategoryListCard` (liste verticale). Il a été retiré de `CategoryBubble` (scroll horizontal) pour ne pas surcharger les bulles.
 
 **Pourquoi** : Mettre en avant le contenu le plus actuel sans surcharger l'UI. Le badge est un signal éditorial, pas un indicateur technique.
+
+---
+
+## ADR-010 — Curation de la home page
+
+**Décision** : La home filtre et ordonne les catégories différemment de l'Explorer.
+- "Priorité du moment" (`FeaturedSessionCard`) : Découverte de la méditation (🧘, catégorie gratuite, 3 séances).
+- Scroll horizontal "Programmes disponibles" : Découverte exclue, Actualité en 1ère position.
+- Liste verticale "Catégories disponibles" : idem scroll horizontal.
+
+**Pourquoi** : Éviter la redondance entre FeaturedSessionCard et les bulles. Mettre Actualité en tête du scroll pour créer de l'urgence. La logique de curation est dans `categoriesProvider` (`home_providers.dart`) — zéro logique dans les widgets.

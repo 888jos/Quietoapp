@@ -28,8 +28,6 @@ abstract final class AppRoutes {
   static String categoryPath(String categoryId) => '/category/$categoryId';
 }
 
-final _shellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'shell');
-
 final appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
   debugLogDiagnostics: false,
@@ -70,23 +68,28 @@ final appRouter = GoRouter(
       },
     ),
 
-    // ── Shell avec bottom nav ─────────────────────────
-    ShellRoute(
-      navigatorKey: _shellNavigatorKey,
-      builder: (context, state, child) => HomeShell(child: child),
-      routes: [
-        GoRoute(
-          path: AppRoutes.home,
-          builder: (context, state) => const HomePage(),
-        ),
-        GoRoute(
-          path: AppRoutes.explore,
-          builder: (context, state) => const ExplorePage(),
-        ),
-        GoRoute(
-          path: AppRoutes.profile,
-          builder: (context, state) => const ProfilePage(),
-        ),
+    // ── Shell avec bottom nav (stack isolée par tab) ──
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, shell) => HomeShell(shell: shell),
+      branches: [
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: AppRoutes.home,
+            builder: (context, state) => const HomePage(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: AppRoutes.explore,
+            builder: (context, state) => const ExplorePage(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: AppRoutes.profile,
+            builder: (context, state) => const ProfilePage(),
+          ),
+        ]),
       ],
     ),
   ],

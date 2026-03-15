@@ -43,7 +43,11 @@ features/ma_feature/
 2. **Pas de style hardcodé** — toujours `AppTextStyles.xxx`
 3. **Pas de valeur magique** — toujours `AppConstants.xxx`
 4. **Pas de logique dans les widgets** — passer par un provider/notifier
-5. **Pas de navigation directe** — utiliser `AppRoutes.xxx` + `context.go()`
+5. **Pas de navigation directe** — utiliser `AppRoutes.xxx` avec le bon appel selon le contexte :
+   - `context.go()` pour remplacer la stack (redirections)
+   - `context.push()` pour empiler avec retour possible (pages detail, player, paywall)
+   - `shell.goBranch(index)` pour changer de tab dans la navbar
+   - Avant toute nouvelle route, consulter la table de décision dans `ARCHITECTURE.md` (section Navigation)
 6. **Try-catch obligatoire** sur tout appel async
 
 ### Exemple de widget correct

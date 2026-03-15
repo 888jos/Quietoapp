@@ -3,34 +3,33 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
-import 'router.dart';
 
 class HomeShell extends StatelessWidget {
-  final Widget child;
+  final StatefulNavigationShell shell;
 
-  const HomeShell({super.key, required this.child});
-
-  int _currentIndex(BuildContext context) {
-    final location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/explore')) return 1;
-    if (location.startsWith('/profile')) return 2;
-    return 0;
-  }
+  const HomeShell({super.key, required this.shell});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: child,
-      bottomNavigationBar: _QuijetoNav(currentIndex: _currentIndex(context)),
+      body: shell,
+      bottomNavigationBar: _QuijetoNav(
+        currentIndex: shell.currentIndex,
+        onTap: (index) => shell.goBranch(
+          index,
+          initialLocation: index == shell.currentIndex,
+        ),
+      ),
     );
   }
 }
 
 class _QuijetoNav extends StatelessWidget {
   final int currentIndex;
+  final ValueChanged<int> onTap;
 
-  const _QuijetoNav({required this.currentIndex});
+  const _QuijetoNav({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -53,21 +52,21 @@ class _QuijetoNav extends StatelessWidget {
                 iconActive: Iconsax.home_1,
                 label: 'Accueil',
                 isActive: currentIndex == 0,
-                onTap: () => context.go(AppRoutes.home),
+                onTap: () => onTap(0),
               ),
               _NavItem(
                 icon: Iconsax.element_4,
                 iconActive: Iconsax.element_4_copy,
                 label: 'Explorer',
                 isActive: currentIndex == 1,
-                onTap: () => context.go(AppRoutes.explore),
+                onTap: () => onTap(1),
               ),
               _NavItem(
                 icon: Iconsax.profile_circle,
                 iconActive: Iconsax.profile_circle_copy,
                 label: 'Profil',
                 isActive: currentIndex == 2,
-                onTap: () => context.go(AppRoutes.profile),
+                onTap: () => onTap(2),
               ),
             ],
           ),

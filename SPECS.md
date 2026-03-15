@@ -7,9 +7,10 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ## Fonctionnalités MVP
 
 ### Onboarding
-- 3 slides d'introduction
-- Bouton "Passer" disponible dès la slide 1
-- Redirige vers Home après completion
+- 6 slides : 2 introductions + 3 questions à choix unique (objectif, moment, état) + saisie du prénom
+- Pas de bouton "Passer" — l'utilisateur doit compléter tout le flow
+- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + marque l'onboarding comme terminé → Home
+- Réponses persistées dans SharedPreferences (`prefOnboardingAnswers`)
 
 ### Home ✅
 - Header : logo "Quieto" + salutation personnalisée "Bonjour, [prénom]" (via StorageService)
@@ -72,7 +73,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ## Monétisation
 
 - Modèle freemium : 1 catégorie gratuite (🧘 Découverte), toutes les autres requièrent un abonnement
-- Badge "New !" sur la catégorie Actualité : `FeaturedSessionCard` (home) + `CategoryListCard` (home liste)
+- Badge "New !" sur la catégorie Actualité : `FeaturedSessionCard` (home priorité) + `CategoryBubble` (scroll horizontal) + `CategoryListCard` (liste verticale)
 - Abonnement mensuel : 4,99 € / mois
 - Intégration RevenueCat (`purchases_flutter`)
 - Entitlement : `premium`

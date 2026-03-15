@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../onboarding_providers.dart';
@@ -48,7 +47,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     'Bien, mais curieux(se)',
   ];
 
-  bool get _isIntroSlide => _page < 2;
   bool get _isLastSlide => _page == _totalSlides - 1;
 
   bool _isSlideProceedable(OnboardingState state) {
@@ -69,14 +67,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     }
-  }
-
-  Future<void> _skip() async {
-    try {
-      await ref.read(storageServiceProvider).setOnboardingDone();
-    } catch (_) {}
-    if (!mounted) return;
-    context.go(AppRoutes.home);
   }
 
   Future<void> _finish() async {
@@ -186,19 +176,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 label: _isLastSlide ? 'Commencer' : 'Suivant',
                 onTap: canProceed ? _next : null,
                 isLoading: _loading,
-              ),
-              const SizedBox(height: AppConstants.spacingMd),
-              SizedBox(
-                height: AppConstants.spacingXl,
-                child: _isIntroSlide
-                    ? GestureDetector(
-                        onTap: _skip,
-                        child: Text(
-                          'Passer',
-                          style: AppTextStyles.bodyMedium,
-                        ),
-                      )
-                    : const SizedBox.shrink(),
               ),
               const SizedBox(height: AppConstants.spacingLg),
             ],

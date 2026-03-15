@@ -12,11 +12,19 @@
 
 ## ADR-002 — GoRouter pour la navigation
 
-**Décision** : `go_router ^14.0.0`
+**Décision** : `go_router ^14.0.0` avec `StatefulShellRoute.indexedStack` pour la bottom navbar.
 
-**Pourquoi** : Gestion déclarative des routes avec deep linking natif. `ShellRoute` est idéal pour la bottom navigation avec persistance d'état. Support officiel Flutter.
+**Pourquoi** : Gestion déclarative des routes avec deep linking natif. Support officiel Flutter. `StatefulShellRoute` donne une stack de navigation isolée par tab — le scroll, l'état et l'historique de chaque tab sont préservés quand on change d'onglet.
 
 **Alternative rejetée** : `auto_route` — génération de code non nécessaire à ce stade.
+
+**Migration** : Démarré avec `ShellRoute` (stack partagée entre tous les tabs). Migré vers `StatefulShellRoute.indexedStack` pour isoler les stacks et conserver l'état par tab (ADR-012).
+
+**Règle pour toute nouvelle route** : Avant d'ajouter une route, se demander quel type utiliser pour une UX optimale :
+- `GoRoute` → page simple sans layout persistant
+- `StatefulShellRoute` → tabs avec bottom nav, état conservé par tab
+- `context.go()` → changement de tab (remplace la stack)
+- `context.push()` → navigation vers une page avec retour possible (player, detail, paywall)
 
 ---
 
@@ -78,9 +86,12 @@
 
 ## ADR-009 — Badge "New !" sur Actualité uniquement
 
-**Décision** : `CategoryModel.isNew` (bool) contrôle l'affichage du badge. Seule la catégorie Actualité a `isNew: true` pour le MVP. Le badge s'affiche sur `FeaturedSessionCard` (home "Priorité du moment") et `CategoryListCard` (liste verticale). Il a été retiré de `CategoryBubble` (scroll horizontal) pour ne pas surcharger les bulles.
+**Décision** : `CategoryModel.isNew` (bool) contrôle l'affichage du badge. Seule la catégorie Actualité a `isNew: true` pour le MVP. Le badge s'affiche sur trois widgets :
+- `FeaturedSessionCard` (home "Priorité du moment") — `Stack` + `Positioned(top:-8, right: spacingSm)`
+- `CategoryBubble` (scroll horizontal) — `Stack(clipBehavior: Clip.none)` + `Positioned(top:0, right:0)`
+- `CategoryListCard` (liste verticale) — `Stack(clipBehavior: Clip.none)` + `Positioned(bottom:18, right:0)` flottant au-dessus du compteur de séances
 
-**Pourquoi** : Mettre en avant le contenu le plus actuel sans surcharger l'UI. Le badge est un signal éditorial, pas un indicateur technique.
+**Pourquoi** : Mettre en avant le contenu le plus actuel sur tous les points d'entrée de la home. Le badge est un signal éditorial, pas un indicateur technique.
 
 ---
 
@@ -90,13 +101,23 @@
 - Slides 0-1 : intro animée avec `IntroSlide` (emoji + titre + sous-titre).
 - Slides 2-4 : 3 questions à choix unique (`QuestionSlide`) — objectif principal, moment préféré, état émotionnel.
 - Slide 5 : saisie du prénom (`TextInputSlide`).
-- "Passer" visible sur les slides intro uniquement → `setOnboardingDone()` + `/home`.
+- Pas de bouton "Passer" — le flow est obligatoire.
 - "Commencer" sur la dernière slide → sauvegarde réponses + prénom + `setOnboardingDone()` + `/home`.
 - `_SplashDecider` (router) est un `ConsumerStatefulWidget` qui lit `storageServiceProvider.isOnboardingDone` pour router vers `/onboarding` ou `/home` au démarrage.
 
 **État** : `OnboardingNotifier` (`StateNotifierProvider.autoDispose`) stocke `answers` (Map<String, String>) et `firstName`. Réponses persistées dans `SharedPreferences` via `StorageService.saveOnboardingAnswers` (clé `prefOnboardingAnswers`, JSON encodé).
 
 **Pourquoi** : Collecter le contexte utilisateur dès le départ pour personnaliser l'expérience future (objectif, timing, humeur, prénom). Zéro logique dans les widgets — tout passe par le notifier.
+
+---
+
+## ADR-012 — Migration ShellRoute → StatefulShellRoute
+
+**Décision** : La bottom navbar utilise `StatefulShellRoute.indexedStack` avec 3 branches (Home, Explore, Profile).
+
+**Pourquoi** : `ShellRoute` partage un seul navigator entre tous les tabs — changer de tab détruisait l'état de la page précédente et pouvait créer des empilements inattendus. `StatefulShellRoute` donne une stack indépendante par tab et conserve le scroll, les données chargées et l'historique de navigation de chaque onglet.
+
+**Implémentation** : `HomeShell` reçoit un `StatefulNavigationShell` (au lieu d'un `Widget child`). La navbar appelle `shell.goBranch(index)` avec `initialLocation: index == shell.currentIndex` pour permettre un double-tap sur un tab de revenir à la racine du tab.
 
 ---
 

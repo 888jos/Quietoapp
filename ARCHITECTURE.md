@@ -15,6 +15,14 @@ lib/
 │   └── ui/           # Composants réutilisables (AppButton, AppCard…)
 └── features/         # Domaines métier
     ├── onboarding/
+    │   ├── presentation/
+    │   │   ├── onboarding_page.dart
+    │   │   └── widgets/
+    │   │       ├── intro_slide.dart
+    │   │       ├── question_slide.dart
+    │   │       ├── text_input_slide.dart
+    │   │       └── progress_bar.dart
+    │   └── onboarding_providers.dart
     ├── home/
     │   ├── data/
     │   │   └── home_repository.dart

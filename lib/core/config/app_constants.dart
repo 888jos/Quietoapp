@@ -11,6 +11,7 @@ abstract final class AppConstants {
 
   // ── SharedPreferences keys ───────────────────────────
   static const prefOnboardingDone = 'onboarding_done';
+  static const prefOnboardingAnswers = 'onboarding_answers';
   static const prefSessionProgress = 'session_progress';
   static const prefUserFirstName = 'user_first_name';
   static const prefIsPremium = 'is_premium';

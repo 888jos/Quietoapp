@@ -17,6 +17,23 @@ class StorageService {
     await _prefs.setBool(AppConstants.prefOnboardingDone, true);
   }
 
+  Future<void> saveOnboardingAnswers(Map<String, String> answers) async {
+    try {
+      await _prefs.setString(
+          AppConstants.prefOnboardingAnswers, jsonEncode(answers));
+    } catch (_) {}
+  }
+
+  Map<String, String> getOnboardingAnswers() {
+    try {
+      final raw = _prefs.getString(AppConstants.prefOnboardingAnswers);
+      if (raw == null) return {};
+      return Map<String, String>.from(jsonDecode(raw) as Map);
+    } catch (_) {
+      return {};
+    }
+  }
+
   // ── User profile ─────────────────────────────────────
 
   String get firstName =>

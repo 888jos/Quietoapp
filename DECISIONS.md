@@ -84,6 +84,22 @@
 
 ---
 
+## ADR-011 — Onboarding : flow en 6 étapes avec questions de personnalisation
+
+**Décision** : L'onboarding comporte 6 slides gérées par un `PageController` dans `OnboardingPage` (ConsumerStatefulWidget).
+- Slides 0-1 : intro animée avec `IntroSlide` (emoji + titre + sous-titre).
+- Slides 2-4 : 3 questions à choix unique (`QuestionSlide`) — objectif principal, moment préféré, état émotionnel.
+- Slide 5 : saisie du prénom (`TextInputSlide`).
+- "Passer" visible sur les slides intro uniquement → `setOnboardingDone()` + `/home`.
+- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + `setOnboardingDone()` + `/home`.
+- `_SplashDecider` (router) est un `ConsumerStatefulWidget` qui lit `storageServiceProvider.isOnboardingDone` pour router vers `/onboarding` ou `/home` au démarrage.
+
+**État** : `OnboardingNotifier` (`StateNotifierProvider.autoDispose`) stocke `answers` (Map<String, String>) et `firstName`. Réponses persistées dans `SharedPreferences` via `StorageService.saveOnboardingAnswers` (clé `prefOnboardingAnswers`, JSON encodé).
+
+**Pourquoi** : Collecter le contexte utilisateur dès le départ pour personnaliser l'expérience future (objectif, timing, humeur, prénom). Zéro logique dans les widgets — tout passe par le notifier.
+
+---
+
 ## ADR-010 — Curation de la home page
 
 **Décision** : La home filtre et ordonne les catégories différemment de l'Explorer.

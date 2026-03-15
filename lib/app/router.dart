@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/services/storage_providers.dart';
 import '../core/theme/app_colors.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/home/presentation/home_page.dart';
@@ -91,14 +93,14 @@ final appRouter = GoRouter(
 );
 
 /// Redirige vers onboarding ou home selon l'état local
-class _SplashDecider extends StatefulWidget {
+class _SplashDecider extends ConsumerStatefulWidget {
   const _SplashDecider();
 
   @override
-  State<_SplashDecider> createState() => _SplashDeciderState();
+  ConsumerState<_SplashDecider> createState() => _SplashDeciderState();
 }
 
-class _SplashDeciderState extends State<_SplashDecider> {
+class _SplashDeciderState extends ConsumerState<_SplashDecider> {
   @override
   void initState() {
     super.initState();
@@ -109,7 +111,8 @@ class _SplashDeciderState extends State<_SplashDecider> {
     // Petite pause pour le splash
     await Future<void>.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
-    context.go(AppRoutes.home);
+    final done = ref.read(storageServiceProvider).isOnboardingDone;
+    context.go(done ? AppRoutes.home : AppRoutes.onboarding);
   }
 
   @override

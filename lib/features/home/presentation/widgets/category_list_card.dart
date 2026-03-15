@@ -26,19 +26,47 @@ class CategoryListCard extends StatelessWidget {
         padding: const EdgeInsets.all(AppConstants.spacingMd),
         child: Row(
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: AppColors.accentDim,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  category.emoji,
-                  style: const TextStyle(fontSize: 28),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: AppColors.accentDim,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      category.emoji,
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                  ),
                 ),
-              ),
+                if (category.isNew)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'New !',
+                        style: TextStyle(
+                          color: AppColors.background,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: AppConstants.spacingMd),
             Expanded(
@@ -62,26 +90,6 @@ class CategoryListCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppConstants.spacingSm),
-            if (category.isNew)
-              Container(
-                margin: const EdgeInsets.only(right: AppConstants.spacingXs),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spacingSm,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'New !',
-                  style: TextStyle(
-                    color: AppColors.background,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
             Text(
               '${category.sessions.length} séances',
               style: AppTextStyles.badge,

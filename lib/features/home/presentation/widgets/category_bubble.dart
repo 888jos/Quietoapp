@@ -22,20 +22,49 @@ class CategoryBubble extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.cardSurface,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.accent, width: 1.5),
-              ),
-              child: Center(
-                child: Text(
-                  category.emoji,
-                  style: const TextStyle(fontSize: 40),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: AppColors.cardSurface,
+                    shape: BoxShape.circle,
+                    border:
+                        Border.all(color: AppColors.accent, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      category.emoji,
+                      style: const TextStyle(fontSize: 32),
+                    ),
+                  ),
                 ),
-              ),
+                if (category.isNew)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'New !',
+                        style: TextStyle(
+                          color: AppColors.background,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: AppConstants.spacingXs),
             Text(

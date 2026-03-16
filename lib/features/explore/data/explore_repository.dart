@@ -20,7 +20,7 @@ class ExploreRepository {
             description:
                 'Une introduction douce pour ceux qui n\'ont jamais médité.',
             durationMinutes: 5,
-            audioFile: 'decouverte_first.mp3',
+            audioFile: 'decouverte/decouverte_first.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(
@@ -29,7 +29,7 @@ class ExploreRepository {
             description:
                 'Apprends à accueillir tes pensées sans t\'y attacher.',
             durationMinutes: 6,
-            audioFile: 'decouverte_observe.mp3',
+            audioFile: 'decouverte/decouverte_observe.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(
@@ -38,7 +38,7 @@ class ExploreRepository {
             description:
                 'Entraîne-toi à revenir ici et maintenant, encore et encore.',
             durationMinutes: 8,
-            audioFile: 'decouverte_present.mp3',
+            audioFile: 'decouverte/decouverte_present.mp3',
             categoryId: 'decouverte',
           ),
         ],
@@ -59,7 +59,7 @@ class ExploreRepository {
             title: 'Détox numérique',
             description: 'Déconnecte ton esprit du bruit informationnel.',
             durationMinutes: 8,
-            audioFile: 'actualite_detox.mp3',
+            audioFile: 'actualite/actualite_detox.mp3',
             categoryId: 'actualite',
           ),
           const SessionModel(
@@ -68,7 +68,7 @@ class ExploreRepository {
             description:
                 'Trouve la sérénité malgré un monde en constante évolution.',
             durationMinutes: 12,
-            audioFile: 'actualite_grounding.mp3',
+            audioFile: 'actualite/actualite_grounding.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),
@@ -77,7 +77,7 @@ class ExploreRepository {
             title: 'Pause info',
             description: 'Une pause consciente loin des écrans et des titres.',
             durationMinutes: 5,
-            audioFile: 'actualite_pause.mp3',
+            audioFile: 'actualite/actualite_pause.mp3',
             categoryId: 'actualite',
           ),
           const SessionModel(
@@ -85,7 +85,7 @@ class ExploreRepository {
             title: 'Déconnexion consciente',
             description: 'Apprends à poser ton téléphone avec légèreté.',
             durationMinutes: 7,
-            audioFile: 'actualite_disconnect.mp3',
+            audioFile: 'actualite/actualite_disconnect.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),
@@ -95,7 +95,7 @@ class ExploreRepository {
             description:
                 'Prends de la hauteur sur les événements du monde.',
             durationMinutes: 10,
-            audioFile: 'actualite_perspective.mp3',
+            audioFile: 'actualite/actualite_perspective.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),
@@ -116,7 +116,7 @@ class ExploreRepository {
             description:
                 'Une technique de respiration puissante pour calmer le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'stress_breathing_478.mp3',
+            audioFile: 'stress/stress_breathing_478.mp3',
             categoryId: 'stress',
           ),
           const SessionModel(
@@ -124,7 +124,7 @@ class ExploreRepository {
             title: 'Body scan de détente',
             description: 'Parcours ton corps pour relâcher les tensions.',
             durationMinutes: 15,
-            audioFile: 'stress_body_scan.mp3',
+            audioFile: 'stress/stress_body_scan.mp3',
             categoryId: 'stress',
             isPremium: true,
           ),
@@ -134,7 +134,7 @@ class ExploreRepository {
             description:
                 'Contracte et relâche chaque groupe musculaire pour libérer le stress physique.',
             durationMinutes: 8,
-            audioFile: 'stress_muscle_release.mp3',
+            audioFile: 'stress/stress_muscle_release.mp3',
             categoryId: 'stress',
           ),
           const SessionModel(
@@ -143,7 +143,7 @@ class ExploreRepository {
             description:
                 'Reviens à toi en 3 minutes grâce à une technique d\'ancrage simple.',
             durationMinutes: 3,
-            audioFile: 'stress_anchor.mp3',
+            audioFile: 'stress/stress_anchor.mp3',
             categoryId: 'stress',
           ),
           const SessionModel(
@@ -152,7 +152,7 @@ class ExploreRepository {
             description:
                 'Dissolve les tensions mentales et retrouve un état de calme profond.',
             durationMinutes: 10,
-            audioFile: 'stress_meditation.mp3',
+            audioFile: 'stress/stress_meditation.mp3',
             categoryId: 'stress',
             isPremium: true,
           ),
@@ -173,7 +173,7 @@ class ExploreRepository {
             description:
                 'Une méditation douce pour préparer ton endormissement.',
             durationMinutes: 10,
-            audioFile: 'sleep_evening.mp3',
+            audioFile: 'sleep/sleep_evening.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
@@ -181,7 +181,7 @@ class ExploreRepository {
             title: 'Visualisation apaisante',
             description: 'Voyage mental dans un lieu calme et sécurisant.',
             durationMinutes: 20,
-            audioFile: 'sleep_visualization.mp3',
+            audioFile: 'sleep/sleep_visualization.mp3',
             categoryId: 'sleep',
             isPremium: true,
           ),
@@ -191,7 +191,7 @@ class ExploreRepository {
             description:
                 'Un rituel de 7 minutes pour signaler à ton corps qu\'il est temps de dormir.',
             durationMinutes: 7,
-            audioFile: 'sleep_ritual.mp3',
+            audioFile: 'sleep/sleep_ritual.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
@@ -200,7 +200,7 @@ class ExploreRepository {
             description:
                 'Une respiration lente et profonde pour ralentir le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'sleep_breathing.mp3',
+            audioFile: 'sleep/sleep_breathing.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
@@ -209,7 +209,7 @@ class ExploreRepository {
             description:
                 'Laisse les pensées se dissoudre dans un silence bienveillant.',
             durationMinutes: 12,
-            audioFile: 'sleep_silence.mp3',
+            audioFile: 'sleep/sleep_silence.mp3',
             categoryId: 'sleep',
             isPremium: true,
           ),
@@ -229,7 +229,7 @@ class ExploreRepository {
             title: 'Pleine conscience 5 min',
             description: 'Ancre-toi dans le moment présent rapidement.',
             durationMinutes: 5,
-            audioFile: 'focus_mindfulness_5.mp3',
+            audioFile: 'focus/focus_mindfulness_5.mp3',
             categoryId: 'focus',
           ),
           const SessionModel(
@@ -238,7 +238,7 @@ class ExploreRepository {
             description:
                 'Entre en focus profond avant une session de travail.',
             durationMinutes: 10,
-            audioFile: 'focus_pomodoro.mp3',
+            audioFile: 'focus/focus_pomodoro.mp3',
             categoryId: 'focus',
             isPremium: true,
           ),
@@ -248,7 +248,7 @@ class ExploreRepository {
             description:
                 'Dégage le brouillard mental et retrouve une pensée claire.',
             durationMinutes: 7,
-            audioFile: 'focus_clarity.mp3',
+            audioFile: 'focus/focus_clarity.mp3',
             categoryId: 'focus',
           ),
           const SessionModel(
@@ -257,7 +257,7 @@ class ExploreRepository {
             description:
                 'Utilise le souffle comme ancre pour entraîner ton attention.',
             durationMinutes: 5,
-            audioFile: 'focus_breath.mp3',
+            audioFile: 'focus/focus_breath.mp3',
             categoryId: 'focus',
           ),
           const SessionModel(
@@ -266,7 +266,7 @@ class ExploreRepository {
             description:
                 'Une session longue pour entrer dans un état de concentration totale.',
             durationMinutes: 12,
-            audioFile: 'focus_deep.mp3',
+            audioFile: 'focus/focus_deep.mp3',
             categoryId: 'focus',
             isPremium: true,
           ),
@@ -287,7 +287,7 @@ class ExploreRepository {
             description:
                 'Synchronise ta respiration pour équilibrer le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'breathing_coherence.mp3',
+            audioFile: 'breathing/breathing_coherence.mp3',
             categoryId: 'breathing',
           ),
           const SessionModel(
@@ -296,7 +296,7 @@ class ExploreRepository {
             description:
                 'La technique des forces spéciales pour retrouver le calme.',
             durationMinutes: 10,
-            audioFile: 'breathing_box.mp3',
+            audioFile: 'breathing/breathing_box.mp3',
             categoryId: 'breathing',
             isPremium: true,
           ),
@@ -306,7 +306,7 @@ class ExploreRepository {
             description:
                 'Équilibre les deux hémisphères cérébraux par la respiration nasale alternée.',
             durationMinutes: 7,
-            audioFile: 'breathing_alternate.mp3',
+            audioFile: 'breathing/breathing_alternate.mp3',
             categoryId: 'breathing',
           ),
           const SessionModel(
@@ -315,7 +315,7 @@ class ExploreRepository {
             description:
                 'Un rythme respiratoire lent pour calmer l\'agitation intérieure.',
             durationMinutes: 3,
-            audioFile: 'breathing_calm.mp3',
+            audioFile: 'breathing/breathing_calm.mp3',
             categoryId: 'breathing',
           ),
           const SessionModel(
@@ -324,7 +324,7 @@ class ExploreRepository {
             description:
                 'Ouvre la cage thoracique et libère les tensions respiratoires.',
             durationMinutes: 8,
-            audioFile: 'breathing_expansion.mp3',
+            audioFile: 'breathing/breathing_expansion.mp3',
             categoryId: 'breathing',
             isPremium: true,
           ),
@@ -344,7 +344,7 @@ class ExploreRepository {
             title: 'Technique du 5-4-3-2-1',
             description: 'Reviens dans le présent avec tes 5 sens.',
             durationMinutes: 8,
-            audioFile: 'anxiety_54321.mp3',
+            audioFile: 'anxiety/anxiety_54321.mp3',
             categoryId: 'anxiety',
           ),
           const SessionModel(
@@ -352,7 +352,7 @@ class ExploreRepository {
             title: 'Méditation de l\'arbre',
             description: 'Enracine-toi comme un arbre face à la tempête.',
             durationMinutes: 12,
-            audioFile: 'anxiety_tree.mp3',
+            audioFile: 'anxiety/anxiety_tree.mp3',
             categoryId: 'anxiety',
             isPremium: true,
           ),
@@ -362,7 +362,7 @@ class ExploreRepository {
             description:
                 'Observe tes pensées anxieuses sans te laisser emporter.',
             durationMinutes: 7,
-            audioFile: 'anxiety_thoughts.mp3',
+            audioFile: 'anxiety/anxiety_thoughts.mp3',
             categoryId: 'anxiety',
           ),
           const SessionModel(
@@ -371,7 +371,7 @@ class ExploreRepository {
             description:
                 'Une technique rapide pour sortir d\'une crise d\'anxiété.',
             durationMinutes: 3,
-            audioFile: 'anxiety_emergency.mp3',
+            audioFile: 'anxiety/anxiety_emergency.mp3',
             categoryId: 'anxiety',
           ),
           const SessionModel(
@@ -380,7 +380,7 @@ class ExploreRepository {
             description:
                 'Accueille ce qui est avec douceur plutôt que de résister.',
             durationMinutes: 10,
-            audioFile: 'anxiety_acceptance.mp3',
+            audioFile: 'anxiety/anxiety_acceptance.mp3',
             categoryId: 'anxiety',
             isPremium: true,
           ),
@@ -400,7 +400,7 @@ class ExploreRepository {
             title: 'Affirmations positives',
             description: 'Reprogramme tes croyances limitantes en douceur.',
             durationMinutes: 7,
-            audioFile: 'confidence_affirmations.mp3',
+            audioFile: 'confidence/confidence_affirmations.mp3',
             categoryId: 'confidence',
           ),
           const SessionModel(
@@ -409,7 +409,7 @@ class ExploreRepository {
             description:
                 'Projette-toi dans la version la plus accomplie de toi-même.',
             durationMinutes: 12,
-            audioFile: 'confidence_success.mp3',
+            audioFile: 'confidence/confidence_success.mp3',
             categoryId: 'confidence',
             isPremium: true,
           ),
@@ -419,7 +419,7 @@ class ExploreRepository {
             description:
                 'Adopte une posture mentale de force et de sérénité.',
             durationMinutes: 5,
-            audioFile: 'confidence_posture.mp3',
+            audioFile: 'confidence/confidence_posture.mp3',
             categoryId: 'confidence',
           ),
           const SessionModel(
@@ -428,7 +428,7 @@ class ExploreRepository {
             description:
                 'Transforme ta voix intérieure en alliée bienveillante.',
             durationMinutes: 8,
-            audioFile: 'confidence_inner_voice.mp3',
+            audioFile: 'confidence/confidence_inner_voice.mp3',
             categoryId: 'confidence',
             isPremium: true,
           ),
@@ -438,7 +438,7 @@ class ExploreRepository {
             description:
                 'Connecte-toi à tes valeurs profondes et ta force intérieure.',
             durationMinutes: 10,
-            audioFile: 'confidence_identity.mp3',
+            audioFile: 'confidence/confidence_identity.mp3',
             categoryId: 'confidence',
             isPremium: true,
           ),
@@ -459,7 +459,7 @@ class ExploreRepository {
             description:
                 'Explore ton corps avec une attention bienveillante.',
             durationMinutes: 10,
-            audioFile: 'mindfulness_scan.mp3',
+            audioFile: 'mindfulness/mindfulness_scan.mp3',
             categoryId: 'mindfulness',
           ),
           const SessionModel(
@@ -467,7 +467,7 @@ class ExploreRepository {
             title: 'Méditation du miroir',
             description: 'Observe tes pensées sans jugement ni attachement.',
             durationMinutes: 15,
-            audioFile: 'mindfulness_mirror.mp3',
+            audioFile: 'mindfulness/mindfulness_mirror.mp3',
             categoryId: 'mindfulness',
             isPremium: true,
           ),
@@ -477,7 +477,7 @@ class ExploreRepository {
             description:
                 'Deviens le témoin de ton flux mental sans t\'y perdre.',
             durationMinutes: 7,
-            audioFile: 'mindfulness_thoughts.mp3',
+            audioFile: 'mindfulness/mindfulness_thoughts.mp3',
             categoryId: 'mindfulness',
           ),
           const SessionModel(
@@ -486,7 +486,7 @@ class ExploreRepository {
             description:
                 'Habite pleinement ton corps dans l\'instant présent.',
             durationMinutes: 5,
-            audioFile: 'mindfulness_body.mp3',
+            audioFile: 'mindfulness/mindfulness_body.mp3',
             categoryId: 'mindfulness',
           ),
           const SessionModel(
@@ -495,7 +495,7 @@ class ExploreRepository {
             description:
                 'Utilise les sons environnants comme ancre de présence.',
             durationMinutes: 8,
-            audioFile: 'mindfulness_sound.mp3',
+            audioFile: 'mindfulness/mindfulness_sound.mp3',
             categoryId: 'mindfulness',
             isPremium: true,
           ),

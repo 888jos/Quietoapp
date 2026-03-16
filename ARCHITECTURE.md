@@ -89,14 +89,14 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 ## Navigation
 
 ```
-/ (splash)  ──► /onboarding
+/ (splash)  ──► /onboarding ──► /paywall (context.go, bouton ✕ après 3s) ──► /home
             └─► StatefulShellRoute (HomeShell + bottom nav)
                   ├─ branch 0 : /home    → HomePage    (stack isolée)
                   ├─ branch 1 : /explore → ExplorePage (stack isolée)
                   └─ branch 2 : /profile → ProfilePage (stack isolée)
 
 /player/:sessionId    (hors shell — context.push, retour possible)
-/paywall              (hors shell — context.push, retour possible)
+/paywall              (hors shell — context.go depuis onboarding / context.push depuis profil)
 /category/:categoryId (hors shell — context.push, retour possible)
 ```
 

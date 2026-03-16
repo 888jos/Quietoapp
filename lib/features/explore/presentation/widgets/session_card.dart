@@ -60,27 +60,6 @@ class SessionCard extends StatelessWidget {
                           fontSize: 13,
                         ),
                       ),
-                      if (session.isPremium) ...[
-                        const SizedBox(width: AppConstants.spacingSm),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppConstants.spacingXs,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accentDim,
-                            borderRadius:
-                                BorderRadius.circular(AppConstants.radiusSm),
-                          ),
-                          child: Text(
-                            'Premium',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.accent,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ],

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,24 @@ class PaywallPage extends ConsumerStatefulWidget {
 
 class _PaywallPageState extends ConsumerState<PaywallPage> {
   bool _isLoading = false;
+  bool _showClose = false;
+  Timer? _closeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _closeTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showClose = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _closeTimer?.cancel();
+    super.dispose();
+  }
+
+  void _dismiss() => context.go(AppRoutes.home);
 
   Future<void> _purchase() async {
     setState(() => _isLoading = true);
@@ -50,15 +69,18 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           child: Column(
             children: [
               Align(
-                alignment: Alignment.centerLeft,
-                child: GestureDetector(
-                  onTap: () => context.canPop()
-                      ? context.pop()
-                      : context.go(AppRoutes.home),
-                  child: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: AppColors.textPrimary,
-                    size: 22,
+                alignment: Alignment.centerRight,
+                child: AnimatedOpacity(
+                  opacity: _showClose ? 1.0 : 0.0,
+                  duration: const Duration(
+                      milliseconds: AppConstants.animNormal),
+                  child: GestureDetector(
+                    onTap: _showClose ? _dismiss : null,
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.textPrimary,
+                      size: 26,
+                    ),
                   ),
                 ),
               ),

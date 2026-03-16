@@ -30,9 +30,11 @@
 
 ## ADR-003 — Contenu audio statique (pas de Firebase Storage)
 
-**Décision** : Les fichiers audio sont embarqués dans `assets/audio/`.
+**Décision** : Les fichiers audio sont embarqués dans `assets/audio/`, organisés en sous-dossiers par catégorie.
 
-**Pourquoi** : Simplicité maximale pour le MVP. Zéro infrastructure à gérer, fonctionnel hors-ligne par défaut. La taille des assets sera gérée au moment de l'ajout des fichiers réels (compression opus/mp3).
+**Structure** : `assets/audio/<categorie>/<categorie>_<slug>.mp3` (ex. `stress/stress_body_scan.mp3`). Chaque catégorie a son propre sous-dossier déclaré dans `pubspec.yaml`.
+
+**Pourquoi** : Simplicité maximale pour le MVP. Zéro infrastructure à gérer, fonctionnel hors-ligne par défaut. Les sous-dossiers facilitent la gestion des assets quand le catalogue grandit.
 
 **Évolution prévue** : Migration vers Firebase Storage (remote URL) avec cache local via `just_audio` quand le catalogue grandira.
 
@@ -102,7 +104,7 @@
 - Slides 2-4 : 3 questions à choix unique (`QuestionSlide`) — objectif principal, moment préféré, état émotionnel.
 - Slide 5 : saisie du prénom (`TextInputSlide`).
 - Pas de bouton "Passer" — le flow est obligatoire.
-- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + `setOnboardingDone()` + `/home`.
+- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + `setOnboardingDone()` + **`context.go('/paywall')`** (le paywall s'affiche immédiatement après l'onboarding).
 - `_SplashDecider` (router) est un `ConsumerStatefulWidget` qui lit `storageServiceProvider.isOnboardingDone` pour router vers `/onboarding` ou `/home` au démarrage.
 
 **État** : `OnboardingNotifier` (`StateNotifierProvider.autoDispose`) stocke `answers` (Map<String, String>) et `firstName`. Réponses persistées dans `SharedPreferences` via `StorageService.saveOnboardingAnswers` (clé `prefOnboardingAnswers`, JSON encodé).
@@ -118,6 +120,26 @@
 **Pourquoi** : `ShellRoute` partage un seul navigator entre tous les tabs — changer de tab détruisait l'état de la page précédente et pouvait créer des empilements inattendus. `StatefulShellRoute` donne une stack indépendante par tab et conserve le scroll, les données chargées et l'historique de navigation de chaque onglet.
 
 **Implémentation** : `HomeShell` reçoit un `StatefulNavigationShell` (au lieu d'un `Widget child`). La navbar appelle `shell.goBranch(index)` avec `initialLocation: index == shell.currentIndex` pour permettre un double-tap sur un tab de revenir à la racine du tab.
+
+---
+
+## ADR-013 — UX Paywall : bouton fermer différé (3 secondes)
+
+**Décision** : Le paywall n'affiche pas de bouton retour immédiat. Un bouton ✕ (`close_rounded`) apparaît après 3 secondes via un `Timer` + `AnimatedOpacity`. La fermeture appelle `context.go(AppRoutes.home)`.
+
+**Pourquoi** : Force l'utilisateur à lire les avantages Premium au moins 3 secondes avant de pouvoir fermer — pattern paywall classique (App Store, Duolingo, etc.). Le délai est court mais suffisant pour créer de l'intention.
+
+**Implémentation** : `_closeTimer` dans `ConsumerStatefulWidget`, dispose propre du timer. `_dismiss()` utilise `context.go` (pas `context.pop`) car le paywall peut être la racine de la stack (ex. arrivée depuis onboarding).
+
+---
+
+## ADR-014 — Flag de développement `_devUnlockPremium`
+
+**Décision** : `const bool _devUnlockPremium = true` dans `storage_providers.dart`. Quand `true`, `subscriptionProvider` retourne `true` sans lire SharedPreferences.
+
+**Pourquoi** : Pendant le développement, le paywall bloque l'accès aux features premium. Ce flag permet de tester les catégories premium sans souscrire ni mocker RevenueCat.
+
+**Règle** : Remettre à `false` avant toute release. Ne jamais committer `true` sur `main` en production.
 
 ---
 

@@ -47,12 +47,12 @@ class ExplorePage extends ConsumerWidget {
                   crossAxisCount: 2,
                   crossAxisSpacing: AppConstants.spacingMd,
                   mainAxisSpacing: AppConstants.spacingMd,
-                  childAspectRatio: 1.1,
+                  childAspectRatio: 0.9,
                 ),
                 itemCount: categories.length,
                 itemBuilder: (context, i) => _CategoryGridCard(
                   category: categories[i],
-                  onTap: () => context.go(
+                  onTap: () => context.push(
                     ref.read(categoryRouteProvider(categories[i].id)),
                   ),
                 ),

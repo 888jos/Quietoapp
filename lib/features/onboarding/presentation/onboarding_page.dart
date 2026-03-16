@@ -78,7 +78,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       await storage.setFirstName(state.firstName.trim());
       await storage.setOnboardingDone();
       if (!mounted) return;
-      context.go(AppRoutes.home);
+      context.go(AppRoutes.paywall);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }

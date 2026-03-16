@@ -80,6 +80,12 @@ refactor: restructuration de player_providers
 chore: mise à jour des dépendances
 ```
 
+## Dev : bypasser le paywall
+
+Pendant le développement, mettre `_devUnlockPremium = true` dans `lib/core/services/storage_providers.dart` pour accéder aux catégories premium sans abonnement.
+
+> **Règle** : Remettre à `false` avant toute release — ne jamais committer `true` sur `main` en production.
+
 ## Pull Requests
 
 1. Branch depuis `develop`

@@ -9,7 +9,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ### Onboarding
 - 6 slides : 2 introductions + 3 questions à choix unique (objectif, moment, état) + saisie du prénom
 - Pas de bouton "Passer" — l'utilisateur doit compléter tout le flow
-- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + marque l'onboarding comme terminé → Home
+- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + marque l'onboarding comme terminé → **Paywall** (puis Home)
 - Réponses persistées dans SharedPreferences (`prefOnboardingAnswers`)
 
 ### Home ✅
@@ -38,6 +38,8 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Présentation des avantages Premium
 - Bouton d'achat (intégration RevenueCat à finaliser)
 - Restauration des achats
+- Bouton fermer (×) qui apparaît après 3 secondes — UX paywall classique, force la lecture des avantages
+- Accessible via `context.go` depuis l'onboarding (pas de retour) ou `context.push` depuis le profil (retour possible)
 
 ## Catégories de contenu (MVP)
 
@@ -78,6 +80,25 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Intégration RevenueCat (`purchases_flutter`)
 - Entitlement : `premium`
 - Offering : `default`
+
+## Assets audio
+
+Les fichiers audio sont organisés par catégorie dans `assets/audio/` :
+
+```
+assets/audio/
+├── decouverte/
+├── actualite/
+├── stress/
+├── sleep/
+├── focus/
+├── breathing/
+├── anxiety/
+├── confidence/
+└── mindfulness/
+```
+
+Convention de nommage : `<categorie>/<categorie>_<slug>.mp3` (ex. `stress/stress_body_scan.mp3`).
 
 ## Roadmap post-MVP
 

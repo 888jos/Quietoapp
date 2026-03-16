@@ -9,6 +9,12 @@ final storageServiceProvider = Provider<StorageService>((ref) {
 
 /// Statut d'abonnement de l'utilisateur.
 /// false par défaut — sera connecté à RevenueCat ultérieurement.
+///
+/// DEV : mettre à true pour bypasser le paywall pendant le développement.
+/// PROD : remettre à false avant de releaser.
+const bool _devUnlockPremium = true;
+
 final subscriptionProvider = Provider<bool>((ref) {
+  if (_devUnlockPremium) return true;
   return ref.watch(storageServiceProvider).isPremium;
 });

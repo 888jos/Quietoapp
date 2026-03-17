@@ -43,7 +43,15 @@ lib/
     │   │       └── session_card.dart
     │   └── explore_providers.dart
     ├── player/
+    │   ├── data/
+    │   │   └── player_repository.dart
+    │   ├── presentation/
+    │   │   └── player_page.dart
+    │   └── player_providers.dart
     ├── profile/
+    │   ├── presentation/
+    │   │   └── profile_page.dart
+    │   └── profile_providers.dart
     └── paywall/
 ```
 
@@ -57,6 +65,7 @@ lib/
 | Stockage local | `shared_preferences ^2.2.0` |
 | Achats in-app | `purchases_flutter ^7.0.0` (RevenueCat) |
 | Icônes | `iconsax_flutter ^1.0.0` |
+| Liens URL | `url_launcher ^6.3.0` |
 
 ## Flux de données
 

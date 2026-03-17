@@ -15,6 +15,7 @@ abstract final class AppConstants {
   static const prefSessionProgress = 'session_progress';
   static const prefUserFirstName = 'user_first_name';
   static const prefIsPremium = 'is_premium';
+  static const prefNotificationsEnabled = 'notifications_enabled';
 
   // ── Audio ────────────────────────────────────────────
   static const audioBasePath = 'assets/audio/';

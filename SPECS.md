@@ -30,9 +30,12 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Sauvegarde de position automatique (reprendre où on s'est arrêté)
 - Marquage automatique "complété" en fin de séance
 
-### Profil
+### Profil ✅
+- Header : "👤 [prénom]" (fontSize 28, bold) + bouton "Modifier" pour éditer le prénom via bottom sheet
 - Statistiques : minutes totales méditées, nombre de séances complétées
 - CTA vers Paywall
+- Section "Paramètres" : toggle notifications (persisté SharedPreferences) + reset onboarding (→ `/onboarding`)
+- Section "Informations légales" : politique de confidentialité + conditions d'utilisation (ouvre URL via `url_launcher`)
 
 ### Paywall
 - Présentation des avantages Premium

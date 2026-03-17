@@ -76,6 +76,26 @@ class StorageService {
     }
   }
 
+  // ── Notifications ─────────────────────────────────────
+
+  bool get notificationsEnabled =>
+      _prefs.getBool(AppConstants.prefNotificationsEnabled) ?? false;
+
+  Future<void> setNotificationsEnabled(bool value) async {
+    try {
+      await _prefs.setBool(AppConstants.prefNotificationsEnabled, value);
+    } catch (_) {}
+  }
+
+  // ── Reset ─────────────────────────────────────────────
+
+  Future<void> resetOnboarding() async {
+    try {
+      await _prefs.setBool(AppConstants.prefOnboardingDone, false);
+      await _prefs.remove(AppConstants.prefOnboardingAnswers);
+    } catch (_) {}
+  }
+
   Future<void> clearAll() async {
     await _prefs.clear();
   }

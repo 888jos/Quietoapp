@@ -7,6 +7,12 @@ final storageServiceProvider = Provider<StorageService>((ref) {
   throw UnimplementedError('storageServiceProvider must be overridden in ProviderScope');
 });
 
+/// Prénom de l'utilisateur — StateProvider pour être réactif
+/// (mis à jour par ProfileNotifier, lu par la home et le profil).
+final firstNameProvider = StateProvider<String>((ref) {
+  return ref.read(storageServiceProvider).firstName;
+});
+
 /// Statut d'abonnement de l'utilisateur.
 /// false par défaut — sera connecté à RevenueCat ultérieurement.
 ///

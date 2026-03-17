@@ -24,5 +24,5 @@ final featuredSessionProvider = Provider<SessionModel>((ref) {
 });
 
 final userFirstNameProvider = Provider<String>((ref) {
-  return ref.watch(storageServiceProvider).firstName;
+  return ref.watch(firstNameProvider);
 });

@@ -25,8 +25,9 @@ class ProfileState {
 
 class ProfileNotifier extends StateNotifier<ProfileState> {
   final StorageService _storage;
+  final Ref _ref;
 
-  ProfileNotifier(this._storage) : super(const ProfileState()) {
+  ProfileNotifier(this._storage, this._ref) : super(const ProfileState()) {
     _load();
   }
 
@@ -39,8 +40,10 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
   Future<void> setFirstName(String name) async {
     try {
-      await _storage.setFirstName(name.trim());
-      state = state.copyWith(firstName: name.trim());
+      final trimmed = name.trim();
+      await _storage.setFirstName(trimmed);
+      state = state.copyWith(firstName: trimmed);
+      _ref.read(firstNameProvider.notifier).state = trimmed;
     } catch (_) {}
   }
 
@@ -62,5 +65,5 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
 final profileProvider =
     StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
-  return ProfileNotifier(ref.watch(storageServiceProvider));
+  return ProfileNotifier(ref.watch(storageServiceProvider), ref);
 });

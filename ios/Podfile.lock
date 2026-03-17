@@ -5,15 +5,17 @@ PODS:
   - just_audio (0.0.1):
     - Flutter
     - FlutterMacOS
-  - purchases_flutter (7.0.2):
+  - purchases_flutter (9.14.0):
     - Flutter
-    - PurchasesHybridCommon (= 13.0.1)
-  - PurchasesHybridCommon (13.0.1):
-    - RevenueCat (= 5.2.3)
-  - RevenueCat (5.2.3)
+    - PurchasesHybridCommon (= 17.46.1)
+  - PurchasesHybridCommon (17.46.1):
+    - RevenueCat (= 5.61.0)
+  - RevenueCat (5.61.0)
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - url_launcher_ios (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
@@ -21,6 +23,7 @@ DEPENDENCIES:
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - url_launcher_ios (from `.symlinks/plugins/url_launcher_ios/ios`)
 
 SPEC REPOS:
   trunk:
@@ -38,16 +41,19 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/purchases_flutter/ios"
   shared_preferences_foundation:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
+  url_launcher_ios:
+    :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
-  purchases_flutter: 397bd6485f4e34be48901895e820018bf2183ca4
-  PurchasesHybridCommon: 6e5772e574ce345922c42f31403cf72a0ba762bf
-  RevenueCat: 86e4486345a6f7740fecb1eeff91eeff8708eee1
+  purchases_flutter: 1a27b709af72a506ddbc2f1255cae31ba101243d
+  PurchasesHybridCommon: afaf46e9650f9399984196a6966c6d697d6122a2
+  RevenueCat: 9acbd29a62000b57d59efa16166290c4a119847b
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
+  url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
 
-PODFILE CHECKSUM: ed03576fc82b9275c2f953f0640da44fba3eb492
+PODFILE CHECKSUM: f940d455666028524bfa19ece4404d99c873c297
 
 COCOAPODS: 1.16.2

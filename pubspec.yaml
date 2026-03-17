@@ -18,7 +18,7 @@ dependencies:
   go_router: ^14.0.0
 
   # Subscriptions
-  purchases_flutter: ^7.0.0
+  purchases_flutter: ^9.14.0
 
   # Local storage
   shared_preferences: ^2.2.0

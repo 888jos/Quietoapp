@@ -20,7 +20,7 @@ class ExploreRepository {
             description:
                 'Une introduction douce pour ceux qui n\'ont jamais médité.',
             durationMinutes: 5,
-            audioFile: 'decouverte/decouverte_first.mp3',
+            audioFile: 'decouverte/0-premiere-séance.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(
@@ -29,7 +29,7 @@ class ExploreRepository {
             description:
                 'Apprends à accueillir tes pensées sans t\'y attacher.',
             durationMinutes: 6,
-            audioFile: 'decouverte/decouverte_observe.mp3',
+            audioFile: 'decouverte/1-deuxième-séance.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(
@@ -38,7 +38,7 @@ class ExploreRepository {
             description:
                 'Entraîne-toi à revenir ici et maintenant, encore et encore.',
             durationMinutes: 8,
-            audioFile: 'decouverte/decouverte_present.mp3',
+            audioFile: 'decouverte/2-troisième-séance.mp3',
             categoryId: 'decouverte',
           ),
         ],
@@ -56,25 +56,25 @@ class ExploreRepository {
         sessions: [
           const SessionModel(
             id: 'actualite_1',
-            title: 'Détox numérique',
+            title: 'Quand le monde brûle',
             description: 'Déconnecte ton esprit du bruit informationnel.',
             durationMinutes: 8,
-            audioFile: 'actualite/actualite_detox.mp3',
+            audioFile: 'actualite/Séance 1.mp3',
             categoryId: 'actualite',
           ),
           const SessionModel(
             id: 'actualite_2',
-            title: 'Ancrage face à l\'incertitude',
+            title: 'La guerre en bruit de fond',
             description:
                 'Trouve la sérénité malgré un monde en constante évolution.',
             durationMinutes: 12,
-            audioFile: 'actualite/actualite_grounding.mp3',
+            audioFile: 'actualite/Séance 2.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),
           const SessionModel(
             id: 'actualite_3',
-            title: 'Pause info',
+            title: 'Débrancher quand tout crie',
             description: 'Une pause consciente loin des écrans et des titres.',
             durationMinutes: 5,
             audioFile: 'actualite/actualite_pause.mp3',
@@ -82,7 +82,7 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'actualite_4',
-            title: 'Déconnexion consciente',
+            title: 'Recul sur l\'actualité',
             description: 'Apprends à poser ton téléphone avec légèreté.',
             durationMinutes: 7,
             audioFile: 'actualite/actualite_disconnect.mp3',
@@ -91,7 +91,7 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'actualite_5',
-            title: 'Recul sur l\'actualité',
+            title: 'Pause info',
             description:
                 'Prends de la hauteur sur les événements du monde.',
             durationMinutes: 10,
@@ -211,63 +211,6 @@ class ExploreRepository {
             durationMinutes: 12,
             audioFile: 'sleep/sleep_silence.mp3',
             categoryId: 'sleep',
-            isPremium: true,
-          ),
-        ],
-      ),
-      CategoryModel(
-        id: 'focus',
-        name: 'Focus & Concentration',
-        emoji: '🎯',
-        description:
-            'Entraîne ton attention pour être pleinement présent. Moins de distraction, plus d\'efficacité.',
-        isPremium: true,
-        isNew: false,
-        sessions: [
-          const SessionModel(
-            id: 'focus_1',
-            title: 'Pleine conscience 5 min',
-            description: 'Ancre-toi dans le moment présent rapidement.',
-            durationMinutes: 5,
-            audioFile: 'focus/focus_mindfulness_5.mp3',
-            categoryId: 'focus',
-          ),
-          const SessionModel(
-            id: 'focus_2',
-            title: 'Méditation pomodoro',
-            description:
-                'Entre en focus profond avant une session de travail.',
-            durationMinutes: 10,
-            audioFile: 'focus/focus_pomodoro.mp3',
-            categoryId: 'focus',
-            isPremium: true,
-          ),
-          const SessionModel(
-            id: 'focus_3',
-            title: 'Clarté mentale',
-            description:
-                'Dégage le brouillard mental et retrouve une pensée claire.',
-            durationMinutes: 7,
-            audioFile: 'focus/focus_clarity.mp3',
-            categoryId: 'focus',
-          ),
-          const SessionModel(
-            id: 'focus_4',
-            title: 'Attention au souffle',
-            description:
-                'Utilise le souffle comme ancre pour entraîner ton attention.',
-            durationMinutes: 5,
-            audioFile: 'focus/focus_breath.mp3',
-            categoryId: 'focus',
-          ),
-          const SessionModel(
-            id: 'focus_5',
-            title: 'Focus profond',
-            description:
-                'Une session longue pour entrer dans un état de concentration totale.',
-            durationMinutes: 12,
-            audioFile: 'focus/focus_deep.mp3',
-            categoryId: 'focus',
             isPremium: true,
           ),
         ],

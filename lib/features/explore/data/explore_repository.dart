@@ -59,7 +59,7 @@ class ExploreRepository {
             title: 'Quand le monde brûle',
             description: 'Déconnecte ton esprit du bruit informationnel.',
             durationMinutes: 8,
-            audioFile: 'actualite/Séance 1.mp3',
+            audioFile: 'actualite/4-quand-le-monde-brule.mp3',
             categoryId: 'actualite',
           ),
           const SessionModel(
@@ -68,7 +68,7 @@ class ExploreRepository {
             description:
                 'Trouve la sérénité malgré un monde en constante évolution.',
             durationMinutes: 12,
-            audioFile: 'actualite/Séance 2.mp3',
+            audioFile: 'actualite/3-la-guerre-en-bruit-de-fond.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),
@@ -77,7 +77,7 @@ class ExploreRepository {
             title: 'Débrancher quand tout crie',
             description: 'Une pause consciente loin des écrans et des titres.',
             durationMinutes: 5,
-            audioFile: 'actualite/actualite_pause.mp3',
+            audioFile: 'actualite/2-débrancher-quand-tout-crie.mp3',
             categoryId: 'actualite',
           ),
           const SessionModel(
@@ -85,7 +85,7 @@ class ExploreRepository {
             title: 'Recul sur l\'actualité',
             description: 'Apprends à poser ton téléphone avec légèreté.',
             durationMinutes: 7,
-            audioFile: 'actualite/actualite_disconnect.mp3',
+            audioFile: 'actualite/1-recul-sur-lactualité.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),
@@ -95,7 +95,7 @@ class ExploreRepository {
             description:
                 'Prends de la hauteur sur les événements du monde.',
             durationMinutes: 10,
-            audioFile: 'actualite/actualite_perspective.mp3',
+            audioFile: 'actualite/0-pause-info.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),

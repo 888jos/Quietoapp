@@ -116,7 +116,7 @@ class ExploreRepository {
             description:
                 'Une technique de respiration puissante pour calmer le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'stress/stress_breathing_478.mp3',
+            audioFile: 'stress/0-quand-le-stress-prend-le-dessu.mp3',
             categoryId: 'stress',
           ),
           const SessionModel(
@@ -124,7 +124,7 @@ class ExploreRepository {
             title: 'Respiration 4-7-8',
             description: 'Parcours ton corps pour relâcher les tensions.',
             durationMinutes: 15,
-            audioFile: 'stress/stress_body_scan.mp3',
+            audioFile: 'stress/1-4-7-8.mp3',
             categoryId: 'stress',
             isPremium: true,
           ),
@@ -134,7 +134,7 @@ class ExploreRepository {
             description:
                 'Contracte et relâche chaque groupe musculaire pour libérer le stress physique.',
             durationMinutes: 8,
-            audioFile: 'stress/stress_muscle_release.mp3',
+            audioFile: 'stress/2-relache.mp3',
             categoryId: 'stress',
           ),
           const SessionModel(
@@ -143,7 +143,7 @@ class ExploreRepository {
             description:
                 'Reviens à toi en 3 minutes grâce à une technique d\'ancrage simple.',
             durationMinutes: 3,
-            audioFile: 'stress/stress_anchor.mp3',
+            audioFile: 'stress/3-ancrage.mp3',
             categoryId: 'stress',
           ),
           const SessionModel(
@@ -152,7 +152,7 @@ class ExploreRepository {
             description:
                 'Dissolve les tensions mentales et retrouve un état de calme profond.',
             durationMinutes: 10,
-            audioFile: 'stress/stress_meditation.mp3',
+            audioFile: 'stress/4-le-voyageur-qui-sarrête.mp3',
             categoryId: 'stress',
             isPremium: true,
           ),

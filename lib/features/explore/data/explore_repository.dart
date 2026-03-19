@@ -112,7 +112,7 @@ class ExploreRepository {
         sessions: [
           const SessionModel(
             id: 'stress_1',
-            title: 'Respiration 4-7-8',
+            title: 'Quand le stress prend le dessus',
             description:
                 'Une technique de respiration puissante pour calmer le système nerveux.',
             durationMinutes: 5,
@@ -121,7 +121,7 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'stress_2',
-            title: 'Body scan de détente',
+            title: 'Respiration 4-7-8',
             description: 'Parcours ton corps pour relâcher les tensions.',
             durationMinutes: 15,
             audioFile: 'stress/stress_body_scan.mp3',
@@ -130,7 +130,7 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'stress_3',
-            title: 'Relâchement musculaire',
+            title: 'Relâche',
             description:
                 'Contracte et relâche chaque groupe musculaire pour libérer le stress physique.',
             durationMinutes: 8,
@@ -139,7 +139,7 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'stress_4',
-            title: 'Ancrage rapide',
+            title: 'Ancrage',
             description:
                 'Reviens à toi en 3 minutes grâce à une technique d\'ancrage simple.',
             durationMinutes: 3,
@@ -148,7 +148,7 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'stress_5',
-            title: 'Méditation anti-stress',
+            title: 'Le voyageur qui s\'arrête',
             description:
                 'Dissolve les tensions mentales et retrouve un état de calme profond.',
             durationMinutes: 10,

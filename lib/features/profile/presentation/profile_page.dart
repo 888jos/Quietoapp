@@ -111,17 +111,6 @@ class ProfilePage extends ConsumerWidget {
                             value: profile.notificationsEnabled,
                             onChanged: notifier.toggleNotifications,
                           ),
-                          _ItemDivider(),
-                          _TapItem(
-                            emoji: '🔄',
-                            label: 'Réinitialiser l\'onboarding',
-                            onTap: () async {
-                              await notifier.resetOnboarding();
-                              if (context.mounted) {
-                                context.go(AppRoutes.onboarding);
-                              }
-                            },
-                          ),
                         ],
                       ),
                     ),

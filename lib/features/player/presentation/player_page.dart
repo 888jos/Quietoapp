@@ -12,6 +12,12 @@ class PlayerPage extends ConsumerWidget {
 
   const PlayerPage({super.key, required this.sessionId});
 
+  String _formatDuration(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(currentSessionProvider(sessionId));
@@ -70,8 +76,12 @@ class PlayerPage extends ConsumerWidget {
                   style: AppTextStyles.titleLarge,
                   textAlign: TextAlign.center),
               const SizedBox(height: AppConstants.spacingXs),
-              Text(session.durationLabel,
-                  style: AppTextStyles.badge),
+              Text(
+                playerState.duration > Duration.zero
+                    ? _formatDuration(playerState.duration)
+                    : '',
+                style: AppTextStyles.badge,
+              ),
 
               const Spacer(),
 

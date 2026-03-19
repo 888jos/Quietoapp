@@ -47,7 +47,6 @@ flutter:
     - assets/audio/actualite/
     - assets/audio/stress/
     - assets/audio/sleep/
-    - assets/audio/focus/
     - assets/audio/breathing/
     - assets/audio/anxiety/
     - assets/audio/confidence/

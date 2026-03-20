@@ -112,12 +112,12 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Future<void> togglePlayPause() async {
     try {
       if (state.status == PlayerStatus.playing) {
-        await _audio.pause();
         state = state.copyWith(status: PlayerStatus.paused);
+        await _audio.pause();
         _savePosition();
       } else {
-        await _audio.play();
         state = state.copyWith(status: PlayerStatus.playing);
+        await _audio.play();
       }
     } catch (e) {
       state = state.copyWith(

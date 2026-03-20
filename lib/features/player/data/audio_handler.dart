@@ -29,6 +29,8 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Duration? get currentDuration => _player?.duration;
 
+  String? get currentSessionId => _session?.id;
+
   // ── Init ──────────────────────────────────────────
 
   Future<void> initSession(SessionModel session) async {
@@ -89,7 +91,13 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
   @override
   Future<void> play() async {
     try {
-      await _player?.play();
+      final player = _player;
+      if (player == null) return;
+      // A completed player needs to seek to 0 before it can play again.
+      if (player.processingState == ProcessingState.completed) {
+        await player.seek(Duration.zero);
+      }
+      await player.play();
       _broadcastState();
     } catch (_) {}
   }
@@ -155,7 +163,9 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       final progress = _storage.loadProgress();
       final updated = progress.markCompleted(session.id, session.durationMinutes);
-      _storage.saveProgress(updated);
+      // Reset saved position so the session restarts from the beginning next time.
+      final cleared = updated.savePosition(session.id, 0);
+      _storage.saveProgress(cleared);
     } catch (_) {}
 
     // Notify external listeners (e.g. Riverpod tick provider) that a session completed

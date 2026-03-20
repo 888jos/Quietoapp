@@ -216,7 +216,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
 // ── Provider factory ──────────────────────────────────
 
-final playerProvider = StateNotifierProvider.autoDispose
+final playerProvider = StateNotifierProvider
     .family<PlayerNotifier, PlayerState, String>((ref, sessionId) {
   final session = ref.watch(currentSessionProvider(sessionId));
   if (session == null) {

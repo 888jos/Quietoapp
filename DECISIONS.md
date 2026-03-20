@@ -143,6 +143,22 @@
 
 ---
 
+## ADR-015 — audio_service pour la lecture en arrière-plan
+
+**Décision** : `audio_service ^0.18.0` avec `QuietoAudioHandler` (`BaseAudioHandler` + `SeekHandler`) dans `lib/features/player/data/audio_handler.dart`.
+
+**Pourquoi** : `just_audio` seul ne permet pas la lecture audio quand l'app est en arrière-plan ni l'affichage des contrôles sur l'écran de verrouillage / notification Android. `audio_service` wrappe le player dans un service natif (foreground service Android, background audio iOS) tout en restant compatible avec `just_audio`. La logique d'affichage de la notification (MediaItem, PlaybackState) est encapsulée dans `QuietoAudioHandler` — zéro fuite dans les widgets ou les providers.
+
+**Architecture** : `QuietoAudioHandler` prend un `StorageService` en paramètre (injection de dépendance). Un `audioHandlerProvider` (Provider Riverpod) maintient une instance singleton du handler et la dispose proprement. `PlayerNotifier` délègue toute la lecture au handler et écoute ses streams — l'API publique (`togglePlayPause`, `seekTo`, `skipForward`, `skipBackward`) reste inchangée.
+
+**Plateformes** :
+- iOS : `UIBackgroundModes > audio` ajouté dans `Info.plist`
+- Android : service `AudioService` + receiver `MediaButtonReceiver` + permissions `FOREGROUND_SERVICE` et `FOREGROUND_SERVICE_MEDIA_PLAYBACK` ajoutés dans `AndroidManifest.xml`
+
+**Alternative rejetée** : Rester sur `just_audio` seul — ne supporte pas le background audio de façon fiable cross-platform sans le wrapper `audio_service`.
+
+---
+
 ## ADR-010 — Curation de la home page
 
 **Décision** : La home filtre et ordonne les catégories différemment de l'Explorer.

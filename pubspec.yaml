@@ -25,6 +25,7 @@ dependencies:
 
   # Audio
   just_audio: ^0.9.36
+  audio_service: ^0.18.0
 
   # Icons
   iconsax_flutter: ^1.0.0

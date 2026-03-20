@@ -5,11 +5,21 @@ import '../../core/services/storage_service.dart';
 import '../../core/services/storage_providers.dart';
 import '../home/home_providers.dart';
 import 'data/player_repository.dart';
+import 'data/audio_handler.dart';
 
 // ── Repository ────────────────────────────────────────
 
 final playerRepositoryProvider = Provider<PlayerRepository>((ref) {
   return PlayerRepository(ref.watch(homeRepositoryProvider));
+});
+
+// ── AudioHandler (singleton par durée de vie de l'app) ────────────
+
+final audioHandlerProvider = Provider<QuietoAudioHandler>((ref) {
+  final storage = ref.watch(storageServiceProvider);
+  final handler = QuietoAudioHandler(storage: storage);
+  ref.onDispose(() => handler.dispose());
+  return handler;
 });
 
 // ── Session courante ──────────────────────────────────
@@ -57,15 +67,15 @@ class PlayerState {
 // ── Notifier ──────────────────────────────────────────
 
 class PlayerNotifier extends StateNotifier<PlayerState> {
-  final AudioPlayer _audio;
+  final QuietoAudioHandler _handler;
   final StorageService _storage;
   final SessionModel session;
 
   PlayerNotifier({
-    required AudioPlayer audio,
+    required QuietoAudioHandler handler,
     required StorageService storage,
     required this.session,
-  })  : _audio = audio,
+  })  : _handler = handler,
         _storage = storage,
         super(const PlayerState()) {
     _init();
@@ -74,32 +84,36 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Future<void> _init() async {
     try {
       state = state.copyWith(status: PlayerStatus.loading);
-      final path = 'assets/audio/${session.audioFile}';
-      await _audio.setAsset(path);
+
+      await _handler.initSession(session);
 
       final progress = _storage.loadProgress();
       final savedPos = progress.lastPosition(session.id);
       if (savedPos > 0) {
-        await _audio.seek(Duration(seconds: savedPos));
+        await _handler.seek(Duration(seconds: savedPos));
       }
 
-      _audio.positionStream.listen((pos) {
+      _handler.positionStream.listen((pos) {
         state = state.copyWith(position: pos);
       });
 
-      _audio.durationStream.listen((dur) {
+      _handler.durationStream.listen((dur) {
         if (dur != null) state = state.copyWith(duration: dur);
       });
 
-      _audio.playerStateStream.listen((s) {
+      _handler.playerStateStream.listen((s) {
         if (s.processingState == ProcessingState.completed) {
-          _onCompleted();
+          state = state.copyWith(status: PlayerStatus.paused);
+        } else if (s.playing) {
+          state = state.copyWith(status: PlayerStatus.playing);
+        } else if (s.processingState == ProcessingState.ready) {
+          state = state.copyWith(status: PlayerStatus.paused);
         }
       });
 
       state = state.copyWith(
         status: PlayerStatus.paused,
-        duration: _audio.duration ?? Duration.zero,
+        duration: _handler.currentDuration ?? Duration.zero,
       );
     } catch (e) {
       state = state.copyWith(
@@ -113,11 +127,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     try {
       if (state.status == PlayerStatus.playing) {
         state = state.copyWith(status: PlayerStatus.paused);
-        await _audio.pause();
+        await _handler.pause();
         _savePosition();
       } else {
         state = state.copyWith(status: PlayerStatus.playing);
-        await _audio.play();
+        await _handler.play();
       }
     } catch (e) {
       state = state.copyWith(
@@ -129,7 +143,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
   Future<void> seekTo(Duration position) async {
     try {
-      await _audio.seek(position);
+      await _handler.seek(position);
       state = state.copyWith(position: position);
     } catch (_) {}
   }
@@ -145,24 +159,17 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   void _savePosition() {
-    final progress = _storage.loadProgress();
-    final updated =
-        progress.savePosition(session.id, state.position.inSeconds);
-    _storage.saveProgress(updated);
-  }
-
-  void _onCompleted() {
-    final progress = _storage.loadProgress();
-    final updated =
-        progress.markCompleted(session.id, session.durationMinutes);
-    _storage.saveProgress(updated);
-    state = state.copyWith(status: PlayerStatus.paused);
+    try {
+      final progress = _storage.loadProgress();
+      final updated =
+          progress.savePosition(session.id, state.position.inSeconds);
+      _storage.saveProgress(updated);
+    } catch (_) {}
   }
 
   @override
   void dispose() {
     _savePosition();
-    _audio.dispose();
     super.dispose();
   }
 }
@@ -176,8 +183,9 @@ final playerProvider = StateNotifierProvider.family<PlayerNotifier,
     throw StateError('Session $sessionId introuvable');
   }
   final storage = ref.watch(storageServiceProvider);
+  final handler = ref.watch(audioHandlerProvider);
   return PlayerNotifier(
-    audio: AudioPlayer(),
+    handler: handler,
     storage: storage,
     session: session,
   );

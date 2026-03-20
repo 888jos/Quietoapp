@@ -44,7 +44,8 @@ lib/
     │   └── explore_providers.dart
     ├── player/
     │   ├── data/
-    │   │   └── player_repository.dart
+    │   │   ├── player_repository.dart
+    │   │   └── audio_handler.dart     # QuietoAudioHandler (BaseAudioHandler + SeekHandler)
     │   ├── presentation/
     │   │   └── player_page.dart
     │   └── player_providers.dart
@@ -62,6 +63,7 @@ lib/
 | State management | `flutter_riverpod ^2.5.1` |
 | Navigation | `go_router ^14.0.0` |
 | Audio | `just_audio ^0.9.36` |
+| Audio background | `audio_service ^0.18.0` |
 | Stockage local | `shared_preferences ^2.2.0` |
 | Achats in-app | `purchases_flutter ^7.0.0` (RevenueCat) |
 | Icônes | `iconsax_flutter ^1.0.0` |

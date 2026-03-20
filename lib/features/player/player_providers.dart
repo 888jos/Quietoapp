@@ -13,6 +13,11 @@ final playerRepositoryProvider = Provider<PlayerRepository>((ref) {
   return PlayerRepository(ref.watch(homeRepositoryProvider));
 });
 
+// ── Active session (mini player) ──────────────────────
+
+/// Holds the sessionId of the currently active session, or null if none.
+final activeSessionIdProvider = StateProvider<String?>((ref) => null);
+
 // ── AudioHandler (singleton par durée de vie de l'app) ────────────
 
 final audioHandlerProvider = Provider<QuietoAudioHandler>((ref) {
@@ -158,6 +163,14 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     await seekTo(prev > Duration.zero ? prev : Duration.zero);
   }
 
+  Future<void> stop() async {
+    try {
+      _savePosition();
+      await _handler.stop();
+      state = state.copyWith(status: PlayerStatus.idle);
+    } catch (_) {}
+  }
+
   void _savePosition() {
     try {
       final progress = _storage.loadProgress();
@@ -184,9 +197,14 @@ final playerProvider = StateNotifierProvider.family<PlayerNotifier,
   }
   final storage = ref.watch(storageServiceProvider);
   final handler = ref.watch(audioHandlerProvider);
-  return PlayerNotifier(
+  final notifier = PlayerNotifier(
     handler: handler,
     storage: storage,
     session: session,
   );
+  // Mark this session as the active one for the mini player
+  Future.microtask(
+    () => ref.read(activeSessionIdProvider.notifier).state = sessionId,
+  );
+  return notifier;
 });

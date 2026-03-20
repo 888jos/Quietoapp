@@ -47,8 +47,10 @@ lib/
     │   │   ├── player_repository.dart
     │   │   └── audio_handler.dart     # QuietoAudioHandler (BaseAudioHandler + SeekHandler)
     │   ├── presentation/
-    │   │   └── player_page.dart
-    │   └── player_providers.dart
+    │   │   ├── player_page.dart
+    │   │   └── widgets/
+    │   │       └── mini_player.dart   # Mini player persistant (au-dessus de la bottom nav)
+    │   └── player_providers.dart      # activeSessionIdProvider (StateProvider<String?>)
     ├── profile/
     │   ├── presentation/
     │   │   └── profile_page.dart

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
+import '../features/player/presentation/widgets/mini_player.dart';
 
 class HomeShell extends StatelessWidget {
   final StatefulNavigationShell shell;
@@ -14,12 +15,18 @@ class HomeShell extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: shell,
-      bottomNavigationBar: _QuijetoNav(
-        currentIndex: shell.currentIndex,
-        onTap: (index) => shell.goBranch(
-          index,
-          initialLocation: index == shell.currentIndex,
-        ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const MiniPlayer(),
+          _QuijetoNav(
+            currentIndex: shell.currentIndex,
+            onTap: (index) => shell.goBranch(
+              index,
+              initialLocation: index == shell.currentIndex,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -29,6 +29,11 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Barre de progression seekable
 - Sauvegarde de position automatique (reprendre où on s'est arrêté)
 - Marquage automatique "complété" en fin de séance
+- Mini player persistant affiché au-dessus de la bottom nav pendant la lecture/pause
+  - Tap → ouvre la page player complète (`context.push`)
+  - Bouton play/pause inline
+  - Bouton stop : arrête la lecture et masque le mini player
+- Métadonnées Now Playing (lock screen / notification) : titre, artist `Quieto`, durée réelle
 
 ### Profil ✅
 - Header : "👤 [prénom]" (fontSize 28, bold) + bouton "Modifier" pour éditer le prénom via bottom sheet

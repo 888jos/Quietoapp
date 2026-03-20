@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
+import '../../../core/config/app_constants.dart';
 import '../../../core/models/session_model.dart';
 import '../../../core/services/storage_service.dart';
 
@@ -40,6 +41,8 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     mediaItem.add(MediaItem(
       id: session.id,
       title: session.title,
+      artist: AppConstants.appName,
+      album: '',
       duration: duration,
     ));
 
@@ -49,6 +52,8 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
         mediaItem.add(MediaItem(
           id: session.id,
           title: session.title,
+          artist: AppConstants.appName,
+          album: '',
           duration: dur,
         ));
       }

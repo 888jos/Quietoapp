@@ -68,7 +68,7 @@ class HomePage extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppConstants.spacingMd),
                     SizedBox(
-                      height: 96,
+                      height: 110,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: categories.length,

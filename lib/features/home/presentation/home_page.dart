@@ -38,13 +38,13 @@ class HomePage extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text(greeting, style: AppTextStyles.bodyMedium),
                     Text(
                       AppConstants.appName,
                       style: AppTextStyles.titleLarge.copyWith(
                         color: AppColors.accent,
                       ),
                     ),
-                    Text(greeting, style: AppTextStyles.bodyMedium),
                   ],
                 ),
               ),

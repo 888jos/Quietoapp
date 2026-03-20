@@ -38,7 +38,7 @@ class HomePage extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(greeting, style: AppTextStyles.bodyMedium),
-                    Image.asset('assets/images/logo.png', height: 32),
+                    Image.asset('assets/images/logo.png', height: 48),
                   ],
                 ),
               ),

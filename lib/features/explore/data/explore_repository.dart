@@ -274,62 +274,6 @@ class ExploreRepository {
         ],
       ),
       CategoryModel(
-        id: 'anxiety',
-        name: 'Anxiété',
-        emoji: '💭',
-        description:
-            'Accueille et apaise les pensées qui débordent. Reprends le contrôle sur ton mental.',
-        isPremium: true,
-        isNew: false,
-        sessions: [
-          const SessionModel(
-            id: 'anxiety_1',
-            title: 'Technique du 5-4-3-2-1',
-            description: 'Reviens dans le présent avec tes 5 sens.',
-            durationMinutes: 8,
-            audioFile: 'anxiety/anxiety_54321.mp3',
-            categoryId: 'anxiety',
-          ),
-          const SessionModel(
-            id: 'anxiety_2',
-            title: 'Méditation de l\'arbre',
-            description: 'Enracine-toi comme un arbre face à la tempête.',
-            durationMinutes: 12,
-            audioFile: 'anxiety/anxiety_tree.mp3',
-            categoryId: 'anxiety',
-            isPremium: true,
-          ),
-          const SessionModel(
-            id: 'anxiety_3',
-            title: 'Gestion des pensées',
-            description:
-                'Observe tes pensées anxieuses sans te laisser emporter.',
-            durationMinutes: 7,
-            audioFile: 'anxiety/anxiety_thoughts.mp3',
-            categoryId: 'anxiety',
-          ),
-          const SessionModel(
-            id: 'anxiety_4',
-            title: 'Ancrage d\'urgence',
-            description:
-                'Une technique rapide pour sortir d\'une crise d\'anxiété.',
-            durationMinutes: 3,
-            audioFile: 'anxiety/anxiety_emergency.mp3',
-            categoryId: 'anxiety',
-          ),
-          const SessionModel(
-            id: 'anxiety_5',
-            title: 'Acceptation bienveillante',
-            description:
-                'Accueille ce qui est avec douceur plutôt que de résister.',
-            durationMinutes: 10,
-            audioFile: 'anxiety/anxiety_acceptance.mp3',
-            categoryId: 'anxiety',
-            isPremium: true,
-          ),
-        ],
-      ),
-      CategoryModel(
         id: 'confidence',
         name: 'Confiance',
         emoji: '💪',

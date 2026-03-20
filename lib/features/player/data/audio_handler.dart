@@ -38,12 +38,14 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
 
     // Set MediaItem for lock screen / notification
     final duration = _player!.duration ?? Duration(minutes: session.durationMinutes);
+    const artUri = 'asset:///assets/images/app_icon.png';
     mediaItem.add(MediaItem(
       id: session.id,
       title: session.title,
       artist: AppConstants.appName,
       album: '',
       duration: duration,
+      artUri: Uri.parse(artUri),
     ));
 
     // Update MediaItem when actual duration is known
@@ -55,6 +57,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
           artist: AppConstants.appName,
           album: '',
           duration: dur,
+          artUri: Uri.parse(artUri),
         ));
       }
     });

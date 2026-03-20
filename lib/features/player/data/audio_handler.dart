@@ -6,10 +6,15 @@ import '../../../core/services/storage_service.dart';
 
 class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
   final StorageService _storage;
+  final void Function()? _completionCallback;
   AudioPlayer? _player;
   SessionModel? _session;
 
-  QuietoAudioHandler({required StorageService storage}) : _storage = storage;
+  QuietoAudioHandler({
+    required StorageService storage,
+    void Function()? onCompleted,
+  })  : _storage = storage,
+        _completionCallback = onCompleted;
 
   // ── Streams ───────────────────────────────────────
 
@@ -152,6 +157,9 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
       final updated = progress.markCompleted(session.id, session.durationMinutes);
       _storage.saveProgress(updated);
     } catch (_) {}
+
+    // Notify external listeners (e.g. Riverpod tick provider) that a session completed
+    _completionCallback?.call();
 
     playbackState.add(PlaybackState(
       controls: [

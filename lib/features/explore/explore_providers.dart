@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/router.dart';
 import '../../core/models/category_model.dart';
 import '../../core/services/storage_providers.dart';
+import '../player/player_providers.dart';
 import 'data/explore_repository.dart';
 
 final exploreRepositoryProvider = Provider<ExploreRepository>(
@@ -19,8 +20,12 @@ final categoryByIdProvider =
 });
 
 /// Returns (completed, total) for a given category.
+/// Watches [sessionCompletionTickProvider] so it re-reads SharedPreferences
+/// every time a session is marked completed by the audio handler.
 final categoryProgressProvider =
     Provider.family<({int completed, int total}), String>((ref, categoryId) {
+  // Re-evaluate whenever a session completion is recorded.
+  ref.watch(sessionCompletionTickProvider);
   final category = ref.watch(categoryByIdProvider(categoryId));
   if (category == null) return (completed: 0, total: 0);
   final progress = ref.watch(storageServiceProvider).loadProgress();

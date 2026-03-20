@@ -18,11 +18,21 @@ final playerRepositoryProvider = Provider<PlayerRepository>((ref) {
 /// Holds the sessionId of the currently active session, or null if none.
 final activeSessionIdProvider = StateProvider<String?>((ref) => null);
 
+// ── Session completion tick ────────────────────────────
+// Incremented each time a session is marked completed.
+// Watched by categoryProgressProvider to trigger a re-read of SharedPreferences.
+final sessionCompletionTickProvider = StateProvider<int>((ref) => 0);
+
 // ── AudioHandler (singleton par durée de vie de l'app) ────────────
 
 final audioHandlerProvider = Provider<QuietoAudioHandler>((ref) {
   final storage = ref.watch(storageServiceProvider);
-  final handler = QuietoAudioHandler(storage: storage);
+  final handler = QuietoAudioHandler(
+    storage: storage,
+    onCompleted: () {
+      ref.read(sessionCompletionTickProvider.notifier).state++;
+    },
+  );
   ref.onDispose(() => handler.dispose());
   return handler;
 });

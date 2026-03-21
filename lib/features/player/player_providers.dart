@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
@@ -87,10 +86,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   final StorageService _storage;
   final SessionModel session;
 
-  StreamSubscription<Duration>? _posSub;
-  StreamSubscription<Duration?>? _durSub;
-  StreamSubscription<dynamic>? _stateSub;
-
   PlayerNotifier({
     required QuietoAudioHandler handler,
     required StorageService storage,
@@ -100,11 +95,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         super(const PlayerState()) {
     _init();
   }
-
-  /// True while this notifier owns the handler's current audio player.
-  /// Guards against stale notifiers (cached by the family) controlling the
-  /// wrong player after a different session has been loaded.
-  bool get _isActive => _handler.currentSessionId == session.id;
 
   Future<void> _init() async {
     try {
@@ -118,16 +108,15 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         await _handler.seek(Duration(seconds: savedPos));
       }
 
-      _posSub = _handler.positionStream.listen((pos) {
-        if (_isActive) state = state.copyWith(position: pos);
+      _handler.positionStream.listen((pos) {
+        state = state.copyWith(position: pos);
       });
 
-      _durSub = _handler.durationStream.listen((dur) {
-        if (_isActive && dur != null) state = state.copyWith(duration: dur);
+      _handler.durationStream.listen((dur) {
+        if (dur != null) state = state.copyWith(duration: dur);
       });
 
-      _stateSub = _handler.playerStateStream.listen((s) {
-        if (!_isActive) return;
+      _handler.playerStateStream.listen((s) {
         if (s.processingState == ProcessingState.completed) {
           state = state.copyWith(status: PlayerStatus.paused);
         } else if (s.playing) {
@@ -150,7 +139,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   Future<void> togglePlayPause() async {
-    if (!_isActive) return;
     try {
       if (state.status == PlayerStatus.playing) {
         state = state.copyWith(status: PlayerStatus.paused);
@@ -169,7 +157,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   Future<void> seekTo(Duration position) async {
-    if (!_isActive) return;
     try {
       await _handler.seek(position);
       state = state.copyWith(position: position);
@@ -187,7 +174,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   Future<void> stop() async {
-    if (!_isActive) return;
     try {
       _savePosition();
       await _handler.stop();
@@ -206,9 +192,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
   @override
   void dispose() {
-    _posSub?.cancel();
-    _durSub?.cancel();
-    _stateSub?.cancel();
     _savePosition();
     super.dispose();
   }

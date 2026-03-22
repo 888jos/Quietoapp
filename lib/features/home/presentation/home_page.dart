@@ -63,26 +63,29 @@ class _HomePageState extends ConsumerState<HomePage>
                       Image.asset('assets/images/logo.png', height: 48),
                       const SizedBox(width: AppConstants.spacingMd),
                       Expanded(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              salut,
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textMuted,
-                                fontSize: 16,
+                        child: RichText(
+                          maxLines: 2,
+                          overflow: TextOverflow.visible,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '$salut ',
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'on fait quoi aujourd\'hui ?',
-                              style: AppTextStyles.titleLarge.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 22,
+                              const TextSpan(
+                                text: 'on fait quoi aujourd\'hui ?',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],

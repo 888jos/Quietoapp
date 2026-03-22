@@ -51,7 +51,7 @@ class CategoryDetailPage extends ConsumerWidget {
                     GestureDetector(
                       onTap: () => context.canPop()
                           ? context.pop()
-                          : context.go(AppRoutes.explore),
+                          : context.go(AppRoutes.home),
                       child: const Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: AppColors.textPrimary,

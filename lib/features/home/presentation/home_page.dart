@@ -58,25 +58,36 @@ class _HomePageState extends ConsumerState<HomePage>
               sliver: SliverToBoxAdapter(
                 child: FadeTransition(
                   opacity: _fadeController,
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Image.asset('assets/images/logo.png', height: 48),
-                      const SizedBox(width: AppConstants.spacingMd),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w300,
-                              color: AppColors.textPrimary,
+                      Row(
+                        children: [
+                          Image.asset('assets/images/logo.png', height: 48),
+                          const SizedBox(width: AppConstants.spacingMd),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w300,
+                                  color: AppColors.textPrimary,
+                                ),
+                                children: [
+                                  TextSpan(text: '$salut\n'),
+                                  const TextSpan(
+                                      text: 'on fait quoi aujourd\'hui ?'),
+                                ],
+                              ),
                             ),
-                            children: [
-                              TextSpan(text: '$salut\n'),
-                              const TextSpan(
-                                  text: 'on fait quoi aujourd\'hui ?'),
-                            ],
                           ),
-                        ),
+                        ],
+                      ),
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: MediaQuery.of(context).size.width * 0.6,
+                        height: 1,
+                        color: AppColors.textPrimary.withValues(alpha: 0.15),
                       ),
                     ],
                   ),

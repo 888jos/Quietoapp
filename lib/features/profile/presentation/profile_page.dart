@@ -144,7 +144,7 @@ class ProfilePage extends ConsumerWidget {
                             onTap: () async {
                               try {
                                 await launchUrl(
-                                  Uri.parse('https://www.quieto.fr/terms'),
+                                  Uri.parse('https://www.notion.so/Terms-31de9e37b4a88085a949e24158d042e9'),
                                   mode: LaunchMode.externalApplication,
                                 );
                               } catch (_) {}

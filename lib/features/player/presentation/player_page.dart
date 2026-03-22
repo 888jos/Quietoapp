@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -44,7 +46,9 @@ class PlayerPage extends ConsumerWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => context.go(
+                      AppRoutes.categoryPath(session.categoryId),
+                    ),
                     icon: const Icon(Iconsax.arrow_left_2,
                         color: AppColors.textPrimary),
                   ),

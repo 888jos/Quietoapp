@@ -64,6 +64,40 @@ class MyWidget extends ConsumerWidget {
 }
 ```
 
+Utiliser `ConsumerStatefulWidget` uniquement si le widget a besoin d'un `AnimationController`, d'un `Timer`, ou d'un `initState`/`dispose`. Dans ce cas, disposer les ressources proprement :
+
+```dart
+class MyAnimatedWidget extends ConsumerStatefulWidget {
+  const MyAnimatedWidget({super.key});
+
+  @override
+  ConsumerState<MyAnimatedWidget> createState() => _MyAnimatedWidgetState();
+}
+
+class _MyAnimatedWidgetState extends ConsumerState<MyAnimatedWidget>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(opacity: _controller, child: ...);
+  }
+}
+```
+
 ## Branches
 
 - `main` — production stable

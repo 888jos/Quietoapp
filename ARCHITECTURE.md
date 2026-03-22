@@ -85,7 +85,7 @@ UI (ConsumerWidget)
 1. **Zéro hardcode** — toutes les couleurs viennent de `AppColors` (`background`, `cardSurface`, `accent`, `textPrimary`…), tous les styles de `AppTextStyles`, toutes les valeurs de `AppConstants`.
 2. **Zéro logique dans les widgets** — les widgets lisent des providers et affichent. Toute logique va dans un `Notifier` ou un `Repository`.
 3. **Navigation centralisée** — toutes les routes sont définies dans `app/router.dart`. On utilise `context.go()` / `context.push()` avec les constantes `AppRoutes`. Avant d'ajouter une route, choisir le bon type (`GoRoute`, `StatefulShellRoute`, `context.go` vs `context.push`) selon l'UX voulue — voir ADR-002 et ADR-012.
-4. **ConsumerWidget** — utiliser `ConsumerWidget` (pas `StatefulWidget` + `ref`) pour éviter les rebuilds inutiles.
+4. **ConsumerWidget par défaut** — utiliser `ConsumerWidget` pour les widgets sans état local. Utiliser `ConsumerStatefulWidget` uniquement quand un `AnimationController`, un `Timer`, ou un cycle de vie (`initState`/`dispose`) est nécessaire.
 5. **Try-catch obligatoire** — toute opération async est enveloppée dans un try-catch.
 
 ## Modèles de données

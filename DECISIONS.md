@@ -88,10 +88,11 @@
 
 ## ADR-009 — Badge "New !" sur Actualité uniquement
 
-**Décision** : `CategoryModel.isNew` (bool) contrôle l'affichage du badge. Seule la catégorie Actualité a `isNew: true` pour le MVP. Le badge s'affiche sur trois widgets :
+**Décision** : `CategoryModel.isNew` (bool) contrôle l'affichage du badge. Seule la catégorie Actualité a `isNew: true` pour le MVP. Le badge s'affiche sur deux widgets :
 - `FeaturedSessionCard` (home "Priorité du moment") — `Stack` + `Positioned(top:-8, right: spacingSm)`
-- `CategoryBubble` (scroll horizontal) — `Stack(clipBehavior: Clip.none)` + `Positioned(top:0, right:0)`
 - `CategoryListCard` (liste verticale) — `Stack(clipBehavior: Clip.none)` + `Positioned(bottom:18, right:0)` flottant au-dessus du compteur de séances
+
+Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal de la home a été retiré au profit d'un header simplifié.
 
 **Pourquoi** : Mettre en avant le contenu le plus actuel sur tous les points d'entrée de la home. Le badge est un signal éditorial, pas un indicateur technique.
 
@@ -161,9 +162,24 @@
 
 ## ADR-010 — Curation de la home page
 
-**Décision** : La home filtre et ordonne les catégories différemment de l'Explorer.
+**Décision** : La home est structurée en 3 blocs :
+- Header : logo + greeting RichText animé (fade in 600ms). `ConsumerStatefulWidget` pour l'`AnimationController`.
 - "Priorité du moment" (`FeaturedSessionCard`) : Découverte de la méditation (🧘, catégorie gratuite, 3 séances).
-- Scroll horizontal "Programmes disponibles" : Découverte exclue, Actualité en 1ère position.
-- Liste verticale "Catégories disponibles" : idem scroll horizontal.
+- Liste verticale "Catégories disponibles" : toutes les catégories avec emoji, nom, description, nb séances.
 
-**Pourquoi** : Éviter la redondance entre FeaturedSessionCard et les bulles. Mettre Actualité en tête du scroll pour créer de l'urgence. La logique de curation est dans `categoriesProvider` (`home_providers.dart`) — zéro logique dans les widgets.
+**Pourquoi** : Le scroll horizontal de bulles a été supprimé — redondant avec la liste verticale et ajoutait de la complexité UI sans valeur ajoutée. La home reste focalisée sur deux points d'entrée clairs. La logique de curation est dans `categoriesProvider` (`home_providers.dart`) — zéro logique dans les widgets.
+
+---
+
+## ADR-016 — Écran de préparation avant chaque séance
+
+**Décision** : Une route `/preparation/:sessionId` s'intercale entre la session card et le player. `PreparationPage` (`ConsumerStatefulWidget`) affiche le titre de la séance, une icône lotus, des messages d'installation, et une barre de progression qui se remplit sur 5 secondes.
+
+**Comportement** :
+- Tap n'importe où → `_fadeController.reverse()` (300ms) puis `context.push('/player/:id')`
+- Auto après 5s → même fade via `_progressController.addStatusListener`
+- `_navigated` flag pour éviter la double navigation
+
+**Pourquoi** : Créer une transition intentionnelle entre l'UI de l'app et la méditation. L'utilisateur a 5 secondes pour s'installer sans être précipité dans l'audio. Tap disponible pour ceux qui sont déjà prêts.
+
+**Implémentation** : Deux `AnimationController` (`_progressController` 5s, `_fadeController` 300ms), tous deux disposés proprement dans `dispose()`. Zéro logique métier dans le widget.

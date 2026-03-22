@@ -13,7 +13,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Réponses persistées dans SharedPreferences (`prefOnboardingAnswers`)
 
 ### Home ✅
-- Header : logo à gauche + phrase "On fait quoi aujourd'hui, [prénom] ?" à droite (fade in 600ms)
+- Header : logo à gauche + greeting RichText à droite (fade in 600ms) — "Salut [prénom]," en `textMuted` + "on fait quoi aujourd'hui ?" en `textPrimary` bold
 - Carte "Priorité du moment" mise en avant (Découverte 🧘, 3 séances, bordure accent) → `/category/decouverte`
 - Liste verticale de toutes les catégories (emoji, nom, description, nb séances) → `/category/:id`
 
@@ -32,7 +32,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Lecture audio via `just_audio`
 - Contrôles : play/pause, +15s, -15s
 - Barre de progression seekable
-- Sauvegarde de position automatique (reprendre où on s'est arrêté)
+- Chaque séance repart toujours du début (pas de sauvegarde de position)
 - Marquage automatique "complété" en fin de séance
 - Mini player persistant affiché au-dessus de la bottom nav pendant la lecture/pause
   - Tap → ouvre la page player complète (`context.push`)
@@ -88,7 +88,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ## Monétisation
 
 - Modèle freemium : 1 catégorie gratuite (🧘 Découverte), toutes les autres requièrent un abonnement
-- Badge "New !" sur la catégorie Actualité : `FeaturedSessionCard` (home priorité) + `CategoryBubble` (scroll horizontal) + `CategoryListCard` (liste verticale)
+- Badge "New !" sur la catégorie Actualité : `FeaturedSessionCard` (home priorité) + `CategoryListCard` (liste verticale)
 - Abonnement mensuel : 4,99 € / mois
 - Intégration RevenueCat (`purchases_flutter`)
 - Entitlement : `premium`

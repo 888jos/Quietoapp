@@ -85,7 +85,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       ),
                       Container(
                         margin: const EdgeInsets.only(top: 12),
-                        width: MediaQuery.of(context).size.width * 0.6,
+                        width: MediaQuery.of(context).size.width * 0.9,
                         height: 1,
                         color: AppColors.textPrimary.withValues(alpha: 0.15),
                       ),

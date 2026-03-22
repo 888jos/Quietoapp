@@ -74,12 +74,16 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
                   opacity: _showClose ? 1.0 : 0.0,
                   duration: const Duration(
                       milliseconds: AppConstants.animNormal),
-                  child: GestureDetector(
-                    onTap: _showClose ? _dismiss : null,
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: AppColors.textPrimary,
-                      size: 26,
+                  child: IgnorePointer(
+                    ignoring: !_showClose,
+                    child: IconButton(
+                      onPressed: _dismiss,
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textPrimary,
+                        size: 26,
+                      ),
+                      padding: EdgeInsets.zero,
                     ),
                   ),
                 ),

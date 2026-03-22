@@ -49,7 +49,9 @@ class CategoryDetailPage extends ConsumerWidget {
                   children: [
                     // Back button
                     GestureDetector(
-                      onTap: () => context.pop(),
+                      onTap: () => context.canPop()
+                          ? context.pop()
+                          : context.go(AppRoutes.explore),
                       child: const Icon(
                         Icons.arrow_back_ios_new_rounded,
                         color: AppColors.textPrimary,

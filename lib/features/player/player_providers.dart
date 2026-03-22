@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
-import '../../core/services/storage_service.dart';
 import '../../core/services/storage_providers.dart';
 import '../home/home_providers.dart';
 import 'data/player_repository.dart';
@@ -83,15 +82,12 @@ class PlayerState {
 
 class PlayerNotifier extends StateNotifier<PlayerState> {
   final QuietoAudioHandler _handler;
-  final StorageService _storage;
   final SessionModel session;
 
   PlayerNotifier({
     required QuietoAudioHandler handler,
-    required StorageService storage,
     required this.session,
   })  : _handler = handler,
-        _storage = storage,
         super(const PlayerState()) {
     _init();
   }
@@ -101,12 +97,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       state = state.copyWith(status: PlayerStatus.loading);
 
       await _handler.initSession(session);
-
-      final progress = _storage.loadProgress();
-      final savedPos = progress.lastPosition(session.id);
-      if (savedPos > 0) {
-        await _handler.seek(Duration(seconds: savedPos));
-      }
 
       _handler.positionStream.listen((pos) {
         state = state.copyWith(position: pos);
@@ -143,7 +133,6 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       if (state.status == PlayerStatus.playing) {
         state = state.copyWith(status: PlayerStatus.paused);
         await _handler.pause();
-        _savePosition();
       } else {
         state = state.copyWith(status: PlayerStatus.playing);
         await _handler.play();
@@ -175,26 +164,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
   Future<void> stop() async {
     try {
-      _savePosition();
       await _handler.stop();
       state = state.copyWith(status: PlayerStatus.idle);
     } catch (_) {}
   }
 
-  void _savePosition() {
-    try {
-      final progress = _storage.loadProgress();
-      final updated =
-          progress.savePosition(session.id, state.position.inSeconds);
-      _storage.saveProgress(updated);
-    } catch (_) {}
-  }
-
-  @override
-  void dispose() {
-    _savePosition();
-    super.dispose();
-  }
 }
 
 // ── Provider factory ──────────────────────────────────
@@ -205,11 +179,9 @@ final playerProvider = StateNotifierProvider
   if (session == null) {
     throw StateError('Session $sessionId introuvable');
   }
-  final storage = ref.watch(storageServiceProvider);
   final handler = ref.watch(audioHandlerProvider);
   final notifier = PlayerNotifier(
     handler: handler,
-    storage: storage,
     session: session,
   );
   // Mark this session as the active one for the mini player

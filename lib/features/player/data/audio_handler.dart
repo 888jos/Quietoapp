@@ -172,9 +172,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       final progress = _storage.loadProgress();
       final updated = progress.markCompleted(session.id, session.durationMinutes);
-      // Reset saved position so the session restarts from the beginning next time.
-      final cleared = updated.savePosition(session.id, 0);
-      _storage.saveProgress(cleared);
+      _storage.saveProgress(updated);
     } catch (_) {}
 
     // Notify external listeners (e.g. Riverpod tick provider) that a session completed

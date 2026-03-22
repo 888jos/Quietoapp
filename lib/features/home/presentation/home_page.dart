@@ -2,24 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../home_providers.dart';
 import '../../explore/explore_providers.dart';
-import 'widgets/category_bubble.dart';
 import 'widgets/category_list_card.dart';
 import 'widgets/featured_session_card.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fadeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: AppConstants.animSlow),
+    );
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final firstName = ref.watch(userFirstNameProvider);
-
-    final greeting =
-        firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName';
+    final greeting = firstName.isEmpty
+        ? 'On fait quoi aujourd\'hui ?'
+        : 'On fait quoi aujourd\'hui, $firstName ?';
 
     return AppScaffold(
       body: SafeArea(
@@ -34,56 +58,30 @@ class HomePage extends ConsumerWidget {
                 0,
               ),
               sliver: SliverToBoxAdapter(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(greeting, style: AppTextStyles.bodyMedium),
-                    Image.asset('assets/images/logo.png', height: 48),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── Catégories scroll horizontal ──────────────────
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.spacingMd,
-                AppConstants.spacingLg,
-                AppConstants.spacingMd,
-                0,
-              ),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Programmes disponibles',
-                      style: AppTextStyles.titleLarge,
-                    ),
-                    const SizedBox(height: AppConstants.spacingMd),
-                    SizedBox(
-                      height: 116,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        clipBehavior: Clip.none,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: categories.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(width: AppConstants.spacingMd),
-                        itemBuilder: (context, i) => CategoryBubble(
-                          category: categories[i],
-                          onTap: () => context.push(
-                            ref.read(categoryRouteProvider(categories[i].id)),
+                child: FadeTransition(
+                  opacity: _fadeController,
+                  child: Row(
+                    children: [
+                      Image.asset('assets/images/logo.png', height: 48),
+                      const SizedBox(width: AppConstants.spacingMd),
+                      Expanded(
+                        child: Text(
+                          greeting,
+                          style: AppTextStyles.titleLarge.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 22,
                           ),
+                          maxLines: 2,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
 
-            // ── Priorité du moment ────────────────────────────────
+            // ── Priorité du moment ────────────────────────────
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
                 AppConstants.spacingMd,

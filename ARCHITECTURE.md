@@ -29,7 +29,6 @@ lib/
     │   ├── presentation/
     │   │   ├── home_page.dart
     │   │   └── widgets/
-    │   │       ├── category_bubble.dart
     │   │       ├── featured_session_card.dart
     │   │       └── category_list_card.dart
     │   └── home_providers.dart

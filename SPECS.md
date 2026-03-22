@@ -13,9 +13,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Réponses persistées dans SharedPreferences (`prefOnboardingAnswers`)
 
 ### Home ✅
-- Header : logo "Quieto" + salutation personnalisée "Bonjour, [prénom]" (via StorageService)
-- Scroll horizontal de bulles de catégories ("Programmes disponibles") → `/category/:id`
-  - Actualité en 1ère position, Découverte exclue (mise en avant via FeaturedSessionCard)
+- Header : logo à gauche + phrase "On fait quoi aujourd'hui, [prénom] ?" à droite (fade in 600ms)
 - Carte "Priorité du moment" mise en avant (Découverte 🧘, 3 séances, bordure accent) → `/category/decouverte`
 - Liste verticale de toutes les catégories (emoji, nom, description, nb séances) → `/category/:id`
 

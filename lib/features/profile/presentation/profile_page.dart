@@ -131,7 +131,7 @@ class ProfilePage extends ConsumerWidget {
                             onTap: () async {
                               try {
                                 await launchUrl(
-                                  Uri.parse('https://www.quieto.fr/privacy'),
+                                  Uri.parse('https://www.notion.so/Politique-de-Confidentialit-31de9e37b4a88093b560e0636712146e'),
                                   mode: LaunchMode.externalApplication,
                                 );
                               } catch (_) {}

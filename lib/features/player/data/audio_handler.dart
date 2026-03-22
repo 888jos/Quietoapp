@@ -36,27 +36,38 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> initSession(SessionModel session) async {
     _session = session;
 
-    // Dispose previous player if any
+    // Dispose previous player and null it out immediately so that any
+    // in-flight play() call sees null and bails out cleanly.
     await _player?.dispose();
-    _player = AudioPlayer();
+    _player = null;
 
+    final newPlayer = AudioPlayer();
     final path = 'assets/audio/${session.audioFile}';
-    await _player!.setAsset(path);
+    try {
+      await newPlayer.setAsset(path);
+    } catch (e) {
+      // setAsset failed (e.g. file not found). Clean up and rethrow so
+      // PlayerNotifier._init()'s catch sets the error state.
+      await newPlayer.dispose();
+      rethrow;
+    }
+
+    // Asset loaded — commit the player.
+    _player = newPlayer;
 
     // Set MediaItem for lock screen / notification
-    final duration = _player!.duration ?? Duration(minutes: session.durationMinutes);
     const artUri = 'asset:///assets/images/hf_20260314_214439_a9a1fd51-1280-41ae-bf86-7548b618d776.jpeg';
     mediaItem.add(MediaItem(
       id: session.id,
       title: session.title,
       artist: AppConstants.appName,
       album: '',
-      duration: duration,
+      duration: newPlayer.duration ?? Duration(minutes: session.durationMinutes),
       artUri: Uri.parse(artUri),
     ));
 
     // Update MediaItem when actual duration is known
-    _player!.durationStream.listen((dur) {
+    newPlayer.durationStream.listen((dur) {
       if (dur != null) {
         mediaItem.add(MediaItem(
           id: session.id,
@@ -70,12 +81,10 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     });
 
     // Forward position updates to playbackState
-    _player!.positionStream.listen((pos) {
-      _broadcastState();
-    });
+    newPlayer.positionStream.listen((_) => _broadcastState());
 
     // Handle playback state changes
-    _player!.playerStateStream.listen((s) {
+    newPlayer.playerStateStream.listen((s) {
       if (s.processingState == ProcessingState.completed) {
         _onCompleted();
       } else {

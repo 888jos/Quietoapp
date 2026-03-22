@@ -7,11 +7,16 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../player_providers.dart';
 
-class PlayerPage extends ConsumerWidget {
+class PlayerPage extends ConsumerStatefulWidget {
   final String sessionId;
 
   const PlayerPage({super.key, required this.sessionId});
 
+  @override
+  ConsumerState<PlayerPage> createState() => _PlayerPageState();
+}
+
+class _PlayerPageState extends ConsumerState<PlayerPage> {
   String _formatDuration(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -19,7 +24,16 @@ class PlayerPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    // Discard any cached PlayerNotifier so each visit creates a fresh one
+    // with a properly initialised AudioPlayer for this session.
+    ref.invalidate(playerProvider(widget.sessionId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sessionId = widget.sessionId;
     final session = ref.watch(currentSessionProvider(sessionId));
 
     if (session == null) {

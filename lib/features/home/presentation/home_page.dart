@@ -65,23 +65,15 @@ class _HomePageState extends ConsumerState<HomePage>
                       Expanded(
                         child: RichText(
                           text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w300,
+                              color: AppColors.textPrimary,
+                            ),
                             children: [
-                              TextSpan(
-                                text: '$salut\n',
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
+                              TextSpan(text: '$salut\n'),
                               const TextSpan(
-                                text: 'on fait quoi aujourd\'hui ?',
-                                style: TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
+                                  text: 'on fait quoi aujourd\'hui ?'),
                             ],
                           ),
                         ),

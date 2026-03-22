@@ -64,24 +64,22 @@ class _HomePageState extends ConsumerState<HomePage>
                       const SizedBox(width: AppConstants.spacingMd),
                       Expanded(
                         child: RichText(
-                          maxLines: 2,
-                          overflow: TextOverflow.visible,
                           text: TextSpan(
                             children: [
                               TextSpan(
-                                text: '$salut ',
+                                text: '$salut\n',
                                 style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.textMuted,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
                               const TextSpan(
                                 text: 'on fait quoi aujourd\'hui ?',
                                 style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.textMuted,
                                 ),
                               ),
                             ],

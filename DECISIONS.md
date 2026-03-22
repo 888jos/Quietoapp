@@ -183,3 +183,11 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 **Pourquoi** : Créer une transition intentionnelle entre l'UI de l'app et la méditation. L'utilisateur a 5 secondes pour s'installer sans être précipité dans l'audio. Tap disponible pour ceux qui sont déjà prêts.
 
 **Implémentation** : Deux `AnimationController` (`_progressController` 5s, `_fadeController` 300ms), tous deux disposés proprement dans `dispose()`. Zéro logique métier dans le widget.
+
+---
+
+## ADR-017 — RichText pour le greeting home plutôt que deux Text séparés
+
+**Décision** : Le greeting du header home utilise un seul `RichText` avec deux `TextSpan` séparés par `\n` : ligne 1 "Salut [prénom]," (w700, textPrimary), ligne 2 "on fait quoi aujourd'hui ?" (w400, textMuted).
+
+**Pourquoi** : Deux `Text` séparés créaient un écart vertical visible et rendaient difficile l'alignement entre les deux lignes. `RichText` garantit un rendu cohérent sur une seule passe de layout, avec un interligne natif contrôlé par Flutter. L'approche est aussi plus légère — un seul widget au lieu de deux dans l'arbre.

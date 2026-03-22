@@ -118,7 +118,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       _handler.playerStateStream.listen((s) {
         if (s.processingState == ProcessingState.completed) {
-          state = state.copyWith(status: PlayerStatus.paused);
+          state = state.copyWith(status: PlayerStatus.idle);
         } else if (s.playing) {
           state = state.copyWith(status: PlayerStatus.playing);
         } else if (s.processingState == ProcessingState.ready) {

@@ -23,6 +23,13 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Grille 2 colonnes de toutes les catégories
 - Recherche textuelle en temps réel (filtre par nom/description)
 
+### Preparation screen
+- Affiché avant chaque séance (tap sur une session card → `/preparation/:sessionId`)
+- Affiche le titre de la séance + icône lotus + messages d'installation
+- Barre de progression qui se remplit sur 5 secondes
+- Tap n'importe où → fade out 300ms → `/player/:sessionId`
+- Après 5 secondes → même fade out 300ms → `/player/:sessionId`
+
 ### Player
 - Lecture audio via `just_audio`
 - Contrôles : play/pause, +15s, -15s

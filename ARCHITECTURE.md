@@ -47,6 +47,7 @@ lib/
     │   │   ├── player_repository.dart
     │   │   └── audio_handler.dart     # QuietoAudioHandler (BaseAudioHandler + SeekHandler)
     │   ├── presentation/
+    │   │   ├── preparation_page.dart  # Écran de préparation (5s timer + fade) avant chaque séance
     │   │   ├── player_page.dart
     │   │   └── widgets/
     │   │       └── mini_player.dart   # Mini player persistant (au-dessus de la bottom nav)
@@ -108,9 +109,10 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
                   ├─ branch 1 : /explore → ExplorePage (stack isolée)
                   └─ branch 2 : /profile → ProfilePage (stack isolée)
 
-/player/:sessionId    (hors shell — context.push, retour possible)
-/paywall              (hors shell — context.go depuis onboarding / context.push depuis profil)
-/category/:categoryId (hors shell — context.push, retour possible)
+/preparation/:sessionId (hors shell — context.push depuis session card → fade 300ms → /player)
+/player/:sessionId      (hors shell — context.push depuis preparation ou mini player)
+/paywall                (hors shell — context.go depuis onboarding / context.push depuis profil)
+/category/:categoryId   (hors shell — context.push, retour possible)
 ```
 
 ### Choisir le bon type de navigation

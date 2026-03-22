@@ -8,6 +8,7 @@ import '../features/home/presentation/home_page.dart';
 import '../features/explore/presentation/category_detail_page.dart';
 import '../features/explore/presentation/explore_page.dart';
 import '../features/player/presentation/player_page.dart';
+import '../features/player/presentation/preparation_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/paywall/presentation/paywall_page.dart';
 import 'home_shell.dart';
@@ -22,9 +23,11 @@ abstract final class AppRoutes {
   static const explore = '/explore';
   static const profile = '/profile';
   static const player = '/player/:sessionId';
+  static const preparation = '/preparation/:sessionId';
   static const category = '/category/:categoryId';
 
   static String playerPath(String sessionId) => '/player/$sessionId';
+  static String preparationPath(String sessionId) => '/preparation/$sessionId';
   static String categoryPath(String categoryId) => '/category/$categoryId';
 }
 
@@ -56,6 +59,15 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final categoryId = state.pathParameters['categoryId']!;
         return CategoryDetailPage(categoryId: categoryId);
+      },
+    ),
+
+    // ── Preparation (hors shell) ──────────────────────
+    GoRoute(
+      path: AppRoutes.preparation,
+      builder: (context, state) {
+        final sessionId = state.pathParameters['sessionId']!;
+        return PreparationPage(sessionId: sessionId);
       },
     ),
 

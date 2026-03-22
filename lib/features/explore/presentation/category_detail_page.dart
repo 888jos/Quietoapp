@@ -115,7 +115,7 @@ class CategoryDetailPage extends ConsumerWidget {
                   return SessionCard(
                     session: session,
                     onTap: () => context.push(
-                      AppRoutes.playerPath(session.id),
+                      AppRoutes.preparationPath(session.id),
                     ),
                   );
                 },

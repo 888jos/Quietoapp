@@ -41,9 +41,7 @@ class _HomePageState extends ConsumerState<HomePage>
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
     final firstName = ref.watch(userFirstNameProvider);
-    final greeting = firstName.isEmpty
-        ? 'On fait quoi aujourd\'hui ?'
-        : 'On fait quoi aujourd\'hui, $firstName ?';
+    final salut = firstName.isEmpty ? 'Salut,' : 'Salut $firstName,';
 
     return AppScaffold(
       body: SafeArea(
@@ -65,14 +63,26 @@ class _HomePageState extends ConsumerState<HomePage>
                       Image.asset('assets/images/logo.png', height: 48),
                       const SizedBox(width: AppConstants.spacingMd),
                       Expanded(
-                        child: Text(
-                          greeting,
-                          style: AppTextStyles.titleLarge.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22,
-                          ),
-                          maxLines: 2,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              salut,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textMuted,
+                                fontSize: 16,
+                              ),
+                            ),
+                            Text(
+                              'on fait quoi aujourd\'hui ?',
+                              style: AppTextStyles.titleLarge.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 22,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

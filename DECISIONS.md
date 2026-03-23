@@ -191,3 +191,15 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 **Décision** : Le greeting du header home utilise un seul `RichText` avec deux `TextSpan` séparés par `\n` : ligne 1 "Salut [prénom]," (w700, textPrimary), ligne 2 "on fait quoi aujourd'hui ?" (w400, textMuted).
 
 **Pourquoi** : Deux `Text` séparés créaient un écart vertical visible et rendaient difficile l'alignement entre les deux lignes. `RichText` garantit un rendu cohérent sur une seule passe de layout, avec un interligne natif contrôlé par Flutter. L'approche est aussi plus légère — un seul widget au lieu de deux dans l'arbre.
+
+---
+
+## ADR-018 — Pages de transition onboarding : loading + preview avant le paywall
+
+**Décision** : Deux pages s'intercalent entre la dernière question de l'onboarding (saisie du prénom) et le paywall :
+1. `OnboardingLoadingPage` (`/onboarding-loading`) — `CircularProgressIndicator` déterministe animé de 0 à 100% en 1200ms (`CurvedAnimation`, `Curves.easeInOut`), puis redirect automatique vers `/onboarding-preview` après 300ms.
+2. `OnboardingPreviewPage` (`/onboarding-preview`) — Liste de toutes les catégories disponibles (depuis `exploreCategoriesProvider`) avec message personnalisé au prénom. Bouton CTA "Accéder à mes séances" → `context.go('/paywall')`.
+
+**Pourquoi** : La transition directe onboarding → paywall est abrupte. La page de loading crée une attente intentionnelle qui suggère une personnalisation en cours (engagement psychologique). La page preview montre à l'utilisateur les séances qui l'attendent, justifiant ainsi l'abonnement avant d'arriver sur le paywall.
+
+**Implémentation** : `OnboardingLoadingPage` est un `ConsumerStatefulWidget` avec un `AnimationController` (dispose propre). `OnboardingPreviewPage` est un `ConsumerWidget` — zéro état local. Le prénom est mis à jour dans `firstNameProvider` (StateProvider) immédiatement après la sauvegarde dans SharedPreferences, pour que les deux pages lisent le bon prénom sans re-lecture du stockage.

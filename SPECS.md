@@ -9,10 +9,10 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ### Onboarding
 - 6 slides : 2 introductions + 3 questions à choix unique (objectif, moment, état) + saisie du prénom
 - Pas de bouton "Passer" — l'utilisateur doit compléter tout le flow
-- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + marque l'onboarding comme terminé → **Loading** → **Preview** → **Paywall** (puis Home)
+- "Commencer" sur la dernière slide → sauvegarde réponses + prénom + marque l'onboarding comme terminé → **Loading** → **Ready** → **Paywall** (puis Home)
 - Réponses persistées dans SharedPreferences (`prefOnboardingAnswers`)
-- **Page Loading** (`/onboarding-loading`) : logo (80×80) centré + cercle de progression 0→100% en 5000ms + animations vagues et particules → redirect automatique vers `/onboarding-preview`
-- **Page Preview** (`/onboarding-preview`) : liste des catégories disponibles + CTA "Accéder à mes séances" → `/paywall`
+- **Page Loading** (`/onboarding-loading`) : logo (80×80) centré + cercle de progression 0→100% en 5000ms + animations vagues et particules + 5 phrases qui apparaissent progressivement (fade in) → redirect automatique vers `/onboarding-ready` après 300ms
+- **Page Ready** (`/onboarding-ready`) : logo (80×80) + "C'est prêt ✨" + "Ton essai gratuit de 7 jours est prêt" + CTA "Découvrir Quieto" → `/paywall`. Fade in 600ms à l'entrée. Pas de retour arrière possible.
 
 ### Home ✅
 - Header : logo à gauche + greeting RichText à droite (fade in 600ms) — "Salut [prénom]," en `textMuted` + "on fait quoi aujourd'hui ?" en `textPrimary` bold

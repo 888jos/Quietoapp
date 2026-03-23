@@ -57,7 +57,7 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
     // ── Progression 0 → 100% en 3000ms ───────────────────────────
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 5000),
     );
     _progressAnim = CurvedAnimation(
       parent: _progressController,
@@ -121,8 +121,8 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
-                  Image.asset('assets/images/logo.png', height: 48),
-                  const SizedBox(height: AppConstants.spacingXxl),
+                  Image.asset('assets/images/logo.png', width: 80, height: 80),
+                  const SizedBox(height: 48),
 
                   // Vagues + cercle de progression
                   SizedBox(

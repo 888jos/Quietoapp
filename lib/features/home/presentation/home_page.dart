@@ -42,133 +42,134 @@ class _HomePageState extends ConsumerState<HomePage>
     final categories = ref.watch(categoriesProvider);
     final firstName = ref.watch(userFirstNameProvider);
     final salut = firstName.isEmpty ? 'Salut,' : 'Salut $firstName,';
-    final screenWidth = MediaQuery.of(context).size.width;
+    final mq = MediaQuery.of(context);
+    final screenWidth = mq.size.width;
+    final topPadding = mq.padding.top;
 
     return AppScaffold(
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            // ── Header épinglé ────────────────────────────────
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _HomeHeaderDelegate(
-                child: FadeTransition(
-                  opacity: _fadeController,
-                  child: Container(
-                    color: AppColors.background,
-                    padding: const EdgeInsets.fromLTRB(
-                      AppConstants.spacingMd,
-                      AppConstants.spacingLg,
-                      AppConstants.spacingMd,
-                      AppConstants.spacingMd,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          children: [
-                            Image.asset('assets/images/logo.png', height: 48),
-                            const SizedBox(width: AppConstants.spacingMd),
-                            Expanded(
-                              child: RichText(
-                                text: TextSpan(
-                                  style: const TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w300,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                  children: [
-                                    TextSpan(text: '$salut\n'),
-                                    const TextSpan(
-                                        text: 'on fait quoi aujourd\'hui ?'),
-                                  ],
+      body: CustomScrollView(
+        slivers: [
+          // ── Header épinglé ────────────────────────────────
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _HomeHeaderDelegate(
+              topPadding: topPadding,
+              child: FadeTransition(
+                opacity: _fadeController,
+                child: Container(
+                  color: AppColors.background,
+                  padding: EdgeInsets.fromLTRB(
+                    AppConstants.spacingMd,
+                    topPadding + AppConstants.spacingLg,
+                    AppConstants.spacingMd,
+                    AppConstants.spacingMd,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Image.asset('assets/images/logo.png', height: 48),
+                          const SizedBox(width: AppConstants.spacingMd),
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w300,
+                                  color: AppColors.textPrimary,
                                 ),
+                                children: [
+                                  TextSpan(text: '$salut\n'),
+                                  const TextSpan(
+                                      text: 'on fait quoi aujourd\'hui ?'),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                        Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          width: screenWidth * 0.9,
-                          height: 1,
-                          color: AppColors.textPrimary.withValues(alpha: 0.15),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Priorité du moment ────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.spacingMd,
-                AppConstants.spacingLg,
-                AppConstants.spacingMd,
-                0,
-              ),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Priorité du moment', style: AppTextStyles.titleLarge),
-                    const SizedBox(height: AppConstants.spacingMd),
-                    FeaturedSessionCard(
-                      emoji: '🧘',
-                      categoryName: 'Découverte de la méditation',
-                      subtitle: 'Commence ton voyage vers la pleine conscience.',
-                      durationLabel: '3 séances disponibles',
-                      onTap: () => context.push(
-                        ref.read(categoryRouteProvider('decouverte')),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── Catégories disponibles ────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.spacingMd,
-                AppConstants.spacingLg,
-                AppConstants.spacingMd,
-                0,
-              ),
-              sliver: SliverToBoxAdapter(
-                child: Text(
-                  'Catégories disponibles',
-                  style: AppTextStyles.titleLarge,
-                ),
-              ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
-                AppConstants.spacingMd,
-                AppConstants.spacingMd,
-                AppConstants.spacingMd,
-                0,
-              ),
-              sliver: SliverList.separated(
-                separatorBuilder: (_, _) =>
-                    const SizedBox(height: AppConstants.spacingSm),
-                itemCount: categories.length,
-                itemBuilder: (context, i) => CategoryListCard(
-                  category: categories[i],
-                  onTap: () => context.push(
-                    ref.read(categoryRouteProvider(categories[i].id)),
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: screenWidth * 0.9,
+                        height: 1,
+                        color: AppColors.textPrimary.withValues(alpha: 0.15),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
+          ),
 
-            const SliverPadding(
-              padding: EdgeInsets.only(bottom: AppConstants.spacingXl),
+          // ── Priorité du moment ────────────────────────────
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.spacingMd,
+              AppConstants.spacingLg,
+              AppConstants.spacingMd,
+              0,
             ),
-          ],
-        ),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Priorité du moment', style: AppTextStyles.titleLarge),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  FeaturedSessionCard(
+                    emoji: '🧘',
+                    categoryName: 'Découverte de la méditation',
+                    subtitle: 'Commence ton voyage vers la pleine conscience.',
+                    durationLabel: '3 séances disponibles',
+                    onTap: () => context.push(
+                      ref.read(categoryRouteProvider('decouverte')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Catégories disponibles ────────────────────────
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.spacingMd,
+              AppConstants.spacingLg,
+              AppConstants.spacingMd,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: Text(
+                'Catégories disponibles',
+                style: AppTextStyles.titleLarge,
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.spacingMd,
+              AppConstants.spacingMd,
+              AppConstants.spacingMd,
+              0,
+            ),
+            sliver: SliverList.separated(
+              separatorBuilder: (_, _) =>
+                  const SizedBox(height: AppConstants.spacingSm),
+              itemCount: categories.length,
+              itemBuilder: (context, i) => CategoryListCard(
+                category: categories[i],
+                onTap: () => context.push(
+                  ref.read(categoryRouteProvider(categories[i].id)),
+                ),
+              ),
+            ),
+          ),
+
+          const SliverPadding(
+            padding: EdgeInsets.only(bottom: AppConstants.spacingXl),
+          ),
+        ],
       ),
     );
   }
@@ -177,13 +178,16 @@ class _HomePageState extends ConsumerState<HomePage>
 // ── Delegate pour le header épinglé ───────────────────────────
 
 class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
-  // logo 48 + richtext ~54 (max) + margin 12 + separator 1
-  // + padding top spacingLg(24) + padding bottom spacingMd(16)
-  static const double _height = 116.0;
+  // Hauteur du contenu : logo 48 + richtext ~54 + margin 12 + separator 1
+  // + padding vertical spacingLg(24) + spacingMd(16) = 155 hors safe area
+  static const double _contentHeight = 116.0;
 
+  final double topPadding;
   final Widget child;
 
-  const _HomeHeaderDelegate({required this.child});
+  const _HomeHeaderDelegate({required this.topPadding, required this.child});
+
+  double get _height => _contentHeight + topPadding;
 
   @override
   double get minExtent => _height;
@@ -198,5 +202,6 @@ class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  bool shouldRebuild(_HomeHeaderDelegate oldDelegate) => true;
+  bool shouldRebuild(_HomeHeaderDelegate oldDelegate) =>
+      oldDelegate.topPadding != topPadding;
 }

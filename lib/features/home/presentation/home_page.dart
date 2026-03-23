@@ -42,25 +42,31 @@ class _HomePageState extends ConsumerState<HomePage>
     final categories = ref.watch(categoriesProvider);
     final firstName = ref.watch(userFirstNameProvider);
     final salut = firstName.isEmpty ? 'Salut,' : 'Salut $firstName,';
-    final mq = MediaQuery.of(context);
-    final screenWidth = mq.size.width;
-    final topPadding = mq.padding.top;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return AppScaffold(
       body: CustomScrollView(
         slivers: [
           // ── Header épinglé ────────────────────────────────
-          SliverPersistentHeader(
+          SliverAppBar(
             pinned: true,
-            delegate: _HomeHeaderDelegate(
-              topPadding: topPadding,
-              child: FadeTransition(
-                opacity: _fadeController,
-                child: Container(
-                  color: AppColors.background,
-                  padding: EdgeInsets.fromLTRB(
+            floating: false,
+            automaticallyImplyLeading: false,
+            backgroundColor: AppColors.background,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            surfaceTintColor: Colors.transparent,
+            toolbarHeight: 116,
+            centerTitle: false,
+            titleSpacing: 0,
+            title: FadeTransition(
+              opacity: _fadeController,
+              child: SizedBox(
+                height: 116,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
                     AppConstants.spacingMd,
-                    topPadding + AppConstants.spacingLg,
+                    AppConstants.spacingLg,
                     AppConstants.spacingMd,
                     AppConstants.spacingMd,
                   ),
@@ -70,7 +76,10 @@ class _HomePageState extends ConsumerState<HomePage>
                     children: [
                       Row(
                         children: [
-                          Image.asset('assets/images/logo.png', height: 48),
+                          Image.asset(
+                            'assets/images/logo.png',
+                            height: 48,
+                          ),
                           const SizedBox(width: AppConstants.spacingMd),
                           Expanded(
                             child: RichText(
@@ -83,7 +92,8 @@ class _HomePageState extends ConsumerState<HomePage>
                                 children: [
                                   TextSpan(text: '$salut\n'),
                                   const TextSpan(
-                                      text: 'on fait quoi aujourd\'hui ?'),
+                                    text: 'on fait quoi aujourd\'hui ?',
+                                  ),
                                 ],
                               ),
                             ),
@@ -94,7 +104,8 @@ class _HomePageState extends ConsumerState<HomePage>
                         margin: const EdgeInsets.only(top: 12),
                         width: screenWidth * 0.9,
                         height: 1,
-                        color: AppColors.textPrimary.withValues(alpha: 0.15),
+                        color:
+                            AppColors.textPrimary.withValues(alpha: 0.15),
                       ),
                     ],
                   ),
@@ -115,12 +126,14 @@ class _HomePageState extends ConsumerState<HomePage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Priorité du moment', style: AppTextStyles.titleLarge),
+                  Text('Priorité du moment',
+                      style: AppTextStyles.titleLarge),
                   const SizedBox(height: AppConstants.spacingMd),
                   FeaturedSessionCard(
                     emoji: '🧘',
                     categoryName: 'Découverte de la méditation',
-                    subtitle: 'Commence ton voyage vers la pleine conscience.',
+                    subtitle:
+                        'Commence ton voyage vers la pleine conscience.',
                     durationLabel: '3 séances disponibles',
                     onTap: () => context.push(
                       ref.read(categoryRouteProvider('decouverte')),
@@ -173,35 +186,4 @@ class _HomePageState extends ConsumerState<HomePage>
       ),
     );
   }
-}
-
-// ── Delegate pour le header épinglé ───────────────────────────
-
-class _HomeHeaderDelegate extends SliverPersistentHeaderDelegate {
-  // Hauteur du contenu : logo 48 + richtext ~54 + margin 12 + separator 1
-  // + padding vertical spacingLg(24) + spacingMd(16) = 155 hors safe area
-  static const double _contentHeight = 116.0;
-
-  final double topPadding;
-  final Widget child;
-
-  const _HomeHeaderDelegate({required this.topPadding, required this.child});
-
-  double get _height => _contentHeight + topPadding;
-
-  @override
-  double get minExtent => _height;
-
-  @override
-  double get maxExtent => _height;
-
-  @override
-  Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
-
-  @override
-  bool shouldRebuild(_HomeHeaderDelegate oldDelegate) =>
-      oldDelegate.topPadding != topPadding;
 }

@@ -197,7 +197,7 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 ## ADR-018 — Pages de transition onboarding : loading + preview avant le paywall
 
 **Décision** : Deux pages s'intercalent entre la dernière question de l'onboarding (saisie du prénom) et le paywall :
-1. `OnboardingLoadingPage` (`/onboarding-loading`) — logo 80×80, `CircularProgressIndicator` déterministe animé de 0 à 100% en 5000ms (`CurvedAnimation`, `Curves.easeInOut`), vagues concentriques animées (`_WavePainter`, 3 ellipses avec décalages de phase), particules flottantes en arrière-plan (`_ParticlePainter`, 8 particules constantes). Redirect automatique vers `/onboarding-preview` après 400ms.
+1. `OnboardingLoadingPage` (`/onboarding-loading`) — logo 80×80, `CircularProgressIndicator` déterministe animé de 0 à 100% en 5000ms (`CurvedAnimation`, `Curves.easeInOut`), vagues concentriques animées (`_WavePainter`, 3 ellipses avec décalages de phase), particules flottantes en arrière-plan (`_ParticlePainter`, 8 particules constantes, 8px diamètre, opacité max 0.45). Redirect automatique vers `/onboarding-preview` après 400ms.
 2. `OnboardingPreviewPage` (`/onboarding-preview`) — Liste de toutes les catégories disponibles (depuis `exploreCategoriesProvider`) avec message personnalisé au prénom. Bouton CTA "Accéder à mes séances" → `context.go('/paywall')`.
 
 **Pourquoi** : La transition directe onboarding → paywall est abrupte. La page de loading crée une attente intentionnelle (5s) qui suggère une personnalisation en cours (engagement psychologique). Les animations de vagues et particules renforcent l'atmosphère apaisante de l'app. La page preview montre à l'utilisateur les séances qui l'attendent, justifiant ainsi l'abonnement avant d'arriver sur le paywall.

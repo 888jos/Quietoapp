@@ -262,14 +262,14 @@ class _ParticlePainter extends CustomPainter {
 
     for (final p in _kParticles) {
       final t = (phase + p.phase) % 1.0;
-      final opacity = 0.15 * (1.0 - t); // s'estompe en montant
+      final opacity = 0.45 * (1.0 - t); // s'estompe en montant
       if (opacity <= 0) continue;
 
       final x = p.x * size.width;
       final y = (p.baseY - t * p.travel) * size.height;
 
       paint.color = AppColors.accent.withValues(alpha: opacity);
-      canvas.drawCircle(Offset(x, y), 2.0, paint); // 4px diamètre
+      canvas.drawCircle(Offset(x, y), 4.0, paint); // 8px diamètre
     }
   }
 

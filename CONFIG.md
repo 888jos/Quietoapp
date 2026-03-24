@@ -4,29 +4,14 @@
 
 ### RevenueCat (obligatoire pour la prod)
 
-Dans `lib/core/config/app_constants.dart` :
+La clé API est dans `lib/core/config/revenue_cat_config.dart` :
 
 ```dart
-static const revenueCatApiKeyIos = 'appl_xxxxxxxxxxxxxxxx';
-static const revenueCatApiKeyAndroid = 'goog_xxxxxxxxxxxxxxxx';
+const String revenueCatApiKey = 'appl_tQodjeAtfHBnYjPSgcQUGjiRAvi';
 ```
 
-Obtenir les clés sur : https://app.revenuecat.com → Project Settings → API Keys
-
-### Initialiser RevenueCat dans main.dart
-
-```dart
-import 'package:purchases_flutter/purchases_flutter.dart';
-
-// Dans main(), après SharedPreferences :
-await Purchases.configure(
-  PurchasesConfiguration(
-    Platform.isIOS
-        ? AppConstants.revenueCatApiKeyIos
-        : AppConstants.revenueCatApiKeyAndroid,
-  ),
-);
-```
+RevenueCat est initialisé automatiquement dans `main.dart` au démarrage.
+Obtenir ou renouveler les clés sur : https://app.revenuecat.com → Project Settings → API Keys
 
 ---
 

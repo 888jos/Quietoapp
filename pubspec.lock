@@ -424,6 +424,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "9.14.0"
+  purchases_ui_flutter:
+    dependency: "direct main"
+    description:
+      name: purchases_ui_flutter
+      sha256: edb15ab48fca177af0bd949aa20939aeafcaf90719903d52f3015ed1414a87f7
+      url: "https://pub.dev"
+    source: hosted
+    version: "9.14.0"
   riverpod:
     dependency: transitive
     description:

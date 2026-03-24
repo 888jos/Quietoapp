@@ -50,10 +50,10 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Section "Informations légales" : politique de confidentialité + conditions d'utilisation (ouvre URL via `url_launcher`)
 
 ### Paywall
-- Présentation des avantages Premium
-- Bouton d'achat (intégration RevenueCat à finaliser)
-- Restauration des achats
-- Bouton fermer (×) qui apparaît après 3 secondes — UX paywall classique, force la lecture des avantages
+- Affiché via `PaywallView` de `purchases_ui_flutter` — UI générée nativement par RevenueCat depuis le dashboard
+- `onDismiss` → `context.go('/home')`
+- `onPurchaseCompleted` → `context.go('/home')`
+- `onRestoreCompleted` → `context.go('/home')`
 - Accessible via `context.go` depuis l'onboarding (pas de retour) ou `context.push` depuis le profil (retour possible)
 
 ## Catégories de contenu (MVP)

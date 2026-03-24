@@ -67,7 +67,7 @@ lib/
 | Audio | `just_audio ^0.9.36` |
 | Audio background | `audio_service ^0.18.0` |
 | Stockage local | `shared_preferences ^2.2.0` |
-| Achats in-app | `purchases_flutter ^7.0.0` (RevenueCat) |
+| Achats in-app | `purchases_flutter ^9.14.0` + `purchases_ui_flutter ^9.14.0` (RevenueCat) |
 | Icônes | `iconsax_flutter ^1.0.0` |
 | Liens URL | `url_launcher ^6.3.0` |
 
@@ -102,7 +102,7 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 ## Navigation
 
 ```
-/ (splash)  ──► /onboarding ──► /paywall (context.go, bouton ✕ après 3s) ──► /home
+/ (splash)  ──► /onboarding ──► /onboarding-loading ──► /onboarding-ready ──► /paywall (PaywallView RevenueCat, onDismiss → /home) ──► /home
             └─► StatefulShellRoute (HomeShell + bottom nav)
                   ├─ branch 0 : /home    → HomePage    (stack isolée)
                   ├─ branch 1 : /explore → ExplorePage (stack isolée)

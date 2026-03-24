@@ -39,14 +39,14 @@ Pour la lecture en arrière-plan, ajouter dans `ios/Runner/Info.plist` :
 ```
 
 ### Bundle ID
-`com.quieto.quieto` — modifier dans Xcode → Runner → Signing & Capabilities.
+`com.example.quietoFlutter` — modifier dans Xcode → Runner → Signing & Capabilities.
 
 ---
 
 ## Android — Configuration
 
 ### Bundle ID
-`com.quieto.quieto` — dans `android/app/build.gradle.kts` : `applicationId`.
+`com.example.quietoFlutter` — dans `android/app/build.gradle.kts` : `applicationId`.
 
 ### Permissions (AndroidManifest.xml)
 `just_audio` ne nécessite pas de permissions supplémentaires pour les assets locaux.

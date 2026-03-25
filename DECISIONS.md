@@ -194,6 +194,16 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 
 ---
 
+## ADR-020 — Remplacement des catégories Confiance, Amour et Pleine conscience par Émotions
+
+**Décision** : Les catégories `confidence` (Confiance), `amour` (Amour) et `mindfulness` (Pleine conscience) sont supprimées. Elles sont remplacées par une seule catégorie `emotion` (Émotions, 💛) avec 5 séances correspondant aux fichiers audio réels dans `assets/audio/Emotion/`.
+
+**Pourquoi** : Les dossiers audio de ces catégories étaient vides ou avec des chemins incorrects. L'utilisateur dispose de vrais fichiers audio dans `assets/audio/Emotion/` couvrant des thématiques émotionnelles (amour de soi, joie, anxiété, peur, amour). Regrouper sous "Émotions" est plus cohérent et évite des catégories sans contenu.
+
+**Implémentation** : Dossier audio `Emotion/` (majuscule conservée pour correspondre au nom de dossier existant). Chemins audio alignés exactement sur les noms de fichiers réels.
+
+---
+
 ## ADR-019 — Paywall natif RevenueCat (PaywallView)
 
 **Décision** : `PaywallPage` utilise `PaywallView` de `purchases_ui_flutter`. L'UI du paywall est entièrement gérée par RevenueCat depuis son dashboard — plus de code Flutter custom pour les offres, le pricing ou le design.

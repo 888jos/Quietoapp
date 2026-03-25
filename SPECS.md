@@ -60,15 +60,12 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 
 | Catégorie | Emoji | Premium | Séances |
 |---|---|---|---|
-| Découverte | 🧘 | Non (gratuit) | Ma première méditation (5min), Observer sans juger (6min), Le moment présent (8min) |
-| Stress | 😤 | Oui | Respiration 4-7-8 (5min), Body scan (15min) |
-| Sommeil | 🌙 | Oui | Détente du soir (10min), Visualisation (20min) |
-| Focus | 🎯 | Oui | Pleine conscience (5min), Méditation pomodoro (10min) |
-| Anxiété | 💭 | Oui | Technique 5-4-3-2-1 (8min), Méditation de l'arbre (12min) |
-| Respiration | 🌬️ | Oui | Cohérence cardiaque (5min), Respiration boîte (10min) |
-| Confiance | 💪 | Oui | Affirmations positives (7min), Visualisation du succès (12min) |
-| Pleine conscience | 🧘 | Oui | Scan des sensations (10min), Méditation du miroir (15min) |
-| Actualité | 🌍 | Oui (isNew: true) | Détox numérique (8min), Ancrage face à l'incertitude (12min) |
+| Découverte de la méditation | 🧘 | Non (gratuit) | Ma première méditation (5min), Observer sans juger (6min), Le moment présent (8min) |
+| Actualité & Surcharge mentale | 📰 | Oui (isNew: true) | Quand le monde brûle (8min), La guerre en bruit de fond (12min), Débrancher quand tout crie (5min), Recul sur l'actualité (7min), Pause info (10min) |
+| Stress & Anxiété | 😤 | Oui | Quand le stress prend le dessus (5min), Respiration 4-7-8 (15min), Relâche (8min), Ancrage (3min), Le voyageur qui s'arrête (10min) |
+| Sommeil | 🌙 | Oui | Détente du soir (10min), Visualisation apaisante (20min), Rituel pré-sommeil (7min), Entre deux mondes (5min), Plongée dans le silence (12min) |
+| Respiration | 🌬️ | Oui | Cohérence cardiaque (5min), Respiration alternée (7min), Souffle apaisant (3min), Expansion thoracique (8min) |
+| Émotions | 💛 | Oui | Apprendre à s'aimer (8min), Joie et énergie (7min), De l'anxiété au sourire (10min), Peur et courage (9min), L'amour (12min) |
 
 ## Design system
 
@@ -106,14 +103,11 @@ assets/audio/
 ├── actualite/
 ├── stress/
 ├── sleep/
-├── focus/
 ├── breathing/
-├── anxiety/
-├── confidence/
-└── mindfulness/
+└── Emotion/
 ```
 
-Convention de nommage : `<categorie>/<categorie>_<slug>.mp3` (ex. `stress/stress_body_scan.mp3`).
+Convention de nommage : `<dossier>/<index>-<slug>.mp3` (ex. `stress/0-quand-le-stress-prend-le-dessu.mp3`).
 
 ## Roadmap post-MVP
 

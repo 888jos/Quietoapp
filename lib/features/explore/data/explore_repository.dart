@@ -20,11 +20,11 @@ class ExploreRepository {
             description:
                 'Une introduction douce pour ceux qui n\'ont jamais médité.',
             durationMinutes: 5,
-            audioFile: 'decouverte/0-premiere-séance.mp3',
+            audioFile: 'decouverte/0-premiere-seance.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(
-            id: 'decouverte_3',
+            id: 'decouverte_2',
             title: 'Observer sans juger',
             description:
                 'Apprends à accueillir tes pensées sans t\'y attacher.',
@@ -33,7 +33,7 @@ class ExploreRepository {
             categoryId: 'decouverte',
           ),
           const SessionModel(
-            id: 'decouverte_4',
+            id: 'decouverte_3',
             title: 'Le moment présent',
             description:
                 'Entraîne-toi à revenir ici et maintenant, encore et encore.',
@@ -48,7 +48,7 @@ class ExploreRepository {
       CategoryModel(
         id: 'actualite',
         name: 'Actualité & Surcharge mentale',
-        emoji: '🌍',
+        emoji: '📰',
         description:
             'Apprends à décrocher du flux d\'informations. Retrouve la clarté dans un monde qui s\'emballe.',
         isPremium: true,
@@ -173,7 +173,7 @@ class ExploreRepository {
             description:
                 'Une méditation douce pour préparer ton endormissement.',
             durationMinutes: 10,
-            audioFile: 'sleep/sleep_evening.mp3',
+            audioFile: 'sleep/3-détente-du-soir.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
@@ -181,7 +181,7 @@ class ExploreRepository {
             title: 'Visualisation apaisante',
             description: 'Voyage mental dans un lieu calme et sécurisant.',
             durationMinutes: 20,
-            audioFile: 'sleep/sleep_visualization.mp3',
+            audioFile: 'sleep/2-visualisation-apaisante.mp3',
             categoryId: 'sleep',
             isPremium: true,
           ),
@@ -191,16 +191,16 @@ class ExploreRepository {
             description:
                 'Un rituel de 7 minutes pour signaler à ton corps qu\'il est temps de dormir.',
             durationMinutes: 7,
-            audioFile: 'sleep/sleep_ritual.mp3',
+            audioFile: 'sleep/1-rituel-pré-sommeil.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
             id: 'sleep_4',
-            title: 'Respiration du soir',
+            title: 'Entre deux mondes',
             description:
                 'Une respiration lente et profonde pour ralentir le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'sleep/sleep_breathing.mp3',
+            audioFile: 'sleep/0-entre-deux-mondes.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
@@ -209,7 +209,7 @@ class ExploreRepository {
             description:
                 'Laisse les pensées se dissoudre dans un silence bienveillant.',
             durationMinutes: 12,
-            audioFile: 'sleep/sleep_silence.mp3',
+            audioFile: 'sleep/4-plongée-dans-le-silence.mp3',
             categoryId: 'sleep',
             isPremium: true,
           ),
@@ -230,160 +230,95 @@ class ExploreRepository {
             description:
                 'Synchronise ta respiration pour équilibrer le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'breathing/breathing_coherence.mp3',
+            audioFile: 'breathing/3-cohérence-cardiaque.mp3',
             categoryId: 'breathing',
           ),
           const SessionModel(
             id: 'breathing_2',
-            title: 'Respiration boîte',
+            title: 'Respiration alternée',
             description:
-                'La technique des forces spéciales pour retrouver le calme.',
-            durationMinutes: 10,
-            audioFile: 'breathing/breathing_box.mp3',
+                'Équilibre les deux hémisphères cérébraux par la respiration nasale alternée.',
+            durationMinutes: 7,
+            audioFile: 'breathing/2-respiration-alternée.mp3',
             categoryId: 'breathing',
             isPremium: true,
           ),
           const SessionModel(
             id: 'breathing_3',
-            title: 'Respiration alternée',
-            description:
-                'Équilibre les deux hémisphères cérébraux par la respiration nasale alternée.',
-            durationMinutes: 7,
-            audioFile: 'breathing/breathing_alternate.mp3',
-            categoryId: 'breathing',
-          ),
-          const SessionModel(
-            id: 'breathing_4',
             title: 'Souffle apaisant',
             description:
                 'Un rythme respiratoire lent pour calmer l\'agitation intérieure.',
             durationMinutes: 3,
-            audioFile: 'breathing/breathing_calm.mp3',
+            audioFile: 'breathing/1-souffle-apaisant.mp3',
             categoryId: 'breathing',
           ),
           const SessionModel(
-            id: 'breathing_5',
+            id: 'breathing_4',
             title: 'Expansion thoracique',
             description:
                 'Ouvre la cage thoracique et libère les tensions respiratoires.',
             durationMinutes: 8,
-            audioFile: 'breathing/breathing_expansion.mp3',
+            audioFile: 'breathing/0-expansion-thoracique.mp3',
             categoryId: 'breathing',
             isPremium: true,
           ),
         ],
       ),
       CategoryModel(
-        id: 'amour',
-        name: 'Amour',
-        emoji: '❤️',
+        id: 'emotion',
+        name: 'Émotions',
+        emoji: '💛',
         description:
-            'Cultive l\'amour de soi et des autres. Ouvre ton cœur avec douceur.',
+            'Explore et apprivoise tes émotions. Accueille ce que tu ressens avec douceur et bienveillance.',
         isPremium: true,
         isNew: false,
         sessions: [
           const SessionModel(
-            id: 'amour_1',
-            title: 'Amour de soi',
-            description: 'Apprends à t\'accueillir avec bienveillance et douceur.',
-            durationMinutes: 7,
-            audioFile: 'amour/amour_self_love.mp3',
-            categoryId: 'amour',
+            id: 'emotion_1',
+            title: 'Apprendre à s\'aimer',
+            description:
+                'Pose un regard doux et bienveillant sur toi-même.',
+            durationMinutes: 8,
+            audioFile: 'Emotion/0-lamour.mp3',
+            categoryId: 'emotion',
           ),
           const SessionModel(
-            id: 'amour_2',
-            title: 'Ouvrir son cœur',
+            id: 'emotion_2',
+            title: 'Joie et énergie',
             description:
-                'Libère les barrières émotionnelles et accueille l\'amour.',
+                'Reconnecte-toi à ta joie naturelle et à ta vitalité.',
+            durationMinutes: 7,
+            audioFile: 'Emotion/3-joie-et-énergie.mp3',
+            categoryId: 'emotion',
+            isPremium: true,
+          ),
+          const SessionModel(
+            id: 'emotion_3',
+            title: 'De l\'anxiété au sourire',
+            description:
+                'Transforme doucement l\'anxiété en légèreté et sérénité.',
+            durationMinutes: 10,
+            audioFile: 'Emotion/2-de-lanxiété-au-sourire.mp3',
+            categoryId: 'emotion',
+            isPremium: true,
+          ),
+          const SessionModel(
+            id: 'emotion_4',
+            title: 'Peur et courage',
+            description:
+                'Accueille ta peur et découvre le courage qui se cache derrière.',
+            durationMinutes: 9,
+            audioFile: 'Emotion/1-peur-et-courage.mp3',
+            categoryId: 'emotion',
+          ),
+          const SessionModel(
+            id: 'emotion_5',
+            title: 'L\'amour',
+            description:
+                'Cultive l\'amour inconditionnel envers toi-même et les autres.',
             durationMinutes: 12,
-            audioFile: 'amour/amour_open_heart.mp3',
-            categoryId: 'amour',
-            isPremium: true,
-          ),
-          const SessionModel(
-            id: 'amour_3',
-            title: 'Compassion',
-            description:
-                'Développe une compassion profonde envers toi-même et les autres.',
-            durationMinutes: 5,
-            audioFile: 'amour/amour_compassion.mp3',
-            categoryId: 'amour',
-          ),
-          const SessionModel(
-            id: 'amour_4',
-            title: 'Gratitude et amour',
-            description:
-                'Connecte la gratitude à l\'amour pour amplifier ta joie intérieure.',
-            durationMinutes: 8,
-            audioFile: 'amour/amour_gratitude.mp3',
-            categoryId: 'amour',
-            isPremium: true,
-          ),
-          const SessionModel(
-            id: 'amour_5',
-            title: 'Guérison du cœur',
-            description:
-                'Laisse partir les blessures passées et retrouve la paix intérieure.',
-            durationMinutes: 10,
-            audioFile: 'amour/amour_healing.mp3',
-            categoryId: 'amour',
-            isPremium: true,
-          ),
-        ],
-      ),
-      CategoryModel(
-        id: 'mindfulness',
-        name: 'Pleine conscience',
-        emoji: '🧘',
-        description:
-            'Reviens au moment présent. Observe sans juger, ressens sans résister.',
-        isPremium: true,
-        isNew: false,
-        sessions: [
-          const SessionModel(
-            id: 'mindfulness_1',
-            title: 'Scan des sensations',
-            description:
-                'Explore ton corps avec une attention bienveillante.',
-            durationMinutes: 10,
-            audioFile: 'mindfulness/mindfulness_scan.mp3',
-            categoryId: 'mindfulness',
-          ),
-          const SessionModel(
-            id: 'mindfulness_2',
-            title: 'Méditation du miroir',
-            description: 'Observe tes pensées sans jugement ni attachement.',
-            durationMinutes: 15,
-            audioFile: 'mindfulness/mindfulness_mirror.mp3',
-            categoryId: 'mindfulness',
-            isPremium: true,
-          ),
-          const SessionModel(
-            id: 'mindfulness_3',
-            title: 'Observation des pensées',
-            description:
-                'Deviens le témoin de ton flux mental sans t\'y perdre.',
-            durationMinutes: 7,
-            audioFile: 'mindfulness/mindfulness_thoughts.mp3',
-            categoryId: 'mindfulness',
-          ),
-          const SessionModel(
-            id: 'mindfulness_4',
-            title: 'Présence au corps',
-            description:
-                'Habite pleinement ton corps dans l\'instant présent.',
-            durationMinutes: 5,
-            audioFile: 'mindfulness/mindfulness_body.mp3',
-            categoryId: 'mindfulness',
-          ),
-          const SessionModel(
-            id: 'mindfulness_5',
-            title: 'Pleine conscience du son',
-            description:
-                'Utilise les sons environnants comme ancre de présence.',
-            durationMinutes: 8,
-            audioFile: 'mindfulness/mindfulness_sound.mp3',
-            categoryId: 'mindfulness',
+            audioFile: 'Emotion/4-apprendre-à-saimer.mp3',
+            categoryId: 'emotion',
             isPremium: true,
           ),
         ],

@@ -1,1 +1,1 @@
-const String revenueCatApiKey = 'appl_tQodjeAtfHBnYjPSgcQUGjiRAvi';
+const String revenueCatApiKey = 'appl_RARDSHYCseUedkVcEoDDIAzESR0';

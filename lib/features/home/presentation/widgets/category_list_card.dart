@@ -45,11 +45,38 @@ class CategoryListCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    category.name,
-                    style: AppTextStyles.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          category.name,
+                          style: AppTextStyles.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (category.isNew) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'New !',
+                            style: TextStyle(
+                              color: AppColors.background,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -62,38 +89,9 @@ class CategoryListCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: AppConstants.spacingSm),
-            Stack(
-              clipBehavior: Clip.none,
-              alignment: Alignment.centerRight,
-              children: [
-                Text(
-                  '${category.sessions.length} séances',
-                  style: AppTextStyles.badge,
-                ),
-                if (category.isNew)
-                  Positioned(
-                    bottom: 18,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Text(
-                        'New !',
-                        style: TextStyle(
-                          color: AppColors.background,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+            Text(
+              '${category.sessions.length} séances',
+              style: AppTextStyles.badge,
             ),
             const SizedBox(width: AppConstants.spacingXs),
             const Icon(

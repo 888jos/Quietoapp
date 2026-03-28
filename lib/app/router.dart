@@ -5,7 +5,7 @@ import '../core/services/storage_providers.dart';
 import '../core/theme/app_colors.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/onboarding_loading_page.dart';
-import '../features/onboarding/presentation/onboarding_preview_page.dart';
+import '../features/onboarding/presentation/onboarding_ready_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/explore/presentation/category_detail_page.dart';
 import '../features/explore/presentation/explore_page.dart';
@@ -20,7 +20,7 @@ abstract final class AppRoutes {
   static const splash = '/';
   static const onboarding = '/onboarding';
   static const onboardingLoading = '/onboarding-loading';
-  static const onboardingPreview = '/onboarding-preview';
+  static const onboardingReady = '/onboarding-ready';
   static const paywall = '/paywall';
   static const shell = '/shell';
   static const home = '/home';
@@ -57,10 +57,10 @@ final appRouter = GoRouter(
       builder: (context, state) => const OnboardingLoadingPage(),
     ),
 
-    // ── Onboarding preview ────────────────────────────
+    // ── Onboarding ready ──────────────────────────────
     GoRoute(
-      path: AppRoutes.onboardingPreview,
-      builder: (context, state) => const OnboardingPreviewPage(),
+      path: AppRoutes.onboardingReady,
+      builder: (context, state) => const OnboardingReadyPage(),
     ),
 
     // ── Paywall ───────────────────────────────────────

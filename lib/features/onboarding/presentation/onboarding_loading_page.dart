@@ -1,11 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/services/storage_providers.dart';
 
 // ── Données fixes des particules (calculées au design-time) ───────────────
 const List<_ParticleData> _kParticles = [
@@ -32,17 +30,36 @@ class _ParticleData {
   });
 }
 
+// ── Phrases progressives ──────────────────────────────────────────────────
+const List<_PhraseData> _kPhrases = [
+  _PhraseData(icon: '🌬️', label: 'Techniques de respiration efficaces', threshold: 0.00),
+  _PhraseData(icon: '🎵', label: 'Musiques et sons relaxants',            threshold: 0.20),
+  _PhraseData(icon: '💪', label: 'Sessions motivantes',                   threshold: 0.40),
+  _PhraseData(icon: '🌿', label: 'Sagesse et pleine conscience',          threshold: 0.60),
+  _PhraseData(icon: '✨', label: 'Ton programme personnalisé',            threshold: 0.80),
+];
+
+class _PhraseData {
+  final String icon;
+  final String label;
+  final double threshold; // seuil de progression (0.0–1.0) déclenchant le fade in
+  const _PhraseData({
+    required this.icon,
+    required this.label,
+    required this.threshold,
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
-class OnboardingLoadingPage extends ConsumerStatefulWidget {
+class OnboardingLoadingPage extends StatefulWidget {
   const OnboardingLoadingPage({super.key});
 
   @override
-  ConsumerState<OnboardingLoadingPage> createState() =>
-      _OnboardingLoadingPageState();
+  State<OnboardingLoadingPage> createState() => _OnboardingLoadingPageState();
 }
 
-class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
+class _OnboardingLoadingPageState extends State<OnboardingLoadingPage>
     with TickerProviderStateMixin {
   late final AnimationController _progressController;
   late final AnimationController _waveController;
@@ -54,7 +71,7 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
   void initState() {
     super.initState();
 
-    // ── Progression 0 → 100% en 3000ms ───────────────────────────
+    // ── Progression 0 → 100% en 5000ms ───────────────────────────
     _progressController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 5000),
@@ -66,8 +83,8 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
     _progressController.addStatusListener((status) {
       if (status == AnimationStatus.completed && !_navigated) {
         _navigated = true;
-        Future.delayed(const Duration(milliseconds: 400), () {
-          if (mounted) context.go(AppRoutes.onboardingPreview);
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) context.go(AppRoutes.onboardingReady);
         });
       }
     });
@@ -94,10 +111,15 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
     super.dispose();
   }
 
+  // Opacité d'une phrase : fade in sur 400ms dès que le seuil est atteint
+  double _phraseOpacity(int index) {
+    const fadeDuration = 0.08; // 400ms / 5000ms
+    final t = (_progressAnim.value - _kPhrases[index].threshold) / fadeDuration;
+    return t.clamp(0.0, 1.0);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final firstName = ref.watch(firstNameProvider);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -177,20 +199,41 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
 
                   const SizedBox(height: AppConstants.spacingXl),
 
-                  // Message personnalisé
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.spacingXl,
-                    ),
-                    child: Text(
-                      'Tes séances personnalisées arrivent'
-                      '${firstName.isEmpty ? '' : ' $firstName'}...',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w300,
-                        color: AppColors.textMuted,
-                      ),
-                      textAlign: TextAlign.center,
+                  // Phrases progressives (fade in une par une)
+                  AnimatedBuilder(
+                    animation: _progressAnim,
+                    builder: (context, _) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(_kPhrases.length, (i) {
+                        final phrase = _kPhrases[i];
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            bottom: i < _kPhrases.length - 1 ? 10.0 : 0.0,
+                          ),
+                          child: Opacity(
+                            opacity: _phraseOpacity(i),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  phrase.icon,
+                                  style: const TextStyle(fontSize: 15),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  phrase.label,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w300,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
                     ),
                   ),
                 ],

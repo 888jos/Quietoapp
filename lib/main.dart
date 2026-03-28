@@ -1,4 +1,5 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -18,7 +19,11 @@ void main() async {
 
   try {
     await Purchases.setLogLevel(LogLevel.debug);
-    await Purchases.configure(PurchasesConfiguration(revenueCatApiKey));
+    final config = PurchasesConfiguration(revenueCatApiKey);
+    if (kDebugMode) {
+      config.storeKitVersion = StoreKitVersion.storeKit2;
+    }
+    await Purchases.configure(config);
     debugPrint('[Main] RevenueCat configuré avec succès');
   } catch (e) {
     debugPrint('[Main] ERREUR configuration RevenueCat : $e');

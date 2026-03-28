@@ -52,11 +52,13 @@
 
 ## ADR-005 — RevenueCat pour les achats in-app
 
-**Décision** : `purchases_flutter ^7.0.0` (RevenueCat)
+**Décision** : `purchases_flutter ^9.14.0` (RevenueCat)
 
 **Pourquoi** : Abstraction cross-platform (iOS StoreKit + Android Billing) avec tableau de bord analytics. Évite la complexité de gérer les webhooks de validation de reçus manuellement.
 
-**Configuration nécessaire** : Remplacer les placeholders dans `AppConstants` par les vraies clés RevenueCat.
+**Configuration** : Clé API isolée dans `lib/core/config/revenue_cat_config.dart`. En mode debug, `StoreKitVersion.storeKit2` est forcé pour permettre les tests sur simulateur via le fichier `ios/Configuration.storekit`. En production, RevenueCat sélectionne automatiquement la version StoreKit optimale. Le flag `PURCHASES_HYBRID_COMMON_USE_SK1` a été retiré du Podfile pour ne plus bloquer SK2.
+
+**Tests simulateur** : `ios/Configuration.storekit` déclare deux abonnements (`quieto_premium_monthly` à 8.99€/mois, `quieto_premium_yearly` à 59.99€/an). Le scheme Xcode (`Runner.xcscheme`) est configuré pour charger ce fichier en Debug via `storeKitConfigurationFileReference`.
 
 ---
 

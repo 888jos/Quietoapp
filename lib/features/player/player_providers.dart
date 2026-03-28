@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
-import '../../core/services/storage_providers.dart';
 import '../home/home_providers.dart';
 import 'data/player_repository.dart';
 import 'data/audio_handler.dart';
@@ -23,17 +22,10 @@ final activeSessionIdProvider = StateProvider<String?>((ref) => null);
 final sessionCompletionTickProvider = StateProvider<int>((ref) => 0);
 
 // ── AudioHandler (singleton par durée de vie de l'app) ────────────
+// Doit être overridé dans main.dart via AudioService.init().
 
 final audioHandlerProvider = Provider<QuietoAudioHandler>((ref) {
-  final storage = ref.watch(storageServiceProvider);
-  final handler = QuietoAudioHandler(
-    storage: storage,
-    onCompleted: () {
-      ref.read(sessionCompletionTickProvider.notifier).state++;
-    },
-  );
-  ref.onDispose(() => handler.dispose());
-  return handler;
+  throw UnimplementedError('audioHandlerProvider must be overridden in ProviderScope');
 });
 
 // ── Session courante ──────────────────────────────────
@@ -180,6 +172,9 @@ final playerProvider = StateNotifierProvider
     throw StateError('Session $sessionId introuvable');
   }
   final handler = ref.watch(audioHandlerProvider);
+  handler.completionCallback = () {
+    ref.read(sessionCompletionTickProvider.notifier).state++;
+  };
   final notifier = PlayerNotifier(
     handler: handler,
     session: session,

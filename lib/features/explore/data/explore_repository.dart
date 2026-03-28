@@ -20,7 +20,7 @@ class ExploreRepository {
             description:
                 'Une introduction douce pour ceux qui n\'ont jamais médité.',
             durationMinutes: 5,
-            audioFile: 'decouverte/0-premiere-seance.mp3',
+            audioFile: 'decouverte/0-premiere-séance.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(

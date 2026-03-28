@@ -210,7 +210,7 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 
 **Pourquoi** : Maintenir un paywall Flutter custom (texte hardcodé, prix fixe, logique d'achat) impliquait de recompiler et republier l'app à chaque changement d'offre ou de prix. `PaywallView` charge la configuration depuis le dashboard RevenueCat en temps réel, permet les A/B tests natifs, et gère automatiquement les états de chargement, les erreurs et la restauration des achats.
 
-**Implémentation** : `PaywallPage` est un `ConsumerWidget` (zéro état local). Les trois callbacks (`onDismiss`, `onPurchaseCompleted`, `onRestoreCompleted`) redirigent tous vers `/home` via `context.go`. RevenueCat est initialisé dans `main()` avec `PurchasesConfiguration(revenueCatApiKey)` — la clé API est isolée dans `lib/core/config/revenue_cat_config.dart`.
+**Implémentation** : `PaywallPage` est un `ConsumerStatefulWidget`. Au `initState`, `Purchases.getOfferings()` est appelé pour charger l'Offering `default` avant d'afficher `PaywallView` — un `CircularProgressIndicator` est affiché pendant le chargement, un message d'erreur si l'Offering est absent. `PaywallView` est rendu dans un `Scaffold` avec `offering` passé explicitement. Les callbacks `onPurchaseCompleted` et `onRestoreCompleted` appellent `storageService.setIsPremium(true)` avant de rediriger vers `/home`. `onDismiss` ne se déclenche que sur action explicite de l'utilisateur. RevenueCat est initialisé dans `main()` via `AudioService.init()` avec `PurchasesConfiguration(revenueCatApiKey)` — la clé API est isolée dans `lib/core/config/revenue_cat_config.dart`.
 
 **Alternative rejetée** : Garder le paywall custom Flutter — prix hardcodé, pas de A/B test possible, obligation de release pour chaque changement d'offre.
 

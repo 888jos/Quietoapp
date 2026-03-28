@@ -18,7 +18,7 @@ final firstNameProvider = StateProvider<String>((ref) {
 ///
 /// DEV : mettre à true pour bypasser le paywall pendant le développement.
 /// PROD : remettre à false avant de releaser.
-const bool _devUnlockPremium = true;
+const bool _devUnlockPremium = false;
 
 final subscriptionProvider = Provider<bool>((ref) {
   if (_devUnlockPremium) return true;

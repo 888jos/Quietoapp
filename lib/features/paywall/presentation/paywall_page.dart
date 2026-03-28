@@ -29,10 +29,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     try {
       debugPrint('[Paywall] Chargement des offerings...');
       final offerings = await Purchases.getOfferings();
-      final current = offerings.current;
+      final current = offerings.getOffering('Abonnement') ?? offerings.current;
 
       if (current == null) {
-        debugPrint('[Paywall] Aucun offering courant trouvé.');
+        debugPrint('[Paywall] Aucun offering trouvé.');
         debugPrint('[Paywall] Offerings disponibles : ${offerings.all.keys.toList()}');
         setState(() {
           _error = 'Aucun abonnement disponible pour le moment.';

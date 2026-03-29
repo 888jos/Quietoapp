@@ -20,7 +20,7 @@ class ExploreRepository {
             description:
                 'Une introduction douce pour ceux qui n\'ont jamais médité.',
             durationMinutes: 5,
-            audioFile: 'decouverte/0-premiere-séance.mp3',
+            audioFile: 'decouverte/0-premiere-seance.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(
@@ -29,7 +29,7 @@ class ExploreRepository {
             description:
                 'Apprends à accueillir tes pensées sans t\'y attacher.',
             durationMinutes: 6,
-            audioFile: 'decouverte/1-deuxième-séance.mp3',
+            audioFile: 'decouverte/1-deuxieme-seance.mp3',
             categoryId: 'decouverte',
           ),
           const SessionModel(
@@ -38,7 +38,7 @@ class ExploreRepository {
             description:
                 'Entraîne-toi à revenir ici et maintenant, encore et encore.',
             durationMinutes: 8,
-            audioFile: 'decouverte/2-troisième-séance.mp3',
+            audioFile: 'decouverte/2-troisieme-seance.mp3',
             categoryId: 'decouverte',
           ),
         ],
@@ -77,7 +77,7 @@ class ExploreRepository {
             title: 'Débrancher quand tout crie',
             description: 'Une pause consciente loin des écrans et des titres.',
             durationMinutes: 5,
-            audioFile: 'actualite/2-débrancher-quand-tout-crie.mp3',
+            audioFile: 'actualite/2-debrancher-quand-tout-crie.mp3',
             categoryId: 'actualite',
           ),
           const SessionModel(
@@ -85,7 +85,7 @@ class ExploreRepository {
             title: 'Recul sur l\'actualité',
             description: 'Apprends à poser ton téléphone avec légèreté.',
             durationMinutes: 7,
-            audioFile: 'actualite/1-recul-sur-lactualité.mp3',
+            audioFile: 'actualite/1-recul-sur-lactualite.mp3',
             categoryId: 'actualite',
             isPremium: true,
           ),
@@ -152,7 +152,7 @@ class ExploreRepository {
             description:
                 'Dissolve les tensions mentales et retrouve un état de calme profond.',
             durationMinutes: 10,
-            audioFile: 'stress/4-le-voyageur-qui-sarrête.mp3',
+            audioFile: 'stress/4-le-voyageur-qui-sarrete.mp3',
             categoryId: 'stress',
             isPremium: true,
           ),
@@ -173,7 +173,7 @@ class ExploreRepository {
             description:
                 'Une méditation douce pour préparer ton endormissement.',
             durationMinutes: 10,
-            audioFile: 'sleep/3-détente-du-soir.mp3',
+            audioFile: 'sleep/3-detente-du-soir.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
@@ -191,7 +191,7 @@ class ExploreRepository {
             description:
                 'Un rituel de 7 minutes pour signaler à ton corps qu\'il est temps de dormir.',
             durationMinutes: 7,
-            audioFile: 'sleep/1-rituel-pré-sommeil.mp3',
+            audioFile: 'sleep/1-rituel-pre-sommeil.mp3',
             categoryId: 'sleep',
           ),
           const SessionModel(
@@ -209,7 +209,7 @@ class ExploreRepository {
             description:
                 'Laisse les pensées se dissoudre dans un silence bienveillant.',
             durationMinutes: 12,
-            audioFile: 'sleep/4-plongée-dans-le-silence.mp3',
+            audioFile: 'sleep/4-plongee-dans-le-silence.mp3',
             categoryId: 'sleep',
             isPremium: true,
           ),
@@ -230,7 +230,7 @@ class ExploreRepository {
             description:
                 'Synchronise ta respiration pour équilibrer le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'breathing/3-cohérence-cardiaque.mp3',
+            audioFile: 'breathing/3-coherence-cardiaque.mp3',
             categoryId: 'breathing',
           ),
           const SessionModel(
@@ -239,7 +239,7 @@ class ExploreRepository {
             description:
                 'Équilibre les deux hémisphères cérébraux par la respiration nasale alternée.',
             durationMinutes: 7,
-            audioFile: 'breathing/2-respiration-alternée.mp3',
+            audioFile: 'breathing/2-respiration-alternee.mp3',
             categoryId: 'breathing',
             isPremium: true,
           ),
@@ -288,7 +288,7 @@ class ExploreRepository {
             description:
                 'Reconnecte-toi à ta joie naturelle et à ta vitalité.',
             durationMinutes: 7,
-            audioFile: 'Emotion/3-joie-et-énergie.mp3',
+            audioFile: 'Emotion/3-joie-et-energie.mp3',
             categoryId: 'emotion',
             isPremium: true,
           ),
@@ -298,7 +298,7 @@ class ExploreRepository {
             description:
                 'Transforme doucement l\'anxiété en légèreté et sérénité.',
             durationMinutes: 10,
-            audioFile: 'Emotion/2-de-lanxiété-au-sourire.mp3',
+            audioFile: 'Emotion/2-de-lanxiete-au-sourire.mp3',
             categoryId: 'emotion',
             isPremium: true,
           ),
@@ -317,7 +317,7 @@ class ExploreRepository {
             description:
                 'Cultive l\'amour inconditionnel envers toi-même et les autres.',
             durationMinutes: 12,
-            audioFile: 'Emotion/4-apprendre-à-saimer.mp3',
+            audioFile: 'Emotion/4-apprendre-a-saimer.mp3',
             categoryId: 'emotion',
             isPremium: true,
           ),

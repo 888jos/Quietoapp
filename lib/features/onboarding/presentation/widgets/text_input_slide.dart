@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -8,6 +9,7 @@ class TextInputSlide extends StatefulWidget {
   final String hint;
   final String initialValue;
   final ValueChanged<String> onChanged;
+  final VoidCallback? onSubmitted;
 
   const TextInputSlide({
     super.key,
@@ -15,6 +17,7 @@ class TextInputSlide extends StatefulWidget {
     required this.hint,
     required this.onChanged,
     this.initialValue = '',
+    this.onSubmitted,
   });
 
   @override
@@ -23,16 +26,25 @@ class TextInputSlide extends StatefulWidget {
 
 class _TextInputSlideState extends State<TextInputSlide> {
   late final TextEditingController _controller;
+  final _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
+    // Attend la fin de la transition de page avant d'ouvrir le clavier
+    Future.delayed(
+      const Duration(milliseconds: AppConstants.animNormal + 50),
+      () {
+        if (mounted) _focusNode.requestFocus();
+      },
+    );
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -50,12 +62,17 @@ class _TextInputSlideState extends State<TextInputSlide> {
         const SizedBox(height: AppConstants.spacingXl),
         TextField(
           controller: _controller,
-          autofocus: true,
+          focusNode: _focusNode,
           textCapitalization: TextCapitalization.words,
           style: AppTextStyles.bodyLarge,
+          maxLength: 30,
+          inputFormatters: [
+            FilteringTextInputFormatter.deny(RegExp(r'^\s+')),
+          ],
           decoration: InputDecoration(
             hintText: widget.hint,
             hintStyle: AppTextStyles.bodyMedium,
+            counterText: '',
             filled: true,
             fillColor: AppColors.cardSurface,
             contentPadding: const EdgeInsets.symmetric(
@@ -74,7 +91,11 @@ class _TextInputSlideState extends State<TextInputSlide> {
                   const BorderSide(color: AppColors.accent, width: 1.5),
             ),
           ),
+          textInputAction: widget.onSubmitted != null
+              ? TextInputAction.done
+              : TextInputAction.none,
           onChanged: widget.onChanged,
+          onSubmitted: (_) => widget.onSubmitted?.call(),
         ),
       ],
     );

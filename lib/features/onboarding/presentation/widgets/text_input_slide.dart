@@ -10,6 +10,7 @@ class TextInputSlide extends StatefulWidget {
   final String initialValue;
   final ValueChanged<String> onChanged;
   final VoidCallback? onSubmitted;
+  final FocusNode? focusNode;
 
   const TextInputSlide({
     super.key,
@@ -18,6 +19,7 @@ class TextInputSlide extends StatefulWidget {
     required this.onChanged,
     this.initialValue = '',
     this.onSubmitted,
+    this.focusNode,
   });
 
   @override
@@ -26,25 +28,16 @@ class TextInputSlide extends StatefulWidget {
 
 class _TextInputSlideState extends State<TextInputSlide> {
   late final TextEditingController _controller;
-  final _focusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialValue);
-    // Attend la fin de la transition de page avant d'ouvrir le clavier
-    Future.delayed(
-      const Duration(milliseconds: AppConstants.animNormal + 50),
-      () {
-        if (mounted) _focusNode.requestFocus();
-      },
-    );
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
     super.dispose();
   }
 
@@ -62,7 +55,7 @@ class _TextInputSlideState extends State<TextInputSlide> {
         const SizedBox(height: AppConstants.spacingXl),
         TextField(
           controller: _controller,
-          focusNode: _focusNode,
+          focusNode: widget.focusNode,
           textCapitalization: TextCapitalization.words,
           style: AppTextStyles.bodyLarge,
           maxLength: 30,

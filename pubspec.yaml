@@ -53,6 +53,12 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/sessions/decouverte/
+    - assets/images/sessions/actualite/
+    - assets/images/sessions/stress/
+    - assets/images/sessions/sleep/
+    - assets/images/sessions/breathing/
+    - assets/images/sessions/emotion/
     - assets/audio/decouverte/
     - assets/audio/actualite/
     - assets/audio/stress/

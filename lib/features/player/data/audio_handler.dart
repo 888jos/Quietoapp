@@ -1,4 +1,5 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/models/session_model.dart';
@@ -56,7 +57,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     _player = newPlayer;
 
     // Set MediaItem for lock screen / notification
-    const artUri = 'asset:///assets/images/hf_20260314_214439_a9a1fd51-1280-41ae-bf86-7548b618d776.jpeg';
+    const artUri = 'asset:///assets/images/Logo%201.jpeg';
     mediaItem.add(MediaItem(
       id: session.id,
       title: session.title,
@@ -108,7 +109,9 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
       }
       await player.play();
       _broadcastState();
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Audio] play() failed: $e\n$st');
+    }
   }
 
   @override
@@ -116,7 +119,9 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       await _player?.pause();
       _broadcastState();
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Audio] pause() failed: $e\n$st');
+    }
   }
 
   @override
@@ -124,7 +129,9 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       await _player?.seek(position);
       _broadcastState();
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Audio] seek() failed: $e\n$st');
+    }
   }
 
   @override
@@ -133,7 +140,9 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
       await _player?.stop();
       _broadcastState();
       await super.stop();
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Audio] stop() failed: $e\n$st');
+    }
   }
 
   // ── Internal ──────────────────────────────────────
@@ -173,7 +182,9 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
       final progress = _storage.loadProgress();
       final updated = progress.markCompleted(session.id, session.durationMinutes);
       _storage.saveProgress(updated);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Audio] _onCompleted saveProgress failed: $e\n$st');
+    }
 
     // Notify external listeners (e.g. Riverpod tick provider) that a session completed
     completionCallback?.call();

@@ -22,6 +22,7 @@ class ExploreRepository {
             durationMinutes: 5,
             audioFile: 'decouverte/0-premiere-seance.mp3',
             categoryId: 'decouverte',
+            imageFile: 'sessions/decouverte/decouverte_1.png',
           ),
           const SessionModel(
             id: 'decouverte_2',
@@ -31,6 +32,7 @@ class ExploreRepository {
             durationMinutes: 6,
             audioFile: 'decouverte/1-deuxieme-seance.mp3',
             categoryId: 'decouverte',
+            imageFile: 'sessions/decouverte/decouverte_2.png',
           ),
           const SessionModel(
             id: 'decouverte_3',
@@ -40,6 +42,7 @@ class ExploreRepository {
             durationMinutes: 8,
             audioFile: 'decouverte/2-troisieme-seance.mp3',
             categoryId: 'decouverte',
+            imageFile: 'sessions/decouverte/decouverte_3.png',
           ),
         ],
       ),
@@ -61,6 +64,7 @@ class ExploreRepository {
             durationMinutes: 8,
             audioFile: 'actualite/4-quand-le-monde-brule.mp3',
             categoryId: 'actualite',
+            imageFile: 'sessions/actualite/actualite_1.png',
           ),
           const SessionModel(
             id: 'actualite_2',
@@ -71,6 +75,7 @@ class ExploreRepository {
             audioFile: 'actualite/3-la-guerre-en-bruit-de-fond.mp3',
             categoryId: 'actualite',
             isPremium: true,
+            imageFile: 'sessions/actualite/actualite_2.png',
           ),
           const SessionModel(
             id: 'actualite_3',
@@ -79,6 +84,7 @@ class ExploreRepository {
             durationMinutes: 5,
             audioFile: 'actualite/2-debrancher-quand-tout-crie.mp3',
             categoryId: 'actualite',
+            imageFile: 'sessions/actualite/actualite_3.png',
           ),
           const SessionModel(
             id: 'actualite_4',
@@ -88,6 +94,7 @@ class ExploreRepository {
             audioFile: 'actualite/1-recul-sur-lactualite.mp3',
             categoryId: 'actualite',
             isPremium: true,
+            imageFile: 'sessions/actualite/actualite_4.png',
           ),
           const SessionModel(
             id: 'actualite_5',
@@ -98,6 +105,7 @@ class ExploreRepository {
             audioFile: 'actualite/0-pause-info.mp3',
             categoryId: 'actualite',
             isPremium: true,
+            imageFile: 'sessions/actualite/actualite_5.png',
           ),
         ],
       ),
@@ -118,6 +126,7 @@ class ExploreRepository {
             durationMinutes: 5,
             audioFile: 'stress/0-quand-le-stress-prend-le-dessu.mp3',
             categoryId: 'stress',
+            imageFile: 'sessions/stress/stress_1.png',
           ),
           const SessionModel(
             id: 'stress_2',
@@ -127,6 +136,7 @@ class ExploreRepository {
             audioFile: 'stress/1-4-7-8.mp3',
             categoryId: 'stress',
             isPremium: true,
+            imageFile: 'sessions/stress/stress_2.png',
           ),
           const SessionModel(
             id: 'stress_3',
@@ -136,6 +146,7 @@ class ExploreRepository {
             durationMinutes: 8,
             audioFile: 'stress/2-relache.mp3',
             categoryId: 'stress',
+            imageFile: 'sessions/stress/stress_3.png',
           ),
           const SessionModel(
             id: 'stress_4',
@@ -145,6 +156,7 @@ class ExploreRepository {
             durationMinutes: 3,
             audioFile: 'stress/3-ancrage.mp3',
             categoryId: 'stress',
+            imageFile: 'sessions/stress/stress_4.png',
           ),
           const SessionModel(
             id: 'stress_5',
@@ -155,6 +167,7 @@ class ExploreRepository {
             audioFile: 'stress/4-le-voyageur-qui-sarrete.mp3',
             categoryId: 'stress',
             isPremium: true,
+            imageFile: 'sessions/stress/stress_5.png',
           ),
         ],
       ),
@@ -175,6 +188,7 @@ class ExploreRepository {
             durationMinutes: 10,
             audioFile: 'sleep/3-detente-du-soir.mp3',
             categoryId: 'sleep',
+            imageFile: 'sessions/sleep/sleep_1.png',
           ),
           const SessionModel(
             id: 'sleep_2',
@@ -184,6 +198,7 @@ class ExploreRepository {
             audioFile: 'sleep/2-visualisation-apaisante.mp3',
             categoryId: 'sleep',
             isPremium: true,
+            imageFile: 'sessions/sleep/sleep_2.png',
           ),
           const SessionModel(
             id: 'sleep_3',
@@ -193,6 +208,7 @@ class ExploreRepository {
             durationMinutes: 7,
             audioFile: 'sleep/1-rituel-pre-sommeil.mp3',
             categoryId: 'sleep',
+            imageFile: 'sessions/sleep/sleep_3.png',
           ),
           const SessionModel(
             id: 'sleep_4',
@@ -202,6 +218,7 @@ class ExploreRepository {
             durationMinutes: 5,
             audioFile: 'sleep/0-entre-deux-mondes.mp3',
             categoryId: 'sleep',
+            imageFile: 'sessions/sleep/sleep_4.png',
           ),
           const SessionModel(
             id: 'sleep_5',
@@ -212,6 +229,7 @@ class ExploreRepository {
             audioFile: 'sleep/4-plongee-dans-le-silence.mp3',
             categoryId: 'sleep',
             isPremium: true,
+            imageFile: 'sessions/sleep/sleep_5.png',
           ),
         ],
       ),
@@ -232,6 +250,7 @@ class ExploreRepository {
             durationMinutes: 5,
             audioFile: 'breathing/3-coherence-cardiaque.mp3',
             categoryId: 'breathing',
+            imageFile: 'sessions/breathing/breathing_1.png',
           ),
           const SessionModel(
             id: 'breathing_2',
@@ -242,6 +261,7 @@ class ExploreRepository {
             audioFile: 'breathing/2-respiration-alternee.mp3',
             categoryId: 'breathing',
             isPremium: true,
+            imageFile: 'sessions/breathing/breathing_2.png',
           ),
           const SessionModel(
             id: 'breathing_3',
@@ -251,6 +271,7 @@ class ExploreRepository {
             durationMinutes: 3,
             audioFile: 'breathing/1-souffle-apaisant.mp3',
             categoryId: 'breathing',
+            imageFile: 'sessions/breathing/breathing_3.png',
           ),
           const SessionModel(
             id: 'breathing_4',
@@ -261,6 +282,7 @@ class ExploreRepository {
             audioFile: 'breathing/0-expansion-thoracique.mp3',
             categoryId: 'breathing',
             isPremium: true,
+            imageFile: 'sessions/breathing/breathing_4.png',
           ),
         ],
       ),
@@ -281,6 +303,7 @@ class ExploreRepository {
             durationMinutes: 8,
             audioFile: 'Emotion/0-lamour.mp3',
             categoryId: 'emotion',
+            imageFile: 'sessions/emotion/emotion_1.png',
           ),
           const SessionModel(
             id: 'emotion_2',
@@ -291,6 +314,7 @@ class ExploreRepository {
             audioFile: 'Emotion/3-joie-et-energie.mp3',
             categoryId: 'emotion',
             isPremium: true,
+            imageFile: 'sessions/emotion/emotion_2.png',
           ),
           const SessionModel(
             id: 'emotion_3',
@@ -301,6 +325,7 @@ class ExploreRepository {
             audioFile: 'Emotion/2-de-lanxiete-au-sourire.mp3',
             categoryId: 'emotion',
             isPremium: true,
+            imageFile: 'sessions/emotion/emotion_3.png',
           ),
           const SessionModel(
             id: 'emotion_4',
@@ -310,6 +335,7 @@ class ExploreRepository {
             durationMinutes: 9,
             audioFile: 'Emotion/1-peur-et-courage.mp3',
             categoryId: 'emotion',
+            imageFile: 'sessions/emotion/emotion_4.png',
           ),
           const SessionModel(
             id: 'emotion_5',
@@ -320,6 +346,7 @@ class ExploreRepository {
             audioFile: 'Emotion/4-apprendre-a-saimer.mp3',
             categoryId: 'emotion',
             isPremium: true,
+            imageFile: 'sessions/emotion/emotion_5.png',
           ),
         ],
       ),

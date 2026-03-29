@@ -7,6 +7,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
+import '../../../core/ui/error_placeholder.dart';
 import '../player_providers.dart';
 
 class PlayerPage extends ConsumerWidget {
@@ -26,15 +27,26 @@ class PlayerPage extends ConsumerWidget {
 
     if (session == null) {
       return AppScaffold(
-        body: Center(
-          child: Text('Séance introuvable.',
-              style: AppTextStyles.bodyMedium),
+        body: ErrorPlaceholder(
+          message: 'Séance introuvable.',
+          onRetry: () => context.go(AppRoutes.home),
+          retryLabel: 'Retour à l\'accueil',
         ),
       );
     }
 
     final playerState = ref.watch(playerProvider(sessionId));
     final notifier = ref.read(playerProvider(sessionId).notifier);
+
+    if (playerState.status == PlayerStatus.error) {
+      return AppScaffold(
+        body: ErrorPlaceholder(
+          message: playerState.error ?? 'Impossible de charger la séance.',
+          onRetry: notifier.retry,
+          icon: Icons.headset_off,
+        ),
+      );
+    }
 
     return AppScaffold(
       body: SafeArea(
@@ -49,6 +61,7 @@ class PlayerPage extends ConsumerWidget {
                     onPressed: () => context.go(
                       AppRoutes.categoryPath(session.categoryId),
                     ),
+                    tooltip: 'Retour',
                     icon: const Icon(Iconsax.arrow_left_2,
                         color: AppColors.textPrimary),
                   ),
@@ -60,17 +73,19 @@ class PlayerPage extends ConsumerWidget {
               ),
               const Spacer(),
 
-              // Cover placeholder
-              Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  color: AppColors.accentDim,
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.radiusXl),
-                ),
-                child: const Icon(Iconsax.music,
-                    size: 80, color: AppColors.accent),
+              // Cover
+              ClipRRect(
+                borderRadius:
+                    BorderRadius.circular(AppConstants.radiusXl),
+                child: session.imageFile != null
+                    ? Image.asset(
+                        'assets/${session.imageFile}',
+                        width: 220,
+                        height: 220,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _CoverPlaceholder(),
+                      )
+                    : _CoverPlaceholder(),
               ),
 
               const SizedBox(height: AppConstants.spacingXl),
@@ -198,34 +213,37 @@ class _PlayerControls extends StatelessWidget {
         // -15s
         IconButton(
           onPressed: onBackward,
+          tooltip: 'Reculer de 15 secondes',
           icon: const Icon(Iconsax.backward_15_seconds,
               color: AppColors.textPrimary, size: 32),
         ),
         const SizedBox(width: AppConstants.spacingXl),
 
         // Play/Pause
-        GestureDetector(
-          onTap: isLoading ? null : onToggle,
-          child: Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: AppColors.accent,
-              shape: BoxShape.circle,
+        Semantics(
+          button: true,
+          label: isPlaying ? 'Mettre en pause' : 'Lancer la méditation',
+          child: GestureDetector(
+            onTap: isLoading ? null : onToggle,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: AppColors.accent,
+                shape: BoxShape.circle,
+              ),
+              child: isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(
+                          color: AppColors.background, strokeWidth: 2),
+                    )
+                  : Icon(
+                      isPlaying ? Iconsax.pause : Iconsax.play,
+                      color: AppColors.background,
+                      size: 32,
+                    ),
             ),
-            child: isLoading
-                ? const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(
-                        color: AppColors.background, strokeWidth: 2),
-                  )
-                : Icon(
-                    isPlaying
-                        ? Iconsax.pause
-                        : Iconsax.play,
-                    color: AppColors.background,
-                    size: 32,
-                  ),
           ),
         ),
         const SizedBox(width: AppConstants.spacingXl),
@@ -233,10 +251,23 @@ class _PlayerControls extends StatelessWidget {
         // +15s
         IconButton(
           onPressed: onForward,
+          tooltip: 'Avancer de 15 secondes',
           icon: const Icon(Iconsax.forward_15_seconds,
               color: AppColors.textPrimary, size: 32),
         ),
       ],
+    );
+  }
+}
+
+class _CoverPlaceholder extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 220,
+      height: 220,
+      color: AppColors.accentDim,
+      child: const Icon(Iconsax.music, size: 80, color: AppColors.accent),
     );
   }
 }

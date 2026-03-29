@@ -6,6 +6,7 @@ class SessionModel {
   final String audioFile;
   final String categoryId;
   final bool isPremium;
+  final String? imageFile;
 
   const SessionModel({
     required this.id,
@@ -15,6 +16,7 @@ class SessionModel {
     required this.audioFile,
     required this.categoryId,
     this.isPremium = false,
+    this.imageFile,
   });
 
   String get durationLabel {
@@ -32,6 +34,7 @@ class SessionModel {
     String? audioFile,
     String? categoryId,
     bool? isPremium,
+    String? imageFile,
   }) =>
       SessionModel(
         id: id ?? this.id,
@@ -41,6 +44,7 @@ class SessionModel {
         audioFile: audioFile ?? this.audioFile,
         categoryId: categoryId ?? this.categoryId,
         isPremium: isPremium ?? this.isPremium,
+        imageFile: imageFile ?? this.imageFile,
       );
 
   @override

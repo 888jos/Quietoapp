@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/models/session_model.dart';
@@ -56,15 +58,17 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     // Asset loaded — commit the player.
     _player = newPlayer;
 
-    // Set MediaItem for lock screen / notification
-    const artUri = 'asset:///assets/images/Logo%201.jpeg';
+    // Écrire le logo dans un fichier temporaire pour que iOS puisse le lire
+    final byteData = await rootBundle.load('assets/images/Logo 1.jpeg');
+    final tempFile = File('${Directory.systemTemp.path}/quieto_artwork.jpeg');
+    await tempFile.writeAsBytes(byteData.buffer.asUint8List());
     mediaItem.add(MediaItem(
       id: session.id,
       title: session.title,
       artist: AppConstants.appName,
       album: '',
       duration: newPlayer.duration ?? Duration(minutes: session.durationMinutes),
-      artUri: Uri.parse(artUri),
+      artUri: tempFile.uri,
     ));
 
     // Update MediaItem when actual duration is known
@@ -76,7 +80,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
           artist: AppConstants.appName,
           album: '',
           duration: dur,
-          artUri: Uri.parse(artUri),
+          artUri: tempFile.uri,
         ));
       }
     });

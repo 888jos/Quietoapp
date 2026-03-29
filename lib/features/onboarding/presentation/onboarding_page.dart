@@ -20,7 +20,6 @@ class OnboardingPage extends ConsumerStatefulWidget {
 }
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
-  final _controller = PageController();
   int _page = 0;
   bool _loading = false;
 
@@ -69,11 +68,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     if (_isLastSlide) {
       await _finish();
     } else {
-      await _controller.nextPage(
-        duration:
-            const Duration(milliseconds: AppConstants.animNormal),
-        curve: Curves.easeInOut,
-      );
+      setState(() => _page++);
     }
   }
 
@@ -96,8 +91,60 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
+  }
+
+  Widget _buildSlide(OnboardingState state, bool canProceed) {
+    switch (_page) {
+      case 0:
+        return const IntroSlide(
+          emoji: '🌿',
+          title: 'Bienvenue dans Quieto',
+          subtitle: 'Un espace calme pour méditer,\nrespirer et vous recentrer.',
+        );
+      case 1:
+        return const IntroSlide(
+          emoji: '🎧',
+          title: 'Des séances guidées',
+          subtitle: 'Des méditations en français\npour tous les niveaux.',
+        );
+      case 2:
+        return QuestionSlide(
+          question: 'Qu\'est-ce qui t\'empêche de te sentir bien en ce moment ?',
+          options: _q1Options,
+          selectedOption: state.answers['q1'],
+          onSelect: (v) => ref.read(onboardingProvider.notifier).setAnswer('q1', v),
+        );
+      case 3:
+        return QuestionSlide(
+          question: 'C\'est quelque chose que tu ressens... ?',
+          options: _q2Options,
+          selectedOption: state.answers['q2'],
+          onSelect: (v) => ref.read(onboardingProvider.notifier).setAnswer('q2', v),
+        );
+      case 4:
+        return QuestionSlide(
+          question: 'Qu\'est-ce que ça affecte le plus ?',
+          options: _q3Options,
+          selectedOption: state.answers['q3'],
+          onSelect: (v) => ref.read(onboardingProvider.notifier).setAnswer('q3', v),
+        );
+      case 5:
+        return QuestionSlide(
+          question: 'Tu aurais plutôt 5 minutes pour toi... ?',
+          options: _q4Options,
+          selectedOption: state.answers['q4'],
+          onSelect: (v) => ref.read(onboardingProvider.notifier).setAnswer('q4', v),
+        );
+      default:
+        return TextInputSlide(
+          question: "Comment tu t'appelles ?",
+          hint: 'Ton prénom',
+          initialValue: state.firstName,
+          onChanged: (v) => ref.read(onboardingProvider.notifier).setFirstName(v),
+          onSubmitted: canProceed ? _next : null,
+        );
+    }
   }
 
   @override
@@ -118,80 +165,28 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   current: _page, total: _totalSlides),
               const SizedBox(height: AppConstants.spacingMd),
               Expanded(
-                child: PageView(
-                  controller: _controller,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (i) => setState(() => _page = i),
-                  children: [
-                    // Slide 0 — Intro 1
-                    const IntroSlide(
-                      emoji: '🌿',
-                      title: 'Bienvenue dans Quieto',
-                      subtitle:
-                          'Un espace calme pour méditer,\nrespirer et vous recentrer.',
-                    ),
-
-                    // Slide 1 — Intro 2
-                    const IntroSlide(
-                      emoji: '🎧',
-                      title: 'Des séances guidées',
-                      subtitle:
-                          'Des méditations en français\npour tous les niveaux.',
-                    ),
-
-                    // Slide 2 — Q1
-                    QuestionSlide(
-                      question:
-                          'Qu\'est-ce qui t\'empêche de te sentir bien en ce moment ?',
-                      options: _q1Options,
-                      selectedOption: state.answers['q1'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q1', v),
-                    ),
-
-                    // Slide 3 — Q2
-                    QuestionSlide(
-                      question: 'C\'est quelque chose que tu ressens... ?',
-                      options: _q2Options,
-                      selectedOption: state.answers['q2'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q2', v),
-                    ),
-
-                    // Slide 4 — Q3
-                    QuestionSlide(
-                      question: 'Qu\'est-ce que ça affecte le plus ?',
-                      options: _q3Options,
-                      selectedOption: state.answers['q3'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q3', v),
-                    ),
-
-                    // Slide 5 — Q4
-                    QuestionSlide(
-                      question:
-                          'Tu aurais plutôt 5 minutes pour toi... ?',
-                      options: _q4Options,
-                      selectedOption: state.answers['q4'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q4', v),
-                    ),
-
-                    // Slide 6 — Prénom
-                    TextInputSlide(
-                      question: "Comment tu t'appelles ?",
-                      hint: 'Ton prénom',
-                      initialValue: state.firstName,
-                      onChanged: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setFirstName(v),
-                      onSubmitted: canProceed ? _next : null,
-                    ),
-                  ],
+                child: AnimatedSwitcher(
+                  duration: const Duration(
+                      milliseconds: AppConstants.animNormal),
+                  transitionBuilder: (child, animation) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.04),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOut,
+                        )),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: KeyedSubtree(
+                    key: ValueKey(_page),
+                    child: _buildSlide(state, canProceed),
+                  ),
                 ),
               ),
               const SizedBox(height: AppConstants.spacingMd),

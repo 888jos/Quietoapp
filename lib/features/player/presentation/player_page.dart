@@ -83,7 +83,7 @@ class PlayerPage extends ConsumerWidget {
                         width: 220,
                         height: 220,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, e) => _CoverPlaceholder(),
+                        errorBuilder: (context, e, stack) => _CoverPlaceholder(),
                       )
                     : _CoverPlaceholder(),
               ),

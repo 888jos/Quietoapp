@@ -27,31 +27,31 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   static const _totalSlides = 7;
 
   static const _q1Options = [
-    '😰 Un stress que je n\'arrive pas à lâcher',
-    '😔 Une tristesse ou un vide',
-    '😤 Des tensions avec les autres',
-    '😶 Un sentiment de flottement',
+    'Un stress que je n\'arrive pas à lâcher',
+    'Une tristesse ou un vide',
+    'Des tensions avec les autres',
+    'Un sentiment de flottement',
   ];
 
   static const _q2Options = [
-    '⚡ Depuis quelques heures',
-    '📅 Depuis quelques jours',
-    '🗓️ Depuis quelques semaines',
-    '🌫️ C\'est flou, ça dure depuis longtemps',
+    'Depuis quelques heures',
+    'Depuis quelques jours',
+    'Depuis quelques semaines',
+    'C\'est flou, ça dure depuis longtemps',
   ];
 
   static const _q3Options = [
-    '😴 Mon sommeil',
-    '🧠 Ma concentration',
-    '❤️ Mes relations',
-    '💪 Mon énergie au quotidien',
+    'Mon sommeil',
+    'Ma concentration',
+    'Mes relations',
+    'Mon énergie au quotidien',
   ];
 
   static const _q4Options = [
-    '🌅 Le matin, pour bien démarrer',
-    '☀️ Dans la journée, pour souffler',
-    '🌙 Le soir, pour décompresser',
-    '🎲 N\'importe quand, selon l\'humeur',
+    'Le matin, pour bien démarrer',
+    'Dans la journée, pour souffler',
+    'Le soir, pour décompresser',
+    'N\'importe quand, selon l\'humeur',
   ];
 
   bool get _isLastSlide => _page == _totalSlides - 1;

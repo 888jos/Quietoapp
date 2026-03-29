@@ -100,19 +100,19 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 
 ---
 
-## ADR-011 — Onboarding : flow en 6 étapes avec questions de personnalisation
+## ADR-011 — Onboarding : flow en 7 étapes avec questions émotionnelles
 
-**Décision** : L'onboarding comporte 6 slides gérées par un `PageController` dans `OnboardingPage` (ConsumerStatefulWidget).
+**Décision** : L'onboarding comporte 7 slides gérées par un `PageController` dans `OnboardingPage` (ConsumerStatefulWidget).
 - Slides 0-1 : intro animée avec `IntroSlide` (emoji + titre + sous-titre).
-- Slides 2-4 : 3 questions à choix unique (`QuestionSlide`) — objectif principal, moment préféré, état émotionnel.
-- Slide 5 : saisie du prénom (`TextInputSlide`).
+- Slides 2-5 : 4 questions émotionnelles à choix unique (`QuestionSlide`) — frein au bien-être, durée du ressenti, domaine affecté, moment préféré pour méditer.
+- Slide 6 : saisie du prénom (`TextInputSlide`).
 - Pas de bouton "Passer" — le flow est obligatoire.
 - "Commencer" sur la dernière slide → sauvegarde réponses + prénom + `setOnboardingDone()` + **`context.go('/paywall')`** (le paywall s'affiche immédiatement après l'onboarding).
 - `_SplashDecider` (router) est un `ConsumerStatefulWidget` qui lit `storageServiceProvider.isOnboardingDone` pour router vers `/onboarding` ou `/home` au démarrage.
 
-**État** : `OnboardingNotifier` (`StateNotifierProvider.autoDispose`) stocke `answers` (Map<String, String>) et `firstName`. Réponses persistées dans `SharedPreferences` via `StorageService.saveOnboardingAnswers` (clé `prefOnboardingAnswers`, JSON encodé).
+**État** : `OnboardingNotifier` (`StateNotifierProvider.autoDispose`) stocke `answers` (Map<String, String>, clés q1–q4) et `firstName`. Réponses persistées dans `SharedPreferences` via `StorageService.saveOnboardingAnswers` (clé `prefOnboardingAnswers`, JSON encodé).
 
-**Pourquoi** : Collecter le contexte utilisateur dès le départ pour personnaliser l'expérience future (objectif, timing, humeur, prénom). Zéro logique dans les widgets — tout passe par le notifier.
+**Pourquoi** : Les 4 questions émotionnelles (frein, durée, impact, moment) permettent de qualifier l'état psychologique de l'utilisateur avant d'arriver sur le paywall — augmente la pertinence perçue et la conversion. Questions recentrées sur l'émotion plutôt que sur les objectifs génériques (ADR-021).
 
 ---
 
@@ -215,6 +215,23 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 **Implémentation** : `PaywallPage` est un `ConsumerStatefulWidget`. Au `initState`, `Purchases.getOfferings()` est appelé pour charger l'Offering `default` avant d'afficher `PaywallView` — un `CircularProgressIndicator` est affiché pendant le chargement, un message d'erreur si l'Offering est absent. `PaywallView` est rendu dans un `Scaffold` avec `offering` passé explicitement. Les callbacks `onPurchaseCompleted` et `onRestoreCompleted` appellent `storageService.setIsPremium(true)` avant de rediriger vers `/home`. `onDismiss` ne se déclenche que sur action explicite de l'utilisateur. RevenueCat est initialisé dans `main()` via `AudioService.init()` avec `PurchasesConfiguration(revenueCatApiKey)` — la clé API est isolée dans `lib/core/config/revenue_cat_config.dart`.
 
 **Alternative rejetée** : Garder le paywall custom Flutter — prix hardcodé, pas de A/B test possible, obligation de release pour chaque changement d'offre.
+
+---
+
+## ADR-021 — Questions onboarding émotionnelles pour améliorer la conversion paywall
+
+**Décision** : Remplacement des 3 questions génériques (objectif, moment préféré, état) par 4 questions émotionnelles centrées sur le ressenti immédiat de l'utilisateur.
+
+| # | Question | But |
+|---|---|---|
+| Q1 | Qu'est-ce qui t'empêche de te sentir bien en ce moment ? | Identifier le frein principal |
+| Q2 | C'est quelque chose que tu ressens... ? | Qualifier la durée / ancrage du problème |
+| Q3 | Qu'est-ce que ça affecte le plus ? | Identifier le domaine de vie impacté |
+| Q4 | Tu aurais plutôt 5 minutes pour toi... ? | Trouver le bon moment pour proposer la méditation |
+
+**Pourquoi** : Les questions génériques (objectif, moment, humeur) ne créaient pas de lien émotionnel avec l'utilisateur avant le paywall. Les nouvelles questions miroir le ressenti immédiat, ce qui augmente la pertinence perçue de l'abonnement et la conversion. Pattern "qualify before convert" utilisé par Calm, Headspace et Noom.
+
+**Implémentation** : `_totalSlides` passe de 6 à 7. Clé q4 ajoutée dans `OnboardingState.answers`. `_isSlideProceedable` mis à jour pour bloquer sur q4 (page 5) avant la saisie du prénom (page 6).
 
 ---
 

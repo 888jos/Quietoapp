@@ -7,7 +7,7 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 ## Fonctionnalités MVP
 
 ### Onboarding
-- 6 slides : 2 introductions + 3 questions à choix unique (objectif, moment, état) + saisie du prénom
+- 7 slides : 2 introductions + 4 questions émotionnelles à choix unique + saisie du prénom
 - Pas de bouton "Passer" — l'utilisateur doit compléter tout le flow
 - "Commencer" sur la dernière slide → sauvegarde réponses + prénom + marque l'onboarding comme terminé → **Loading** → **Ready** → **Paywall** (puis Home)
 - Réponses persistées dans SharedPreferences (`prefOnboardingAnswers`)

@@ -24,27 +24,34 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   int _page = 0;
   bool _loading = false;
 
-  static const _totalSlides = 6;
+  static const _totalSlides = 7;
 
   static const _q1Options = [
-    'Réduire mon stress',
-    'Mieux dormir',
-    'Me recentrer',
-    'Développer la pleine conscience',
+    '😰 Un stress que je n\'arrive pas à lâcher',
+    '😔 Une tristesse ou un vide',
+    '😤 Des tensions avec les autres',
+    '😶 Un sentiment de flottement',
   ];
 
   static const _q2Options = [
-    'Le matin',
-    'Dans la journée',
-    'Le soir',
-    'Variable',
+    '⚡ Depuis quelques heures',
+    '📅 Depuis quelques jours',
+    '🗓️ Depuis quelques semaines',
+    '🌫️ C\'est flou, ça dure depuis longtemps',
   ];
 
   static const _q3Options = [
-    'Anxieux(se)',
-    'Fatigué(e)',
-    'Stressé(e)',
-    'Bien, mais curieux(se)',
+    '😴 Mon sommeil',
+    '🧠 Ma concentration',
+    '❤️ Mes relations',
+    '💪 Mon énergie au quotidien',
+  ];
+
+  static const _q4Options = [
+    '🌅 Le matin, pour bien démarrer',
+    '☀️ Dans la journée, pour souffler',
+    '🌙 Le soir, pour décompresser',
+    '🎲 N\'importe quand, selon l\'humeur',
   ];
 
   bool get _isLastSlide => _page == _totalSlides - 1;
@@ -53,7 +60,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     if (_page == 2) return state.answers.containsKey('q1');
     if (_page == 3) return state.answers.containsKey('q2');
     if (_page == 4) return state.answers.containsKey('q3');
-    if (_page == 5) return state.firstName.trim().isNotEmpty;
+    if (_page == 5) return state.answers.containsKey('q4');
+    if (_page == 6) return state.firstName.trim().isNotEmpty;
     return true;
   }
 
@@ -133,7 +141,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
                     // Slide 2 — Q1
                     QuestionSlide(
-                      question: 'Quel est ton objectif principal ?',
+                      question:
+                          'Qu\'est-ce qui t\'empêche de te sentir bien en ce moment ?',
                       options: _q1Options,
                       selectedOption: state.answers['q1'],
                       onSelect: (v) => ref
@@ -143,7 +152,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
                     // Slide 3 — Q2
                     QuestionSlide(
-                      question: 'Quand préfères-tu méditer ?',
+                      question: 'C\'est quelque chose que tu ressens... ?',
                       options: _q2Options,
                       selectedOption: state.answers['q2'],
                       onSelect: (v) => ref
@@ -153,7 +162,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
                     // Slide 4 — Q3
                     QuestionSlide(
-                      question: 'Comment te sens-tu en ce moment ?',
+                      question: 'Qu\'est-ce que ça affecte le plus ?',
                       options: _q3Options,
                       selectedOption: state.answers['q3'],
                       onSelect: (v) => ref
@@ -161,7 +170,18 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           .setAnswer('q3', v),
                     ),
 
-                    // Slide 5 — Prénom
+                    // Slide 5 — Q4
+                    QuestionSlide(
+                      question:
+                          'Tu aurais plutôt 5 minutes pour toi... ?',
+                      options: _q4Options,
+                      selectedOption: state.answers['q4'],
+                      onSelect: (v) => ref
+                          .read(onboardingProvider.notifier)
+                          .setAnswer('q4', v),
+                    ),
+
+                    // Slide 6 — Prénom
                     TextInputSlide(
                       question: "Comment tu t'appelles ?",
                       hint: 'Ton prénom',
@@ -169,6 +189,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       onChanged: (v) => ref
                           .read(onboardingProvider.notifier)
                           .setFirstName(v),
+                      onSubmitted: canProceed ? _next : null,
                     ),
                   ],
                 ),

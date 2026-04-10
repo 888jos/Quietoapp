@@ -77,7 +77,7 @@ class _HomePageState extends ConsumerState<HomePage>
                       Row(
                         children: [
                           Image.asset(
-                            'assets/images/logo.png',
+                            'assets/images/Inside app.png',
                             height: 48,
                           ),
                           const SizedBox(width: AppConstants.spacingMd),
@@ -118,7 +118,7 @@ class _HomePageState extends ConsumerState<HomePage>
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
               AppConstants.spacingMd,
-              AppConstants.spacingLg,
+              AppConstants.spacingSm,
               AppConstants.spacingMd,
               0,
             ),

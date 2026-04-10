@@ -62,7 +62,7 @@ class CategoryListCard extends StatelessWidget {
                       if (category.isNew) ...[
                         const SizedBox(width: 8),
                         Transform.translate(
-                          offset: const Offset(45, -28),
+                          offset: const Offset(60, -28),
                           child: const NewBadge(),
                         ),
                       ],

@@ -63,7 +63,10 @@ class CategoryListCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Transform.translate(
                           offset: const Offset(70, -28),
-                          child: const NewBadge(),
+                          child: Transform.scale(
+                            scale: 1.5,
+                            child: const NewBadge(),
+                          ),
                         ),
                       ],
                     ],

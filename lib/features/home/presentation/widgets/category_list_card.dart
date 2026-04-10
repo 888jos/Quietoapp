@@ -3,6 +3,7 @@ import '../../../../core/config/app_constants.dart';
 import '../../../../core/models/category_model.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/ui/new_badge.dart';
 
 class CategoryListCard extends StatelessWidget {
   final CategoryModel category;
@@ -16,9 +17,12 @@ class CategoryListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
+    return Semantics(
+      button: true,
+      label: 'Catégorie ${category.name}, ${category.sessions.length} séances',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
           borderRadius: BorderRadius.circular(AppConstants.radiusMd),
@@ -57,23 +61,9 @@ class CategoryListCard extends StatelessWidget {
                       ),
                       if (category.isNew) ...[
                         const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'New !',
-                            style: TextStyle(
-                              color: AppColors.background,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        Transform.translate(
+                          offset: const Offset(0, -12),
+                          child: const NewBadge(),
                         ),
                       ],
                     ],
@@ -101,6 +91,7 @@ class CategoryListCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

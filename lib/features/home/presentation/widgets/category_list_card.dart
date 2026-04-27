@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/models/category_model.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -21,7 +22,10 @@ class CategoryListCard extends StatelessWidget {
       button: true,
       label: 'Catégorie ${category.name}, ${category.sessions.length} séances',
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
         child: Container(
         decoration: BoxDecoration(
           color: AppColors.cardSurface,

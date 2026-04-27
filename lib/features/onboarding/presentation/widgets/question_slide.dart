@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -32,7 +33,10 @@ class QuestionSlide extends StatelessWidget {
         ...options.map((option) {
           final selected = option == selectedOption;
           return GestureDetector(
-            onTap: () => onSelect(option),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onSelect(option);
+            },
             child: AnimatedContainer(
               duration:
                   const Duration(milliseconds: AppConstants.animFast),

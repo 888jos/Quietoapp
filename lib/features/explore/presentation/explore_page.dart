@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_card.dart';
 import '../../../core/ui/app_scaffold.dart';
+import '../../../core/ui/error_placeholder.dart';
 import '../explore_providers.dart';
 
 class ExplorePage extends ConsumerWidget {
@@ -38,26 +39,33 @@ class ExplorePage extends ConsumerWidget {
                 ),
               ),
             ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spacingMd),
-              sliver: SliverGrid.builder(
-                gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: AppConstants.spacingMd,
-                  mainAxisSpacing: AppConstants.spacingMd,
-                  childAspectRatio: 0.9,
+            if (categories.isEmpty)
+              const SliverFillRemaining(
+                child: ErrorPlaceholder(
+                  message: 'Aucun résultat pour cette recherche.',
                 ),
-                itemCount: categories.length,
-                itemBuilder: (context, i) => _CategoryGridCard(
-                  category: categories[i],
-                  onTap: () => context.push(
-                    ref.read(categoryRouteProvider(categories[i].id)),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacingMd),
+                sliver: SliverGrid.builder(
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: AppConstants.spacingMd,
+                    mainAxisSpacing: AppConstants.spacingMd,
+                    childAspectRatio: 0.9,
+                  ),
+                  itemCount: categories.length,
+                  itemBuilder: (context, i) => _CategoryGridCard(
+                    category: categories[i],
+                    onTap: () => context.push(
+                      ref.read(categoryRouteProvider(categories[i].id)),
+                    ),
                   ),
                 ),
               ),
-            ),
             const SliverPadding(
               padding: EdgeInsets.only(bottom: AppConstants.spacingXl),
             ),

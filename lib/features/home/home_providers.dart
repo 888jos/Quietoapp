@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/category_model.dart';
-import '../../core/models/session_model.dart';
 import '../../core/services/storage_providers.dart';
 import '../explore/explore_providers.dart';
 import 'data/home_repository.dart';
@@ -18,10 +17,6 @@ final categoriesProvider = Provider<List<CategoryModel>>((ref) {
   final actualite = all.where((c) => c.id == 'actualite').toList();
   final rest = all.where((c) => c.id != 'actualite').toList();
   return [...actualite, ...rest];
-});
-
-final featuredSessionProvider = Provider<SessionModel>((ref) {
-  return ref.watch(homeRepositoryProvider).fetchFeaturedSession();
 });
 
 final userFirstNameProvider = Provider<String>((ref) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -212,7 +213,10 @@ class _PlayerControls extends StatelessWidget {
       children: [
         // -15s
         IconButton(
-          onPressed: onBackward,
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            onBackward();
+          },
           tooltip: 'Reculer de 15 secondes',
           icon: const Icon(Iconsax.backward_15_seconds,
               color: AppColors.textPrimary, size: 32),
@@ -224,7 +228,12 @@ class _PlayerControls extends StatelessWidget {
           button: true,
           label: isPlaying ? 'Mettre en pause' : 'Lancer la méditation',
           child: GestureDetector(
-            onTap: isLoading ? null : onToggle,
+            onTap: isLoading
+                ? null
+                : () {
+                    HapticFeedback.heavyImpact();
+                    onToggle();
+                  },
             child: Container(
               width: 72,
               height: 72,
@@ -250,7 +259,10 @@ class _PlayerControls extends StatelessWidget {
 
         // +15s
         IconButton(
-          onPressed: onForward,
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            onForward();
+          },
           tooltip: 'Avancer de 15 secondes',
           icon: const Icon(Iconsax.forward_15_seconds,
               color: AppColors.textPrimary, size: 32),

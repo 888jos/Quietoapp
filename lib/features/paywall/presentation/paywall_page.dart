@@ -6,6 +6,7 @@ import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
+import '../../../core/ui/error_placeholder.dart';
 
 class PaywallPage extends ConsumerStatefulWidget {
   const PaywallPage({super.key});
@@ -78,14 +79,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
             onPressed: () => context.go(AppRoutes.home),
           ),
         ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              _error ?? 'Aucun abonnement disponible.',
-              textAlign: TextAlign.center,
-            ),
-          ),
+        body: ErrorPlaceholder(
+          message: _error ?? 'Aucun abonnement disponible.',
+          onRetry: _loadOffering,
         ),
       );
     }

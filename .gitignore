@@ -1,3 +1,6 @@
+# Secrets (never commit)
+.env.json
+
 # Miscellaneous
 *.class
 *.log

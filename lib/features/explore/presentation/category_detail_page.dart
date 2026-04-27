@@ -48,14 +48,18 @@ class CategoryDetailPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Back button
-                    GestureDetector(
-                      onTap: () => context.canPop()
-                          ? context.pop()
-                          : context.go(AppRoutes.home),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.textPrimary,
-                        size: 22,
+                    Semantics(
+                      button: true,
+                      label: 'Retour',
+                      child: GestureDetector(
+                        onTap: () => context.canPop()
+                            ? context.pop()
+                            : context.go(AppRoutes.home),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.textPrimary,
+                          size: 22,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingLg),

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_constants.dart';
 import '../models/user_progress_model.dart';
@@ -21,7 +22,9 @@ class StorageService {
     try {
       await _prefs.setString(
           AppConstants.prefOnboardingAnswers, jsonEncode(answers));
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Storage] saveOnboardingAnswers failed: $e\n$st');
+    }
   }
 
   Map<String, String> getOnboardingAnswers() {
@@ -29,7 +32,8 @@ class StorageService {
       final raw = _prefs.getString(AppConstants.prefOnboardingAnswers);
       if (raw == null) return {};
       return Map<String, String>.from(jsonDecode(raw) as Map);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[Storage] getOnboardingAnswers failed: $e\n$st');
       return {};
     }
   }
@@ -51,7 +55,9 @@ class StorageService {
   Future<void> setIsPremium(bool value) async {
     try {
       await _prefs.setBool(AppConstants.prefIsPremium, value);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Storage] setIsPremium failed: $e\n$st');
+    }
   }
 
   // ── Progress ─────────────────────────────────────────
@@ -62,7 +68,8 @@ class StorageService {
       if (raw == null) return const UserProgressModel();
       final json = jsonDecode(raw) as Map<String, dynamic>;
       return UserProgressModel.fromJson(json);
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[Storage] loadProgress failed: $e\n$st');
       return const UserProgressModel();
     }
   }
@@ -71,8 +78,8 @@ class StorageService {
     try {
       final raw = jsonEncode(progress.toJson());
       await _prefs.setString(AppConstants.prefSessionProgress, raw);
-    } catch (_) {
-      // Silently ignore write errors
+    } catch (e, st) {
+      debugPrint('[Storage] saveProgress failed: $e\n$st');
     }
   }
 
@@ -84,7 +91,9 @@ class StorageService {
   Future<void> setNotificationsEnabled(bool value) async {
     try {
       await _prefs.setBool(AppConstants.prefNotificationsEnabled, value);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Storage] setNotificationsEnabled failed: $e\n$st');
+    }
   }
 
   // ── Reset ─────────────────────────────────────────────
@@ -93,7 +102,9 @@ class StorageService {
     try {
       await _prefs.setBool(AppConstants.prefOnboardingDone, false);
       await _prefs.remove(AppConstants.prefOnboardingAnswers);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('[Storage] resetOnboarding failed: $e\n$st');
+    }
   }
 
   Future<void> clearAll() async {

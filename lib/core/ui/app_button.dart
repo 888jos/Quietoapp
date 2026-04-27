@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../config/app_constants.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -38,7 +39,12 @@ class AppButton extends StatelessWidget {
           borderRadius:
               BorderRadius.circular(AppConstants.radiusLg),
           child: InkWell(
-            onTap: isDisabled ? null : onTap,
+            onTap: isDisabled
+                ? null
+                : () {
+                    HapticFeedback.mediumImpact();
+                    onTap!();
+                  },
             borderRadius:
                 BorderRadius.circular(AppConstants.radiusLg),
             splashColor: AppColors.accentDim,

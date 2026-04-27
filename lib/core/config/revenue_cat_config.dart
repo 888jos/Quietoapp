@@ -1,1 +1,1 @@
-const String revenueCatApiKey = 'appl_RARDSHYCseUedkVcEoDDIAzESRO';
+const String revenueCatApiKey = String.fromEnvironment('REVENUE_CAT_KEY');

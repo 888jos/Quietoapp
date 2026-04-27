@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/ui/new_badge.dart';
 
 class FeaturedSessionCard extends StatelessWidget {
   final String emoji;
@@ -23,9 +25,15 @@ class FeaturedSessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
+    return Semantics(
+      button: true,
+      label: 'Priorité du moment : $categoryName, $subtitle',
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
@@ -57,29 +65,13 @@ class FeaturedSessionCard extends StatelessWidget {
             ),
           ),
           if (isNew)
-            Positioned(
+            const Positioned(
               top: -8,
               right: AppConstants.spacingSm,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spacingSm,
-                  vertical: 3,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Text(
-                  'New !',
-                  style: TextStyle(
-                    color: AppColors.background,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              child: NewBadge(),
             ),
         ],
+        ),
       ),
     );
   }

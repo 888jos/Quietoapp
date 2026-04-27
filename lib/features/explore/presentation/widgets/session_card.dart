@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/models/session_model.dart';
@@ -17,8 +18,14 @@ class SessionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    return Semantics(
+      button: true,
+      label: 'Lancer ${session.title}, ${session.durationLabel}',
+      child: GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        onTap();
+      },
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.cardSurface,
@@ -81,6 +88,7 @@ class SessionCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

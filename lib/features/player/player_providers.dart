@@ -154,6 +154,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     await seekTo(prev > Duration.zero ? prev : Duration.zero);
   }
 
+  Future<void> retry() async {
+    state = const PlayerState();
+    await _init();
+  }
+
   Future<void> stop() async {
     try {
       await _handler.stop();

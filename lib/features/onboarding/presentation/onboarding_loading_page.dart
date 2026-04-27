@@ -143,7 +143,7 @@ class _OnboardingLoadingPageState extends State<OnboardingLoadingPage>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Logo
-                  Image.asset('assets/images/logo.png', width: 80, height: 80),
+                  Image.asset('assets/images/Inside app.png', width: 80, height: 80),
                   const SizedBox(height: 48),
 
                   // Vagues + cercle de progression

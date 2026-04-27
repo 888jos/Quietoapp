@@ -53,7 +53,7 @@ class _OnboardingReadyPageState extends State<OnboardingReadyPage>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Image.asset(
-                          'assets/images/logo.png',
+                          'assets/images/Inside app.png',
                           width: 80,
                           height: 80,
                         ),

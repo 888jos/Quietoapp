@@ -4,10 +4,7 @@ abstract final class AppConstants {
   static const appVersion = '1.0.0';
 
   // ── RevenueCat ───────────────────────────────────────
-  static const revenueCatApiKeyIos = 'REVENUECAT_IOS_KEY_PLACEHOLDER';
-  static const revenueCatApiKeyAndroid = 'REVENUECAT_ANDROID_KEY_PLACEHOLDER';
   static const entitlementPremium = 'premium';
-  static const offeringDefault = 'default';
 
   // ── SharedPreferences keys ───────────────────────────
   static const prefOnboardingDone = 'onboarding_done';

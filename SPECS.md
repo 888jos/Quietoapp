@@ -36,11 +36,12 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Barre de progression seekable
 - Chaque séance repart toujours du début (pas de sauvegarde de position)
 - Marquage automatique "complété" en fin de séance
+- Image de couverture 220×220 par session (depuis `SessionModel.imageFile`, dans `assets/images/sessions/<categorie>/`) — fallback sur placeholder turquoise + note de musique si absente
 - Mini player persistant affiché au-dessus de la bottom nav pendant la lecture/pause
   - Tap → ouvre la page player complète (`context.push`)
   - Bouton play/pause inline
   - Bouton stop : arrête la lecture et masque le mini player
-- Métadonnées Now Playing (lock screen / notification) : titre, artist `Quieto`, durée réelle
+- Métadonnées Now Playing (lock screen / notification) : titre, artist `Quieto`, durée réelle, artwork = `Logo 1.jpeg` (chargé via `rootBundle` → fichier temp → `file://` URI)
 
 ### Profil ✅
 - Header : "👤 [prénom]" (fontSize 28, bold) + bouton "Modifier" pour éditer le prénom via bottom sheet
@@ -107,7 +108,34 @@ assets/audio/
 └── Emotion/
 ```
 
-Convention de nommage : `<dossier>/<index>-<slug>.mp3` (ex. `stress/0-quand-le-stress-prend-le-dessu.mp3`).
+Convention de nommage : `<dossier>/<index>-<slug>.mp3` en **ASCII pur** (pas d'accents, pas d'espaces) — ex. `stress/4-le-voyageur-qui-sarrete.mp3`. macOS stockerait les accents en NFD alors que Flutter charge en NFC, créant des fichiers introuvables au runtime (voir ADR-024).
+
+## Assets images de couverture
+
+Les images de couverture des séances sont dans `assets/images/sessions/` :
+
+```
+assets/images/sessions/
+├── decouverte/   (decouverte_1.png … decouverte_3.png)
+├── actualite/    (actualite_1.png … actualite_5.png)
+├── stress/       (stress_1.png … stress_5.png)
+├── sleep/        (sleep_1.png … sleep_5.png)
+├── breathing/    (breathing_1.png … breathing_4.png)
+└── emotion/      (emotion_1.png … emotion_5.png)
+```
+
+Convention : `sessions/<categorie>/<session_id>.png`. Le player affiche cette image dans le cover 220×220, avec fallback automatique sur le placeholder note de musique si l'image est absente ou corrompue.
+
+## UX haptic feedback
+
+Vibrations iOS subtiles via `HapticFeedback` natif (zéro dépendance) sur les actions clés :
+- **medium** : tous les `AppButton`, tap sur `SessionCard` (lance une lecture)
+- **light** : tap sur les cartes catégorie (`CategoryListCard`, `FeaturedSessionCard`), seek ±15s
+- **selection** : choix d'une option dans une question de l'onboarding
+- **heavy** : bouton play/pause central du player
+- **light × 5** : pendant la barre de chargement de l'onboarding (1 vibration par phrase, à 0% / 20% / 40% / 60% / 80%)
+
+Voir ADR-022 pour la stratégie complète. Test obligatoire sur iPhone physique (les haptics ne fonctionnent pas dans le simulateur).
 
 ## Roadmap post-MVP
 

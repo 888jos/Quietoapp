@@ -235,6 +235,59 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 
 ---
 
+## ADR-022 — Haptic feedback ciblé sur les actions clés
+
+**Décision** : Vibrations légères iOS via `HapticFeedback` (Flutter `flutter/services.dart`, sans dépendance externe) sur un ensemble ciblé d'interactions utilisateur, et non sur tous les `onTap`.
+
+**Mapping** :
+- `mediumImpact` — `AppButton` (centralisé, couvre paywall / onboarding / profile / form save)
+- `mediumImpact` — `SessionCard` (lance une lecture = validation)
+- `lightImpact` — `CategoryListCard`, `FeaturedSessionCard`, seek ±15s du player
+- `selectionClick` — sélection d'option dans `QuestionSlide` (onboarding)
+- `heavyImpact` — bouton play/pause central du player (action forte qui démarre/arrête la méditation)
+- `lightImpact` × 5 — `OnboardingLoadingPage`, à chaque apparition d'une nouvelle phrase pendant la barre de progression de 5s (synchronisé avec les seuils 0%, 20%, 40%, 60%, 80%)
+
+**Pourquoi** : L'haptic feedback signale au système nerveux qu'une action a été enregistrée — c'est ce qui distingue une UX premium d'une UX "ok". Mais des vibrations sur tous les taps deviennent agaçantes. Cibler les actions à valeur (validation, navigation principale, contrôles audio) plutôt que les retours arrières ou les éléments décoratifs.
+
+**Implémentation** : `import 'package:flutter/services.dart';` dans 6 fichiers. Le `HapticFeedback` est appelé synchronously avant la callback utilisateur — il ne bloque pas. Centralisation dans `AppButton` pour éviter la répétition. Pour la page de chargement, un `Set<int> _vibratedPhrases` garde l'idempotence (chaque seuil ne déclenche qu'une vibration unique).
+
+**Test** : Les haptics ne fonctionnent pas dans le simulateur iOS — tester uniquement sur device physique.
+
+---
+
+## ADR-023 — Images de couverture par session (assets/images/sessions/)
+
+**Décision** : Chaque `SessionModel` peut avoir un `imageFile` (String?) qui pointe vers une image de couverture dans `assets/images/sessions/<categorie>/<session_id>.png`. Le player affiche cette image (220×220, `ClipRRect` arrondi) à la place du placeholder turquoise + note de musique. Si le fichier est absent ou vide, `Image.asset` errorBuilder retombe sur `_CoverPlaceholder` (même visuel que l'ancien placeholder).
+
+**Structure** :
+```
+assets/images/sessions/
+├── decouverte/      (3 images : decouverte_1.png … decouverte_3.png)
+├── actualite/       (5 images)
+├── stress/          (5 images)
+├── sleep/           (5 images)
+├── breathing/       (4 images)
+└── emotion/         (5 images)
+```
+
+**Pourquoi** : Le placeholder unique pour toutes les séances rend l'app générique. Une image dédiée par session augmente la perception de qualité éditoriale et aide à différencier visuellement les méditations dans le player et potentiellement dans les listes. Le fallback automatique permet de déployer le code avant d'avoir toutes les images finales — chaque image peut être ajoutée incrémentalement.
+
+**Implémentation** : Champ `imageFile` optionnel ajouté à `SessionModel` (constructeur + `copyWith`, sans toucher à `==`/`hashCode`). Tous les chemins déclarés dans `ExploreRepository`. Dans `PlayerPage` : `session.imageFile != null ? Image.asset('assets/${session.imageFile}', errorBuilder: ...) : _CoverPlaceholder()`. Dossiers déclarés dans `pubspec.yaml > flutter > assets`.
+
+---
+
+## ADR-024 — Noms de fichiers audio en ASCII pur
+
+**Décision** : Tous les fichiers audio dans `assets/audio/` utilisent uniquement de l'ASCII (pas d'accents, ni d'espaces). Ex. `4-le-voyageur-qui-sarrete.mp3` au lieu de `4-le-voyageur-qui-sarrête.mp3`.
+
+**Pourquoi** : macOS stocke les noms de fichiers en **NFD** (forme décomposée Unicode : `é` = `e` + ` ́`), tandis que Flutter charge les assets en **NFC** (forme composée : `é` = un seul codepoint). Les fichiers avec accents étaient introuvables au runtime (`PlatformException` au `setAsset`) — c'est ce qui empêchait les leçons de Découverte de démarrer. Renommer en ASCII supprime la classe entière de bug.
+
+**Application au-delà de l'audio** : Même logique appliquée à l'artwork Now Playing (`Logo 1.jpeg` chargé via `rootBundle.load` puis écrit dans un fichier temp et passé en `file://` URI à `MPNowPlayingInfoCenter`, car `asset:///` avec espace n'est pas supporté nativement par iOS).
+
+**Implémentation** : 14 fichiers audio renommés via `mv`, chemins mis à jour dans `ExploreRepository`. `audio_handler.dart` `initSession` charge le logo en bytes et écrit dans `${Directory.systemTemp.path}/quieto_artwork.jpeg` à chaque session.
+
+---
+
 ## ADR-018 — Pages de transition onboarding : loading + preview avant le paywall
 
 **Décision** : Deux pages s'intercalent entre la dernière question de l'onboarding (saisie du prénom) et le paywall :

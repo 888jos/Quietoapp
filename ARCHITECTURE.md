@@ -87,6 +87,8 @@ UI (ConsumerWidget)
 3. **Navigation centralisée** — toutes les routes sont définies dans `app/router.dart`. On utilise `context.go()` / `context.push()` avec les constantes `AppRoutes`. Avant d'ajouter une route, choisir le bon type (`GoRoute`, `StatefulShellRoute`, `context.go` vs `context.push`) selon l'UX voulue — voir ADR-002 et ADR-012.
 4. **ConsumerWidget par défaut** — utiliser `ConsumerWidget` pour les widgets sans état local. Utiliser `ConsumerStatefulWidget` uniquement quand un `AnimationController`, un `Timer`, ou un cycle de vie (`initState`/`dispose`) est nécessaire.
 5. **Try-catch obligatoire** — toute opération async est enveloppée dans un try-catch.
+6. **Assets en ASCII pur** — les noms de fichiers dans `assets/audio/` et `assets/images/sessions/` ne contiennent ni accents ni espaces (problème NFD/NFC sur macOS, voir ADR-024).
+7. **Haptic ciblé** — les vibrations ne sont posées que sur les actions à valeur (validation, navigation principale, contrôles audio), pas sur les retours arrière ou éléments décoratifs (voir ADR-022).
 
 ## Modèles de données
 
@@ -94,7 +96,7 @@ UI (ConsumerWidget)
 Regroupe un ensemble de `SessionModel`. Champs clés : `isPremium` (bool — accès abonnement requis), `isNew` (bool — badge "New !"), `totalMinutes` (calculé).
 
 ### SessionModel
-Unité de contenu : une séance de méditation avec son fichier audio, sa durée, et son statut premium.
+Unité de contenu : une séance de méditation avec son fichier audio (`audioFile` — chemin ASCII relatif sous `assets/audio/`), son image de couverture optionnelle (`imageFile` — chemin sous `assets/images/sessions/<categorie>/`), sa durée, et son statut premium.
 
 ### UserProgressModel
 Suivi de la progression utilisateur : sessions complétées, positions sauvegardées, total de minutes. Sérialisé en JSON dans SharedPreferences.

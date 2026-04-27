@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -6,6 +8,7 @@ import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/error_placeholder.dart';
 
 class PaywallPage extends ConsumerStatefulWidget {
@@ -19,11 +22,28 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   Offering? _offering;
   bool _loading = true;
   String? _error;
+  bool _showCloseButton = false;
+  Timer? _closeTimer;
 
   @override
   void initState() {
     super.initState();
     _loadOffering();
+    // La croix de fermeture apparaît après 3 secondes (ADR-013)
+    _closeTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _showCloseButton = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _closeTimer?.cancel();
+    super.dispose();
+  }
+
+  void _dismiss() {
+    HapticFeedback.lightImpact();
+    context.go(AppRoutes.home);
   }
 
   Future<void> _loadOffering() async {
@@ -90,30 +110,59 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     }
 
     return Scaffold(
-      body: PaywallView(
-        offering: _offering,
-        onDismiss: () {
-          debugPrint('[Paywall] Fermeture manuelle par l\'utilisateur.');
-          context.go(AppRoutes.home);
-        },
-        onPurchaseCompleted: (customerInfo, transaction) async {
-          final router = GoRouter.of(context);
-          await _onPurchaseSuccess(customerInfo);
-          if (!mounted) return;
-          router.go(AppRoutes.paywallSuccess);
-        },
-        onRestoreCompleted: (customerInfo) async {
-          final router = GoRouter.of(context);
-          await _onPurchaseSuccess(customerInfo);
-          if (!mounted) return;
-          router.go(AppRoutes.paywallSuccess);
-        },
-        onPurchaseError: (error) {
-          debugPrint('[Paywall] Erreur d\'achat : $error');
-        },
-        onRestoreError: (error) {
-          debugPrint('[Paywall] Erreur de restauration : $error');
-        },
+      body: Stack(
+        children: [
+          PaywallView(
+            offering: _offering,
+            onDismiss: () {
+              debugPrint('[Paywall] Fermeture manuelle par l\'utilisateur.');
+              context.go(AppRoutes.home);
+            },
+            onPurchaseCompleted: (customerInfo, transaction) async {
+              final router = GoRouter.of(context);
+              await _onPurchaseSuccess(customerInfo);
+              if (!mounted) return;
+              router.go(AppRoutes.paywallSuccess);
+            },
+            onRestoreCompleted: (customerInfo) async {
+              final router = GoRouter.of(context);
+              await _onPurchaseSuccess(customerInfo);
+              if (!mounted) return;
+              router.go(AppRoutes.paywallSuccess);
+            },
+            onPurchaseError: (error) {
+              debugPrint('[Paywall] Erreur d\'achat : $error');
+            },
+            onRestoreError: (error) {
+              debugPrint('[Paywall] Erreur de restauration : $error');
+            },
+          ),
+          // Croix de fermeture (apparaît après 3s, ADR-013)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + AppConstants.spacingSm,
+            right: AppConstants.spacingSm,
+            child: AnimatedOpacity(
+              opacity: _showCloseButton ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 400),
+              child: IgnorePointer(
+                ignoring: !_showCloseButton,
+                child: Material(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  shape: const CircleBorder(),
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: AppColors.textPrimary,
+                      size: 20,
+                    ),
+                    tooltip: 'Fermer',
+                    onPressed: _dismiss,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

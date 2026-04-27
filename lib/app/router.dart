@@ -13,6 +13,7 @@ import '../features/player/presentation/player_page.dart';
 import '../features/player/presentation/preparation_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/paywall/presentation/paywall_page.dart';
+import '../features/paywall/presentation/paywall_success_page.dart';
 import 'home_shell.dart';
 
 // Noms de routes — toujours utiliser ces constantes pour naviguer
@@ -22,6 +23,7 @@ abstract final class AppRoutes {
   static const onboardingLoading = '/onboarding-loading';
   static const onboardingReady = '/onboarding-ready';
   static const paywall = '/paywall';
+  static const paywallSuccess = '/paywall-success';
   static const shell = '/shell';
   static const home = '/home';
   static const explore = '/explore';
@@ -67,6 +69,12 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.paywall,
       builder: (context, state) => const PaywallPage(),
+    ),
+
+    // ── Paywall success ───────────────────────────────
+    GoRoute(
+      path: AppRoutes.paywallSuccess,
+      builder: (context, state) => const PaywallSuccessPage(),
     ),
 
     // ── Category detail (hors shell) ─────────────────

@@ -100,13 +100,13 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           final router = GoRouter.of(context);
           await _onPurchaseSuccess(customerInfo);
           if (!mounted) return;
-          router.go(AppRoutes.home);
+          router.go(AppRoutes.paywallSuccess);
         },
         onRestoreCompleted: (customerInfo) async {
           final router = GoRouter.of(context);
           await _onPurchaseSuccess(customerInfo);
           if (!mounted) return;
-          router.go(AppRoutes.home);
+          router.go(AppRoutes.paywallSuccess);
         },
         onPurchaseError: (error) {
           debugPrint('[Paywall] Erreur d\'achat : $error');

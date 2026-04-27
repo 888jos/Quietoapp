@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
@@ -65,6 +66,7 @@ class _OnboardingLoadingPageState extends State<OnboardingLoadingPage>
   late final AnimationController _waveController;
   late final AnimationController _particleController;
   late final Animation<double> _progressAnim;
+  final Set<int> _vibratedPhrases = {};
   bool _navigated = false;
 
   @override
@@ -86,6 +88,16 @@ class _OnboardingLoadingPageState extends State<OnboardingLoadingPage>
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) context.go(AppRoutes.onboardingReady);
         });
+      }
+    });
+    // Vibration légère à chaque apparition d'une nouvelle phrase
+    _progressAnim.addListener(() {
+      for (var i = 0; i < _kPhrases.length; i++) {
+        if (_progressAnim.value >= _kPhrases[i].threshold &&
+            !_vibratedPhrases.contains(i)) {
+          _vibratedPhrases.add(i);
+          HapticFeedback.lightImpact();
+        }
       }
     });
     _progressController.forward();

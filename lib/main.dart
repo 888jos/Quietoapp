@@ -16,21 +16,29 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final storageService = StorageService(prefs);
 
-  try {
-    await Purchases.setLogLevel(LogLevel.debug);
-    await Purchases.configure(PurchasesConfiguration(revenueCatApiKey));
-    debugPrint('[Main] RevenueCat configuré avec succès');
-  } catch (e) {
-    debugPrint('[Main] ERREUR configuration RevenueCat : $e');
-  }
+  if (revenueCatApiKey.isEmpty) {
+    debugPrint(
+        '[Main] ⚠️ REVENUE_CAT_KEY est vide. Lance avec --dart-define-from-file=.env.json '
+        '(ou utilise les configs VS Code dans .vscode/launch.json). '
+        'Le paywall ne pourra pas se charger.');
+  } else {
+    try {
+      await Purchases.setLogLevel(LogLevel.debug);
+      await Purchases.configure(PurchasesConfiguration(revenueCatApiKey));
+      debugPrint('[Main] RevenueCat configuré avec succès');
+    } catch (e) {
+      debugPrint('[Main] ERREUR configuration RevenueCat : $e');
+    }
 
-  try {
-    final customerInfo = await Purchases.getCustomerInfo();
-    final isPremium = customerInfo.entitlements.active.containsKey('premium');
-    await storageService.setIsPremium(isPremium);
-    debugPrint('[Main] isPremium: $isPremium');
-  } catch (e) {
-    debugPrint('[Main] getCustomerInfo failed (non-bloquant) : $e');
+    try {
+      final customerInfo = await Purchases.getCustomerInfo();
+      final isPremium =
+          customerInfo.entitlements.active.containsKey('premium');
+      await storageService.setIsPremium(isPremium);
+      debugPrint('[Main] isPremium: $isPremium');
+    } catch (e) {
+      debugPrint('[Main] getCustomerInfo failed (non-bloquant) : $e');
+    }
   }
 
   final audioHandler = await AudioService.init(

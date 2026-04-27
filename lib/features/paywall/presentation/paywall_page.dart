@@ -30,7 +30,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     try {
       debugPrint('[Paywall] Chargement des offerings...');
       final offerings = await Purchases.getOfferings();
-      final current = offerings.getOffering('Abonnement') ?? offerings.current;
+      // Triple fallback : 'Abonnement' nommé → current → premier offering disponible
+      final current = offerings.getOffering('Abonnement') ??
+          offerings.current ??
+          (offerings.all.isNotEmpty ? offerings.all.values.first : null);
 
       if (current == null) {
         debugPrint('[Paywall] Aucun offering trouvé.');
@@ -107,6 +110,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
         },
         onPurchaseError: (error) {
           debugPrint('[Paywall] Erreur d\'achat : $error');
+        },
+        onRestoreError: (error) {
+          debugPrint('[Paywall] Erreur de restauration : $error');
         },
       ),
     );

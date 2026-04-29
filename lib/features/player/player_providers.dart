@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
@@ -75,6 +76,7 @@ class PlayerState {
 class PlayerNotifier extends StateNotifier<PlayerState> {
   final QuietoAudioHandler _handler;
   final SessionModel session;
+  final List<StreamSubscription<dynamic>> _subscriptions = [];
 
   PlayerNotifier({
     required QuietoAudioHandler handler,
@@ -84,21 +86,36 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     _init();
   }
 
+  Future<void> _cancelSubscriptions() async {
+    for (final sub in _subscriptions) {
+      await sub.cancel();
+    }
+    _subscriptions.clear();
+  }
+
   Future<void> _init() async {
+    // Annule les subscriptions précédentes (cas retry())
+    await _cancelSubscriptions();
+
     try {
+      if (!mounted) return;
       state = state.copyWith(status: PlayerStatus.loading);
 
       await _handler.initSession(session);
+      if (!mounted) return;
 
-      _handler.positionStream.listen((pos) {
+      _subscriptions.add(_handler.positionStream.listen((pos) {
+        if (!mounted) return;
         state = state.copyWith(position: pos);
-      });
+      }));
 
-      _handler.durationStream.listen((dur) {
+      _subscriptions.add(_handler.durationStream.listen((dur) {
+        if (!mounted) return;
         if (dur != null) state = state.copyWith(duration: dur);
-      });
+      }));
 
-      _handler.playerStateStream.listen((s) {
+      _subscriptions.add(_handler.playerStateStream.listen((s) {
+        if (!mounted) return;
         if (s.processingState == ProcessingState.completed) {
           state = state.copyWith(status: PlayerStatus.idle);
         } else if (s.playing) {
@@ -106,18 +123,25 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         } else if (s.processingState == ProcessingState.ready) {
           state = state.copyWith(status: PlayerStatus.paused);
         }
-      });
+      }));
 
       state = state.copyWith(
         status: PlayerStatus.paused,
         duration: _handler.currentDuration ?? Duration.zero,
       );
     } catch (e) {
+      if (!mounted) return;
       state = state.copyWith(
         status: PlayerStatus.error,
         error: 'Impossible de charger la séance.',
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _cancelSubscriptions();
+    super.dispose();
   }
 
   Future<void> togglePlayPause() async {

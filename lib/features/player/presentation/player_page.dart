@@ -75,14 +75,18 @@ class PlayerPage extends ConsumerWidget {
               const Spacer(),
 
               // Cover
-              ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(AppConstants.radiusXl),
+              Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  borderRadius:
+                      BorderRadius.circular(AppConstants.radiusXl),
+                  border: Border.all(color: AppColors.accent, width: 2),
+                ),
+                clipBehavior: Clip.antiAlias,
                 child: session.imageFile != null
                     ? Image.asset(
                         'assets/images/${session.imageFile}',
-                        width: 220,
-                        height: 220,
                         fit: BoxFit.cover,
                         errorBuilder: (context, e, stack) => _CoverPlaceholder(),
                       )

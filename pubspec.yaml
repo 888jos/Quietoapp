@@ -59,6 +59,8 @@ flutter:
     - assets/images/sessions/sleep/
     - assets/images/sessions/breathing/
     - assets/images/sessions/emotion/
+    - assets/images/sessions/express/
+    - assets/audio/express/
     - assets/audio/decouverte/
     - assets/audio/actualite/
     - assets/audio/stress/

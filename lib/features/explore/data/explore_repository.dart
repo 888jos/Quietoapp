@@ -4,6 +4,103 @@ import '../../../core/models/session_model.dart';
 class ExploreRepository {
   List<CategoryModel> fetchCategories() {
     return [
+      // ── Express (différenciation Quieto vs Petit BamBou) ──
+      CategoryModel(
+        id: 'express',
+        name: 'Une minute pour toi',
+        emoji: '⚡',
+        description:
+            'Des micro-méditations pour les vrais moments de ta journée.',
+        isPremium: false,
+        isNew: true,
+        sessions: [
+          const SessionModel(
+            id: 'express_1',
+            title: 'Avant un appel difficile',
+            description:
+                'Un ancrage rapide pour arriver centré et calme à ton prochain appel.',
+            durationMinutes: 1,
+            audioFile: 'express/1-avant-un-appel.mp3',
+            categoryId: 'express',
+            imageFile: 'sessions/express/express_1.png',
+          ),
+          const SessionModel(
+            id: 'express_2',
+            title: 'Transports bondés',
+            description:
+                'Trouve ton calme intérieur même au milieu de la foule.',
+            durationMinutes: 2,
+            audioFile: 'express/2-transports-bondes.mp3',
+            categoryId: 'express',
+            imageFile: 'sessions/express/express_2.png',
+          ),
+          const SessionModel(
+            id: 'express_3',
+            title: 'Pause-déjeuner solo',
+            description:
+                'Une minute de gratitude pour rendre ta pause vraiment ressourçante.',
+            durationMinutes: 2,
+            audioFile: 'express/3-pause-dejeuner.mp3',
+            categoryId: 'express',
+            imageFile: 'sessions/express/express_3.png',
+          ),
+          const SessionModel(
+            id: 'express_4',
+            title: 'Juste avant de dormir',
+            description:
+                'Relâche les tensions de la journée en 3 minutes pour mieux t\'endormir.',
+            durationMinutes: 3,
+            audioFile: 'express/4-juste-avant-de-dormir.mp3',
+            categoryId: 'express',
+            imageFile: 'sessions/express/express_4.png',
+          ),
+          const SessionModel(
+            id: 'express_5',
+            title: 'Coup de stress au boulot',
+            description:
+                'Quand la pression monte, reprends le contrôle en 90 secondes.',
+            durationMinutes: 2,
+            audioFile: 'express/5-coup-de-stress.mp3',
+            categoryId: 'express',
+            isPremium: true,
+            imageFile: 'sessions/express/express_5.png',
+          ),
+          const SessionModel(
+            id: 'express_6',
+            title: 'Après une dispute',
+            description:
+                'Reconnecte-toi à toi-même quand l\'émotion a pris le dessus.',
+            durationMinutes: 2,
+            audioFile: 'express/6-apres-une-dispute.mp3',
+            categoryId: 'express',
+            isPremium: true,
+            imageFile: 'sessions/express/express_6.png',
+          ),
+          const SessionModel(
+            id: 'express_7',
+            title: 'Réveil en panique',
+            description:
+                'Calme ton cœur quand tu te réveilles avec l\'angoisse au ventre.',
+            durationMinutes: 1,
+            audioFile: 'express/7-reveil-en-panique.mp3',
+            categoryId: 'express',
+            isPremium: true,
+            imageFile: 'sessions/express/express_7.png',
+          ),
+          const SessionModel(
+            id: 'express_8',
+            title: 'Accueillir une émotion',
+            description:
+                'Tenir une émotion forte sans la fuir, en 90 secondes.',
+            durationMinutes: 2,
+            audioFile: 'express/8-accueillir-emotion.mp3',
+            categoryId: 'express',
+            isPremium: true,
+            imageFile: 'sessions/express/express_8.png',
+          ),
+        ],
+      ),
+
       // ── Gratuit ───────────────────────────────────────
       CategoryModel(
         id: 'decouverte',

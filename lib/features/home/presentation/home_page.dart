@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../home_providers.dart';
 import '../../explore/explore_providers.dart';
 import 'widgets/category_list_card.dart';
+import 'widgets/express_card.dart';
 import 'widgets/featured_session_card.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -40,6 +43,8 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
+    final expressSessions = ref.watch(expressSessionsProvider);
+    final isPremium = ref.watch(subscriptionProvider);
     final firstName = ref.watch(userFirstNameProvider);
     final salut = firstName.isEmpty ? 'Salut,' : 'Salut $firstName,';
     final screenWidth = MediaQuery.of(context).size.width;
@@ -114,11 +119,66 @@ class _HomePageState extends ConsumerState<HomePage>
             ),
           ),
 
-          // ── Priorité du moment ────────────────────────────
+          // ── Une minute pour toi (Express) ─────────────────
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
               AppConstants.spacingMd,
               AppConstants.spacingSm,
+              0,
+              0,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                        right: AppConstants.spacingMd),
+                    child: Row(
+                      children: [
+                        Text('Une minute pour toi',
+                            style: AppTextStyles.titleLarge),
+                        const SizedBox(width: AppConstants.spacingXs),
+                        const Text('⚡', style: TextStyle(fontSize: 20)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  SizedBox(
+                    height: 200,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: expressSessions.length,
+                      padding: const EdgeInsets.only(
+                          right: AppConstants.spacingMd),
+                      separatorBuilder: (context, i) =>
+                          const SizedBox(width: AppConstants.spacingMd),
+                      itemBuilder: (context, i) {
+                        final session = expressSessions[i];
+                        return ExpressCard(
+                          session: session,
+                          onTap: () {
+                            if (session.isPremium && !isPremium) {
+                              context.push(AppRoutes.paywall);
+                            } else {
+                              context.push(
+                                  AppRoutes.preparationPath(session.id));
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Priorité du moment ────────────────────────────
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.spacingMd,
+              AppConstants.spacingLg,
               AppConstants.spacingMd,
               0,
             ),

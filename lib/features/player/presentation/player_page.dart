@@ -80,7 +80,7 @@ class PlayerPage extends ConsumerWidget {
                     BorderRadius.circular(AppConstants.radiusXl),
                 child: session.imageFile != null
                     ? Image.asset(
-                        'assets/${session.imageFile}',
+                        'assets/images/${session.imageFile}',
                         width: 220,
                         height: 220,
                         fit: BoxFit.cover,

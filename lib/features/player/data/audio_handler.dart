@@ -58,9 +58,21 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     // Asset loaded — commit the player.
     _player = newPlayer;
 
-    // Écrire le logo dans un fichier temporaire pour que iOS puisse le lire
-    final byteData = await rootBundle.load('assets/images/Logo 1.jpeg');
-    final tempFile = File('${Directory.systemTemp.path}/quieto_artwork.jpeg');
+    // Détermine l'artwork : image de la session si disponible, sinon logo
+    final imageFile = session.imageFile;
+    final artworkAssetPath = imageFile != null
+        ? 'assets/images/$imageFile'
+        : 'assets/images/Logo 1.jpeg';
+
+    ByteData byteData;
+    try {
+      byteData = await rootBundle.load(artworkAssetPath);
+    } catch (e) {
+      debugPrint(
+          '[Audio] Artwork load failed for $artworkAssetPath, fallback logo: $e');
+      byteData = await rootBundle.load('assets/images/Logo 1.jpeg');
+    }
+    final tempFile = File('${Directory.systemTemp.path}/quieto_artwork.png');
     await tempFile.writeAsBytes(byteData.buffer.asUint8List());
     mediaItem.add(MediaItem(
       id: session.id,

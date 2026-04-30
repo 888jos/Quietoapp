@@ -83,14 +83,18 @@ class PlayerPage extends ConsumerWidget {
                       BorderRadius.circular(AppConstants.radiusXl),
                   border: Border.all(color: AppColors.accent, width: 2),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: session.imageFile != null
-                    ? Image.asset(
-                        'assets/images/${session.imageFile}',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, e, stack) => _CoverPlaceholder(),
-                      )
-                    : _CoverPlaceholder(),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                      AppConstants.radiusXl - 2),
+                  child: session.imageFile != null
+                      ? Image.asset(
+                          'assets/images/${session.imageFile}',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, e, stack) =>
+                              _CoverPlaceholder(),
+                        )
+                      : _CoverPlaceholder(),
+                ),
               ),
 
               const SizedBox(height: AppConstants.spacingXl),

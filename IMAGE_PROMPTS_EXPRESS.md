@@ -70,11 +70,13 @@ A gently pulsing turquoise heart slowing down with smooth concentric waves emana
 
 ---
 
-### `express_8.png` — Accueillir une émotion
+### `express_8.png` — Avant une présentation
 
 ```
-A soft turquoise gateway or arch opening gently, with a small warm luminous glow flowing through it like a welcomed visitor, sense of acceptance and passage, threshold of welcome. Minimalist meditation illustration, serene atmosphere, deep midnight blue background (#0A1628), vibrant turquoise glow (#5CE0D8) as the focal accent, soft gradient transitions, flat design with subtle depth, smooth flowing shapes, dreamy and atmospheric, no text, no human figures, no faces, no harsh edges, centered composition, square 1:1 format, low-contrast peaceful mood, soft diffuse lighting, sense of stillness.
+A luminous turquoise threshold or doorway opening softly, with a warm glow on the other side suggesting visibility and presence, sense of stepping forward into the moment, courage at the edge. Minimalist meditation illustration, serene atmosphere, deep midnight blue background (#0A1628), vibrant turquoise glow (#5CE0D8) as the focal accent, soft gradient transitions, flat design with subtle depth, smooth flowing shapes, dreamy and atmospheric, no text, no human figures, no faces, no harsh edges, centered composition, square 1:1 format, low-contrast peaceful mood, soft diffuse lighting, sense of stillness.
 ```
+
+> Note : l'image actuelle (portail lumineux) est compatible avec ce thème — pas besoin de la régénérer sauf si tu veux quelque chose de plus spécifique.
 
 ---
 
@@ -89,4 +91,4 @@ A soft turquoise gateway or arch opening gently, with a small warm luminous glow
 | `express_5.png` | ⚡ Éclair se transformant en vagues |
 | `express_6.png` | 🤲 Mains tenant une sphère fragile |
 | `express_7.png` | 💓 Cœur pulsant qui ralentit |
-| `express_8.png` | 🚪 Portail s'ouvrant à une émotion |
+| `express_8.png` | 🚪 Portail / seuil avant la prise de parole |

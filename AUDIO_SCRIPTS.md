@@ -185,26 +185,26 @@
 
 ---
 
-## express_8 — Accueillir une émotion
+## express_8 — Avant une présentation
 
-**Fichier** : `assets/audio/express/8-accueillir-emotion.mp3`
-**Durée cible** : 90 secondes
+**Fichier** : `assets/audio/express/8-avant-presentation.mp3`
+**Durée cible** : ~90 secondes
 
-> Quelque chose monte en toi, là, maintenant. De la tristesse, de la colère, de la peur. Quelque chose.
+> Tu vas bientôt prendre la parole. Une présentation, un examen, un entretien. Et ton corps le sait : ton cœur s'accélère, tes mains sont peut-être moites, ton ventre se serre. C'est une réaction normale. Ton corps se prépare.
 >
-> Au lieu de la repousser, fais l'inverse. Dis-lui : OK, viens.
+> Pose tes pieds bien à plat. Sens-toi enraciné. Tu as le droit d'être là.
 >
-> Pose une main sur l'endroit du corps où tu la sens. Le ventre, la poitrine, la gorge.
+> Une grande inspiration par le nez. Et expire lentement par la bouche.
 >
-> Respire. Tu n'as rien à faire avec cette émotion. Juste la laisser être là.
+> Encore. Inspire profondément. Et lâche tes épaules en expirant.
 >
-> Elle ne va pas te détruire. Elle est juste un signal. Quelque chose en toi essaie de te parler.
+> Tu connais ton sujet. Tu as préparé. Maintenant, c'est juste un moment à traverser. Ce n'est pas une vie entière qui se joue. C'est quelques minutes.
 >
-> Inspire. Expire.
+> Si pendant que tu parles tu sens un blanc, tu sais quoi faire : tu respires. Une fois. Personne ne le verra. Et la suite reviendra.
 >
-> Une émotion qui est accueillie passe. Une émotion qui est repoussée s'installe.
+> Une dernière respiration. Inspire. Expire long.
 >
-> Reste avec elle encore un instant. Puis, doucement, tu peux reprendre ton fil. Mais elle, tu l'as honorée.
+> Tu n'as pas à être brillant. Tu as juste à être toi. Vas-y.
 
 ---
 
@@ -219,4 +219,4 @@
 | express_5 | `5-coup-de-stress.mp3` | 90s |
 | express_6 | `6-apres-une-dispute.mp3` | 90s |
 | express_7 | `7-reveil-en-panique.mp3` | 60s |
-| express_8 | `8-accueillir-emotion.mp3` | 90s |
+| express_8 | `8-avant-presentation.mp3` | 90s |

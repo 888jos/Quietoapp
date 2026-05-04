@@ -89,11 +89,11 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'express_8',
-            title: 'Accueillir une émotion',
+            title: 'Avant une présentation',
             description:
-                'Tenir une émotion forte sans la fuir, en 90 secondes.',
+                'Calme le trac avant de prendre la parole en public, en présentation ou en examen.',
             durationMinutes: 2,
-            audioFile: 'express/8-accueillir-emotion.mp3',
+            audioFile: 'express/8-avant-presentation.mp3',
             categoryId: 'express',
             isPremium: true,
             imageFile: 'sessions/express/express_8.png',

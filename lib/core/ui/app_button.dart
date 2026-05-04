@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../config/app_constants.dart';
@@ -42,8 +43,9 @@ class AppButton extends StatelessWidget {
             onTap: isDisabled
                 ? null
                 : () {
-                    HapticFeedback.mediumImpact();
                     onTap!();
+                    scheduleMicrotask(
+                        () => HapticFeedback.mediumImpact());
                   },
             borderRadius:
                 BorderRadius.circular(AppConstants.radiusLg),

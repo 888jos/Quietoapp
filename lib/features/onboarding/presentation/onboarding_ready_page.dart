@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_button.dart';
+import '../../paywall/paywall_providers.dart';
 
-class OnboardingReadyPage extends StatefulWidget {
+class OnboardingReadyPage extends ConsumerStatefulWidget {
   const OnboardingReadyPage({super.key});
 
   @override
-  State<OnboardingReadyPage> createState() => _OnboardingReadyPageState();
+  ConsumerState<OnboardingReadyPage> createState() =>
+      _OnboardingReadyPageState();
 }
 
-class _OnboardingReadyPageState extends State<OnboardingReadyPage>
+class _OnboardingReadyPageState extends ConsumerState<OnboardingReadyPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _fadeController;
   late final Animation<double> _fadeAnim;
@@ -26,6 +29,8 @@ class _OnboardingReadyPageState extends State<OnboardingReadyPage>
     );
     _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeIn);
     _fadeController.forward();
+    // Précharge l'Offering RevenueCat pour que le paywall s'ouvre instantanément
+    ref.read(offeringProvider.future);
   }
 
   @override

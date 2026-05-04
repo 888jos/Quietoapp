@@ -10,6 +10,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/error_placeholder.dart';
+import '../paywall_providers.dart';
 
 class PaywallPage extends ConsumerStatefulWidget {
   const PaywallPage({super.key});
@@ -19,16 +20,12 @@ class PaywallPage extends ConsumerStatefulWidget {
 }
 
 class _PaywallPageState extends ConsumerState<PaywallPage> {
-  Offering? _offering;
-  bool _loading = true;
-  String? _error;
   bool _showCloseButton = false;
   Timer? _closeTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadOffering();
     // La croix de fermeture apparaît après 3 secondes (ADR-013)
     _closeTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) setState(() => _showCloseButton = true);
@@ -46,39 +43,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     context.go(AppRoutes.home);
   }
 
-  Future<void> _loadOffering() async {
-    try {
-      debugPrint('[Paywall] Chargement des offerings...');
-      final offerings = await Purchases.getOfferings();
-      // Triple fallback : 'Abonnement' nommé → current → premier offering disponible
-      final current = offerings.getOffering('Abonnement') ??
-          offerings.current ??
-          (offerings.all.isNotEmpty ? offerings.all.values.first : null);
-
-      if (current == null) {
-        debugPrint('[Paywall] Aucun offering trouvé.');
-        debugPrint('[Paywall] Offerings disponibles : ${offerings.all.keys.toList()}');
-        setState(() {
-          _error = 'Aucun abonnement disponible pour le moment.';
-          _loading = false;
-        });
-      } else {
-        debugPrint('[Paywall] Offering trouvé : ${current.identifier}');
-        debugPrint('[Paywall] Packages : ${current.availablePackages.map((p) => p.identifier).toList()}');
-        setState(() {
-          _offering = current;
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('[Paywall] Erreur lors du chargement : $e');
-      setState(() {
-        _error = 'Erreur : $e';
-        _loading = false;
-      });
-    }
-  }
-
   Future<void> _onPurchaseSuccess(CustomerInfo customerInfo) async {
     final isPremium = customerInfo.entitlements.active
         .containsKey(AppConstants.entitlementPremium);
@@ -88,14 +52,13 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
+    final offeringAsync = ref.watch(offeringProvider);
 
-    if (_error != null || _offering == null) {
-      return Scaffold(
+    return offeringAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.close),
@@ -103,17 +66,36 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           ),
         ),
         body: ErrorPlaceholder(
-          message: _error ?? 'Aucun abonnement disponible.',
-          onRetry: _loadOffering,
+          message: 'Erreur : $e',
+          onRetry: () => ref.invalidate(offeringProvider),
         ),
-      );
-    }
+      ),
+      data: (offering) {
+        if (offering == null) {
+          return Scaffold(
+            appBar: AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => context.go(AppRoutes.home),
+              ),
+            ),
+            body: ErrorPlaceholder(
+              message: 'Aucun abonnement disponible pour le moment.',
+              onRetry: () => ref.invalidate(offeringProvider),
+            ),
+          );
+        }
+        return _buildPaywall(offering);
+      },
+    );
+  }
 
+  Widget _buildPaywall(Offering offering) {
     return Scaffold(
       body: Stack(
         children: [
           PaywallView(
-            offering: _offering,
+            offering: offering,
             onDismiss: () {
               debugPrint('[Paywall] Fermeture manuelle par l\'utilisateur.');
               context.go(AppRoutes.home);

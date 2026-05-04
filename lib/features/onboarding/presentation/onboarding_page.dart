@@ -21,6 +21,7 @@ class OnboardingPage extends ConsumerStatefulWidget {
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final _controller = PageController();
+  final _firstNameFocus = FocusNode();
   int _page = 0;
   bool _loading = false;
 
@@ -97,6 +98,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   @override
   void dispose() {
     _controller.dispose();
+    _firstNameFocus.dispose();
     super.dispose();
   }
 
@@ -121,7 +123,20 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 child: PageView(
                   controller: _controller,
                   physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (i) => setState(() => _page = i),
+                  onPageChanged: (i) {
+                    setState(() => _page = i);
+                    // Focus la slide prénom seulement après la fin de l'animation
+                    // (évite que le clavier monte pendant le slide)
+                    if (i == _totalSlides - 1) {
+                      Future.delayed(
+                        const Duration(
+                            milliseconds: AppConstants.animNormal + 50),
+                        () {
+                          if (mounted) _firstNameFocus.requestFocus();
+                        },
+                      );
+                    }
+                  },
                   children: [
                     // Slide 0 — Intro 1
                     const IntroSlide(
@@ -186,6 +201,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       question: "Comment tu t'appelles ?",
                       hint: 'Ton prénom',
                       initialValue: state.firstName,
+                      focusNode: _firstNameFocus,
                       onChanged: (v) => ref
                           .read(onboardingProvider.notifier)
                           .setFirstName(v),

@@ -10,6 +10,7 @@ class TextInputSlide extends StatefulWidget {
   final String initialValue;
   final ValueChanged<String> onChanged;
   final VoidCallback? onSubmitted;
+  final FocusNode? focusNode;
 
   const TextInputSlide({
     super.key,
@@ -18,6 +19,7 @@ class TextInputSlide extends StatefulWidget {
     required this.onChanged,
     this.initialValue = '',
     this.onSubmitted,
+    this.focusNode,
   });
 
   @override
@@ -53,7 +55,7 @@ class _TextInputSlideState extends State<TextInputSlide> {
         const SizedBox(height: AppConstants.spacingXl),
         TextField(
           controller: _controller,
-          autofocus: true,
+          focusNode: widget.focusNode,
           textCapitalization: TextCapitalization.words,
           style: AppTextStyles.bodyLarge,
           maxLength: 30,

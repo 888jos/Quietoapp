@@ -84,9 +84,7 @@ class _TextInputSlideState extends State<TextInputSlide> {
                   const BorderSide(color: AppColors.accent, width: 1.5),
             ),
           ),
-          textInputAction: widget.onSubmitted != null
-              ? TextInputAction.done
-              : TextInputAction.none,
+          textInputAction: TextInputAction.done,
           onChanged: widget.onChanged,
           onSubmitted: (_) => widget.onSubmitted?.call(),
         ),

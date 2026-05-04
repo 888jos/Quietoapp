@@ -27,13 +27,14 @@ class ExpressCard extends StatelessWidget {
           onTap();
         },
         child: SizedBox(
-          width: 140,
+          width: 110,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 140,
-                height: 140,
+                width: 110,
+                height: 110,
                 decoration: BoxDecoration(
                   borderRadius:
                       BorderRadius.circular(AppConstants.radiusMd),
@@ -53,12 +54,14 @@ class ExpressCard extends StatelessWidget {
                       : _placeholder(),
                 ),
               ),
-              const SizedBox(height: AppConstants.spacingSm),
+              const SizedBox(height: AppConstants.spacingXs),
               Text(
                 session.title,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
+                style: const TextStyle(
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                  height: 1.2,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -79,7 +82,7 @@ class ExpressCard extends StatelessWidget {
     return Container(
       color: AppColors.accentDim,
       child: const Icon(Icons.bolt_rounded,
-          size: 40, color: AppColors.accent),
+          size: 32, color: AppColors.accent),
     );
   }
 }

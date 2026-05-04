@@ -145,14 +145,14 @@ class _HomePageState extends ConsumerState<HomePage>
                   ),
                   const SizedBox(height: AppConstants.spacingMd),
                   SizedBox(
-                    height: 200,
+                    height: 170,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: expressSessions.length,
                       padding: const EdgeInsets.only(
                           right: AppConstants.spacingMd),
                       separatorBuilder: (context, i) =>
-                          const SizedBox(width: AppConstants.spacingMd),
+                          const SizedBox(width: AppConstants.spacingSm),
                       itemBuilder: (context, i) {
                         final session = expressSessions[i];
                         return ExpressCard(

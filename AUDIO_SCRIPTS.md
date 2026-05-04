@@ -54,9 +54,9 @@
 
 ---
 
-## express_3 — Pause-déjeuner solo
+## express_3 — Petit déjeuner
 
-**Fichier** : `assets/audio/express/3-pause-dejeuner.mp3`
+**Fichier** : `assets/audio/express/3-petit-dejeuner.mp3`
 **Durée cible** : 2 minutes
 
 > Tu es seul, et c'est OK. C'est même précieux.
@@ -214,7 +214,7 @@
 |---|---|---|
 | express_1 | `1-avant-un-appel.mp3` | 75s |
 | express_2 | `2-transports-bondes.mp3` | 2 min |
-| express_3 | `3-pause-dejeuner.mp3` | 2 min |
+| express_3 | `3-petit-dejeuner.mp3` | 2 min |
 | express_4 | `4-juste-avant-de-dormir.mp3` | 3 min |
 | express_5 | `5-coup-de-stress.mp3` | 90s |
 | express_6 | `6-apres-une-dispute.mp3` | 90s |

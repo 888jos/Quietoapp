@@ -36,11 +36,11 @@ class ExploreRepository {
           ),
           const SessionModel(
             id: 'express_3',
-            title: 'Pause-déjeuner solo',
+            title: 'Petit déjeuner',
             description:
-                'Une minute de gratitude pour rendre ta pause vraiment ressourçante.',
+                'Une minute de gratitude pour bien commencer ta journée.',
             durationMinutes: 2,
-            audioFile: 'express/3-pause-dejeuner.mp3',
+            audioFile: 'express/3-petit-dejeuner.mp3',
             categoryId: 'express',
             imageFile: 'sessions/express/express_3.png',
           ),

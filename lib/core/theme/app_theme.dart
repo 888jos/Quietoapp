@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'app_colors.dart';
 import 'app_text_styles.dart';
+import 'fade_page_transitions_builder.dart';
 
 abstract final class AppTheme {
   static ThemeData get dark => ThemeData(
@@ -49,6 +50,18 @@ abstract final class AppTheme {
         dividerTheme: const DividerThemeData(
           color: AppColors.accentDim,
           thickness: 1,
+        ),
+        // Transitions d'écran en fade-in/out doux sur toutes les plateformes,
+        // au lieu du slide horizontal iOS sec qui jurait avec l'ambiance calme.
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.iOS: FadePageTransitionsBuilder(),
+            TargetPlatform.android: FadePageTransitionsBuilder(),
+            TargetPlatform.macOS: FadePageTransitionsBuilder(),
+            TargetPlatform.windows: FadePageTransitionsBuilder(),
+            TargetPlatform.linux: FadePageTransitionsBuilder(),
+            TargetPlatform.fuchsia: FadePageTransitionsBuilder(),
+          },
         ),
         useMaterial3: true,
       );

@@ -62,6 +62,9 @@ class MiniPlayer extends ConsumerWidget {
             ),
             IconButton(
               onPressed: () async {
+                // stop() relâche le keepAlive : le notifier sera détruit par
+                // l'autoDispose une fois le mini player caché. Pas besoin
+                // d'invalider (ça recréait le provider et relançait l'audio).
                 await notifier.stop();
                 ref.read(activeSessionIdProvider.notifier).state = null;
               },

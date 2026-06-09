@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/models/user_progress_model.dart';
 import '../../core/services/storage_providers.dart';
 import '../../core/services/storage_service.dart';
+import '../player/player_providers.dart';
 
 // ── État ──────────────────────────────────────────────
 
@@ -66,4 +68,14 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 final profileProvider =
     StateNotifierProvider<ProfileNotifier, ProfileState>((ref) {
   return ProfileNotifier(ref.watch(storageServiceProvider), ref);
+});
+
+/// Progrès utilisateur (minutes méditées + séances complétées).
+/// Réactif : se rafraîchit automatiquement à chaque fois qu'une séance est
+/// marquée complétée par l'audio handler (via sessionCompletionTickProvider).
+/// Sans ça, les stats affichées sur la page Profil ne changeraient pas avant
+/// un redémarrage de l'app.
+final userProgressProvider = Provider<UserProgressModel>((ref) {
+  ref.watch(sessionCompletionTickProvider);
+  return ref.watch(storageServiceProvider).loadProgress();
 });

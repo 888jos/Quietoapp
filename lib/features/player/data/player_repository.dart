@@ -16,6 +16,4 @@ class PlayerRepository {
     return null;
   }
 
-  String audioPath(String audioFile) =>
-      'assets/audio/$audioFile';
 }

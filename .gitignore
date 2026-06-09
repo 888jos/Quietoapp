@@ -1,5 +1,9 @@
 # Secrets (never commit)
 .env.json
+# Google Cloud service account credentials (RevenueCat Android, etc.)
+*service-account*.json
+revenuecat-*.json
+quieto-google-*.json
 
 # Dossier de dépôt temporaire pour les images de session avant tri
 quieto-images-a-trier/

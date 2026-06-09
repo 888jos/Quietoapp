@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,7 +48,40 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     final isPremium = customerInfo.entitlements.active
         .containsKey(AppConstants.entitlementPremium);
     debugPrint('[Paywall] Achat réussi — isPremium: $isPremium');
-    await ref.read(storageServiceProvider).setIsPremium(isPremium);
+    try {
+      await ref.read(storageServiceProvider).setIsPremium(isPremium);
+    } catch (e) {
+      debugPrint('[Paywall] setIsPremium a échoué (non-bloquant) : $e');
+    }
+    // Pas besoin d'invalider subscriptionProvider : depuis sa conversion
+    // en StateNotifierProvider qui écoute Purchases.addCustomerInfoUpdateListener,
+    // le state est déjà mis à jour automatiquement par le listener RC quand
+    // l'achat se conclut.
+  }
+
+  /// Alerte native iOS de confirmation (façon Calm). S'affiche par-dessus le
+  /// paywall, non annulable au tap extérieur : l'utilisateur doit taper
+  /// « Parfait ».
+  Future<void> _showPremiumConfirmation() {
+    return showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => CupertinoAlertDialog(
+        title: const Text('Félicitations !'),
+        content: const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text(
+              'Vous bénéficiez désormais de ${AppConstants.appName} Premium'),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.of(dialogCtx).pop(),
+            child: const Text('Parfait'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -104,13 +138,17 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
               final router = GoRouter.of(context);
               await _onPurchaseSuccess(customerInfo);
               if (!mounted) return;
-              router.go(AppRoutes.paywallSuccess);
+              await _showPremiumConfirmation();
+              if (!mounted) return;
+              router.go(AppRoutes.home);
             },
             onRestoreCompleted: (customerInfo) async {
               final router = GoRouter.of(context);
               await _onPurchaseSuccess(customerInfo);
               if (!mounted) return;
-              router.go(AppRoutes.paywallSuccess);
+              await _showPremiumConfirmation();
+              if (!mounted) return;
+              router.go(AppRoutes.home);
             },
             onPurchaseError: (error) {
               debugPrint('[Paywall] Erreur d\'achat : $error');

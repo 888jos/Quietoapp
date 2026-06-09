@@ -5,6 +5,7 @@ import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/services/storage_providers.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../explore_providers.dart';
 import 'widgets/session_card.dart';
@@ -30,6 +31,7 @@ class CategoryDetailPage extends ConsumerWidget {
     final percent = progress.total == 0
         ? 0.0
         : progress.completed / progress.total;
+    final isSubscribed = ref.watch(subscriptionProvider);
 
     return AppScaffold(
       body: SafeArea(
@@ -120,9 +122,16 @@ class CategoryDetailPage extends ConsumerWidget {
                   final session = category.sessions[i];
                   return SessionCard(
                     session: session,
-                    onTap: () => context.push(
-                      AppRoutes.preparationPath(session.id),
-                    ),
+                    onTap: () {
+                      // Verrou par séance : une séance premium dans une
+                      // catégorie gratuite (ex. Express) renvoie au paywall
+                      // si l'utilisateur n'est pas abonné.
+                      if (session.isPremium && !isSubscribed) {
+                        context.push(AppRoutes.paywall);
+                      } else {
+                        context.push(AppRoutes.preparationPath(session.id));
+                      }
+                    },
                   );
                 },
               ),

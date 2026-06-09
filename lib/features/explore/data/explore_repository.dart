@@ -20,7 +20,7 @@ class ExploreRepository {
             description:
                 'Un ancrage rapide pour arriver centré et calme à ton prochain appel.',
             durationMinutes: 1,
-            audioFile: 'express/1-avant-un-appel.mp3',
+            audioFile: 'express-avant-un-appel-difficile.mp3',
             categoryId: 'express',
             imageFile: 'sessions/express/express_1.png',
           ),
@@ -30,7 +30,7 @@ class ExploreRepository {
             description:
                 'Trouve ton calme intérieur même au milieu de la foule.',
             durationMinutes: 2,
-            audioFile: 'express/2-transports-bondes.mp3',
+            audioFile: 'express-transports-bondes.mp3',
             categoryId: 'express',
             imageFile: 'sessions/express/express_2.png',
           ),
@@ -40,7 +40,7 @@ class ExploreRepository {
             description:
                 'Une minute de gratitude pour bien commencer ta journée.',
             durationMinutes: 2,
-            audioFile: 'express/3-petit-dejeuner.mp3',
+            audioFile: 'express-petit-dejeuner.mp3',
             categoryId: 'express',
             imageFile: 'sessions/express/express_3.png',
           ),
@@ -50,7 +50,7 @@ class ExploreRepository {
             description:
                 'Relâche les tensions de la journée en 3 minutes pour mieux t\'endormir.',
             durationMinutes: 3,
-            audioFile: 'express/4-juste-avant-de-dormir.mp3',
+            audioFile: 'express-juste-avant-de-dormir.mp3',
             categoryId: 'express',
             imageFile: 'sessions/express/express_4.png',
           ),
@@ -60,7 +60,7 @@ class ExploreRepository {
             description:
                 'Quand la pression monte, reprends le contrôle en 90 secondes.',
             durationMinutes: 2,
-            audioFile: 'express/5-coup-de-stress.mp3',
+            audioFile: 'express-coup-de-stress-au-boulot.mp3',
             categoryId: 'express',
             isPremium: true,
             imageFile: 'sessions/express/express_5.png',
@@ -71,7 +71,7 @@ class ExploreRepository {
             description:
                 'Reconnecte-toi à toi-même quand l\'émotion a pris le dessus.',
             durationMinutes: 2,
-            audioFile: 'express/6-apres-une-dispute.mp3',
+            audioFile: 'express-apres-une-dispute.mp3',
             categoryId: 'express',
             isPremium: true,
             imageFile: 'sessions/express/express_6.png',
@@ -82,7 +82,7 @@ class ExploreRepository {
             description:
                 'Calme ton cœur quand tu te réveilles avec l\'angoisse au ventre.',
             durationMinutes: 1,
-            audioFile: 'express/7-reveil-en-panique.mp3',
+            audioFile: 'express-reveil-en-panique.mp3',
             categoryId: 'express',
             isPremium: true,
             imageFile: 'sessions/express/express_7.png',
@@ -93,7 +93,7 @@ class ExploreRepository {
             description:
                 'Calme le trac avant de prendre la parole en public, en présentation ou en examen.',
             durationMinutes: 2,
-            audioFile: 'express/8-avant-presentation.mp3',
+            audioFile: 'express-avant-une-presentation.mp3',
             categoryId: 'express',
             isPremium: true,
             imageFile: 'sessions/express/express_8.png',
@@ -117,7 +117,7 @@ class ExploreRepository {
             description:
                 'Une introduction douce pour ceux qui n\'ont jamais médité.',
             durationMinutes: 5,
-            audioFile: 'decouverte/0-premiere-seance.mp3',
+            audioFile: '01-decouverte-premiere-meditation.mp3',
             categoryId: 'decouverte',
             imageFile: 'sessions/decouverte/decouverte_1.png',
           ),
@@ -127,7 +127,7 @@ class ExploreRepository {
             description:
                 'Apprends à accueillir tes pensées sans t\'y attacher.',
             durationMinutes: 6,
-            audioFile: 'decouverte/1-deuxieme-seance.mp3',
+            audioFile: '02-decouverte-observer-sans-juger.mp3',
             categoryId: 'decouverte',
             imageFile: 'sessions/decouverte/decouverte_2.png',
           ),
@@ -137,7 +137,7 @@ class ExploreRepository {
             description:
                 'Entraîne-toi à revenir ici et maintenant, encore et encore.',
             durationMinutes: 8,
-            audioFile: 'decouverte/2-troisieme-seance.mp3',
+            audioFile: '03-decouverte-moment-present.mp3',
             categoryId: 'decouverte',
             imageFile: 'sessions/decouverte/decouverte_3.png',
           ),
@@ -159,7 +159,7 @@ class ExploreRepository {
             title: 'Quand le monde brûle',
             description: 'Déconnecte ton esprit du bruit informationnel.',
             durationMinutes: 8,
-            audioFile: 'actualite/4-quand-le-monde-brule.mp3',
+            audioFile: '23-actualite-quand-le-monde-brule.mp3',
             categoryId: 'actualite',
             imageFile: 'sessions/actualite/actualite_1.png',
           ),
@@ -169,7 +169,7 @@ class ExploreRepository {
             description:
                 'Trouve la sérénité malgré un monde en constante évolution.',
             durationMinutes: 12,
-            audioFile: 'actualite/3-la-guerre-en-bruit-de-fond.mp3',
+            audioFile: '24-actualite-la-guerre-en-bruit-de-fond.mp3',
             categoryId: 'actualite',
             isPremium: true,
             imageFile: 'sessions/actualite/actualite_2.png',
@@ -179,7 +179,7 @@ class ExploreRepository {
             title: 'Débrancher quand tout crie',
             description: 'Une pause consciente loin des écrans et des titres.',
             durationMinutes: 5,
-            audioFile: 'actualite/2-debrancher-quand-tout-crie.mp3',
+            audioFile: '25-actualite-debrancher-quand-tout-crie.mp3',
             categoryId: 'actualite',
             imageFile: 'sessions/actualite/actualite_3.png',
           ),
@@ -188,7 +188,7 @@ class ExploreRepository {
             title: 'Recul sur l\'actualité',
             description: 'Apprends à poser ton téléphone avec légèreté.',
             durationMinutes: 7,
-            audioFile: 'actualite/1-recul-sur-lactualite.mp3',
+            audioFile: '26-actualite-recul-sur-lactualite.mp3',
             categoryId: 'actualite',
             isPremium: true,
             imageFile: 'sessions/actualite/actualite_4.png',
@@ -199,7 +199,7 @@ class ExploreRepository {
             description:
                 'Prends de la hauteur sur les événements du monde.',
             durationMinutes: 10,
-            audioFile: 'actualite/0-pause-info.mp3',
+            audioFile: '27-actualite-pause-info.mp3',
             categoryId: 'actualite',
             isPremium: true,
             imageFile: 'sessions/actualite/actualite_5.png',
@@ -221,7 +221,7 @@ class ExploreRepository {
             description:
                 'Une technique de respiration puissante pour calmer le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'stress/0-quand-le-stress-prend-le-dessu.mp3',
+            audioFile: '08-stress-quand-le-stress-prend-le-dessus.mp3',
             categoryId: 'stress',
             imageFile: 'sessions/stress/stress_1.png',
           ),
@@ -230,7 +230,7 @@ class ExploreRepository {
             title: 'Respiration 4-7-8',
             description: 'Parcours ton corps pour relâcher les tensions.',
             durationMinutes: 15,
-            audioFile: 'stress/1-4-7-8.mp3',
+            audioFile: '09-stress-respiration-4-7-8.mp3',
             categoryId: 'stress',
             isPremium: true,
             imageFile: 'sessions/stress/stress_2.png',
@@ -241,7 +241,7 @@ class ExploreRepository {
             description:
                 'Contracte et relâche chaque groupe musculaire pour libérer le stress physique.',
             durationMinutes: 8,
-            audioFile: 'stress/2-relache.mp3',
+            audioFile: '10-stress-relache.mp3',
             categoryId: 'stress',
             imageFile: 'sessions/stress/stress_3.png',
           ),
@@ -251,7 +251,7 @@ class ExploreRepository {
             description:
                 'Reviens à toi en 3 minutes grâce à une technique d\'ancrage simple.',
             durationMinutes: 3,
-            audioFile: 'stress/3-ancrage.mp3',
+            audioFile: '11-stress-ancrage.mp3',
             categoryId: 'stress',
             imageFile: 'sessions/stress/stress_4.png',
           ),
@@ -261,7 +261,7 @@ class ExploreRepository {
             description:
                 'Dissolve les tensions mentales et retrouve un état de calme profond.',
             durationMinutes: 10,
-            audioFile: 'stress/4-le-voyageur-qui-sarrete.mp3',
+            audioFile: '12-stress-le-voyageur-qui-sarrete.mp3',
             categoryId: 'stress',
             isPremium: true,
             imageFile: 'sessions/stress/stress_5.png',
@@ -283,7 +283,7 @@ class ExploreRepository {
             description:
                 'Une méditation douce pour préparer ton endormissement.',
             durationMinutes: 10,
-            audioFile: 'sleep/3-detente-du-soir.mp3',
+            audioFile: '13-sommeil-detente-du-soir.mp3',
             categoryId: 'sleep',
             imageFile: 'sessions/sleep/sleep_1.png',
           ),
@@ -292,7 +292,7 @@ class ExploreRepository {
             title: 'Visualisation apaisante',
             description: 'Voyage mental dans un lieu calme et sécurisant.',
             durationMinutes: 20,
-            audioFile: 'sleep/2-visualisation-apaisante.mp3',
+            audioFile: '14-sommeil-visualisation-apaisante.mp3',
             categoryId: 'sleep',
             isPremium: true,
             imageFile: 'sessions/sleep/sleep_2.png',
@@ -303,7 +303,7 @@ class ExploreRepository {
             description:
                 'Un rituel de 7 minutes pour signaler à ton corps qu\'il est temps de dormir.',
             durationMinutes: 7,
-            audioFile: 'sleep/1-rituel-pre-sommeil.mp3',
+            audioFile: '15-sommeil-rituel-pre-sommeil.mp3',
             categoryId: 'sleep',
             imageFile: 'sessions/sleep/sleep_3.png',
           ),
@@ -313,7 +313,7 @@ class ExploreRepository {
             description:
                 'Une respiration lente et profonde pour ralentir le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'sleep/0-entre-deux-mondes.mp3',
+            audioFile: '16-sommeil-entre-deux-mondes.mp3',
             categoryId: 'sleep',
             imageFile: 'sessions/sleep/sleep_4.png',
           ),
@@ -323,7 +323,7 @@ class ExploreRepository {
             description:
                 'Laisse les pensées se dissoudre dans un silence bienveillant.',
             durationMinutes: 12,
-            audioFile: 'sleep/4-plongee-dans-le-silence.mp3',
+            audioFile: '17-sommeil-plongee-dans-le-silence.mp3',
             categoryId: 'sleep',
             isPremium: true,
             imageFile: 'sessions/sleep/sleep_5.png',
@@ -345,7 +345,7 @@ class ExploreRepository {
             description:
                 'Synchronise ta respiration pour équilibrer le système nerveux.',
             durationMinutes: 5,
-            audioFile: 'breathing/3-coherence-cardiaque.mp3',
+            audioFile: '04-respiration-coherence-cardiaque.mp3',
             categoryId: 'breathing',
             imageFile: 'sessions/breathing/breathing_1.png',
           ),
@@ -355,7 +355,7 @@ class ExploreRepository {
             description:
                 'Équilibre les deux hémisphères cérébraux par la respiration nasale alternée.',
             durationMinutes: 7,
-            audioFile: 'breathing/2-respiration-alternee.mp3',
+            audioFile: '05-respiration-respiration-alternee.mp3',
             categoryId: 'breathing',
             isPremium: true,
             imageFile: 'sessions/breathing/breathing_2.png',
@@ -366,7 +366,7 @@ class ExploreRepository {
             description:
                 'Un rythme respiratoire lent pour calmer l\'agitation intérieure.',
             durationMinutes: 3,
-            audioFile: 'breathing/1-souffle-apaisant.mp3',
+            audioFile: '06-respiration-souffle-apaisant.mp3',
             categoryId: 'breathing',
             imageFile: 'sessions/breathing/breathing_3.png',
           ),
@@ -376,7 +376,7 @@ class ExploreRepository {
             description:
                 'Ouvre la cage thoracique et libère les tensions respiratoires.',
             durationMinutes: 8,
-            audioFile: 'breathing/0-expansion-thoracique.mp3',
+            audioFile: '07-respiration-expansion-thoracique.mp3',
             categoryId: 'breathing',
             isPremium: true,
             imageFile: 'sessions/breathing/breathing_4.png',
@@ -398,7 +398,7 @@ class ExploreRepository {
             description:
                 'Pose un regard doux et bienveillant sur toi-même.',
             durationMinutes: 8,
-            audioFile: 'Emotion/0-lamour.mp3',
+            audioFile: '18-emotion-apprendre-a-saimer.mp3',
             categoryId: 'emotion',
             imageFile: 'sessions/emotion/emotion_1.png',
           ),
@@ -408,7 +408,7 @@ class ExploreRepository {
             description:
                 'Reconnecte-toi à ta joie naturelle et à ta vitalité.',
             durationMinutes: 7,
-            audioFile: 'Emotion/3-joie-et-energie.mp3',
+            audioFile: '19-emotion-joie-et-energie.mp3',
             categoryId: 'emotion',
             isPremium: true,
             imageFile: 'sessions/emotion/emotion_2.png',
@@ -419,7 +419,7 @@ class ExploreRepository {
             description:
                 'Transforme doucement l\'anxiété en légèreté et sérénité.',
             durationMinutes: 10,
-            audioFile: 'Emotion/2-de-lanxiete-au-sourire.mp3',
+            audioFile: '20-emotion-de-lanxiete-au-sourire.mp3',
             categoryId: 'emotion',
             isPremium: true,
             imageFile: 'sessions/emotion/emotion_3.png',
@@ -430,7 +430,7 @@ class ExploreRepository {
             description:
                 'Accueille ta peur et découvre le courage qui se cache derrière.',
             durationMinutes: 9,
-            audioFile: 'Emotion/1-peur-et-courage.mp3',
+            audioFile: '21-emotion-peur-et-courage.mp3',
             categoryId: 'emotion',
             imageFile: 'sessions/emotion/emotion_4.png',
           ),
@@ -440,7 +440,7 @@ class ExploreRepository {
             description:
                 'Cultive l\'amour inconditionnel envers toi-même et les autres.',
             durationMinutes: 12,
-            audioFile: 'Emotion/4-apprendre-a-saimer.mp3',
+            audioFile: '22-emotion-lamour.mp3',
             categoryId: 'emotion',
             isPremium: true,
             imageFile: 'sessions/emotion/emotion_5.png',

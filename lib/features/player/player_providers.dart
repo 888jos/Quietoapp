@@ -78,6 +78,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   final SessionModel session;
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
+  /// Libère le `ref.keepAlive()` du provider pour que celui-ci puisse être
+  /// détruit par l'autoDispose (appelé sur stop). Défini par le provider.
+  void Function()? releaseKeepAlive;
+
   PlayerNotifier({
     required QuietoAudioHandler handler,
     required this.session,
@@ -129,6 +133,14 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         status: PlayerStatus.paused,
         duration: _handler.currentDuration ?? Duration.zero,
       );
+
+      // Auto-play : on lance la lecture dès que le chargement est terminé.
+      // L'utilisateur veut entendre la séance immédiatement après avoir
+      // tapé sur la carte, sans avoir à appuyer sur play.
+      if (mounted) {
+        state = state.copyWith(status: PlayerStatus.playing);
+        await _handler.play();
+      }
     } catch (e) {
       if (!mounted) return;
       state = state.copyWith(
@@ -188,14 +200,38 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       await _handler.stop();
       state = state.copyWith(status: PlayerStatus.idle);
     } catch (_) {}
+    // Libère le keepAlive : une fois que plus aucun widget ne lit le provider
+    // (le mini player se cache car status == idle), l'autoDispose détruit ce
+    // notifier. La prochaine ouverture de la même séance repart d'un état neuf
+    // à 0 — sans avoir à recréer le provider à la main (ce qui relançait
+    // l'audio par erreur via l'auto-play de _init).
+    releaseKeepAlive?.call();
   }
 
 }
 
 // ── Provider factory ──────────────────────────────────
+//
+// `.autoDispose` : quand plus aucun widget ne lit playerProvider(sessionId)
+// (par ex. après stop sur le mini player → mini player se cache), Riverpod
+// détruit le PlayerNotifier. La prochaine ouverture de la même séance crée
+// un PlayerNotifier neuf qui repart proprement de zéro (initSession → audio
+// rechargé position 0). Sans ça, l'ancien notifier était réutilisé avec son
+// état "idle" résiduel, ce qui faisait disparaître la mini-barre et empêchait
+// la séance de repartir du début.
 
 final playerProvider = StateNotifierProvider
+    .autoDispose
     .family<PlayerNotifier, PlayerState, String>((ref, sessionId) {
+  // `ref.keepAlive()` empêche l'autoDispose tant qu'on n'invalide pas
+  // explicitement le provider. Sans ça, naviguer du player vers une page
+  // hors HomeShell (ex. /category/X) détruisait le notifier, et le retour
+  // sur Home recréait un nouveau notifier qui réinitialisait l'audio à 0
+  // en pause. Avec keepAlive, le lecteur reste vivant pendant la navigation,
+  // et l'audio continue à jouer. Le notifier est explicitement détruit via
+  // `ref.invalidate(...)` quand l'utilisateur tape "stop" sur le mini player.
+  final keepAliveLink = ref.keepAlive();
+
   final session = ref.watch(currentSessionProvider(sessionId));
   if (session == null) {
     throw StateError('Session $sessionId introuvable');
@@ -204,10 +240,18 @@ final playerProvider = StateNotifierProvider
   handler.completionCallback = () {
     ref.read(sessionCompletionTickProvider.notifier).state++;
   };
+  // Rafraîchit les stats (minutes méditées) au fil de l'écoute, sans
+  // attendre la fin de la séance ni un redémarrage de l'app.
+  handler.progressCallback = () {
+    ref.read(sessionCompletionTickProvider.notifier).state++;
+  };
   final notifier = PlayerNotifier(
     handler: handler,
     session: session,
   );
+  // Permet à stop() de relâcher le keepAlive → le notifier sera détruit par
+  // l'autoDispose dès qu'il n'est plus écouté (mini player caché).
+  notifier.releaseKeepAlive = keepAliveLink.close;
   // Mark this session as the active one for the mini player
   Future.microtask(
     () => ref.read(activeSessionIdProvider.notifier).state = sessionId,

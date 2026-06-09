@@ -1,8 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../core/services/storage_providers.dart';
-import '../core/theme/app_colors.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/onboarding_loading_page.dart';
 import '../features/onboarding/presentation/onboarding_ready_page.dart';
@@ -13,8 +9,8 @@ import '../features/player/presentation/player_page.dart';
 import '../features/player/presentation/preparation_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/paywall/presentation/paywall_page.dart';
-import '../features/paywall/presentation/paywall_success_page.dart';
 import 'home_shell.dart';
+import 'splash_page.dart';
 
 // Noms de routes — toujours utiliser ces constantes pour naviguer
 abstract final class AppRoutes {
@@ -23,7 +19,6 @@ abstract final class AppRoutes {
   static const onboardingLoading = '/onboarding-loading';
   static const onboardingReady = '/onboarding-ready';
   static const paywall = '/paywall';
-  static const paywallSuccess = '/paywall-success';
   static const shell = '/shell';
   static const home = '/home';
   static const explore = '/explore';
@@ -44,7 +39,7 @@ final appRouter = GoRouter(
     // ── Splash ────────────────────────────────────────
     GoRoute(
       path: AppRoutes.splash,
-      builder: (context, state) => const _SplashDecider(),
+      builder: (context, state) => const SplashPage(),
     ),
 
     // ── Onboarding ────────────────────────────────────
@@ -69,12 +64,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.paywall,
       builder: (context, state) => const PaywallPage(),
-    ),
-
-    // ── Paywall success ───────────────────────────────
-    GoRoute(
-      path: AppRoutes.paywallSuccess,
-      builder: (context, state) => const PaywallSuccessPage(),
     ),
 
     // ── Category detail (hors shell) ─────────────────
@@ -130,39 +119,3 @@ final appRouter = GoRouter(
     ),
   ],
 );
-
-/// Redirige vers onboarding ou home selon l'état local
-class _SplashDecider extends ConsumerStatefulWidget {
-  const _SplashDecider();
-
-  @override
-  ConsumerState<_SplashDecider> createState() => _SplashDeciderState();
-}
-
-class _SplashDeciderState extends ConsumerState<_SplashDecider> {
-  @override
-  void initState() {
-    super.initState();
-    _redirect();
-  }
-
-  Future<void> _redirect() async {
-    // Petite pause pour le splash
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    final done = ref.read(storageServiceProvider).isOnboardingDone;
-    context.go(done ? AppRoutes.home : AppRoutes.onboarding);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: CircularProgressIndicator(
-          color: AppColors.accent,
-        ),
-      ),
-    );
-  }
-}

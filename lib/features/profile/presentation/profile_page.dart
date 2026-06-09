@@ -9,7 +9,6 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_card.dart';
 import '../../../core/ui/app_scaffold.dart';
-import '../../../core/services/storage_providers.dart';
 import '../profile_providers.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -19,7 +18,9 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
     final notifier = ref.read(profileProvider.notifier);
-    final progress = ref.watch(storageServiceProvider).loadProgress();
+    // userProgressProvider est réactif au sessionCompletionTickProvider :
+    // les stats se mettent à jour automatiquement à chaque séance complétée.
+    final progress = ref.watch(userProgressProvider);
 
     return AppScaffold(
       body: SafeArea(

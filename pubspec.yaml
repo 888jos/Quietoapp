@@ -2,7 +2,7 @@ name: quieto
 description: "Quieto — application de méditation en français"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.4+3
 
 environment:
   sdk: ^3.11.1
@@ -60,11 +60,6 @@ flutter:
     - assets/images/sessions/breathing/
     - assets/images/sessions/emotion/
     - assets/images/sessions/express/
-    - assets/audio/express/
-    - assets/audio/decouverte/
-    - assets/audio/actualite/
-    - assets/audio/stress/
-    - assets/audio/sleep/
-    - assets/audio/breathing/
-    - assets/audio/Emotion/
+    # Audios hébergés sur Firebase Storage (cf. AppConstants.audioBaseUrl)
+    # — plus embarqués dans le binaire pour réduire la taille de l'app.
 

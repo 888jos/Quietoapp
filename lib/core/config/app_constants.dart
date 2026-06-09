@@ -15,7 +15,10 @@ abstract final class AppConstants {
   static const prefNotificationsEnabled = 'notifications_enabled';
 
   // ── Audio ────────────────────────────────────────────
-  static const audioBasePath = 'assets/audio/';
+  // Les MP3 sont hébergés sur Firebase Storage (bucket quieto-06) à plat
+  // sans sous-dossiers, pour réduire la taille du binaire iOS.
+  static const audioBaseUrl =
+      'https://firebasestorage.googleapis.com/v0/b/quieto-06.firebasestorage.app/o/';
 
   // ── Spacing ──────────────────────────────────────────
   static const spacingXs = 4.0;

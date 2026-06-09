@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../onboarding_providers.dart';
@@ -32,6 +34,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     'Une tristesse ou un vide',
     'Des tensions avec les autres',
     'Un sentiment de flottement',
+    'Rien de tout ça, tout roule',
   ];
 
   static const _q2Options = [
@@ -39,6 +42,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     'Depuis quelques jours',
     'Depuis quelques semaines',
     'C\'est flou, ça dure depuis longtemps',
+    'Aucun souci, je viens juste essayer',
   ];
 
   static const _q3Options = [
@@ -46,6 +50,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     'Ma concentration',
     'Mes relations',
     'Mon énergie au quotidien',
+    'Tout va, je veux juste prendre soin de moi',
   ];
 
   static const _q4Options = [
@@ -115,7 +120,39 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               horizontal: AppConstants.spacingLg),
           child: Column(
             children: [
-              const SizedBox(height: AppConstants.spacingMd),
+              const SizedBox(height: AppConstants.spacingSm),
+              // Flèche retour discrète (cachée sur la première slide)
+              SizedBox(
+                height: 32,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: AnimatedOpacity(
+                    opacity: _page > 0 ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: IgnorePointer(
+                      ignoring: _page == 0,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: AppColors.textMuted,
+                          size: 18,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          _controller.previousPage(
+                            duration: const Duration(
+                                milliseconds: AppConstants.animNormal),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppConstants.spacingSm),
               OnboardingProgressBar(
                   current: _page, total: _totalSlides),
               const SizedBox(height: AppConstants.spacingMd),
@@ -157,7 +194,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     // Slide 2 — Q1
                     QuestionSlide(
                       question:
-                          'Qu\'est-ce qui t\'empêche de te sentir bien en ce moment ?',
+                          'Qu\'est-ce qui t\'amène à méditer aujourd\'hui ?',
                       options: _q1Options,
                       selectedOption: state.answers['q1'],
                       onSelect: (v) => ref
@@ -188,7 +225,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     // Slide 5 — Q4
                     QuestionSlide(
                       question:
-                          'Tu aurais plutôt 5 minutes pour toi... ?',
+                          'Tu aurais plutôt 5 minutes pour toi... ?',
                       options: _q4Options,
                       selectedOption: state.answers['q4'],
                       onSelect: (v) => ref

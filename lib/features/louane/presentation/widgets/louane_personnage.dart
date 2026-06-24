@@ -439,7 +439,7 @@ class _VisagePainter extends CustomPainter {
       r,
       Paint()
         ..shader = const RadialGradient(
-          colors: [Color(0xFFF8C3AC), LouanePalette.accent],
+          colors: [Color(0xFFB6F2EC), LouanePalette.accent],
         ).createShader(Rect.fromCircle(center: c, radius: r)),
     );
 

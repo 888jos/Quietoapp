@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_colors.dart';
 
-/// Accent chaud propre à Louane (le reste de l'app garde son turquoise).
+/// Louane partage l'accent turquoise de Quieto, pour rester dans l'ambiance
+/// « nuit étoilée » de l'app (plutôt qu'un accent à part).
 abstract final class LouanePalette {
-  /// Corail doux — l'accent chaleureux de Louane.
-  static const accent = Color(0xFFF2A488);
+  /// Turquoise de Quieto — l'accent de Louane.
+  static const accent = AppColors.accent;
 
-  /// Corail très léger — pour les lueurs / fonds subtils.
-  static const accentSoft = Color(0x22F2A488);
+  /// Turquoise très léger — pour les lueurs / fonds subtils.
+  static const accentSoft = Color(0x225CE0D8);
 }

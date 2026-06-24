@@ -212,9 +212,15 @@ class _LouanePageState extends ConsumerState<LouanePage> {
           children: [
             _SelecteurMode(mode: _mode, onChange: _changerMode),
             Expanded(
-              child: _mode == ModeLouane.ecrit
-                  ? _vueEcrit(chat)
-                  : _vueOral(chat),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 350),
+                child: KeyedSubtree(
+                  key: ValueKey(_mode),
+                  child: _mode == ModeLouane.ecrit
+                      ? _vueEcrit(chat)
+                      : _vueOral(chat),
+                ),
+              ),
             ),
           ],
         ),
@@ -241,6 +247,7 @@ class _LouanePageState extends ConsumerState<LouanePage> {
         Expanded(
           child: ListView.builder(
             controller: _scroll,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             itemCount: nbItems,
             itemBuilder: (context, i) {
@@ -264,35 +271,33 @@ class _LouanePageState extends ConsumerState<LouanePage> {
     for (final m in chat.messages) {
       if (m.estLouane) derniere = m.texte;
     }
-    final statut = _ecoute
-        ? 'je t\'écoute…'
-        : chat.louaneEcrit
-            ? 'elle réfléchit…'
-            : _louaneParle
-                ? 'elle te parle…'
-                : 'appuie pour me parler';
 
-    return Column(
+    return Stack(
       children: [
-        const Spacer(flex: 2),
-        LouanePersonnage(parle: _louaneParle, ecoute: _ecoute),
-        const SizedBox(height: 18),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 36),
-          child: Text(
-            derniere,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.bodyLarge,
-          ),
+        // Fond : ciel étoilé sur toute la page.
+        const Positioned.fill(child: CielEtoileFond()),
+        Column(
+          children: [
+            const Spacer(flex: 2),
+            LouanePersonnage(
+              parle: _louaneParle,
+              ecoute: _ecoute,
+              sansCiel: true,
+            ),
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 36),
+              child: Text(
+                derniere,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodyLarge,
+              ),
+            ),
+            const Spacer(flex: 3),
+            _GrosBoutonMicro(actif: _ecoute, onTap: _toggleMicroOral),
+            const SizedBox(height: 28),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          statut,
-          style: AppTextStyles.caption.copyWith(color: LouanePalette.accent),
-        ),
-        const Spacer(flex: 3),
-        _GrosBoutonMicro(actif: _ecoute, onTap: _toggleMicroOral),
-        const SizedBox(height: 28),
       ],
     );
   }
@@ -364,30 +369,9 @@ class _SceneLouane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sousTitre = parle
-        ? 'écrit…'
-        : ecoute
-            ? 'je t\'écoute…'
-            : 'ton compagnon';
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        LouanePersonnage(parle: parle, ecoute: ecoute, compact: compact),
-        if (!compact) ...[
-          Text('Louane', style: AppTextStyles.titleMedium),
-          const SizedBox(height: 2),
-          Text(
-            sousTitre,
-            style: AppTextStyles.caption.copyWith(
-              color: (parle || ecoute)
-                  ? LouanePalette.accent
-                  : AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-      ],
-    );
+    // Le bandeau « Louane / ton compagnon » a été retiré pour agrandir la zone
+    // de conversation. On ne garde que le personnage.
+    return LouanePersonnage(parle: parle, ecoute: ecoute, compact: compact);
   }
 }
 

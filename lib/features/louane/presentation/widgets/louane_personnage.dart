@@ -17,11 +17,16 @@ class LouanePersonnage extends StatefulWidget {
   final bool ecoute;
   final bool compact;
 
+  /// Quand true, le perso ne dessine PAS son propre ciel (un ciel pleine page
+  /// est affiché derrière, en mode oral).
+  final bool sansCiel;
+
   const LouanePersonnage({
     super.key,
     this.parle = false,
     this.ecoute = false,
     this.compact = false,
+    this.sansCiel = false,
   });
 
   @override
@@ -177,21 +182,23 @@ class _LouanePersonnageState extends State<LouanePersonnage>
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Ciel étoilé (+ étoile filante)
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: Listenable.merge([_twinkle, _shoot]),
-              builder: (context, _) => CustomPaint(
-                painter: _CielEtoile(
-                  t: _twinkle.value,
-                  shootActif: _shootActif,
-                  shootProgress: _shoot.value,
-                  shootStart: _shootStart,
-                  shootEnd: _shootEnd,
+          // Ciel étoilé local (masqué en mode oral : un ciel pleine page est
+          // déjà affiché derrière le personnage).
+          if (!widget.sansCiel)
+            Positioned.fill(
+              child: AnimatedBuilder(
+                animation: Listenable.merge([_twinkle, _shoot]),
+                builder: (context, _) => CustomPaint(
+                  painter: _CielEtoile(
+                    t: _twinkle.value,
+                    shootActif: _shootActif,
+                    shootProgress: _shoot.value,
+                    shootStart: _shootStart,
+                    shootEnd: _shootEnd,
+                  ),
                 ),
               ),
             ),
-          ),
           // Le visage
           AnimatedBuilder(
             animation: Listenable.merge([_breath, _float, _blink, _ring, _shoot]),
@@ -223,12 +230,95 @@ class _LouanePersonnageState extends State<LouanePersonnage>
   }
 }
 
+/// Ciel étoilé pleine page (fond du mode oral) : champ d'étoiles dense qui
+/// scintille, avec des étoiles filantes occasionnelles, étalé sur tout l'écran.
+class CielEtoileFond extends StatefulWidget {
+  const CielEtoileFond({super.key});
+
+  @override
+  State<CielEtoileFond> createState() => _CielEtoileFondState();
+}
+
+class _CielEtoileFondState extends State<CielEtoileFond>
+    with TickerProviderStateMixin {
+  late final AnimationController _twinkle;
+  late final AnimationController _shoot;
+  Timer? _timerShoot;
+  final _rng = math.Random();
+
+  bool _shootActif = false;
+  Offset _shootStart = Offset.zero;
+  Offset _shootEnd = Offset.zero;
+
+  // Champ d'étoiles dense, généré une seule fois (positions stables).
+  late final List<(double, double, double)> _etoiles;
+
+  @override
+  void initState() {
+    super.initState();
+    final r = math.Random(42);
+    _etoiles = List.generate(
+      70,
+      (_) => (r.nextDouble(), r.nextDouble(), 0.8 + r.nextDouble() * 1.3),
+    );
+    _twinkle = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 4000))
+      ..repeat();
+    _shoot = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
+    _planifieShoot();
+  }
+
+  void _planifieShoot() {
+    _timerShoot =
+        Timer(Duration(milliseconds: 6000 + _rng.nextInt(9000)), () async {
+      if (!mounted) return;
+      final depuisGauche = _rng.nextBool();
+      _shootStart =
+          Offset(depuisGauche ? 0.04 : 0.96, 0.05 + _rng.nextDouble() * 0.30);
+      _shootEnd =
+          Offset(depuisGauche ? 0.75 : 0.25, 0.35 + _rng.nextDouble() * 0.40);
+      setState(() => _shootActif = true);
+      await _shoot.forward(from: 0);
+      if (mounted) setState(() => _shootActif = false);
+      _planifieShoot();
+    });
+  }
+
+  @override
+  void dispose() {
+    _timerShoot?.cancel();
+    _twinkle.dispose();
+    _shoot.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_twinkle, _shoot]),
+      builder: (context, _) => CustomPaint(
+        size: Size.infinite,
+        painter: _CielEtoile(
+          t: _twinkle.value,
+          shootActif: _shootActif,
+          shootProgress: _shoot.value,
+          shootStart: _shootStart,
+          shootEnd: _shootEnd,
+          etoiles: _etoiles,
+        ),
+      ),
+    );
+  }
+}
+
 class _CielEtoile extends CustomPainter {
   final double t;
   final bool shootActif;
   final double shootProgress;
   final Offset shootStart;
   final Offset shootEnd;
+  final List<(double, double, double)> etoiles;
 
   const _CielEtoile({
     required this.t,
@@ -236,9 +326,10 @@ class _CielEtoile extends CustomPainter {
     required this.shootProgress,
     required this.shootStart,
     required this.shootEnd,
+    this.etoiles = _etoilesParDefaut,
   });
 
-  static const _etoiles = <(double, double, double)>[
+  static const _etoilesParDefaut = <(double, double, double)>[
     (0.08, 0.18, 1.4), (0.18, 0.42, 1.0), (0.27, 0.12, 1.8),
     (0.36, 0.30, 1.0), (0.45, 0.10, 1.2), (0.55, 0.20, 1.6),
     (0.63, 0.08, 1.0), (0.72, 0.28, 1.3), (0.82, 0.14, 1.7),
@@ -251,8 +342,8 @@ class _CielEtoile extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint();
-    for (var i = 0; i < _etoiles.length; i++) {
-      final e = _etoiles[i];
+    for (var i = 0; i < etoiles.length; i++) {
+      final e = etoiles[i];
       final tw =
           0.3 + 0.5 * (0.5 + 0.5 * math.sin((t + i * 0.13) * 2 * math.pi));
       p.color = Colors.white.withValues(alpha: tw * 0.75);

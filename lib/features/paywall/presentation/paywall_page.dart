@@ -21,21 +21,55 @@ class PaywallPage extends ConsumerStatefulWidget {
 }
 
 class _PaywallPageState extends ConsumerState<PaywallPage> {
-  bool _showCloseButton = false;
+  // ValueNotifier (et non un bool + setState) : quand la croix apparaît à 3s,
+  // seul le petit bouton se reconstruit via ValueListenableBuilder — le gros
+  // PaywallView natif n'est PAS repeint (évite un à-coup).
+  final ValueNotifier<bool> _showCloseButton = ValueNotifier(false);
   Timer? _closeTimer;
+
+  // Le paywall natif (PaywallView) est LOURD à monter : s'il s'instancie pendant
+  // l'animation de montée, la transition saccade. On attend donc que la montée
+  // soit FINIE avant de le monter — la montée reste 100 % fluide (écran léger),
+  // puis le vrai paywall apparaît en fondu doux sur un écran déjà immobile.
+  bool _pretPourLeNatif = false;
+  Animation<double>? _transitionRoute;
 
   @override
   void initState() {
     super.initState();
     // La croix de fermeture apparaît après 3 secondes (ADR-013)
     _closeTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showCloseButton = true);
+      if (mounted) _showCloseButton.value = true;
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Suit l'animation d'arrivée de la route : on ne monte le paywall natif
+    // qu'une fois la transition terminée (status == completed).
+    final anim = ModalRoute.of(context)?.animation;
+    if (identical(anim, _transitionRoute)) return;
+    _transitionRoute?.removeStatusListener(_onTransition);
+    _transitionRoute = anim;
+    if (anim == null || anim.isCompleted) {
+      _pretPourLeNatif = true; // pas de transition (ou déjà finie) → direct
+    } else {
+      anim.addStatusListener(_onTransition);
+    }
+  }
+
+  void _onTransition(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted && !_pretPourLeNatif) {
+      setState(() => _pretPourLeNatif = true);
+    }
+  }
+
+  @override
   void dispose() {
+    _transitionRoute?.removeStatusListener(_onTransition);
     _closeTimer?.cancel();
+    _showCloseButton.dispose();
     super.dispose();
   }
 
@@ -137,74 +171,101 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
   Widget _buildPaywall(Offering offering) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          PaywallView(
-            offering: offering,
-            onDismiss: () {
-              debugPrint('[Paywall] Fermeture manuelle par l\'utilisateur.');
-              _close();
-            },
-            onPurchaseCompleted: (customerInfo, transaction) async {
-              // Capturé avant les await : le context peut être démonté après.
-              final router = GoRouter.of(context);
-              await _onPurchaseSuccess(customerInfo);
-              if (!mounted) return;
-              await _showPremiumConfirmation();
-              if (!mounted) return;
-              // Retour à la page d'origine : l'acheteur retrouve la
-              // catégorie/séance qu'il consultait, désormais débloquée.
-              if (router.canPop()) {
-                router.pop();
-              } else {
-                router.go(AppRoutes.home);
-              }
-            },
-            onRestoreCompleted: (customerInfo) async {
-              final router = GoRouter.of(context);
-              await _onPurchaseSuccess(customerInfo);
-              if (!mounted) return;
-              await _showPremiumConfirmation();
-              if (!mounted) return;
-              if (router.canPop()) {
-                router.pop();
-              } else {
-                router.go(AppRoutes.home);
-              }
-            },
-            onPurchaseError: (error) {
-              debugPrint('[Paywall] Erreur d\'achat : $error');
-            },
-            onRestoreError: (error) {
-              debugPrint('[Paywall] Erreur de restauration : $error');
-            },
+          // Pendant la montée : écran léger (fond uni) → glissement 100 % fluide.
+          // Montée finie : le paywall natif apparaît en fondu doux par-dessus.
+          Positioned.fill(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              child: _pretPourLeNatif
+                  ? _vueNative(offering)
+                  : ColoredBox(
+                      key: const ValueKey('paywall-placeholder'),
+                      color: AppColors.background,
+                    ),
+            ),
           ),
-          // Croix de fermeture (apparaît après 3s, ADR-013)
+          // Croix de fermeture (apparaît après 3s, ADR-013).
+          // ValueListenableBuilder : seul ce bouton se reconstruit au bout de
+          // 3s, jamais le PaywallView. `child` (le Material/IconButton) est
+          // construit une seule fois et réutilisé à chaque frame.
           Positioned(
             top: MediaQuery.of(context).padding.top + AppConstants.spacingSm,
             right: AppConstants.spacingSm,
-            child: AnimatedOpacity(
-              opacity: _showCloseButton ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 400),
-              child: IgnorePointer(
-                ignoring: !_showCloseButton,
-                child: Material(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  shape: const CircleBorder(),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: AppColors.textPrimary,
-                      size: 20,
-                    ),
-                    tooltip: 'Fermer',
-                    onPressed: _dismiss,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _showCloseButton,
+              builder: (context, show, child) => AnimatedOpacity(
+                opacity: show ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 400),
+                child: IgnorePointer(ignoring: !show, child: child),
+              ),
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.4),
+                shape: const CircleBorder(),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: AppColors.textPrimary,
+                    size: 20,
                   ),
+                  tooltip: 'Fermer',
+                  onPressed: _dismiss,
                 ),
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Le paywall natif RevenueCat. Monté seulement une fois la montée terminée
+  /// (voir [_pretPourLeNatif]) : la transition reste lisse, et cette vue apparaît
+  /// ensuite en fondu via l'AnimatedSwitcher.
+  Widget _vueNative(Offering offering) {
+    return KeyedSubtree(
+      key: const ValueKey('paywall-natif'),
+      child: PaywallView(
+        offering: offering,
+        onDismiss: () {
+          debugPrint('[Paywall] Fermeture manuelle par l\'utilisateur.');
+          _close();
+        },
+        onPurchaseCompleted: (customerInfo, transaction) async {
+          // Capturé avant les await : le context peut être démonté après.
+          final router = GoRouter.of(context);
+          await _onPurchaseSuccess(customerInfo);
+          if (!mounted) return;
+          await _showPremiumConfirmation();
+          if (!mounted) return;
+          // Retour à la page d'origine : l'acheteur retrouve la
+          // catégorie/séance qu'il consultait, désormais débloquée.
+          if (router.canPop()) {
+            router.pop();
+          } else {
+            router.go(AppRoutes.home);
+          }
+        },
+        onRestoreCompleted: (customerInfo) async {
+          final router = GoRouter.of(context);
+          await _onPurchaseSuccess(customerInfo);
+          if (!mounted) return;
+          await _showPremiumConfirmation();
+          if (!mounted) return;
+          if (router.canPop()) {
+            router.pop();
+          } else {
+            router.go(AppRoutes.home);
+          }
+        },
+        onPurchaseError: (error) {
+          debugPrint('[Paywall] Erreur d\'achat : $error');
+        },
+        onRestoreError: (error) {
+          debugPrint('[Paywall] Erreur de restauration : $error');
+        },
       ),
     );
   }

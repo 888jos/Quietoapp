@@ -7,9 +7,11 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 /// 2. offering current
 /// 3. premier offering disponible
 ///
-/// Utilisé pour précharger l'Offering avant l'arrivée sur le paywall
-/// (depuis OnboardingReadyPage) afin d'éviter le délai de chargement.
-final offeringProvider = FutureProvider.autoDispose<Offering?>((ref) async {
+/// Préchargé au lancement de l'app (voir QuietoApp.initState) afin que le
+/// paywall s'ouvre avec ses prix déjà en mémoire, sans délai ni roue de
+/// chargement. PAS d'autoDispose : le cache doit survivre entre les écrans
+/// (sinon il est jeté pile avant l'ouverture du paywall → saccade).
+final offeringProvider = FutureProvider<Offering?>((ref) async {
   try {
     debugPrint('[Paywall] Chargement des offerings...');
     final offerings = await Purchases.getOfferings();

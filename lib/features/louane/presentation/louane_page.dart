@@ -19,7 +19,8 @@ class LouanePage extends ConsumerStatefulWidget {
   ConsumerState<LouanePage> createState() => _LouanePageState();
 }
 
-class _LouanePageState extends ConsumerState<LouanePage> {
+class _LouanePageState extends ConsumerState<LouanePage>
+    with SingleTickerProviderStateMixin {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
 
@@ -32,9 +33,18 @@ class _LouanePageState extends ConsumerState<LouanePage> {
 
   ModeLouane _mode = ModeLouane.ecrit;
 
+  // Bascule écrit ↔ oral (0 = écrit, 1 = oral) : un seul personnage glisse du
+  // haut vers le centre en grandissant, pendant que le contenu écrit descend
+  // et s'efface, et que le ciel étoilé apparaît.
+  late final AnimationController _modeAnim;
+
   @override
   void initState() {
     super.initState();
+    _modeAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
     _initSpeech();
     _initTts();
     WidgetsBinding.instance.addPostFrameCallback((_) => _versLeBas());
@@ -44,6 +54,7 @@ class _LouanePageState extends ConsumerState<LouanePage> {
   void dispose() {
     _speech.stop();
     _tts.stop();
+    _modeAnim.dispose();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
@@ -166,6 +177,12 @@ class _LouanePageState extends ConsumerState<LouanePage> {
       _ecoute = false;
       _louaneParle = false;
     });
+    // Glisse en douceur vers le nouveau mode (le personnage se déplace).
+    if (m == ModeLouane.oral) {
+      _modeAnim.forward();
+    } else {
+      _modeAnim.reverse();
+    }
   }
 
   void _passerEnOral() => _changerMode(ModeLouane.oral);
@@ -211,38 +228,99 @@ class _LouanePageState extends ConsumerState<LouanePage> {
         child: Column(
           children: [
             _SelecteurMode(mode: _mode, onChange: _changerMode),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 350),
-                child: KeyedSubtree(
-                  key: ValueKey(_mode),
-                  child: _mode == ModeLouane.ecrit
-                      ? _vueEcrit(chat)
-                      : _vueOral(chat),
-                ),
-              ),
-            ),
+            Expanded(child: _corps(chat)),
           ],
         ),
       ),
     );
   }
 
-  // ── Vue ÉCRIT ───────────────────────────────────────────
-  Widget _vueEcrit(LouaneChatState chat) {
-    final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
+  // ── Corps : écrit ↔ oral en un seul mouvement continu ─────
+  Widget _corps(LouaneChatState chat) {
+    final estOral = _mode == ModeLouane.oral;
     final clavier = MediaQuery.of(context).viewInsets.bottom > 0;
+    return AnimatedBuilder(
+      animation: _modeAnim,
+      builder: (context, _) {
+        final t = Curves.easeInOutCubic.transform(_modeAnim.value);
+        return LayoutBuilder(
+          builder: (context, c) {
+            final h = c.maxHeight;
+            // Centre vertical du personnage : en haut (écrit) → centre (oral).
+            final yEcrit = clavier ? 66.0 : 110.0;
+            final yOral = h * 0.40;
+            final yC = yEcrit + (yOral - yEcrit) * t;
+            // Taille : grandit un peu en arrivant au centre.
+            final scEcrit = clavier ? 0.5 : 1.0;
+            final scale = scEcrit + (1.25 - scEcrit) * t;
+            return Stack(
+              children: [
+                // 1. Ciel étoilé plein écran (apparaît en mode oral).
+                if (t > 0.001)
+                  Positioned.fill(
+                    child: Opacity(opacity: t, child: const CielEtoileFond()),
+                  ),
+                // 2. Conversation écrite : glisse vers le bas en s'effaçant.
+                Positioned.fill(
+                  child: IgnorePointer(
+                    ignoring: estOral,
+                    child: Opacity(
+                      opacity: (1 - t).clamp(0.0, 1.0),
+                      child: Transform.translate(
+                        offset: Offset(0, t * 90),
+                        child: _contenuEcrit(chat, clavier),
+                      ),
+                    ),
+                  ),
+                ),
+                // 3. Le personnage : UN SEUL élément qui glisse et grandit.
+                Positioned(
+                  top: yC - 95,
+                  left: 0,
+                  right: 0,
+                  height: 190,
+                  child: Transform.scale(
+                    scale: scale,
+                    child: LouanePersonnage(
+                      parle: estOral ? _louaneParle : chat.louaneEcrit,
+                      ecoute: estOral ? _ecoute : false,
+                      sansCiel: true,
+                    ),
+                  ),
+                ),
+                // 4. Bouton micro (mode oral) : apparaît en bas.
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 28,
+                  child: IgnorePointer(
+                    ignoring: !estOral,
+                    child: Opacity(
+                      opacity: t,
+                      child: Center(
+                        child: _GrosBoutonMicro(
+                          actif: _ecoute,
+                          onTap: _toggleMicroOral,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Conversation écrite (sans le personnage, qui flotte au-dessus).
+  Widget _contenuEcrit(LouaneChatState chat, bool clavier) {
+    final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
+    final espaceHaut = clavier ? 120.0 : 210.0; // réserve la place du personnage
     return Column(
       children: [
-        AnimatedSize(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-          child: _SceneLouane(
-            parle: chat.louaneEcrit,
-            ecoute: false,
-            compact: clavier,
-          ),
-        ),
+        SizedBox(height: espaceHaut),
         const Divider(height: 1, color: AppColors.accentDim),
         Expanded(
           child: ListView.builder(
@@ -260,43 +338,6 @@ class _LouanePageState extends ConsumerState<LouanePage> {
           controller: _controller,
           onEnvoyer: _envoyer,
           onMic: _passerEnOral,
-        ),
-      ],
-    );
-  }
-
-  // ── Vue ORAL ────────────────────────────────────────────
-  Widget _vueOral(LouaneChatState chat) {
-    String derniere = '';
-    for (final m in chat.messages) {
-      if (m.estLouane) derniere = m.texte;
-    }
-
-    return Stack(
-      children: [
-        // Fond : ciel étoilé sur toute la page.
-        const Positioned.fill(child: CielEtoileFond()),
-        Column(
-          children: [
-            const Spacer(flex: 2),
-            LouanePersonnage(
-              parle: _louaneParle,
-              ecoute: _ecoute,
-              sansCiel: true,
-            ),
-            const SizedBox(height: 18),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 36),
-              child: Text(
-                derniere,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyLarge,
-              ),
-            ),
-            const Spacer(flex: 3),
-            _GrosBoutonMicro(actif: _ecoute, onTap: _toggleMicroOral),
-            const SizedBox(height: 28),
-          ],
         ),
       ],
     );
@@ -353,25 +394,6 @@ class _SelecteurMode extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ── Scène (visage + nom) en mode écrit ────────────────────
-class _SceneLouane extends StatelessWidget {
-  final bool parle;
-  final bool ecoute;
-  final bool compact;
-  const _SceneLouane({
-    required this.parle,
-    required this.ecoute,
-    this.compact = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Le bandeau « Louane / ton compagnon » a été retiré pour agrandir la zone
-    // de conversation. On ne garde que le personnage.
-    return LouanePersonnage(parle: parle, ecoute: ecoute, compact: compact);
   }
 }
 

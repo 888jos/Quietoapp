@@ -1,7 +1,8 @@
 abstract final class AppConstants {
   // ── App ──────────────────────────────────────────────
   static const appName = 'Quieto';
-  static const appVersion = '1.0.0';
+  // Version : source de vérité = pubspec.yaml (via package_info_plus si
+  // un affichage est nécessaire un jour).
 
   // ── RevenueCat ───────────────────────────────────────
   static const entitlementPremium = 'premium';
@@ -13,6 +14,10 @@ abstract final class AppConstants {
   static const prefUserFirstName = 'user_first_name';
   static const prefIsPremium = 'is_premium';
   static const prefNotificationsEnabled = 'notifications_enabled';
+  static const prefReminderHour = 'reminder_hour';
+  static const prefReminderMinute = 'reminder_minute';
+  // La proposition de rappel post-première-séance ne se fait qu'une fois.
+  static const prefNotificationPromptShown = 'notification_prompt_shown';
 
   // ── Audio ────────────────────────────────────────────
   // Les MP3 sont hébergés sur Firebase Storage (bucket quieto-06) à plat

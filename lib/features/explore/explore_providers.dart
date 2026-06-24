@@ -35,7 +35,7 @@ final categoryProgressProvider =
 });
 
 /// Calcule la route de destination quand l'utilisateur tape sur une catégorie.
-/// Premium + non abonné → /paywall. Sinon → /category/:id.
+/// Premium + non abonné → paywall en montée glissée. Sinon → /category/:id.
 final categoryRouteProvider =
     Provider.family<String, String>((ref, categoryId) {
   final category = ref.watch(categoryByIdProvider(categoryId));
@@ -45,7 +45,7 @@ final categoryRouteProvider =
   final isSubscribed = ref.watch(subscriptionProvider);
   return isSubscribed
       ? AppRoutes.categoryPath(categoryId)
-      : AppRoutes.paywall;
+      : AppRoutes.paywallSlide;
 });
 
 final searchQueryProvider = StateProvider<String>((ref) => '');

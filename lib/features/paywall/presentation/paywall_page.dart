@@ -41,7 +41,18 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
   void _dismiss() {
     HapticFeedback.lightImpact();
-    context.go(AppRoutes.home);
+    _close();
+  }
+
+  /// Ferme le paywall en revenant à la page d'origine (catégorie, séance,
+  /// profil…) avec l'animation de descente. Cas onboarding : le paywall a été
+  /// ouvert via `context.go` (pile vide, canPop = false) → fallback home.
+  void _close() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.home);
+    }
   }
 
   Future<void> _onPurchaseSuccess(CustomerInfo customerInfo) async {
@@ -96,7 +107,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.close),
-            onPressed: () => context.go(AppRoutes.home),
+            onPressed: _close,
           ),
         ),
         body: ErrorPlaceholder(
@@ -110,7 +121,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
             appBar: AppBar(
               leading: IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: () => context.go(AppRoutes.home),
+                onPressed: _close,
               ),
             ),
             body: ErrorPlaceholder(
@@ -132,15 +143,22 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
             offering: offering,
             onDismiss: () {
               debugPrint('[Paywall] Fermeture manuelle par l\'utilisateur.');
-              context.go(AppRoutes.home);
+              _close();
             },
             onPurchaseCompleted: (customerInfo, transaction) async {
+              // Capturé avant les await : le context peut être démonté après.
               final router = GoRouter.of(context);
               await _onPurchaseSuccess(customerInfo);
               if (!mounted) return;
               await _showPremiumConfirmation();
               if (!mounted) return;
-              router.go(AppRoutes.home);
+              // Retour à la page d'origine : l'acheteur retrouve la
+              // catégorie/séance qu'il consultait, désormais débloquée.
+              if (router.canPop()) {
+                router.pop();
+              } else {
+                router.go(AppRoutes.home);
+              }
             },
             onRestoreCompleted: (customerInfo) async {
               final router = GoRouter.of(context);
@@ -148,7 +166,11 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
               if (!mounted) return;
               await _showPremiumConfirmation();
               if (!mounted) return;
-              router.go(AppRoutes.home);
+              if (router.canPop()) {
+                router.pop();
+              } else {
+                router.go(AppRoutes.home);
+              }
             },
             onPurchaseError: (error) {
               debugPrint('[Paywall] Erreur d\'achat : $error');

@@ -12,6 +12,7 @@ import '../onboarding_providers.dart';
 import 'widgets/intro_slide.dart';
 import 'widgets/progress_bar.dart';
 import 'widgets/question_slide.dart';
+import 'widgets/recap_slide.dart';
 import 'widgets/text_input_slide.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
@@ -27,7 +28,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   int _page = 0;
   bool _loading = false;
 
-  static const _totalSlides = 7;
+  // 2 intro + 4 questions + prénom + récap « ce qu'on a compris de toi »
+  static const _totalSlides = 8;
 
   static const _q1Options = [
     'Un stress que je n\'arrive pas à lâcher',
@@ -68,7 +70,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     if (_page == 4) return state.answers.containsKey('q3');
     if (_page == 5) return state.answers.containsKey('q4');
     if (_page == 6) return state.firstName.trim().isNotEmpty;
-    return true;
+    return true; // 7 = récap, toujours validable
   }
 
   Future<void> _next() async {
@@ -152,10 +154,17 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: AppConstants.spacingSm),
-              OnboardingProgressBar(
-                  current: _page, total: _totalSlides),
-              const SizedBox(height: AppConstants.spacingMd),
+              // Barre de progression cachée sur la slide récap (dernière) :
+              // y ajouter un cran la rendait moche. On garde un espacement
+              // constant pour ne pas faire sauter la mise en page.
+              if (_isLastSlide)
+                const SizedBox(height: AppConstants.spacingMd)
+              else ...[
+                const SizedBox(height: AppConstants.spacingSm),
+                OnboardingProgressBar(
+                    current: _page, total: _totalSlides),
+                const SizedBox(height: AppConstants.spacingMd),
+              ],
               Expanded(
                 child: PageView(
                   controller: _controller,
@@ -164,7 +173,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     setState(() => _page = i);
                     // Focus la slide prénom seulement après la fin de l'animation
                     // (évite que le clavier monte pendant le slide)
-                    if (i == _totalSlides - 1) {
+                    if (i == 6) {
                       Future.delayed(
                         const Duration(
                             milliseconds: AppConstants.animNormal + 50),
@@ -173,6 +182,8 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                         },
                       );
                     }
+                    // Récap : referme le clavier de la slide prénom
+                    if (i == 7) _firstNameFocus.unfocus();
                   },
                   children: [
                     // Slide 0 — Intro 1
@@ -244,12 +255,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           .setFirstName(v),
                       onSubmitted: canProceed ? _next : null,
                     ),
+
+                    // Slide 7 — Récap (effet miroir : ses propres mots,
+                    // juste avant la « création du programme »)
+                    RecapSlide(
+                      firstName: state.firstName,
+                      answers: state.answers,
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: AppConstants.spacingMd),
               AppButton(
-                label: _isLastSlide ? 'Commencer' : 'Suivant',
+                label: _isLastSlide ? 'Créer mon programme' : 'Suivant',
                 onTap: canProceed ? _next : null,
                 isLoading: _loading,
               ),

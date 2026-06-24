@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
+import '../../core/services/storage_providers.dart';
 import '../home/home_providers.dart';
 import 'data/player_repository.dart';
 import 'data/audio_handler.dart';
@@ -239,6 +240,20 @@ final playerProvider = StateNotifierProvider
   final handler = ref.watch(audioHandlerProvider);
   handler.completionCallback = () {
     ref.read(sessionCompletionTickProvider.notifier).state++;
+    // L'utilisateur vient de méditer : le rappel du jour n'a plus de raison
+    // d'être, on le reprogramme à partir de demain (rappel doux, jamais
+    // redondant).
+    final storage = ref.read(storageServiceProvider);
+    final hour = storage.reminderHour;
+    final minute = storage.reminderMinute;
+    if (storage.notificationsEnabled && hour != null && minute != null) {
+      ref.read(notificationServiceProvider).scheduleDailyReminder(
+            hour: hour,
+            minute: minute,
+            skipToday: true,
+            firstName: storage.firstName,
+          );
+    }
   };
   // Rafraîchit les stats (minutes méditées) au fil de l'écoute, sans
   // attendre la fin de la séance ni un redémarrage de l'app.

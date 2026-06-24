@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../config/app_constants.dart';
+import 'notification_service.dart';
 import 'storage_service.dart';
 
 /// Provider global pour StorageService.
@@ -10,15 +12,23 @@ final storageServiceProvider = Provider<StorageService>((ref) {
       'storageServiceProvider must be overridden in ProviderScope');
 });
 
+/// Service des rappels quotidiens. Singleton sur la durée de vie de l'app ;
+/// son init (plugin + timezone) est lazy, appelée par ses propres méthodes.
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService();
+});
+
 /// Prénom de l'utilisateur — StateProvider pour être réactif
 /// (mis à jour par ProfileNotifier, lu par la home et le profil).
 final firstNameProvider = StateProvider<String>((ref) {
   return ref.read(storageServiceProvider).firstName;
 });
 
-/// DEV : mettre à true pour bypasser le paywall pendant le développement.
-/// PROD : remettre à false avant de releaser.
-const bool _devUnlockPremium = false;
+/// DEV : passe ce flag à true pour bypasser le paywall pendant le développement.
+/// Garde-fou : grâce à `!kReleaseMode`, un build de RELEASE force TOUJOURS le
+/// paywall (peu importe la valeur ci-dessous) — impossible de shipper le bypass.
+const bool _kDevWantsPremiumBypass = true;
+const bool _devUnlockPremium = !kReleaseMode && _kDevWantsPremiumBypass;
 
 /// Notifier qui maintient l'état "isPremium" en temps réel.
 /// Écoute les mises à jour de RevenueCat via [Purchases.addCustomerInfoUpdateListener]

@@ -96,6 +96,32 @@ class StorageService {
     }
   }
 
+  /// Heure du rappel quotidien. Null si jamais choisie (on calcule alors un
+  /// défaut depuis la réponse Q4 de l'onboarding, cf. defaultReminderTime).
+  int? get reminderHour => _prefs.getInt(AppConstants.prefReminderHour);
+  int? get reminderMinute => _prefs.getInt(AppConstants.prefReminderMinute);
+
+  Future<void> setReminderTime(int hour, int minute) async {
+    try {
+      await _prefs.setInt(AppConstants.prefReminderHour, hour);
+      await _prefs.setInt(AppConstants.prefReminderMinute, minute);
+    } catch (e, st) {
+      debugPrint('[Storage] setReminderTime failed: $e\n$st');
+    }
+  }
+
+  /// La proposition de rappel après la première séance ne se fait qu'une fois.
+  bool get notificationPromptShown =>
+      _prefs.getBool(AppConstants.prefNotificationPromptShown) ?? false;
+
+  Future<void> setNotificationPromptShown() async {
+    try {
+      await _prefs.setBool(AppConstants.prefNotificationPromptShown, true);
+    } catch (e, st) {
+      debugPrint('[Storage] setNotificationPromptShown failed: $e\n$st');
+    }
+  }
+
   // ── Reset ─────────────────────────────────────────────
 
   Future<void> resetOnboarding() async {

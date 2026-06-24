@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/onboarding_loading_page.dart';
@@ -9,6 +10,7 @@ import '../features/player/presentation/player_page.dart';
 import '../features/player/presentation/preparation_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/paywall/presentation/paywall_page.dart';
+import '../features/louane/presentation/louane_page.dart';
 import 'home_shell.dart';
 import 'splash_page.dart';
 
@@ -19,9 +21,12 @@ abstract final class AppRoutes {
   static const onboardingLoading = '/onboarding-loading';
   static const onboardingReady = '/onboarding-ready';
   static const paywall = '/paywall';
+  // Ouverture avec montée glissée (séance premium / profil)
+  static const paywallSlide = '/paywall?from=premium';
   static const shell = '/shell';
   static const home = '/home';
   static const explore = '/explore';
+  static const louane = '/louane';
   static const profile = '/profile';
   static const player = '/player/:sessionId';
   static const preparation = '/preparation/:sessionId';
@@ -63,7 +68,42 @@ final appRouter = GoRouter(
     // ── Paywall ───────────────────────────────────────
     GoRoute(
       path: AppRoutes.paywall,
-      builder: (context, state) => const PaywallPage(),
+      pageBuilder: (context, state) {
+        final slideUp = state.uri.queryParameters['from'] == 'premium';
+        const page = PaywallPage();
+        if (slideUp) {
+          // Montée glissée + fondu doux (feuille modale)
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: page,
+            transitionDuration: const Duration(milliseconds: 420),
+            reverseTransitionDuration: const Duration(milliseconds: 320),
+            transitionsBuilder: (context, animation, secondary, child) {
+              final curved = CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+                reverseCurve: Curves.easeInCubic,
+              );
+              return SlideTransition(
+                position: Tween(begin: const Offset(0, 1), end: Offset.zero)
+                    .animate(curved),
+                child: FadeTransition(opacity: curved, child: child),
+              );
+            },
+          );
+        }
+        // Onboarding : fondu doux identique à l'actuel
+        return CustomTransitionPage(
+          key: state.pageKey,
+          child: page,
+          transitionsBuilder: (context, animation, secondary, child) =>
+              FadeTransition(
+            opacity:
+                CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+            child: child,
+          ),
+        );
+      },
     ),
 
     // ── Category detail (hors shell) ─────────────────
@@ -107,6 +147,12 @@ final appRouter = GoRouter(
           GoRoute(
             path: AppRoutes.explore,
             builder: (context, state) => const ExplorePage(),
+          ),
+        ]),
+        StatefulShellBranch(routes: [
+          GoRoute(
+            path: AppRoutes.louane,
+            builder: (context, state) => const LouanePage(),
           ),
         ]),
         StatefulShellBranch(routes: [

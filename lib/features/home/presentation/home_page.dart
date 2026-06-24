@@ -159,7 +159,7 @@ class _HomePageState extends ConsumerState<HomePage>
                           session: session,
                           onTap: () {
                             if (session.isPremium && !isPremium) {
-                              context.push(AppRoutes.paywall);
+                              context.push(AppRoutes.paywallSlide);
                             } else {
                               context.push(
                                   AppRoutes.preparationPath(session.id));

@@ -127,7 +127,7 @@ class CategoryDetailPage extends ConsumerWidget {
                       // catégorie gratuite (ex. Express) renvoie au paywall
                       // si l'utilisateur n'est pas abonné.
                       if (session.isPremium && !isSubscribed) {
-                        context.push(AppRoutes.paywall);
+                        context.push(AppRoutes.paywallSlide);
                       } else {
                         context.push(AppRoutes.preparationPath(session.id));
                       }

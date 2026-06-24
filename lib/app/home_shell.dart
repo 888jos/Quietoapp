@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
+import '../features/louane/presentation/louane_palette.dart';
 import '../features/player/presentation/widgets/mini_player.dart';
 
 class HomeShell extends StatelessWidget {
@@ -69,11 +70,19 @@ class _QuijetoNav extends StatelessWidget {
                 onTap: () => onTap(1),
               ),
               _NavItem(
+                icon: Icons.chat_bubble_outline_rounded,
+                iconActive: Icons.chat_bubble_rounded,
+                label: 'Louane',
+                isActive: currentIndex == 2,
+                activeColor: LouanePalette.accent,
+                onTap: () => onTap(2),
+              ),
+              _NavItem(
                 icon: Iconsax.profile_circle,
                 iconActive: Iconsax.profile_circle_copy,
                 label: 'Profil',
-                isActive: currentIndex == 2,
-                onTap: () => onTap(2),
+                isActive: currentIndex == 3,
+                onTap: () => onTap(3),
               ),
             ],
           ),
@@ -88,6 +97,7 @@ class _NavItem extends StatelessWidget {
   final IconData iconActive;
   final String label;
   final bool isActive;
+  final Color? activeColor;
   final VoidCallback onTap;
 
   const _NavItem({
@@ -95,11 +105,13 @@ class _NavItem extends StatelessWidget {
     required this.iconActive,
     required this.label,
     required this.isActive,
+    this.activeColor,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final active = activeColor ?? AppColors.accent;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -110,14 +122,14 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               isActive ? iconActive : icon,
-              color: isActive ? AppColors.accent : AppColors.textMuted,
+              color: isActive ? active : AppColors.textMuted,
               size: 24,
             ),
             const SizedBox(height: 4),
             Text(
               label,
               style: AppTextStyles.caption.copyWith(
-                color: isActive ? AppColors.accent : AppColors.textMuted,
+                color: isActive ? active : AppColors.textMuted,
               ),
             ),
           ],

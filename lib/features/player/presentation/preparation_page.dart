@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../player_providers.dart';
@@ -65,6 +66,21 @@ class _PreparationPageState extends ConsumerState<PreparationPage>
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(currentSessionProvider(widget.sessionId));
+
+    // Garde premium : un deep link /preparation/<id_premium> doit renvoyer
+    // au paywall. `_navigated = true` neutralise le timer de 5 s qui
+    // pousserait sinon le player malgré la redirection.
+    final isSubscribed = ref.watch(subscriptionProvider);
+    if (session != null && session.isPremium && !isSubscribed) {
+      _navigated = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.pushReplacement(AppRoutes.paywallSlide);
+      });
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: SizedBox.shrink(),
+      );
+    }
 
     return GestureDetector(
       onTap: _startFadeAndNavigate,

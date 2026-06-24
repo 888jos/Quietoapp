@@ -1,5 +1,9 @@
 # Secrets (never commit)
 .env.json
+# Firebase — config client (clés) gardée en local, jamais sur GitHub
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
 # Google Cloud service account credentials (RevenueCat Android, etc.)
 *service-account*.json
 revenuecat-*.json
@@ -41,6 +45,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+ios/build/
 /coverage/
 
 # Symbolication related

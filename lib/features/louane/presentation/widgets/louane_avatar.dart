@@ -52,7 +52,7 @@ class _LouaneAvatarState extends State<LouaneAvatar>
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFF6B79E), LouanePalette.accent],
+                colors: [Color(0xFFB6F2EC), LouanePalette.accent],
               ),
               boxShadow: [
                 BoxShadow(

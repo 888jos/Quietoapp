@@ -247,11 +247,11 @@ class _LouanePageState extends ConsumerState<LouanePage>
           builder: (context, c) {
             final h = c.maxHeight;
             // Centre vertical du personnage : en haut (écrit) → centre (oral).
-            final yEcrit = clavier ? 66.0 : 110.0;
+            final yEcrit = clavier ? 52.0 : 76.0;
             final yOral = h * 0.40;
             final yC = yEcrit + (yOral - yEcrit) * t;
-            // Taille : grandit un peu en arrivant au centre.
-            final scEcrit = clavier ? 0.5 : 1.0;
+            // Taille : petit avatar de profil (écrit) → grand au centre (oral).
+            final scEcrit = clavier ? 0.42 : 0.62;
             final scale = scEcrit + (1.25 - scEcrit) * t;
             return Stack(
               children: [
@@ -288,6 +288,45 @@ class _LouanePageState extends ConsumerState<LouanePage>
                     ),
                   ),
                 ),
+                // 3bis. En-tête profil (nom + statut) en mode écrit, façon
+                // messagerie — s'efface en passant à l'oral.
+                if (t < 0.999)
+                  Positioned(
+                    top: yEcrit + 34,
+                    left: 0,
+                    right: 0,
+                    child: IgnorePointer(
+                      child: Opacity(
+                        opacity: (1 - t).clamp(0.0, 1.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Louane', style: AppTextStyles.titleMedium),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: LouanePalette.accent,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  chat.louaneEcrit ? 'écrit…' : 'en ligne',
+                                  style: AppTextStyles.caption
+                                      .copyWith(color: AppColors.textMuted),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 // 4. Bouton micro (mode oral) : apparaît en bas.
                 Positioned(
                   left: 0,
@@ -317,7 +356,8 @@ class _LouanePageState extends ConsumerState<LouanePage>
   // Conversation écrite (sans le personnage, qui flotte au-dessus).
   Widget _contenuEcrit(LouaneChatState chat, bool clavier) {
     final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
-    final espaceHaut = clavier ? 120.0 : 210.0; // réserve la place du personnage
+    // Réserve la place de l'avatar de profil + nom/statut au-dessus.
+    final espaceHaut = clavier ? 92.0 : 168.0;
     return Column(
       children: [
         SizedBox(height: espaceHaut),
@@ -330,7 +370,14 @@ class _LouanePageState extends ConsumerState<LouanePage>
             itemCount: nbItems,
             itemBuilder: (context, i) {
               if (i >= chat.messages.length) return const TypingBubble();
-              return MessageBubble(message: chat.messages[i]);
+              final m = chat.messages[i];
+              final dernier = i == chat.messages.length - 1;
+              return MessageBubble(
+                key: ValueKey(i),
+                message: m,
+                nouveau: dernier,
+                machineAEcrire: dernier && m.estLouane,
+              );
             },
           ),
         ),

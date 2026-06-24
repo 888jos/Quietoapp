@@ -34,16 +34,20 @@ class _LouanePageState extends ConsumerState<LouanePage>
   ModeLouane _mode = ModeLouane.ecrit;
 
   // Bascule écrit ↔ oral (0 = écrit, 1 = oral) : un seul personnage glisse du
-  // haut vers le centre en grandissant, pendant que le contenu écrit descend
-  // et s'efface, et que le ciel étoilé apparaît.
+  // haut vers le centre en grandissant, le contenu écrit s'efface AVANT qu'il
+  // bouge, et le ciel étoilé apparaît. Séquencé pour éviter tout chevauchement.
   late final AnimationController _modeAnim;
+
+  // Nombre de messages déjà affichés : seuls les messages neufs « POP ».
+  int _nbVus = 0;
 
   @override
   void initState() {
     super.initState();
     _modeAnim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
+      duration: const Duration(milliseconds: 600),
+      reverseDuration: const Duration(milliseconds: 850),
     );
     _initSpeech();
     _initTts();
@@ -212,6 +216,14 @@ class _LouanePageState extends ConsumerState<LouanePage>
   Widget build(BuildContext context) {
     final chat = ref.watch(louaneChatProvider);
 
+    // Mémorise quels messages ont déjà été affichés, pour n'animer (POP) que
+    // les nouveaux et ne jamais rejouer l'animation lors des reconstructions.
+    if (_nbVus != chat.messages.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _nbVus = chat.messages.length;
+      });
+    }
+
     // Nouveau message de Louane → en mode oral, elle le dit à voix haute.
     ref.listen(louaneChatProvider, (prev, next) {
       _versLeBas();
@@ -242,37 +254,44 @@ class _LouanePageState extends ConsumerState<LouanePage>
     return AnimatedBuilder(
       animation: _modeAnim,
       builder: (context, _) {
-        final t = Curves.easeInOutCubic.transform(_modeAnim.value);
+        final a = _modeAnim.value;
+        // Séquencé : le contenu écrit s'efface vite (phase 1), PUIS le perso
+        // glisse au centre et le ciel apparaît (phase 2). Au retour, l'ordre
+        // s'inverse de lui-même → zéro chevauchement.
+        const seuil = 0.35;
+        final opaciteContenu =
+            Curves.easeInOut.transform((1 - a / seuil).clamp(0.0, 1.0));
+        final move = Curves.easeInOutCubic
+            .transform(((a - seuil) / (1 - seuil)).clamp(0.0, 1.0));
         return LayoutBuilder(
           builder: (context, c) {
             final h = c.maxHeight;
             // Centre vertical du personnage : en haut (écrit) → centre (oral).
             final yEcrit = clavier ? 52.0 : 76.0;
             final yOral = h * 0.40;
-            final yC = yEcrit + (yOral - yEcrit) * t;
+            final yC = yEcrit + (yOral - yEcrit) * move;
             // Taille : petit avatar de profil (écrit) → grand au centre (oral).
             final scEcrit = clavier ? 0.42 : 0.62;
-            final scale = scEcrit + (1.25 - scEcrit) * t;
+            final scale = scEcrit + (1.25 - scEcrit) * move;
             return Stack(
               children: [
-                // 1. Ciel étoilé plein écran (apparaît en mode oral).
-                if (t > 0.001)
+                // 1. Ciel étoilé : apparaît seulement quand le perso se déplace.
+                if (move > 0.001)
                   Positioned.fill(
-                    child: Opacity(opacity: t, child: const CielEtoileFond()),
+                    child:
+                        Opacity(opacity: move, child: const CielEtoileFond()),
                   ),
-                // 2. Conversation écrite : glisse vers le bas en s'effaçant.
-                Positioned.fill(
-                  child: IgnorePointer(
-                    ignoring: estOral,
-                    child: Opacity(
-                      opacity: (1 - t).clamp(0.0, 1.0),
-                      child: Transform.translate(
-                        offset: Offset(0, t * 90),
+                // 2. Conversation écrite : s'efface vite, AVANT le mouvement.
+                if (opaciteContenu > 0.001)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      ignoring: estOral,
+                      child: Opacity(
+                        opacity: opaciteContenu,
                         child: _contenuEcrit(chat, clavier),
                       ),
                     ),
                   ),
-                ),
                 // 3. Le personnage : UN SEUL élément qui glisse et grandit.
                 Positioned(
                   top: yC - 95,
@@ -288,16 +307,15 @@ class _LouanePageState extends ConsumerState<LouanePage>
                     ),
                   ),
                 ),
-                // 3bis. En-tête profil (nom + statut) en mode écrit, façon
-                // messagerie — s'efface en passant à l'oral.
-                if (t < 0.999)
+                // 3bis. En-tête profil (nom + statut) — s'efface avec le contenu.
+                if (opaciteContenu > 0.001)
                   Positioned(
                     top: yEcrit + 34,
                     left: 0,
                     right: 0,
                     child: IgnorePointer(
                       child: Opacity(
-                        opacity: (1 - t).clamp(0.0, 1.0),
+                        opacity: opaciteContenu,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -327,24 +345,25 @@ class _LouanePageState extends ConsumerState<LouanePage>
                       ),
                     ),
                   ),
-                // 4. Bouton micro (mode oral) : apparaît en bas.
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 28,
-                  child: IgnorePointer(
-                    ignoring: !estOral,
-                    child: Opacity(
-                      opacity: t,
-                      child: Center(
-                        child: _GrosBoutonMicro(
-                          actif: _ecoute,
-                          onTap: _toggleMicroOral,
+                // 4. Bouton micro (mode oral) : apparaît avec le personnage.
+                if (move > 0.001)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 28,
+                    child: IgnorePointer(
+                      ignoring: !estOral,
+                      child: Opacity(
+                        opacity: move,
+                        child: Center(
+                          child: _GrosBoutonMicro(
+                            actif: _ecoute,
+                            onTap: _toggleMicroOral,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
               ],
             );
           },
@@ -370,13 +389,10 @@ class _LouanePageState extends ConsumerState<LouanePage>
             itemCount: nbItems,
             itemBuilder: (context, i) {
               if (i >= chat.messages.length) return const TypingBubble();
-              final m = chat.messages[i];
-              final dernier = i == chat.messages.length - 1;
               return MessageBubble(
                 key: ValueKey(i),
-                message: m,
-                nouveau: dernier,
-                machineAEcrire: dernier && m.estLouane,
+                message: chat.messages[i],
+                nouveau: i >= _nbVus,
               );
             },
           ),

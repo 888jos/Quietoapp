@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -9,25 +8,51 @@ import 'louane_avatar.dart';
 /// Une bulle de message. Louane à gauche (sombre) avec son mini-avatar,
 /// l'utilisateur à droite (turquoise).
 ///
-/// [nouveau] : le message vient d'arriver → petite animation d'entrée
-/// (glisse vers le haut + fondu), comme en messagerie.
-/// [machineAEcrire] : le texte de Louane s'écrit progressivement, en direct
-/// (réservé à son tout dernier message).
-class MessageBubble extends StatelessWidget {
+/// [nouveau] : le message vient d'arriver → il « POP » (apparaît d'un coup
+/// avec un petit rebond + fondu), comme en messagerie. L'animation ne se joue
+/// QU'UNE fois (au montage) : pas de ré-animation lors des reconstructions.
+class MessageBubble extends StatefulWidget {
   final LouaneMessage message;
   final bool nouveau;
-  final bool machineAEcrire;
 
   const MessageBubble({
     super.key,
     required this.message,
     this.nouveau = false,
-    this.machineAEcrire = false,
   });
 
   @override
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 340),
+    );
+    // Anime seulement si le message est neuf ; sinon il est déjà « posé ».
+    if (widget.nouveau) {
+      _c.forward();
+    } else {
+      _c.value = 1.0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final estLouane = message.estLouane;
+    final estLouane = widget.message.estLouane;
     final largeurMax = MediaQuery.of(context).size.width * 0.72;
 
     final texteStyle = AppTextStyles.bodyLarge.copyWith(
@@ -47,9 +72,7 @@ class MessageBubble extends StatelessWidget {
           bottomRight: Radius.circular(estLouane ? 20 : 6),
         ),
       ),
-      child: (estLouane && machineAEcrire)
-          ? _TexteMachine(texte: message.texte, style: texteStyle)
-          : Text(message.texte, style: texteStyle),
+      child: Text(widget.message.texte, style: texteStyle),
     );
 
     final Widget ligne = estLouane
@@ -72,63 +95,23 @@ class MessageBubble extends StatelessWidget {
       child: ligne,
     );
 
-    if (!nouveau) return contenu;
-
-    // Entrée façon messagerie : glisse vers le haut + fondu.
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOut,
-      builder: (context, t, child) => Opacity(
-        opacity: t,
-        child: Transform.translate(
-          offset: Offset(0, (1 - t) * 14),
-          child: child,
-        ),
-      ),
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, child) {
+        // POP : petit rebond (scale) + fondu, depuis le côté de l'expéditeur.
+        final pop = Curves.easeOutBack.transform(_c.value);
+        return Opacity(
+          opacity: _c.value.clamp(0.0, 1.0),
+          child: Transform.scale(
+            scale: 0.75 + 0.25 * pop,
+            alignment:
+                estLouane ? Alignment.bottomLeft : Alignment.bottomRight,
+            child: child,
+          ),
+        );
+      },
       child: contenu,
     );
-  }
-}
-
-/// Texte qui s'écrit progressivement (effet « en train d'écrire »).
-class _TexteMachine extends StatefulWidget {
-  final String texte;
-  final TextStyle style;
-  const _TexteMachine({required this.texte, required this.style});
-
-  @override
-  State<_TexteMachine> createState() => _TexteMachineState();
-}
-
-class _TexteMachineState extends State<_TexteMachine> {
-  int _n = 0;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    // ~1 s pour révéler le message quelle que soit sa longueur (vivant, sans
-    // traîner) : on adapte le nombre de caractères par tick.
-    final pas = (widget.texte.length / 60).ceil().clamp(1, 6);
-    _timer = Timer.periodic(const Duration(milliseconds: 16), (t) {
-      if (!mounted || _n >= widget.texte.length) {
-        t.cancel();
-        return;
-      }
-      setState(() => _n = (_n + pas).clamp(0, widget.texte.length));
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(widget.texte.substring(0, _n), style: widget.style);
   }
 }
 

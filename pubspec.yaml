@@ -2,7 +2,7 @@ name: quieto
 description: "Quieto — application de méditation en français"
 publish_to: 'none'
 
-version: 1.0.5+4
+version: 1.0.5+5
 
 environment:
   sdk: ^3.11.1
@@ -41,6 +41,16 @@ dependencies:
   cloud_functions: ^6.3.3
   speech_to_text: ^7.4.0
   flutter_tts: ^4.2.5
+  firebase_app_check: ^0.4.5
+  firebase_core: ^4.11.0
+  material_symbols_icons: ^4.2951.0
+
+# Force path_provider sur une version SANS le package natif `objective_c`.
+# La 2.6.0 (via objective_c / native-assets) ne s'embarque pas correctement sur
+# les builds Xcode/release → crash dyld au lancement (« DOBJC_initializeApi »)
+# = écran blanc. La 2.4.1 utilise l'implémentation Objective-C classique, stable.
+dependency_overrides:
+  path_provider_foundation: 2.4.1
 
 dev_dependencies:
   flutter_test:
@@ -68,4 +78,10 @@ flutter:
     - assets/images/sessions/express/
     # Audios hébergés sur Firebase Storage (cf. AppConstants.audioBaseUrl)
     # — plus embarqués dans le binaire pour réduire la taille de l'app.
+
+  fonts:
+    # Police du paywall (design Sereine). Fichier variable (toutes graisses).
+    - family: HankenGrotesk
+      fonts:
+        - asset: assets/fonts/HankenGrotesk.ttf
 

@@ -1,4 +1,10 @@
 PODS:
+  - AppCheckCore (11.3.0):
+    - GoogleUtilities/Environment (~> 8.0)
+    - GoogleUtilities/UserDefaults (~> 8.0)
+    - PromisesObjC (~> 2.4)
+    - PromisesSwift (~> 2.4)
+    - RecaptchaInterop (~> 101.0)
   - audio_service (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -16,9 +22,20 @@ PODS:
   - Firebase/Functions (12.15.0):
     - Firebase/CoreOnly
     - FirebaseFunctions (~> 12.15.0)
+  - firebase_app_check (0.4.5):
+    - Firebase/CoreOnly (~> 12.15.0)
+    - firebase_core
+    - FirebaseAppCheck (~> 12.15.0)
+    - Flutter
   - firebase_core (4.11.0):
     - Firebase/CoreOnly (= 12.15.0)
     - Flutter
+  - FirebaseAppCheck (12.15.0):
+    - AppCheckCore (~> 11.3)
+    - FirebaseAppCheckInterop (~> 12.15.0)
+    - FirebaseCore (~> 12.15.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
   - FirebaseAppCheckInterop (12.15.0)
   - FirebaseAuthInterop (12.15.0)
   - FirebaseCore (12.15.0):
@@ -54,10 +71,19 @@ PODS:
   - "GoogleUtilities/NSData+zlib (8.1.1)":
     - GoogleUtilities/Privacy
   - GoogleUtilities/Privacy (8.1.1)
+  - GoogleUtilities/UserDefaults (8.1.1):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
   - GTMSessionFetcher/Core (5.3.0)
   - just_audio (0.0.1):
     - Flutter
     - FlutterMacOS
+  - path_provider_foundation (0.0.1):
+    - Flutter
+    - FlutterMacOS
+  - PromisesObjC (2.4.1)
+  - PromisesSwift (2.4.1):
+    - PromisesObjC (= 2.4.1)
   - purchases_flutter (9.14.0):
     - Flutter
     - PurchasesHybridCommon (= 17.46.1)
@@ -69,6 +95,7 @@ PODS:
   - PurchasesHybridCommonUI (17.46.1):
     - PurchasesHybridCommon (= 17.46.1)
     - RevenueCatUI (= 5.61.0)
+  - RecaptchaInterop (101.0.0)
   - RevenueCat (5.61.0)
   - RevenueCatUI (5.61.0):
     - RevenueCat (= 5.61.0)
@@ -89,12 +116,14 @@ DEPENDENCIES:
   - audio_service (from `.symlinks/plugins/audio_service/darwin`)
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
   - cloud_functions (from `.symlinks/plugins/cloud_functions/ios`)
+  - firebase_app_check (from `.symlinks/plugins/firebase_app_check/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - Flutter (from `Flutter`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
   - flutter_timezone (from `.symlinks/plugins/flutter_timezone/ios`)
   - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
+  - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - purchases_flutter (from `.symlinks/plugins/purchases_flutter/ios`)
   - purchases_ui_flutter (from `.symlinks/plugins/purchases_ui_flutter/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -104,9 +133,11 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - AppCheckCore
     - CwlCatchException
     - CwlCatchExceptionSupport
     - Firebase
+    - FirebaseAppCheck
     - FirebaseAppCheckInterop
     - FirebaseAuthInterop
     - FirebaseCore
@@ -117,8 +148,11 @@ SPEC REPOS:
     - FirebaseSharedSwift
     - GoogleUtilities
     - GTMSessionFetcher
+    - PromisesObjC
+    - PromisesSwift
     - PurchasesHybridCommon
     - PurchasesHybridCommonUI
+    - RecaptchaInterop
     - RevenueCat
     - RevenueCatUI
 
@@ -129,6 +163,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/audio_session/ios"
   cloud_functions:
     :path: ".symlinks/plugins/cloud_functions/ios"
+  firebase_app_check:
+    :path: ".symlinks/plugins/firebase_app_check/ios"
   firebase_core:
     :path: ".symlinks/plugins/firebase_core/ios"
   Flutter:
@@ -141,6 +177,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_tts/ios"
   just_audio:
     :path: ".symlinks/plugins/just_audio/darwin"
+  path_provider_foundation:
+    :path: ".symlinks/plugins/path_provider_foundation/darwin"
   purchases_flutter:
     :path: ".symlinks/plugins/purchases_flutter/ios"
   purchases_ui_flutter:
@@ -155,13 +193,16 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/url_launcher_ios/ios"
 
 SPEC CHECKSUMS:
+  AppCheckCore: 214137f5c378d1dec88a68425c467fe65aaff637
   audio_service: aa99a6ba2ae7565996015322b0bb024e1d25c6fd
   audio_session: 9bb7f6c970f21241b19f5a3658097ae459681ba0
   cloud_functions: 26314ecaab7b88f3df15c1cc86f2a8348dcbbc02
   CwlCatchException: 7acc161b299a6de7f0a46a6ed741eae2c8b4d75a
   CwlCatchExceptionSupport: 54ccab8d8c78907b57f99717fb19d4cc3bce02dc
   Firebase: a8539b633d474fbeb654c7043f9c1649e274045b
+  firebase_app_check: b140a524632115e950bd706a8d7a9d0633a25427
   firebase_core: fc23178af8ea070194d09031ae4198a9608a3d22
+  FirebaseAppCheck: 29d81a8b4a1bf0273c04a1ffe1532aceabc9e7a8
   FirebaseAppCheckInterop: 5083c9acf65f206832fe659e1c676b7bc3d55e8a
   FirebaseAuthInterop: 0778f5f24d6cccd6d67ef45832fe9c67a0b944ea
   FirebaseCore: 2e86a4ea1684d4381707069e4a6d89ac808e901e
@@ -177,10 +218,14 @@ SPEC CHECKSUMS:
   GoogleUtilities: 4f2618a4a1e762a1ee134a1e2323bba9843e06da
   GTMSessionFetcher: 127211aeec0b1e904fc49f4f6f895dcc535b0ecf
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
+  PromisesObjC: 752c3227f599e3467650e47ea36f433eeb10c273
+  PromisesSwift: 217dea0fd5d2ad65222a109c48698add13cc1c5b
   purchases_flutter: 1a27b709af72a506ddbc2f1255cae31ba101243d
   purchases_ui_flutter: 0d1314931e99ba6dfb64e74df2eb1b26830799f9
   PurchasesHybridCommon: afaf46e9650f9399984196a6966c6d697d6122a2
   PurchasesHybridCommonUI: 19f4782374f25aa19c87d035a02fa845b4805157
+  RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RevenueCat: 9acbd29a62000b57d59efa16166290c4a119847b
   RevenueCatUI: 67229fd8c301e0f3df3e0d6c86bd9112311ef1a5
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb

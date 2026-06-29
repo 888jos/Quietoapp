@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
@@ -32,7 +33,10 @@ class MiniPlayer extends ConsumerWidget {
     final notifier = ref.read(playerProvider(sessionId).notifier);
 
     return GestureDetector(
-      onTap: () => context.push(AppRoutes.playerPath(sessionId)),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        context.push(AppRoutes.playerPath(sessionId));
+      },
       child: Container(
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingMd),
@@ -53,7 +57,10 @@ class MiniPlayer extends ConsumerWidget {
               ),
             ),
             IconButton(
-              onPressed: notifier.togglePlayPause,
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                notifier.togglePlayPause();
+              },
               icon: Icon(
                 isPlaying ? Iconsax.pause : Iconsax.play,
                 color: AppColors.accent,
@@ -62,6 +69,7 @@ class MiniPlayer extends ConsumerWidget {
             ),
             IconButton(
               onPressed: () async {
+                HapticFeedback.lightImpact();
                 // stop() relâche le keepAlive : le notifier sera détruit par
                 // l'autoDispose une fois le mini player caché. Pas besoin
                 // d'invalider (ça recréait le provider et relançait l'audio).

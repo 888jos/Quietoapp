@@ -47,6 +47,20 @@ class StorageService {
     await _prefs.setString(AppConstants.prefUserFirstName, name);
   }
 
+  // ── Mémoire de Louane (locale) ───────────────────────
+
+  /// Ce que Louane retient de l'utilisateur entre les sessions. Vide au début.
+  String get louaneMemoire =>
+      _prefs.getString(AppConstants.prefLouaneMemoire) ?? '';
+
+  Future<void> setLouaneMemoire(String fiche) async {
+    try {
+      await _prefs.setString(AppConstants.prefLouaneMemoire, fiche);
+    } catch (e, st) {
+      debugPrint('[Storage] setLouaneMemoire failed: $e\n$st');
+    }
+  }
+
   // ── Subscription ─────────────────────────────────
 
   bool get isPremium =>

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart'
     show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
         CupertinoThemeData;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -598,7 +599,10 @@ class _TapItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(AppConstants.radiusMd),
       splashColor: AppColors.accentDim,
       child: Padding(

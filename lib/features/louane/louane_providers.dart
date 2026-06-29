@@ -1,9 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/storage_providers.dart';
 import 'data/louane_message.dart';
 import 'data/louane_repository.dart';
 
 final louaneRepositoryProvider = Provider<LouaneRepository>(
-  (_) => LouaneRepository(),
+  (ref) => LouaneRepository(ref.watch(storageServiceProvider)),
 );
 
 /// État de la conversation : la liste des messages + si Louane est en train

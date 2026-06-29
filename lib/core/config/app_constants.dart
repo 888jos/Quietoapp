@@ -13,6 +13,8 @@ abstract final class AppConstants {
   static const prefSessionProgress = 'session_progress';
   static const prefUserFirstName = 'user_first_name';
   static const prefIsPremium = 'is_premium';
+  // Mémoire de Louane : ce qu'elle retient de l'utilisateur entre les sessions.
+  static const prefLouaneMemoire = 'louane_memoire';
   static const prefNotificationsEnabled = 'notifications_enabled';
   static const prefReminderHour = 'reminder_hour';
   static const prefReminderMinute = 'reminder_minute';

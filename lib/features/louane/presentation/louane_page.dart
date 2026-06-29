@@ -1,17 +1,25 @@
-import 'dart:io' show Platform;
+import 'dart:async';
+import 'dart:math' show sin, pi;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../louane_providers.dart';
 import 'louane_palette.dart';
-import 'widgets/louane_personnage.dart';
+import 'widgets/louane_avatar.dart';
 import 'widgets/message_bubble.dart';
 
-enum ModeLouane { ecrit, oral }
+/// État de la dictée vocale.
+enum _EtatVocal { inactif, ecoute, pause }
 
+/// Page Louane : une conversation à l'écrit, façon WhatsApp.
+/// En haut un bandeau « profil ». Au milieu le fil de bulles. En bas, la barre
+/// de saisie : champ texte + bouton micro (champ vide → appui = on dicte) qui
+/// passe à « envoyer » dès qu'on écrit. Pendant la dictée : annuler · pause ·
+/// terminer (façon WhatsApp), avec une vague qui réagit quand on parle. Le
+/// vocal est transcrit, déposé dans le champ pour relecture, puis envoyé.
 class LouanePage extends ConsumerStatefulWidget {
   const LouanePage({super.key});
 
@@ -19,24 +27,23 @@ class LouanePage extends ConsumerStatefulWidget {
   ConsumerState<LouanePage> createState() => _LouanePageState();
 }
 
-class _LouanePageState extends ConsumerState<LouanePage>
-    with SingleTickerProviderStateMixin {
+class _LouanePageState extends ConsumerState<LouanePage> {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
 
+  // Reconnaissance vocale (dictée).
   final SpeechToText _speech = SpeechToText();
-  final FlutterTts _tts = FlutterTts();
   bool _speechDispo = false;
-  bool _ecoute = false; // micro en écoute
-  bool _louaneParle = false; // TTS en cours
-  String _texteReconnu = '';
+  _EtatVocal _vocal = _EtatVocal.inactif;
+  bool _annuler = false; // session arrêtée pour annulation → ne pas remplir
+  String _texteAccumule = ''; // texte figé des segments précédents
+  String _texteReconnu = ''; // texte du segment d'écoute en cours
+  Timer? _chrono;
+  int _secondes = 0;
 
-  ModeLouane _mode = ModeLouane.ecrit;
-
-  // Bascule écrit ↔ oral (0 = écrit, 1 = oral) : un seul personnage glisse du
-  // haut vers le centre en grandissant, le contenu écrit s'efface AVANT qu'il
-  // bouge, et le ciel étoilé apparaît. Séquencé pour éviter tout chevauchement.
-  late final AnimationController _modeAnim;
+  // Dernier instant où des mots sont arrivés (= on parle). Sert à animer la
+  // vague : récent = on parle → barres hautes ; ancien = silence → barres basses.
+  final ValueNotifier<DateTime?> _dernierMot = ValueNotifier(null);
 
   // Nombre de messages déjà affichés : seuls les messages neufs « POP ».
   int _nbVus = 0;
@@ -44,160 +51,163 @@ class _LouanePageState extends ConsumerState<LouanePage>
   @override
   void initState() {
     super.initState();
-    _modeAnim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-      reverseDuration: const Duration(milliseconds: 850),
-    );
-    _initSpeech();
-    _initTts();
     WidgetsBinding.instance.addPostFrameCallback((_) => _versLeBas());
   }
 
   @override
   void dispose() {
+    _chrono?.cancel();
     _speech.stop();
-    _tts.stop();
-    _modeAnim.dispose();
+    _dernierMot.dispose();
     _controller.dispose();
     _scroll.dispose();
     super.dispose();
   }
 
-  // ── Init voix ───────────────────────────────────────────
-  Future<void> _initSpeech() async {
-    try {
-      _speechDispo = await _speech.initialize(
-        onStatus: _onSpeechStatus,
-        onError: (_) {
-          if (mounted) setState(() => _ecoute = false);
-        },
-      );
-    } catch (_) {
-      _speechDispo = false;
-    }
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _initTts() async {
-    try {
-      if (Platform.isIOS) {
-        await _tts.setSharedInstance(true);
-      }
-      await _tts.setLanguage('fr-FR');
-      await _tts.setSpeechRate(0.48);
-      await _tts.setPitch(1.0);
-      _tts.setCompletionHandler(() {
-        if (mounted) setState(() => _louaneParle = false);
-      });
-      _tts.setCancelHandler(() {
-        if (mounted) setState(() => _louaneParle = false);
-      });
-    } catch (_) {}
-  }
-
-  // ── Écoute micro ────────────────────────────────────────
-  void _onSpeechStatus(String status) {
-    if (!mounted) return;
-    if (status == 'done' || status == 'notListening') {
-      final etaitEcoute = _ecoute;
-      setState(() => _ecoute = false);
-      // En mode oral : on envoie automatiquement ce qui a été dit.
-      if (etaitEcoute && _mode == ModeLouane.oral) {
-        final t = _texteReconnu.trim();
-        _texteReconnu = '';
-        if (t.isNotEmpty) {
-          ref.read(louaneChatProvider.notifier).envoyer(t);
-        }
-      }
-    }
-  }
-
-  Future<void> _demarreEcouteOrale() async {
-    if (_louaneParle) {
-      await _tts.stop();
-      if (mounted) setState(() => _louaneParle = false);
-    }
-    if (!_speechDispo) {
-      _speechDispo = await _speech.initialize(
-        onStatus: _onSpeechStatus,
-        onError: (_) {
-          if (mounted) setState(() => _ecoute = false);
-        },
-      );
-    }
-    if (!_speechDispo || !mounted) return;
-    _texteReconnu = '';
-    setState(() => _ecoute = true);
-    try {
-      await _speech.listen(
-        onResult: (r) => _texteReconnu = r.recognizedWords,
-        listenOptions: SpeechListenOptions(
-          localeId: 'fr_FR',
-          listenFor: const Duration(seconds: 60),
-          pauseFor: const Duration(seconds: 3),
-          partialResults: true,
-          cancelOnError: true,
-          listenMode: ListenMode.dictation,
-        ),
-      );
-    } catch (_) {
-      if (mounted) setState(() => _ecoute = false);
-    }
-  }
-
-  Future<void> _toggleMicroOral() async {
-    if (_ecoute) {
-      await _speech.stop(); // le status handler enverra le texte
-      return;
-    }
-    await _demarreEcouteOrale();
-  }
-
-  // ── Louane parle (TTS) ──────────────────────────────────
-  Future<void> _parler(String texte) async {
-    final t = _sansEmoji(texte).trim();
-    if (t.isEmpty) return;
-    if (mounted) setState(() => _louaneParle = true);
-    await _tts.stop();
-    await _tts.speak(t);
-  }
-
-  String _sansEmoji(String s) => s.replaceAll(
-        RegExp(
-          r'[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}️]',
-          unicode: true,
-        ),
-        '',
-      );
-
-  // ── Mode ────────────────────────────────────────────────
-  void _changerMode(ModeLouane m) {
-    if (m == _mode) return;
-    _speech.stop();
-    _tts.stop();
-    setState(() {
-      _mode = m;
-      _ecoute = false;
-      _louaneParle = false;
-    });
-    // Glisse en douceur vers le nouveau mode (le personnage se déplace).
-    if (m == ModeLouane.oral) {
-      _modeAnim.forward();
-    } else {
-      _modeAnim.reverse();
-    }
-  }
-
-  void _passerEnOral() => _changerMode(ModeLouane.oral);
-
-  // ── Envoi écrit ─────────────────────────────────────────
   void _envoyer() {
     final texte = _controller.text;
     if (texte.trim().isEmpty) return;
     _controller.clear();
     ref.read(louaneChatProvider.notifier).envoyer(texte);
     _versLeBas();
+  }
+
+  // ── Vocal (dictée avec pause) ───────────────────────────
+  void _demarrerChrono() {
+    _chrono?.cancel();
+    _chrono = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _secondes++);
+    });
+  }
+
+  Future<void> _ecouter() async {
+    _texteReconnu = '';
+    await _speech.listen(
+      onResult: (r) {
+        _texteReconnu = r.recognizedWords;
+        _dernierMot.value = DateTime.now(); // des mots arrivent → on parle
+      },
+      listenOptions: SpeechListenOptions(
+        localeId: 'fr_FR',
+        listenFor: const Duration(seconds: 120),
+        pauseFor: const Duration(seconds: 30),
+        partialResults: true,
+        cancelOnError: true,
+        listenMode: ListenMode.dictation,
+        autoPunctuation: true, // ponctuation auto (virgules, points, ?) comme le clavier
+      ),
+    );
+  }
+
+  Future<void> _demarrerVocal() async {
+    if (!_speechDispo) {
+      _speechDispo = await _speech.initialize(
+        onStatus: _onStatutVocal,
+        onError: (_) {
+          if (mounted) setState(() => _vocal = _EtatVocal.inactif);
+        },
+      );
+    }
+    if (!_speechDispo) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Micro indisponible sur cet appareil.')),
+        );
+      }
+      return;
+    }
+    HapticFeedback.lightImpact();
+    _texteAccumule = '';
+    _texteReconnu = '';
+    _annuler = false;
+    _secondes = 0;
+    if (mounted) setState(() => _vocal = _EtatVocal.ecoute);
+    _demarrerChrono();
+    await _ecouter();
+  }
+
+  Future<void> _pauseVocal() async {
+    HapticFeedback.lightImpact();
+    _chrono?.cancel(); // fige le minuteur
+    setState(() => _vocal = _EtatVocal.pause);
+    await _speech.stop(); // le statut "done" verra l'état pause → reste en pause
+  }
+
+  Future<void> _reprendreVocal() async {
+    HapticFeedback.lightImpact();
+    setState(() => _vocal = _EtatVocal.ecoute);
+    _demarrerChrono();
+    await _ecouter();
+  }
+
+  void _finaliser() {
+    _chrono?.cancel();
+    final t = _texteAccumule.trim();
+    _texteAccumule = '';
+    _texteReconnu = '';
+    setState(() {
+      _vocal = _EtatVocal.inactif;
+      _secondes = 0;
+    });
+    if (t.isNotEmpty) {
+      _controller.text = t;
+      _controller.selection = TextSelection.collapsed(offset: t.length);
+    }
+  }
+
+  Future<void> _terminerVocal() async {
+    HapticFeedback.lightImpact();
+    if (_vocal == _EtatVocal.pause) {
+      _finaliser(); // pas en écoute : on finalise directement
+    } else {
+      await _speech.stop(); // le statut "done" finalisera
+    }
+  }
+
+  Future<void> _annulerVocal() async {
+    HapticFeedback.lightImpact();
+    // On coupe et on revient au champ texte TOUT DE SUITE, sans attendre le
+    // retour de la reconnaissance (sur iPhone, cancel() ne rappelle pas
+    // toujours le statut → sinon le bouton semblait ne rien faire).
+    _annuler = true;
+    _chrono?.cancel();
+    _texteAccumule = '';
+    _texteReconnu = '';
+    if (mounted) {
+      setState(() {
+        _vocal = _EtatVocal.inactif;
+        _secondes = 0;
+      });
+    }
+    await _speech.cancel();
+  }
+
+  void _onStatutVocal(String status) {
+    if (!mounted) return;
+    if (status != 'done' && status != 'notListening') return;
+
+    // Annulation : on jette tout.
+    if (_annuler) {
+      _annuler = false;
+      _chrono?.cancel();
+      _texteAccumule = '';
+      _texteReconnu = '';
+      setState(() {
+        _vocal = _EtatVocal.inactif;
+        _secondes = 0;
+      });
+      return;
+    }
+
+    // On fige le texte de ce segment.
+    _texteAccumule = '$_texteAccumule $_texteReconnu'.trim();
+    _texteReconnu = '';
+
+    // En pause : on attend reprise / terminer.
+    if (_vocal == _EtatVocal.pause) return;
+
+    // Sinon (terminer manuel, ou arrêt auto après silence) : dépose + sort.
+    _finaliser();
   }
 
   void _versLeBas() {
@@ -224,252 +234,135 @@ class _LouanePageState extends ConsumerState<LouanePage>
       });
     }
 
-    // Nouveau message de Louane → en mode oral, elle le dit à voix haute.
-    ref.listen(louaneChatProvider, (prev, next) {
-      _versLeBas();
-      if (_mode != ModeLouane.oral) return;
-      final avant = prev?.messages.length ?? 0;
-      if (next.messages.length > avant && next.messages.last.estLouane) {
-        _parler(next.messages.last.texte);
-      }
-    });
+    // Chaque nouveau message → on redescend en bas du fil.
+    ref.listen(louaneChatProvider, (_, _) => _versLeBas());
+
+    final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            _SelecteurMode(mode: _mode, onChange: _changerMode),
-            Expanded(child: _corps(chat)),
+            _EnTete(ecrit: chat.louaneEcrit),
+            Expanded(
+              child: ListView.builder(
+                controller: _scroll,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                itemCount: nbItems,
+                itemBuilder: (context, i) {
+                  if (i >= chat.messages.length) return const TypingBubble();
+                  return MessageBubble(
+                    key: ValueKey(i),
+                    message: chat.messages[i],
+                    nouveau: i >= _nbVus,
+                  );
+                },
+              ),
+            ),
+            _BarreSaisie(
+              controller: _controller,
+              onEnvoyer: _envoyer,
+              enregistre: _vocal != _EtatVocal.inactif,
+              enPause: _vocal == _EtatVocal.pause,
+              secondes: _secondes,
+              dernierMot: _dernierMot,
+              onMic: _demarrerVocal,
+              onPause: _pauseVocal,
+              onReprendre: _reprendreVocal,
+              onTerminer: _terminerVocal,
+              onAnnuler: _annulerVocal,
+            ),
           ],
         ),
       ),
     );
   }
-
-  // ── Corps : écrit ↔ oral en un seul mouvement continu ─────
-  Widget _corps(LouaneChatState chat) {
-    final estOral = _mode == ModeLouane.oral;
-    final clavier = MediaQuery.of(context).viewInsets.bottom > 0;
-    return AnimatedBuilder(
-      animation: _modeAnim,
-      builder: (context, _) {
-        final a = _modeAnim.value;
-        // Séquencé : le contenu écrit s'efface vite (phase 1), PUIS le perso
-        // glisse au centre et le ciel apparaît (phase 2). Au retour, l'ordre
-        // s'inverse de lui-même → zéro chevauchement.
-        const seuil = 0.35;
-        final opaciteContenu =
-            Curves.easeInOut.transform((1 - a / seuil).clamp(0.0, 1.0));
-        final move = Curves.easeInOutCubic
-            .transform(((a - seuil) / (1 - seuil)).clamp(0.0, 1.0));
-        return LayoutBuilder(
-          builder: (context, c) {
-            final h = c.maxHeight;
-            // Centre vertical du personnage : en haut (écrit) → centre (oral).
-            final yEcrit = clavier ? 52.0 : 76.0;
-            final yOral = h * 0.40;
-            final yC = yEcrit + (yOral - yEcrit) * move;
-            // Taille : petit avatar de profil (écrit) → grand au centre (oral).
-            final scEcrit = clavier ? 0.42 : 0.62;
-            final scale = scEcrit + (1.25 - scEcrit) * move;
-            return Stack(
-              children: [
-                // 1. Ciel étoilé : apparaît seulement quand le perso se déplace.
-                if (move > 0.001)
-                  Positioned.fill(
-                    child:
-                        Opacity(opacity: move, child: const CielEtoileFond()),
-                  ),
-                // 2. Conversation écrite : s'efface vite, AVANT le mouvement.
-                if (opaciteContenu > 0.001)
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      ignoring: estOral,
-                      child: Opacity(
-                        opacity: opaciteContenu,
-                        child: _contenuEcrit(chat, clavier),
-                      ),
-                    ),
-                  ),
-                // 3. Le personnage : UN SEUL élément qui glisse et grandit.
-                Positioned(
-                  top: yC - 95,
-                  left: 0,
-                  right: 0,
-                  height: 190,
-                  child: Transform.scale(
-                    scale: scale,
-                    child: LouanePersonnage(
-                      parle: estOral ? _louaneParle : chat.louaneEcrit,
-                      ecoute: estOral ? _ecoute : false,
-                      sansCiel: true,
-                    ),
-                  ),
-                ),
-                // 3bis. En-tête profil (nom + statut) — s'efface avec le contenu.
-                if (opaciteContenu > 0.001)
-                  Positioned(
-                    top: yEcrit + 34,
-                    left: 0,
-                    right: 0,
-                    child: IgnorePointer(
-                      child: Opacity(
-                        opacity: opaciteContenu,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('Louane', style: AppTextStyles.titleMedium),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: const BoxDecoration(
-                                    color: LouanePalette.accent,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  chat.louaneEcrit ? 'écrit…' : 'en ligne',
-                                  style: AppTextStyles.caption
-                                      .copyWith(color: AppColors.textMuted),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                // 4. Bouton micro (mode oral) : apparaît avec le personnage.
-                if (move > 0.001)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 28,
-                    child: IgnorePointer(
-                      ignoring: !estOral,
-                      child: Opacity(
-                        opacity: move,
-                        child: Center(
-                          child: _GrosBoutonMicro(
-                            actif: _ecoute,
-                            onTap: _toggleMicroOral,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // Conversation écrite (sans le personnage, qui flotte au-dessus).
-  Widget _contenuEcrit(LouaneChatState chat, bool clavier) {
-    final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
-    // Réserve la place de l'avatar de profil + nom/statut au-dessus.
-    final espaceHaut = clavier ? 92.0 : 168.0;
-    return Column(
-      children: [
-        SizedBox(height: espaceHaut),
-        const Divider(height: 1, color: AppColors.accentDim),
-        Expanded(
-          child: ListView.builder(
-            controller: _scroll,
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            itemCount: nbItems,
-            itemBuilder: (context, i) {
-              if (i >= chat.messages.length) return const TypingBubble();
-              return MessageBubble(
-                key: ValueKey(i),
-                message: chat.messages[i],
-                nouveau: i >= _nbVus,
-              );
-            },
-          ),
-        ),
-        _BarreSaisie(
-          controller: _controller,
-          onEnvoyer: _envoyer,
-          onMic: _passerEnOral,
-        ),
-      ],
-    );
-  }
 }
 
-// ── Sélecteur Écrit / Oral ────────────────────────────────
-class _SelecteurMode extends StatelessWidget {
-  final ModeLouane mode;
-  final ValueChanged<ModeLouane> onChange;
+// ── En-tête « profil » (façon WhatsApp) ───────────────────
+class _EnTete extends StatelessWidget {
+  final bool ecrit;
 
-  const _SelecteurMode({required this.mode, required this.onChange});
+  const _EnTete({required this.ecrit});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: AppColors.cardSurface,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Row(
-          children: [
-            _pill('À l\'écrit', ModeLouane.ecrit),
-            _pill('À l\'oral', ModeLouane.oral),
-          ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        border: Border(
+          bottom: BorderSide(color: AppColors.accentDim, width: 1),
         ),
       ),
-    );
-  }
-
-  Widget _pill(String label, ModeLouane m) {
-    final actif = mode == m;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => onChange(m),
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 9),
-          decoration: BoxDecoration(
-            color: actif ? LouanePalette.accent : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: AppTextStyles.labelLarge.copyWith(
-              color: actif ? AppColors.background : AppColors.textMuted,
+      child: Row(
+        children: [
+          LouaneAvatar(size: 44, parle: ecrit),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Louane', style: AppTextStyles.titleMedium),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: LouanePalette.accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      ecrit ? 'écrit…' : 'en ligne',
+                      style: AppTextStyles.caption
+                          .copyWith(color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-// ── Barre de saisie (écrit) ───────────────────────────────
+// ── Barre de saisie ───────────────────────────────────────
 class _BarreSaisie extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onEnvoyer;
+  final bool enregistre;
+  final bool enPause;
+  final int secondes;
+  final ValueNotifier<DateTime?> dernierMot;
   final VoidCallback onMic;
+  final VoidCallback onPause;
+  final VoidCallback onReprendre;
+  final VoidCallback onTerminer;
+  final VoidCallback onAnnuler;
 
   const _BarreSaisie({
     required this.controller,
     required this.onEnvoyer,
+    required this.enregistre,
+    required this.enPause,
+    required this.secondes,
+    required this.dernierMot,
     required this.onMic,
+    required this.onPause,
+    required this.onReprendre,
+    required this.onTerminer,
+    required this.onAnnuler,
   });
 
   @override
@@ -480,66 +373,195 @@ class _BarreSaisie extends StatelessWidget {
         color: AppColors.background,
         border: Border(top: BorderSide(color: AppColors.accentDim, width: 1)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              minLines: 1,
-              maxLines: 4,
-              textCapitalization: TextCapitalization.sentences,
-              style: AppTextStyles.bodyLarge,
-              onSubmitted: (_) => onEnvoyer(),
-              decoration: InputDecoration(
-                hintText: 'Dis ce que tu as sur le cœur…',
-                hintStyle: AppTextStyles.bodyMedium,
-                filled: true,
-                fillColor: AppColors.cardSurface,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+      child: enregistre
+          ? _BandeauEnregistrement(
+              enPause: enPause,
+              secondes: secondes,
+              dernierMot: dernierMot,
+              onAnnuler: onAnnuler,
+              onPause: onPause,
+              onReprendre: onReprendre,
+              onTerminer: onTerminer,
+            )
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    minLines: 1,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    style: AppTextStyles.bodyLarge,
+                    onSubmitted: (_) => onEnvoyer(),
+                    decoration: InputDecoration(
+                      hintText: 'Dis ce que tu as sur le cœur…',
+                      hintStyle: AppTextStyles.bodyMedium,
+                      filled: true,
+                      fillColor: AppColors.cardSurface,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    final aTexte = value.text.trim().isNotEmpty;
+                    return _BoutonAction(
+                      aTexte: aTexte,
+                      onTap: aTexte ? onEnvoyer : onMic,
+                    );
+                  },
+                ),
+              ],
             ),
+    );
+  }
+}
+
+/// Le bouton à droite : micro (champ vide) ↔ envoyer (dès qu'on écrit).
+class _BoutonAction extends StatelessWidget {
+  final bool aTexte;
+  final VoidCallback onTap;
+
+  const _BoutonAction({required this.aTexte, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        transitionBuilder: (child, anim) =>
+            ScaleTransition(scale: anim, child: child),
+        child: Container(
+          key: ValueKey(aTexte),
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: aTexte ? LouanePalette.accent : AppColors.cardSurface,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(width: 10),
-          ValueListenableBuilder<TextEditingValue>(
-            valueListenable: controller,
-            builder: (context, value, _) {
-              final aTexte = value.text.trim().isNotEmpty;
-              if (aTexte) {
-                return _BoutonRond(
-                  icon: Icons.arrow_upward_rounded,
-                  couleur: LouanePalette.accent,
-                  iconColor: AppColors.background,
-                  onTap: onEnvoyer,
-                );
-              }
-              return _BoutonRond(
-                icon: Icons.mic_none_rounded,
-                couleur: AppColors.cardSurface,
-                iconColor: AppColors.textMuted,
-                onTap: onMic,
-              );
-            },
+          child: Icon(
+            aTexte ? Icons.arrow_upward_rounded : Icons.mic_none_rounded,
+            color: aTexte ? AppColors.background : AppColors.textMuted,
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _BoutonRond extends StatelessWidget {
+/// Pendant la dictée (2 lignes façon WhatsApp) :
+/// haut = point rouge + vague (barres blanches réactives) + minuteur ;
+/// bas  = 🗑️ annuler · ⏸️/🎙️ pause-reprendre · ✓ terminer.
+class _BandeauEnregistrement extends StatelessWidget {
+  final bool enPause;
+  final int secondes;
+  final ValueNotifier<DateTime?> dernierMot;
+  final VoidCallback onAnnuler;
+  final VoidCallback onPause;
+  final VoidCallback onReprendre;
+  final VoidCallback onTerminer;
+
+  const _BandeauEnregistrement({
+    required this.enPause,
+    required this.secondes,
+    required this.dernierMot,
+    required this.onAnnuler,
+    required this.onPause,
+    required this.onReprendre,
+    required this.onTerminer,
+  });
+
+  String get _minutage {
+    final m = secondes ~/ 60;
+    final s = (secondes % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Ligne 1 : point + vague + minuteur.
+        SizedBox(
+          height: 34,
+          child: Row(
+            children: [
+              const SizedBox(width: 4),
+              Container(
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: enPause ? AppColors.textMuted : AppColors.error,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _Ondes(actif: !enPause, dernierMot: dernierMot),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                _minutage,
+                style:
+                    AppTextStyles.caption.copyWith(color: AppColors.textMuted),
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        // Ligne 2 : annuler · pause/reprendre · terminer.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _PetitBouton(
+              icon: Icons.delete_outline_rounded,
+              taille: 46,
+              couleur: AppColors.cardSurface,
+              iconColor: AppColors.error,
+              onTap: onAnnuler,
+            ),
+            _PetitBouton(
+              icon: enPause ? Icons.mic_rounded : Icons.pause_rounded,
+              taille: 54,
+              couleur: AppColors.error,
+              iconColor: Colors.white,
+              onTap: enPause ? onReprendre : onPause,
+            ),
+            _PetitBouton(
+              icon: Icons.check_rounded,
+              taille: 46,
+              couleur: LouanePalette.accent,
+              iconColor: AppColors.background,
+              onTap: onTerminer,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PetitBouton extends StatelessWidget {
   final IconData icon;
+  final double taille;
   final Color couleur;
   final Color iconColor;
   final VoidCallback onTap;
 
-  const _BoutonRond({
+  const _PetitBouton({
     required this.icon,
+    required this.taille,
     required this.couleur,
     required this.iconColor,
     required this.onTap,
@@ -550,76 +572,95 @@ class _BoutonRond extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 48,
-        height: 48,
+        width: taille,
+        height: taille,
         decoration: BoxDecoration(color: couleur, shape: BoxShape.circle),
-        child: Icon(icon, color: iconColor),
+        child: Icon(icon, color: iconColor, size: taille * 0.46),
       ),
     );
   }
 }
 
-// ── Gros bouton micro (oral) ──────────────────────────────
-class _GrosBoutonMicro extends StatefulWidget {
+/// Vague de barres blanches qui remplit la largeur, ondule en continu, et
+/// monte quand on parle (détecté via [dernierMot]) / s'aplatit en pause.
+class _Ondes extends StatefulWidget {
   final bool actif;
-  final VoidCallback onTap;
+  final ValueNotifier<DateTime?> dernierMot;
 
-  const _GrosBoutonMicro({required this.actif, required this.onTap});
+  const _Ondes({required this.actif, required this.dernierMot});
 
   @override
-  State<_GrosBoutonMicro> createState() => _GrosBoutonMicroState();
+  State<_Ondes> createState() => _OndesState();
 }
 
-class _GrosBoutonMicroState extends State<_GrosBoutonMicro>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c;
+class _OndesState extends State<_Ondes> with SingleTickerProviderStateMixin {
+  late final AnimationController _flow;
+  double _intensite = 0; // 0 (silence/pause) → 1 (on parle), lissé
 
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(
+    _flow = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 1300),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _c.dispose();
+    _flow.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (context, _) {
-          final couleur = widget.actif ? AppColors.error : LouanePalette.accent;
-          final glow = widget.actif ? (0.35 + 0.4 * _c.value) : 0.25;
-          return Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: couleur,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: couleur.withValues(alpha: glow),
-                  blurRadius: 24,
-                  spreadRadius: 3,
-                ),
-              ],
-            ),
-            child: Icon(
-              widget.actif ? Icons.mic : Icons.mic_none_rounded,
-              color: Colors.white,
-              size: 32,
-            ),
-          );
-        },
-      ),
+    return AnimatedBuilder(
+      animation: _flow,
+      builder: (context, _) {
+        final dm = widget.dernierMot.value;
+        final parleRecemment = widget.actif &&
+            dm != null &&
+            DateTime.now().difference(dm).inMilliseconds < 380;
+        // Cible : haut si on parle, bas si silence, ~0 si pause/inactif.
+        final cible = !widget.actif ? 0.0 : (parleRecemment ? 1.0 : 0.2);
+        _intensite += (cible - _intensite) * 0.16; // lissage
+        return CustomPaint(
+          size: const Size(double.infinity, 30),
+          painter: _OndesPainter(phase: _flow.value, intensite: _intensite),
+        );
+      },
     );
   }
+}
+
+class _OndesPainter extends CustomPainter {
+  final double phase; // 0 → 1 (déplacement de l'onde)
+  final double intensite; // 0 → 1
+
+  _OndesPainter({required this.phase, required this.intensite});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const n = 36;
+    final gap = size.width / n;
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = gap * 0.5;
+    final cy = size.height / 2;
+    for (var i = 0; i < n; i++) {
+      final x = gap * (i + 0.5);
+      // Onde qui se déplace + petite enveloppe (centre un peu plus haut).
+      final onde = (sin(phase * 2 * pi + i * 0.55) + 1) / 2; // 0 → 1
+      final enveloppe =
+          0.6 + 0.4 * (1 - ((i - (n - 1) / 2).abs() / ((n - 1) / 2)));
+      final frac = (0.1 + 0.9 * intensite) * (0.35 + 0.65 * onde) * enveloppe;
+      final h = size.height * frac.clamp(0.0, 1.0);
+      canvas.drawLine(Offset(x, cy - h / 2), Offset(x, cy + h / 2), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_OndesPainter old) =>
+      old.phase != phase || old.intensite != intensite;
 }

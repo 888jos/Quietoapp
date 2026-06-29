@@ -3,10 +3,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/louane_message.dart';
 import '../louane_palette.dart';
-import 'louane_avatar.dart';
 
-/// Une bulle de message. Louane à gauche (sombre) avec son mini-avatar,
-/// l'utilisateur à droite (turquoise).
+/// Une bulle de message, façon messagerie. Louane à gauche (sombre),
+/// l'utilisateur à droite (turquoise). Pas d'avatar par message : il vit
+/// dans l'en-tête, comme une conversation WhatsApp en tête-à-tête.
 ///
 /// [nouveau] : le message vient d'arriver → il « POP » (apparaît d'un coup
 /// avec un petit rebond + fondu), comme en messagerie. L'animation ne se joue
@@ -53,7 +53,7 @@ class _MessageBubbleState extends State<MessageBubble>
   @override
   Widget build(BuildContext context) {
     final estLouane = widget.message.estLouane;
-    final largeurMax = MediaQuery.of(context).size.width * 0.72;
+    final largeurMax = MediaQuery.of(context).size.width * 0.78;
 
     final texteStyle = AppTextStyles.bodyLarge.copyWith(
       color: estLouane ? AppColors.textPrimary : AppColors.background,
@@ -61,7 +61,7 @@ class _MessageBubbleState extends State<MessageBubble>
     );
 
     final bulle = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
       constraints: BoxConstraints(maxWidth: largeurMax),
       decoration: BoxDecoration(
         color: estLouane ? AppColors.cardSurface : LouanePalette.accent,
@@ -75,24 +75,10 @@ class _MessageBubbleState extends State<MessageBubble>
       child: Text(widget.message.texte, style: texteStyle),
     );
 
-    final Widget ligne = estLouane
-        ? Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.only(right: 8, bottom: 2),
-                child: LouaneAvatar(size: 30),
-              ),
-              Flexible(child: bulle),
-            ],
-          )
-        : bulle;
-
     final contenu = Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       alignment: estLouane ? Alignment.centerLeft : Alignment.centerRight,
-      child: ligne,
+      child: bulle,
     );
 
     return AnimatedBuilder(
@@ -115,7 +101,7 @@ class _MessageBubbleState extends State<MessageBubble>
   }
 }
 
-/// Bulle "Louane écrit…" : son avatar + 3 points qui pulsent doucement.
+/// Bulle "Louane écrit…" : 3 points qui pulsent doucement, à gauche.
 class TypingBubble extends StatefulWidget {
   const TypingBubble({super.key});
 
@@ -145,56 +131,46 @@ class _TypingBubbleState extends State<TypingBubble>
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       alignment: Alignment.centerLeft,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(right: 8, bottom: 2),
-            child: LouaneAvatar(size: 30, parle: true),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: const BoxDecoration(
+          color: AppColors.cardSurface,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomLeft: Radius.circular(6),
+            bottomRight: Radius.circular(20),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-            decoration: const BoxDecoration(
-              color: AppColors.cardSurface,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-                bottomLeft: Radius.circular(6),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-            child: AnimatedBuilder(
-              animation: _c,
-              builder: (context, _) {
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(3, (i) {
-                    final phase = (_c.value + i * 0.2) % 1.0;
-                    final opacity =
-                        0.3 + 0.7 * (1 - (phase - 0.5).abs() * 2).clamp(0.0, 1.0);
-                    return Padding(
-                      padding: EdgeInsets.only(right: i < 2 ? 6 : 0),
-                      child: Opacity(
-                        opacity: opacity,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: LouanePalette.accent,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+        ),
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(3, (i) {
+                final phase = (_c.value + i * 0.2) % 1.0;
+                final opacity =
+                    0.3 + 0.7 * (1 - (phase - 0.5).abs() * 2).clamp(0.0, 1.0);
+                return Padding(
+                  padding: EdgeInsets.only(right: i < 2 ? 6 : 0),
+                  child: Opacity(
+                    opacity: opacity,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: LouanePalette.accent,
+                        shape: BoxShape.circle,
                       ),
-                    );
-                  }),
+                    ),
+                  ),
                 );
-              },
-            ),
-          ),
-        ],
+              }),
+            );
+          },
+        ),
       ),
     );
   }

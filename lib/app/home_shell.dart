@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../core/theme/app_colors.dart';
@@ -113,7 +114,10 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = activeColor ?? AppColors.accent;
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
         width: 72,

@@ -6,12 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/error_placeholder.dart';
 import '../paywall_providers.dart';
+import 'paywall_screen.dart';
+
+/// INTERRUPTEUR DE SECOURS — mets `false` pour revenir INSTANTANÉMENT à
+/// l'ancien paywall natif RevenueCat si le nouveau (100 % Flutter) pose souci.
+/// Aucune autre modif : on recompile et l'ancien écran revient tel quel.
+const bool kUsePaywallFlutter = true;
 
 class PaywallPage extends ConsumerStatefulWidget {
   const PaywallPage({super.key});
@@ -26,6 +33,13 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   // PaywallView natif n'est PAS repeint (évite un à-coup).
   final ValueNotifier<bool> _showCloseButton = ValueNotifier(false);
   Timer? _closeTimer;
+
+  bool _busy = false; // achat / restauration en cours
+
+  static const _urlConfidentialite =
+      'https://www.notion.so/Politique-de-Confidentialit-31de9e37b4a88093b560e0636712146e';
+  static const _urlConditions =
+      'https://www.notion.so/Terms-31de9e37b4a88085a949e24158d042e9';
 
   // Le paywall natif (PaywallView) est LOURD à monter : s'il s'instancie pendant
   // l'animation de montée, la transition saccade. On attend donc que la montée
@@ -104,6 +118,138 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     // l'achat se conclut.
   }
 
+  /// Flux commun après un achat/restauration réussi : marque premium, montre la
+  /// confirmation, puis revient à la page d'origine. Utilisé par le paywall
+  /// Flutter ET le paywall natif → mêmes étapes, rien ne change côté paiement.
+  Future<void> _finaliserAchat(CustomerInfo info) async {
+    final router = GoRouter.of(context); // capturé avant les await
+    await _onPurchaseSuccess(info);
+    if (!mounted) return;
+    await _showPremiumConfirmation();
+    if (!mounted) return;
+    if (router.canPop()) {
+      router.pop();
+    } else {
+      router.go(AppRoutes.home);
+    }
+  }
+
+  // ── Branchement du paywall design (PaywallScreen) ───────
+
+  /// Achat depuis le CTA du nouveau paywall (forfait sélectionné).
+  Future<void> _onStart(Package? pkg) async {
+    if (pkg == null) {
+      _snack('Offre indisponible. Réessaie dans un instant.');
+      return;
+    }
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final result = await Purchases.purchase(PurchaseParams.package(pkg));
+      if (!mounted) return;
+      await _finaliserAchat(result.customerInfo);
+    } on PlatformException catch (e) {
+      // Annulation utilisateur → silencieux (pas une erreur).
+      final code = PurchasesErrorHelper.getErrorCode(e);
+      if (code != PurchasesErrorCode.purchaseCancelledError) {
+        _snack('L\'achat n\'a pas pu aboutir. Réessaie dans un instant.');
+      }
+    } catch (_) {
+      _snack('Une erreur est survenue. Réessaie dans un instant.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Restauration depuis « Restaurer mes achats ».
+  Future<void> _onRestore() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final info = await Purchases.restorePurchases();
+      if (!mounted) return;
+      final premium = info.entitlements.active
+          .containsKey(AppConstants.entitlementPremium);
+      if (premium) {
+        await _finaliserAchat(info);
+      } else {
+        _snack('Aucun abonnement à restaurer sur ce compte.');
+      }
+    } on PlatformException catch (_) {
+      _snack('La restauration a échoué. Réessaie dans un instant.');
+    } catch (_) {
+      _snack('Une erreur est survenue. Réessaie dans un instant.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _ouvrirLien(String url) async {
+    try {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  void _snack(String texte) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.cardSurface,
+        margin: const EdgeInsets.all(AppConstants.spacingMd),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.radiusLg)),
+        content: Text(texte, style: const TextStyle(color: Colors.white)),
+      ));
+  }
+
+  /// Construit l'offre affichée (prix, dates, essai) à partir d'un package RC.
+  PaywallOffer _buildOffer(Package p, {required bool annuel, int? savePct}) {
+    final sp = p.storeProduct;
+    final trial = _trialDays(sp);
+    final reminder = trial - 2;
+    // ⚠️ PRIX FORCÉS EN EUROS (demande explicite). Affiche toujours les prix
+    // français, quel que soit le pays du compte. Pour revenir au prix réel
+    // RevenueCat (localisé automatiquement par pays), décommente les lignes RC.
+    return PaywallOffer(
+      trialDays: trial,
+      pricePerMonth: annuel ? '4,99 €' : '11,90 €',
+      // pricePerMonth: annuel ? (sp.pricePerMonthString ?? sp.priceString) : sp.priceString,
+      billingLine: annuel
+          ? 'facturé 59,90 € par an'
+          : 'facturé chaque mois, sans engagement',
+      // billingLine: annuel ? 'facturé ${sp.priceString} par an' : 'facturé chaque mois...',
+      saveBadge: annuel ? 'Économise 58 %' : null,
+      // saveBadge: (annuel && savePct != null) ? 'Économise $savePct %' : null,
+      reminderWhen: reminder <= 1 ? 'Demain' : 'Dans $reminder jours',
+      chargeWhen: 'Dans $trial jours',
+      chargeDate: _chargeDate(trial),
+    );
+  }
+
+  int _trialDays(StoreProduct p) {
+    final intro = p.introductoryPrice;
+    if (intro == null || intro.price != 0) return 0;
+    final n = intro.periodNumberOfUnits;
+    return switch (intro.periodUnit) {
+      PeriodUnit.day => n,
+      PeriodUnit.week => n * 7,
+      PeriodUnit.month => n * 30,
+      PeriodUnit.year => n * 365,
+      _ => n,
+    };
+  }
+
+  String _chargeDate(int trial) {
+    const mois = [
+      'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+      'août', 'septembre', 'octobre', 'novembre', 'décembre'
+    ];
+    final d = DateTime.now().add(Duration(days: trial));
+    return 'le ${d.day} ${mois[d.month - 1]}';
+  }
+
   /// Alerte native iOS de confirmation (façon Calm). S'affiche par-dessus le
   /// paywall, non annulable au tap extérieur : l'utilisateur doit taper
   /// « Parfait ».
@@ -170,53 +316,110 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   }
 
   Widget _buildPaywall(Offering offering) {
+    // Secours : ancien paywall natif RevenueCat (mettre kUsePaywallFlutter=false).
+    if (!kUsePaywallFlutter) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: Stack(
+          children: [
+            Positioned.fill(child: _vueNativeDifferee(offering)),
+            _boutonFermeture(),
+          ],
+        ),
+      );
+    }
+
+    // Nouveau paywall design (PaywallScreen) alimenté par RevenueCat.
+    Package? annuel, mensuel;
+    for (final p in offering.availablePackages) {
+      if (p.packageType == PackageType.annual) annuel = p;
+      if (p.packageType == PackageType.monthly) mensuel = p;
+    }
+    int? savePct;
+    if (annuel != null &&
+        mensuel != null &&
+        mensuel.storeProduct.price > 0) {
+      savePct = ((1 - annuel.storeProduct.price / (mensuel.storeProduct.price * 12)) *
+              100)
+          .round();
+    }
+    final offreAnnuel = annuel != null
+        ? _buildOffer(annuel, annuel: true, savePct: savePct)
+        : PaywallOffer.placeholderAnnual;
+    final offreMensuel = mensuel != null
+        ? _buildOffer(mensuel, annuel: false)
+        : PaywallOffer.placeholderMonthly;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Pendant la montée : écran léger (fond uni) → glissement 100 % fluide.
-          // Montée finie : le paywall natif apparaît en fondu doux par-dessus.
           Positioned.fill(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              child: _pretPourLeNatif
-                  ? _vueNative(offering)
-                  : ColoredBox(
-                      key: const ValueKey('paywall-placeholder'),
-                      color: AppColors.background,
-                    ),
+            child: PaywallScreen(
+              annual: offreAnnuel,
+              monthly: offreMensuel,
+              onStart: (plan) => _onStart(
+                  plan == PaywallPlan.annual ? annuel : mensuel),
+              onRestore: _onRestore,
+              onTerms: () => _ouvrirLien(_urlConditions),
+              onPrivacy: () => _ouvrirLien(_urlConfidentialite),
             ),
           ),
-          // Croix de fermeture (apparaît après 3s, ADR-013).
-          // ValueListenableBuilder : seul ce bouton se reconstruit au bout de
-          // 3s, jamais le PaywallView. `child` (le Material/IconButton) est
-          // construit une seule fois et réutilisé à chaque frame.
-          Positioned(
-            top: MediaQuery.of(context).padding.top + AppConstants.spacingSm,
-            right: AppConstants.spacingSm,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: _showCloseButton,
-              builder: (context, show, child) => AnimatedOpacity(
-                opacity: show ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 400),
-                child: IgnorePointer(ignoring: !show, child: child),
-              ),
-              child: Material(
-                color: Colors.black.withValues(alpha: 0.4),
-                shape: const CircleBorder(),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: AppColors.textPrimary,
-                    size: 20,
-                  ),
-                  tooltip: 'Fermer',
-                  onPressed: _dismiss,
-                ),
+          // Voile + spinner pendant un achat/restauration (anti double-tap).
+          if (_busy)
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Color(0x66000000),
+                child: Center(
+                    child: CircularProgressIndicator(color: AppColors.accent)),
               ),
             ),
-          ),
+          _boutonFermeture(),
         ],
+      ),
+    );
+  }
+
+  /// Paywall natif (secours) : on monte un écran léger pendant la montée, puis
+  /// la vue native apparaît en fondu une fois l'écran immobile.
+  Widget _vueNativeDifferee(Offering offering) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      child: _pretPourLeNatif
+          ? _vueNative(offering)
+          : ColoredBox(
+              key: const ValueKey('paywall-placeholder'),
+              color: AppColors.background,
+            ),
+    );
+  }
+
+  /// Croix de fermeture (apparaît après 3s, ADR-013). ValueListenableBuilder :
+  /// seul ce bouton se reconstruit au bout de 3s, jamais le contenu du paywall.
+  Widget _boutonFermeture() {
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + AppConstants.spacingSm,
+      right: AppConstants.spacingSm,
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _showCloseButton,
+        builder: (context, show, child) => AnimatedOpacity(
+          opacity: show ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 400),
+          child: IgnorePointer(ignoring: !show, child: child),
+        ),
+        child: Material(
+          color: Colors.black.withValues(alpha: 0.4),
+          shape: const CircleBorder(),
+          child: IconButton(
+            icon: const Icon(
+              Icons.close_rounded,
+              color: AppColors.textPrimary,
+              size: 20,
+            ),
+            tooltip: 'Fermer',
+            onPressed: _dismiss,
+          ),
+        ),
       ),
     );
   }
@@ -233,33 +436,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           debugPrint('[Paywall] Fermeture manuelle par l\'utilisateur.');
           _close();
         },
-        onPurchaseCompleted: (customerInfo, transaction) async {
-          // Capturé avant les await : le context peut être démonté après.
-          final router = GoRouter.of(context);
-          await _onPurchaseSuccess(customerInfo);
-          if (!mounted) return;
-          await _showPremiumConfirmation();
-          if (!mounted) return;
-          // Retour à la page d'origine : l'acheteur retrouve la
-          // catégorie/séance qu'il consultait, désormais débloquée.
-          if (router.canPop()) {
-            router.pop();
-          } else {
-            router.go(AppRoutes.home);
-          }
-        },
-        onRestoreCompleted: (customerInfo) async {
-          final router = GoRouter.of(context);
-          await _onPurchaseSuccess(customerInfo);
-          if (!mounted) return;
-          await _showPremiumConfirmation();
-          if (!mounted) return;
-          if (router.canPop()) {
-            router.pop();
-          } else {
-            router.go(AppRoutes.home);
-          }
-        },
+        onPurchaseCompleted: (customerInfo, transaction) =>
+            _finaliserAchat(customerInfo),
+        onRestoreCompleted: (customerInfo) => _finaliserAchat(customerInfo),
         onPurchaseError: (error) {
           debugPrint('[Paywall] Erreur d\'achat : $error');
         },

@@ -1,9 +1,11 @@
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'app/app.dart';
 import 'firebase_options.dart';
 import 'core/config/app_constants.dart';
@@ -19,6 +21,25 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // App Check : prouve à Firebase que l'appel vient bien de NOTRE vraie app,
+  // pas d'un script qui voudrait cramer les crédits Claude.
+  // - En dev (debug) : provider "debug" → un jeton à coller dans la console.
+  // - En prod (release) : App Attest (iOS) / Play Integrity (Android).
+  // On le borne par un timeout : s'il échoue, l'app démarre quand même.
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerApple: kDebugMode
+          ? const AppleDebugProvider()
+          : const AppleAppAttestProvider(),
+      providerAndroid: kDebugMode
+          ? const AndroidDebugProvider()
+          : const AndroidPlayIntegrityProvider(),
+    ).timeout(const Duration(seconds: 6));
+    debugPrint('[Main] App Check activé (${kDebugMode ? "debug" : "prod"})');
+  } catch (e) {
+    debugPrint('[Main] App Check activation échec (non-bloquant) : $e');
+  }
 
   final prefs = await SharedPreferences.getInstance();
   final storageService = StorageService(prefs);

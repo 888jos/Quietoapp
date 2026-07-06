@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -294,8 +295,16 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           onRetry: () => ref.invalidate(offeringProvider),
         ),
       ),
-      data: (offering) =>
-          offering == null ? _fermerSansPaywall() : _buildPaywall(offering),
+      data: (offering) {
+        // Aucun produit sur cette plateforme (Android tant que Play + RC ne
+        // sont pas branchés) : en DEBUG on affiche quand même le paywall
+        // Flutter avec ses prix d'exemple pour valider le design ; en release
+        // on referme sans bloquer l'utilisateur.
+        if (offering == null && !(kDebugMode && kUsePaywallFlutter)) {
+          return _fermerSansPaywall();
+        }
+        return _buildPaywall(offering);
+      },
     );
   }
 
@@ -316,9 +325,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     );
   }
 
-  Widget _buildPaywall(Offering offering) {
+  Widget _buildPaywall(Offering? offering) {
     // Secours : ancien paywall natif RevenueCat (mettre kUsePaywallFlutter=false).
     if (!kUsePaywallFlutter) {
+      if (offering == null) return _fermerSansPaywall();
       return Scaffold(
         backgroundColor: AppColors.background,
         body: Stack(
@@ -331,8 +341,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     }
 
     // Nouveau paywall design (PaywallScreen) alimenté par RevenueCat.
+    // offering null (debug sans produits) : prix d'exemple, achat impossible.
     Package? annuel, mensuel;
-    for (final p in offering.availablePackages) {
+    for (final p in offering?.availablePackages ?? const <Package>[]) {
       if (p.packageType == PackageType.annual) annuel = p;
       if (p.packageType == PackageType.monthly) mensuel = p;
     }

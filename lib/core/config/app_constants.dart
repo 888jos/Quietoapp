@@ -15,11 +15,19 @@ abstract final class AppConstants {
   static const prefIsPremium = 'is_premium';
   // Mémoire de Louane : ce qu'elle retient de l'utilisateur entre les sessions.
   static const prefLouaneMemoire = 'louane_memoire';
+  // Quotas Louane (jamais affichés) : total de messages envoyés depuis le
+  // début (limite des gratuits) + compteur du jour (plafond des abonnés),
+  // rattaché à une date-jour heure de Paris ("2026-07-05").
+  static const prefLouaneCompteurTotal = 'louane_compteur_total';
+  static const prefLouaneCompteurJour = 'louane_compteur_jour';
+  static const prefLouaneJour = 'louane_jour';
   static const prefNotificationsEnabled = 'notifications_enabled';
   static const prefReminderHour = 'reminder_hour';
   static const prefReminderMinute = 'reminder_minute';
   // La proposition de rappel post-première-séance ne se fait qu'une fois.
   static const prefNotificationPromptShown = 'notification_prompt_shown';
+  // Niveau de la musique d'ambiance (curseur 0..1, 0 = coupée).
+  static const prefAmbientLevel = 'ambient_level';
 
   // ── Audio ────────────────────────────────────────────
   // Les MP3 sont hébergés sur Firebase Storage (bucket quieto-06) à plat

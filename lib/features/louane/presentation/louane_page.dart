@@ -3,12 +3,16 @@ import 'dart:math' show sin, pi;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import '../../../app/router.dart';
+import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../louane_providers.dart';
 import 'louane_palette.dart';
 import 'widgets/louane_avatar.dart';
+import 'widgets/louane_sommeil_sheet.dart';
 import 'widgets/message_bubble.dart';
 
 /// État de la dictée vocale.
@@ -234,8 +238,14 @@ class _LouanePageState extends ConsumerState<LouanePage> {
       });
     }
 
-    // Chaque nouveau message → on redescend en bas du fil.
-    ref.listen(louaneChatProvider, (_, _) => _versLeBas());
+    // Chaque nouveau message → on redescend en bas du fil. Et si le serveur
+    // signale le plafond du jour → la feuille « Louane se repose » glisse.
+    ref.listen(louaneChatProvider, (avant, apres) {
+      _versLeBas();
+      if ((avant?.plafondEvenement ?? 0) < apres.plafondEvenement) {
+        montrerLouaneSommeil(context);
+      }
+    });
 
     final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
 
@@ -254,11 +264,22 @@ class _LouanePageState extends ConsumerState<LouanePage> {
                 itemCount: nbItems,
                 itemBuilder: (context, i) {
                   if (i >= chat.messages.length) return const TypingBubble();
-                  return MessageBubble(
+                  final m = chat.messages[i];
+                  final bulle = MessageBubble(
                     key: ValueKey(i),
-                    message: chat.messages[i],
+                    message: m,
                     nouveau: i >= _nbVus,
                   );
+                  // Bulle de fin des 15 messages → bouton essai gratuit
+                  // dessous (masqué si la personne s'est abonnée depuis).
+                  if (m.avecBoutonEssai &&
+                      !ref.watch(subscriptionProvider)) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [bulle, const _BoutonEssaiGratuit()],
+                    );
+                  }
+                  return bulle;
                 },
               ),
             ),
@@ -332,6 +353,55 @@ class _EnTete extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Bouton « essai gratuit » sous la bulle de fin des 15 ──
+/// Un vrai bouton d'action : centré, généreux, avec un halo turquoise
+/// STATIQUE (une lueur animée scintille sur iOS, cf. feuille sommeil).
+class _BoutonEssaiGratuit extends StatelessWidget {
+  const _BoutonEssaiGratuit();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 12, bottom: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF86ECE4), LouanePalette.accent],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: LouanePalette.accent.withValues(alpha: 0.45),
+              blurRadius: 22,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: () => context.push(AppRoutes.paywallSlide),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 32, vertical: 16),
+              child: Text(
+                'Commencer mon essai gratuit',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.background,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

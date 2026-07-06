@@ -61,6 +61,32 @@ class StorageService {
     }
   }
 
+  // ── Quotas Louane (locaux, jamais affichés) ──────────
+
+  /// Messages envoyés à Louane depuis toujours (sert à la limite des gratuits).
+  int get louaneCompteurTotal =>
+      _prefs.getInt(AppConstants.prefLouaneCompteurTotal) ?? 0;
+
+  /// Messages envoyés aujourd'hui, au sens du jour [jour] (date heure de
+  /// Paris). Si le jour enregistré est différent, le compteur est reparti à
+  /// zéro — c'est le reset de minuit.
+  int louaneCompteurJour(String jour) {
+    if (_prefs.getString(AppConstants.prefLouaneJour) != jour) return 0;
+    return _prefs.getInt(AppConstants.prefLouaneCompteurJour) ?? 0;
+  }
+
+  Future<void> incrementeLouaneCompteurs(String jour) async {
+    try {
+      await _prefs.setInt(
+          AppConstants.prefLouaneCompteurTotal, louaneCompteurTotal + 1);
+      await _prefs.setInt(
+          AppConstants.prefLouaneCompteurJour, louaneCompteurJour(jour) + 1);
+      await _prefs.setString(AppConstants.prefLouaneJour, jour);
+    } catch (e, st) {
+      debugPrint('[Storage] incrementeLouaneCompteurs failed: $e\n$st');
+    }
+  }
+
   // ── Subscription ─────────────────────────────────
 
   bool get isPremium =>
@@ -133,6 +159,21 @@ class StorageService {
       await _prefs.setBool(AppConstants.prefNotificationPromptShown, true);
     } catch (e, st) {
       debugPrint('[Storage] setNotificationPromptShown failed: $e\n$st');
+    }
+  }
+
+  // ── Musique d'ambiance ────────────────────────────────
+
+  /// Position du curseur de volume (0..1). 0 = musique coupée.
+  /// 0.5 par défaut : correspond au volume doux historique.
+  double get ambientLevel =>
+      _prefs.getDouble(AppConstants.prefAmbientLevel) ?? 0.5;
+
+  Future<void> setAmbientLevel(double value) async {
+    try {
+      await _prefs.setDouble(AppConstants.prefAmbientLevel, value);
+    } catch (e, st) {
+      debugPrint('[Storage] setAmbientLevel failed: $e\n$st');
     }
   }
 

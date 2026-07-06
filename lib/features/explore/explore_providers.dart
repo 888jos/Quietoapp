@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/router.dart';
 import '../../core/models/category_model.dart';
+import '../../core/models/session_model.dart';
 import '../../core/services/storage_providers.dart';
 import '../player/player_providers.dart';
 import 'data/explore_repository.dart';
@@ -34,18 +35,23 @@ final categoryProgressProvider =
   return (completed: completed, total: category.sessions.length);
 });
 
-/// Calcule la route de destination quand l'utilisateur tape sur une catégorie.
-/// Premium + non abonné → paywall en montée glissée. Sinon → /category/:id.
-final categoryRouteProvider =
-    Provider.family<String, String>((ref, categoryId) {
-  final category = ref.watch(categoryByIdProvider(categoryId));
-  if (category == null || !category.isPremium) {
-    return AppRoutes.categoryPath(categoryId);
-  }
-  final isSubscribed = ref.watch(subscriptionProvider);
-  return isSubscribed
-      ? AppRoutes.categoryPath(categoryId)
-      : AppRoutes.paywallSlide;
+/// Destination quand on tape sur une catégorie : TOUJOURS la page de la
+/// catégorie, même premium. L'utilisateur peut parcourir librement les séances ;
+/// le verrou ne se déclenche qu'à l'ouverture d'une séance payante (voir
+/// [sessionLockedProvider]).
+final categoryRouteProvider = Provider.family<String, String>(
+  (ref, categoryId) => AppRoutes.categoryPath(categoryId),
+);
+
+/// true si la séance exige un abonnement que l'utilisateur n'a pas encore.
+/// Règle unique : une séance est payante si elle est marquée premium OU si sa
+/// catégorie l'est → toute séance d'une catégorie premium est payante.
+final sessionLockedProvider =
+    Provider.family<bool, SessionModel>((ref, session) {
+  if (ref.watch(subscriptionProvider)) return false;
+  if (session.isPremium) return true;
+  final category = ref.watch(categoryByIdProvider(session.categoryId));
+  return category?.isPremium ?? false;
 });
 
 final searchQueryProvider = StateProvider<String>((ref) => '');

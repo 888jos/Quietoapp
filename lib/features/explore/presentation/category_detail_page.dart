@@ -5,7 +5,6 @@ import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/services/storage_providers.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../explore_providers.dart';
 import 'widgets/session_card.dart';
@@ -22,7 +21,10 @@ class CategoryDetailPage extends ConsumerWidget {
     if (category == null) {
       return AppScaffold(
         body: Center(
-          child: Text('Catégorie introuvable.', style: AppTextStyles.bodyMedium),
+          child: Text(
+            'Catégorie introuvable.',
+            style: AppTextStyles.bodyMedium,
+          ),
         ),
       );
     }
@@ -31,7 +33,6 @@ class CategoryDetailPage extends ConsumerWidget {
     final percent = progress.total == 0
         ? 0.0
         : progress.completed / progress.total;
-    final isSubscribed = ref.watch(subscriptionProvider);
 
     return AppScaffold(
       body: SafeArea(
@@ -72,7 +73,10 @@ class CategoryDetailPage extends ConsumerWidget {
                       style: const TextStyle(fontSize: 60),
                     ),
                     const SizedBox(height: AppConstants.spacingSm),
-                    Text(category.name, style: AppTextStyles.displayLarge),
+                    Text(
+                      category.name,
+                      style: AppTextStyles.displayLarge,
+                    ),
                     const SizedBox(height: AppConstants.spacingSm),
 
                     // Description
@@ -92,8 +96,9 @@ class CategoryDetailPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppConstants.spacingXs),
                     ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(AppConstants.radiusSm),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusSm,
+                      ),
                       child: LinearProgressIndicator(
                         value: percent,
                         minHeight: 4,
@@ -123,13 +128,16 @@ class CategoryDetailPage extends ConsumerWidget {
                   return SessionCard(
                     session: session,
                     onTap: () {
-                      // Verrou par séance : une séance premium dans une
-                      // catégorie gratuite (ex. Express) renvoie au paywall
-                      // si l'utilisateur n'est pas abonné.
-                      if (session.isPremium && !isSubscribed) {
+                      // Verrou par séance : toute séance payante (marquée
+                      // premium OU appartenant à une catégorie premium) renvoie
+                      // au paywall si l'utilisateur n'est pas abonné. La
+                      // catégorie, elle, reste librement parcourable.
+                      if (ref.read(sessionLockedProvider(session))) {
                         context.push(AppRoutes.paywallSlide);
                       } else {
-                        context.push(AppRoutes.preparationPath(session.id));
+                        context.push(
+                          AppRoutes.preparationPath(session.id),
+                        );
                       }
                     },
                   );

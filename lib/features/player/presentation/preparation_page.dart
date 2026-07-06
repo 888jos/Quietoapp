@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
-import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../player_providers.dart';
+import '../../explore/explore_providers.dart';
 
 class PreparationPage extends ConsumerStatefulWidget {
   final String sessionId;
@@ -70,8 +70,7 @@ class _PreparationPageState extends ConsumerState<PreparationPage>
     // Garde premium : un deep link /preparation/<id_premium> doit renvoyer
     // au paywall. `_navigated = true` neutralise le timer de 5 s qui
     // pousserait sinon le player malgré la redirection.
-    final isSubscribed = ref.watch(subscriptionProvider);
-    if (session != null && session.isPremium && !isSubscribed) {
+    if (session != null && ref.watch(sessionLockedProvider(session))) {
       _navigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.pushReplacement(AppRoutes.paywallSlide);

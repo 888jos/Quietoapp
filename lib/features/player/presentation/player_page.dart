@@ -8,6 +8,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
+import '../../explore/explore_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
@@ -99,8 +100,7 @@ class PlayerPage extends ConsumerWidget {
     // Garde premium : le verrou des cartes (onTap) ne suffit pas — un deep
     // link /player/<id_premium> doit aussi renvoyer au paywall. Le check se
     // fait AVANT de watcher playerProvider, sinon l'auto-play démarre l'audio.
-    final isSubscribed = ref.watch(subscriptionProvider);
-    if (session.isPremium && !isSubscribed) {
+    if (ref.watch(sessionLockedProvider(session))) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.pushReplacement(AppRoutes.paywallSlide);
       });

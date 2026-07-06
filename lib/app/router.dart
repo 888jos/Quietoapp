@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/onboarding_loading_page.dart';
 import '../features/onboarding/presentation/onboarding_ready_page.dart';
+import '../features/onboarding/presentation/onboarding_breath_page.dart';
+import '../features/onboarding/presentation/onboarding_trust_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/explore/presentation/category_detail_page.dart';
 import '../features/explore/presentation/explore_page.dart';
@@ -12,6 +13,7 @@ import '../features/profile/presentation/profile_page.dart';
 import '../features/paywall/presentation/paywall_page.dart';
 import '../features/louane/presentation/louane_page.dart';
 import 'home_shell.dart';
+import 'page_transitions.dart';
 import 'splash_page.dart';
 
 // Noms de routes — toujours utiliser ces constantes pour naviguer
@@ -20,6 +22,8 @@ abstract final class AppRoutes {
   static const onboarding = '/onboarding';
   static const onboardingLoading = '/onboarding-loading';
   static const onboardingReady = '/onboarding-ready';
+  static const onboardingBreath = '/onboarding-breath';
+  static const onboardingTrust = '/onboarding-trust';
   static const paywall = '/paywall';
   // Ouverture avec montée glissée (séance premium / profil)
   static const paywallSlide = '/paywall?from=premium';
@@ -44,123 +48,135 @@ final appRouter = GoRouter(
     // ── Splash ────────────────────────────────────────
     GoRoute(
       path: AppRoutes.splash,
-      builder: (context, state) => const SplashPage(),
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const SplashPage(),
+      ),
     ),
 
-    // ── Onboarding ────────────────────────────────────
+    // ── Onboarding (fondu respirant entre chaque étape) ──
     GoRoute(
       path: AppRoutes.onboarding,
-      builder: (context, state) => const OnboardingPage(),
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const OnboardingPage(),
+      ),
     ),
-
-    // ── Onboarding loading ────────────────────────────
     GoRoute(
       path: AppRoutes.onboardingLoading,
-      builder: (context, state) => const OnboardingLoadingPage(),
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const OnboardingLoadingPage(),
+      ),
     ),
-
-    // ── Onboarding ready ──────────────────────────────
     GoRoute(
       path: AppRoutes.onboardingReady,
-      builder: (context, state) => const OnboardingReadyPage(),
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const OnboardingReadyPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.onboardingBreath,
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const OnboardingBreathPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.onboardingTrust,
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const OnboardingTrustPage(),
+      ),
     ),
 
     // ── Paywall ───────────────────────────────────────
+    // Depuis une séance premium : montée façon feuille modale.
+    // En fin d'onboarding : fondu, dans la continuité des étapes.
     GoRoute(
       path: AppRoutes.paywall,
       pageBuilder: (context, state) {
         final slideUp = state.uri.queryParameters['from'] == 'premium';
         const page = PaywallPage();
-        if (slideUp) {
-          // Montée glissée + fondu doux (feuille modale)
-          return CustomTransitionPage(
-            key: state.pageKey,
-            child: page,
-            transitionDuration: const Duration(milliseconds: 420),
-            reverseTransitionDuration: const Duration(milliseconds: 320),
-            transitionsBuilder: (context, animation, secondary, child) {
-              final curved = CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-                reverseCurve: Curves.easeInCubic,
-              );
-              return SlideTransition(
-                position: Tween(begin: const Offset(0, 1), end: Offset.zero)
-                    .animate(curved),
-                child: FadeTransition(opacity: curved, child: child),
-              );
-            },
-          );
-        }
-        // Onboarding : fondu doux identique à l'actuel
-        return CustomTransitionPage(
-          key: state.pageKey,
-          child: page,
-          transitionsBuilder: (context, animation, secondary, child) =>
-              FadeTransition(
-            opacity:
-                CurvedAnimation(parent: animation, curve: Curves.easeInOut),
-            child: child,
-          ),
-        );
+        return slideUp
+            ? QuietoTransitions.sheetPage(key: state.pageKey, child: page)
+            : QuietoTransitions.fadePage(key: state.pageKey, child: page);
       },
     ),
 
-    // ── Category detail (hors shell) ─────────────────
+    // ── Category detail (monte du bas, retour en fondu) ──
     GoRoute(
       path: AppRoutes.category,
-      builder: (context, state) {
-        final categoryId = state.pathParameters['categoryId']!;
-        return CategoryDetailPage(categoryId: categoryId);
-      },
+      pageBuilder: (context, state) => QuietoTransitions.sheetPage(
+        key: state.pageKey,
+        fadeBack: true,
+        child: CategoryDetailPage(
+          categoryId: state.pathParameters['categoryId']!,
+        ),
+      ),
     ),
 
-    // ── Preparation (hors shell) ──────────────────────
+    // ── Preparation (on entre dans une séance) ────────
     GoRoute(
       path: AppRoutes.preparation,
-      builder: (context, state) {
-        final sessionId = state.pathParameters['sessionId']!;
-        return PreparationPage(sessionId: sessionId);
-      },
+      pageBuilder: (context, state) => QuietoTransitions.slidePage(
+        key: state.pageKey,
+        child: PreparationPage(sessionId: state.pathParameters['sessionId']!),
+      ),
     ),
 
-    // ── Player (hors shell) ───────────────────────────
+    // ── Player (moment immersif, monte du bas) ────────
     GoRoute(
       path: AppRoutes.player,
-      builder: (context, state) {
-        final sessionId = state.pathParameters['sessionId']!;
-        return PlayerPage(sessionId: sessionId);
-      },
+      pageBuilder: (context, state) => QuietoTransitions.sheetPage(
+        key: state.pageKey,
+        child: PlayerPage(sessionId: state.pathParameters['sessionId']!),
+      ),
     ),
 
     // ── Shell avec bottom nav (stack isolée par tab) ──
-    StatefulShellRoute.indexedStack(
+    // Fondu croisé entre les onglets, état conservé.
+    StatefulShellRoute(
       builder: (context, state, shell) => HomeShell(shell: shell),
+      navigatorContainerBuilder: (context, shell, children) =>
+          AnimatedBranchContainer(
+            currentIndex: shell.currentIndex,
+            children: children,
+          ),
       branches: [
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: AppRoutes.home,
-            builder: (context, state) => const HomePage(),
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: AppRoutes.explore,
-            builder: (context, state) => const ExplorePage(),
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: AppRoutes.louane,
-            builder: (context, state) => const LouanePage(),
-          ),
-        ]),
-        StatefulShellBranch(routes: [
-          GoRoute(
-            path: AppRoutes.profile,
-            builder: (context, state) => const ProfilePage(),
-          ),
-        ]),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.home,
+              builder: (context, state) => const HomePage(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.explore,
+              builder: (context, state) => const ExplorePage(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.louane,
+              builder: (context, state) => const LouanePage(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.profile,
+              builder: (context, state) => const ProfilePage(),
+            ),
+          ],
+        ),
       ],
     ),
   ],

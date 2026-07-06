@@ -2,12 +2,14 @@ import 'package:flutter/cupertino.dart'
     show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
         CupertinoThemeData;
 import 'package:flutter/material.dart';
+import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
@@ -25,6 +27,7 @@ class ProfilePage extends ConsumerWidget {
     // userProgressProvider est réactif au sessionCompletionTickProvider :
     // les stats se mettent à jour automatiquement à chaque séance complétée.
     final progress = ref.watch(userProgressProvider);
+    final isPremium = ref.watch(subscriptionProvider);
 
     return AppScaffold(
       body: SafeArea(
@@ -80,25 +83,42 @@ class ProfilePage extends ConsumerWidget {
 
                     const SizedBox(height: AppConstants.spacingXl),
 
-                    // ── Premium CTA ──────────────────────────
+                    // ── Premium ──────────────────────────────
+                    // Abonné : on remercie, plus de CTA d'achat.
+                    // Non abonné : incitation à découvrir les offres.
                     AppCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('✨ Passer à Premium',
-                              style: AppTextStyles.titleMedium),
-                          const SizedBox(height: AppConstants.spacingSm),
-                          Text(
-                            'Accédez à toutes les séances sans limite.',
-                            style: AppTextStyles.bodyMedium,
-                          ),
-                          const SizedBox(height: AppConstants.spacingMd),
-                          AppButton(
-                            label: 'Voir les offres',
-                            onTap: () => context.push(AppRoutes.paywallSlide),
-                          ),
-                        ],
-                      ),
+                      child: isPremium
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('✨ Tu es Premium',
+                                    style: AppTextStyles.titleMedium),
+                                const SizedBox(height: AppConstants.spacingSm),
+                                Text(
+                                  'Merci ! Tu as accès à toutes les séances '
+                                  'sans limite.',
+                                  style: AppTextStyles.bodyMedium,
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('✨ Passer à Premium',
+                                    style: AppTextStyles.titleMedium),
+                                const SizedBox(height: AppConstants.spacingSm),
+                                Text(
+                                  'Accédez à toutes les séances sans limite.',
+                                  style: AppTextStyles.bodyMedium,
+                                ),
+                                const SizedBox(height: AppConstants.spacingMd),
+                                AppButton(
+                                  label: 'Voir les offres',
+                                  onTap: () =>
+                                      context.push(AppRoutes.paywallSlide),
+                                ),
+                              ],
+                            ),
                     ),
 
                     const SizedBox(height: AppConstants.spacingXl),
@@ -112,13 +132,18 @@ class ProfilePage extends ConsumerWidget {
                           const TimeOfDay(hour: 19, minute: 0),
                       onToggle: (v) async {
                         final ok = await notifier.toggleNotifications(v);
-                        // Permission refusée : le toggle reste éteint,
-                        // on explique pourquoi — en douceur.
+                        // Permission refusée : le toggle reste éteint.
+                        // iOS n'autorise qu'une seule popup système, donc on
+                        // propose un raccourci direct vers les réglages.
                         if (v && !ok && context.mounted) {
                           _showSoftSnack(
                             context,
-                            'Autorise les notifications dans les Réglages '
+                            'Autorise les notifications '
                             'pour activer ton rappel.',
+                            actionLabel: 'Ouvrir les réglages',
+                            onAction: () => AppSettings.openAppSettings(
+                              type: AppSettingsType.notification,
+                            ),
                           );
                         }
                       },
@@ -180,15 +205,29 @@ class ProfilePage extends ConsumerWidget {
 
   /// SnackBar « zen » : flottant, arrondi, aux couleurs du thème, avec une
   /// petite icône douce — bien plus chaleureux que le SnackBar brut par défaut.
-  void _showSoftSnack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context)
+  void _showSoftSnack(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
+        // Entrée et sortie ralenties avec une courbe amortie : le message
+        // se dépose et s'efface en douceur, dans l'esprit calme de l'app.
+        snackBarAnimationStyle: AnimationStyle(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
+          reverseDuration: const Duration(milliseconds: 500),
+          reverseCurve: Curves.easeInCubic,
+        ),
         SnackBar(
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.cardSurface,
           elevation: 0,
-          duration: const Duration(seconds: 4),
+          duration: Duration(seconds: actionLabel != null ? 6 : 4),
           margin: const EdgeInsets.all(AppConstants.spacingMd),
           padding: const EdgeInsets.symmetric(
             horizontal: AppConstants.spacingMd,
@@ -208,6 +247,22 @@ class ProfilePage extends ConsumerWidget {
               Expanded(
                 child: Text(message, style: AppTextStyles.bodyMedium),
               ),
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(width: AppConstants.spacingSm),
+                GestureDetector(
+                  onTap: () {
+                    messenger.hideCurrentSnackBar();
+                    onAction();
+                  },
+                  child: Text(
+                    actionLabel,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

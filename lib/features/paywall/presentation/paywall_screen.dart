@@ -249,35 +249,41 @@ class _PaywallScreenState extends State<PaywallScreen>
           builder: (context, _) {
             final h = Curves.easeInOut.transform(_halo.value);
             final f = Curves.easeInOut.transform(_float.value);
-            final haloOpacity = 0.55 + (0.92 - 0.55) * h;
-            final haloScale = 1.0 + (1.10 - 1.0) * h;
+            final haloOpacity = 0.55 + (0.85 - 0.55) * h;
+            final haloScale = 1.0 + (1.05 - 1.0) * h;
             final dy = 0.0 + (-5.0 - 0.0) * f;
             return Stack(
+              // Clip.none : le halo dépasse du bloc de 128 px sans être coupé.
+              clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                // halo radial 200x200
-                Opacity(
-                  opacity: haloOpacity,
-                  child: Transform.scale(
-                    scale: haloScale,
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        // Halo plus DOUX : dégradé radial multi-paliers qui
-                        // s'éteint progressivement (plus de « cercle » net,
-                        // un vrai voile lumineux diffus).
-                        gradient: RadialGradient(
-                          radius: 0.95,
-                          colors: [
-                            Color(0x265CE0D8), // ~15 % au cœur
-                            Color(0x145CE0D8), // ~8 %
-                            Color(0x0A5CE0D8), // ~4 %
-                            Color(0x045CE0D8), // ~1.5 %
-                            Color(0x005CE0D8), // 0 % (fondu total)
-                          ],
-                          stops: [0.0, 0.35, 0.6, 0.8, 1.0],
+                // Halo : en Positioned pour qu'il ne compte pas dans la mise
+                // en page (sinon il est écrasé à 128 px de haut et devient une
+                // ellipse au bord visible). Ici : vrai cercle, très faible,
+                // fondu progressif façon lueur.
+                Positioned(
+                  left: -55,
+                  top: -55,
+                  child: Opacity(
+                    opacity: haloOpacity,
+                    child: Transform.scale(
+                      scale: haloScale,
+                      child: Container(
+                        width: 210,
+                        height: 210,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Color(0x145CE0D8), // ~8 % (caché sous le cercle)
+                              Color(0x115CE0D8), // ~7 % au bord du cercle
+                              Color(0x0A5CE0D8), // ~4 %
+                              Color(0x055CE0D8), // ~2 %
+                              Color(0x025CE0D8), // ~1 %
+                              Color(0x005CE0D8), // 0 % (fondu total)
+                            ],
+                            stops: [0.0, 0.48, 0.62, 0.76, 0.88, 1.0],
+                          ),
                         ),
                       ),
                     ),
@@ -681,6 +687,15 @@ class _PaywallScreenState extends State<PaywallScreen>
               ),
             ),
           ),
+        ),
+        // mention de renouvellement automatique (exigée par Apple, règle 3.1.2)
+        const SizedBox(height: 14),
+        Text(
+          "L'abonnement se renouvelle automatiquement au tarif indiqué ci-dessus, "
+          "sauf annulation au moins 24 h avant la fin de la période en cours. "
+          "Gère ou résilie ton abonnement dans les réglages de ton compte.",
+          textAlign: TextAlign.center,
+          style: TextStyle(color: _w(0.4), fontSize: 11, height: 1.35),
         ),
         // légal
         const SizedBox(height: 11),

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 
@@ -24,6 +25,19 @@ final offeringProvider = FutureProvider<Offering?>((ref) async {
       debugPrint('[Paywall] Aucun offering trouvé.');
     }
     return current;
+  } on PlatformException catch (e) {
+    // ConfigurationError (code 23) = aucun produit configuré pour CETTE
+    // plateforme. C'est le cas Android tant que les abonnements ne sont pas
+    // branchés sur le Play Store + RevenueCat. Ce n'est PAS une panne : on
+    // renvoie null pour afficher proprement « aucun abonnement disponible »
+    // au lieu d'une erreur technique brute.
+    final code = PurchasesErrorHelper.getErrorCode(e);
+    if (code == PurchasesErrorCode.configurationError) {
+      debugPrint('[Paywall] Offerings non configurés sur cette plateforme : $e');
+      return null;
+    }
+    debugPrint('[Paywall] Erreur lors du chargement : $e');
+    rethrow;
   } catch (e) {
     debugPrint('[Paywall] Erreur lors du chargement : $e');
     rethrow;

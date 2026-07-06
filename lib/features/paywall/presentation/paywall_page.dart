@@ -35,6 +35,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   Timer? _closeTimer;
 
   bool _busy = false; // achat / restauration en cours
+  bool _autoClosed = false; // évite de refermer 2× quand aucune offre n'existe
 
   static const _urlConfidentialite =
       'https://www.notion.so/Politique-de-Confidentialit-31de9e37b4a88093b560e0636712146e';
@@ -209,19 +210,17 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     final sp = p.storeProduct;
     final trial = _trialDays(sp);
     final reminder = trial - 2;
-    // ⚠️ PRIX FORCÉS EN EUROS (demande explicite). Affiche toujours les prix
-    // français, quel que soit le pays du compte. Pour revenir au prix réel
-    // RevenueCat (localisé automatiquement par pays), décommente les lignes RC.
+    // Prix RÉELS RevenueCat, localisés automatiquement selon le pays du compte
+    // (€, $, £…). Exigé par Apple (règle 3.1.2) : le prix affiché doit être
+    // exactement le prix facturé, dans la devise de l'utilisateur.
     return PaywallOffer(
       trialDays: trial,
-      pricePerMonth: annuel ? '4,99 €' : '11,90 €',
-      // pricePerMonth: annuel ? (sp.pricePerMonthString ?? sp.priceString) : sp.priceString,
+      pricePerMonth:
+          annuel ? (sp.pricePerMonthString ?? sp.priceString) : sp.priceString,
       billingLine: annuel
-          ? 'facturé 59,90 € par an'
+          ? 'facturé ${sp.priceString} par an'
           : 'facturé chaque mois, sans engagement',
-      // billingLine: annuel ? 'facturé ${sp.priceString} par an' : 'facturé chaque mois...',
-      saveBadge: annuel ? 'Économise 58 %' : null,
-      // saveBadge: (annuel && savePct != null) ? 'Économise $savePct %' : null,
+      saveBadge: (annuel && savePct != null) ? 'Économise $savePct %' : null,
       reminderWhen: reminder <= 1 ? 'Demain' : 'Dans $reminder jours',
       chargeWhen: 'Dans $trial jours',
       chargeDate: _chargeDate(trial),
@@ -291,27 +290,29 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           ),
         ),
         body: ErrorPlaceholder(
-          message: 'Erreur : $e',
+          message: 'Aucun abonnement disponible pour le moment.',
           onRetry: () => ref.invalidate(offeringProvider),
         ),
       ),
-      data: (offering) {
-        if (offering == null) {
-          return Scaffold(
-            appBar: AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _close,
-              ),
-            ),
-            body: ErrorPlaceholder(
-              message: 'Aucun abonnement disponible pour le moment.',
-              onRetry: () => ref.invalidate(offeringProvider),
-            ),
-          );
-        }
-        return _buildPaywall(offering);
-      },
+      data: (offering) =>
+          offering == null ? _fermerSansPaywall() : _buildPaywall(offering),
+    );
+  }
+
+  /// Aucun abonnement à vendre (ex. Android : produits pas encore branchés sur
+  /// le Play Store + RevenueCat). On n'affiche PAS le paywall — on le referme
+  /// immédiatement pour ne pas bloquer l'utilisateur sur un écran vide. Sur iOS
+  /// l'offering existe, donc ce chemin ne se déclenche jamais.
+  Widget _fermerSansPaywall() {
+    if (!_autoClosed) {
+      _autoClosed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _close();
+      });
+    }
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: const SizedBox.shrink(),
     );
   }
 
@@ -407,18 +408,18 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
           duration: const Duration(milliseconds: 400),
           child: IgnorePointer(ignoring: !show, child: child),
         ),
-        child: Material(
-          color: Colors.black.withValues(alpha: 0.4),
-          shape: const CircleBorder(),
-          child: IconButton(
-            icon: const Icon(
-              Icons.close_rounded,
-              color: AppColors.textPrimary,
-              size: 20,
-            ),
-            tooltip: 'Fermer',
-            onPressed: _dismiss,
+        child: IconButton(
+          icon: Icon(
+            Icons.close_rounded,
+            color: Colors.white.withValues(alpha: 0.85),
+            size: 24,
           ),
+          style: IconButton.styleFrom(
+            splashFactory: NoSplash.splashFactory,
+            highlightColor: Colors.white.withValues(alpha: 0.08),
+          ),
+          tooltip: 'Fermer',
+          onPressed: _dismiss,
         ),
       ),
     );

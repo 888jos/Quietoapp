@@ -27,7 +27,7 @@ final firstNameProvider = StateProvider<String>((ref) {
 /// DEV : passe ce flag à true pour bypasser le paywall pendant le développement.
 /// Garde-fou : grâce à `!kReleaseMode`, un build de RELEASE force TOUJOURS le
 /// paywall (peu importe la valeur ci-dessous) — impossible de shipper le bypass.
-const bool _kDevWantsPremiumBypass = true;
+const bool _kDevWantsPremiumBypass = false;
 const bool _devUnlockPremium = !kReleaseMode && _kDevWantsPremiumBypass;
 
 /// Notifier qui maintient l'état "isPremium" en temps réel.

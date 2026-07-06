@@ -9,6 +9,7 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../home_providers.dart';
 import '../../explore/explore_providers.dart';
+import 'widgets/ambient_volume_control.dart';
 import 'widgets/category_list_card.dart';
 import 'widgets/express_card.dart';
 import 'widgets/featured_session_card.dart';
@@ -68,52 +69,69 @@ class _HomePageState extends ConsumerState<HomePage>
               opacity: _fadeController,
               child: SizedBox(
                 height: 116,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppConstants.spacingMd,
-                    AppConstants.spacingLg,
-                    AppConstants.spacingMd,
-                    AppConstants.spacingMd,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
+                child: Stack(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppConstants.spacingMd,
+                        AppConstants.spacingLg,
+                        AppConstants.spacingMd,
+                        AppConstants.spacingMd,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Image.asset(
-                            'assets/images/Inside app.png',
-                            height: 48,
-                          ),
-                          const SizedBox(width: AppConstants.spacingMd),
-                          Expanded(
-                            child: RichText(
-                              text: TextSpan(
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w300,
-                                  color: AppColors.textPrimary,
-                                ),
-                                children: [
-                                  TextSpan(text: '$salut\n'),
-                                  const TextSpan(
-                                    text: 'on fait quoi aujourd\'hui ?',
-                                  ),
-                                ],
+                          Row(
+                            children: [
+                              Image.asset(
+                                'assets/images/Inside app.png',
+                                height: 48,
                               ),
+                              const SizedBox(width: AppConstants.spacingMd),
+                              Expanded(
+                                child: RichText(
+                                  text: TextSpan(
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w300,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    children: [
+                                      TextSpan(text: '$salut\n'),
+                                      const TextSpan(
+                                        text: 'on fait quoi aujourd\'hui ?',
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Réserve la zone du bouton musique (en Stack
+                              // au-dessus) pour que le texte ne passe pas
+                              // dessous.
+                              const SizedBox(width: 40),
+                            ],
+                          ),
+                          Container(
+                            margin: const EdgeInsets.only(top: 12),
+                            width: screenWidth * 0.9,
+                            height: 1,
+                            color: AppColors.textPrimary.withValues(
+                              alpha: 0.15,
                             ),
                           ),
                         ],
                       ),
-                      Container(
-                        margin: const EdgeInsets.only(top: 12),
-                        width: screenWidth * 0.9,
-                        height: 1,
-                        color:
-                            AppColors.textPrimary.withValues(alpha: 0.15),
-                      ),
-                    ],
-                  ),
+                    ),
+                    // Contrôle discret de la musique d'ambiance : posé en
+                    // Stack pour que le curseur se déplie au-dessus du texte
+                    // sans faire bouger la mise en page.
+                    const Positioned(
+                      top: AppConstants.spacingMd,
+                      right: AppConstants.spacingSm,
+                      child: AmbientVolumeControl(),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -133,11 +151,14 @@ class _HomePageState extends ConsumerState<HomePage>
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(
-                        right: AppConstants.spacingMd),
+                      right: AppConstants.spacingMd,
+                    ),
                     child: Row(
                       children: [
-                        Text('Une minute pour toi',
-                            style: AppTextStyles.titleLarge),
+                        Text(
+                          'Une minute pour toi',
+                          style: AppTextStyles.titleLarge,
+                        ),
                         const SizedBox(width: AppConstants.spacingXs),
                         const Text('⚡', style: TextStyle(fontSize: 20)),
                       ],
@@ -150,7 +171,8 @@ class _HomePageState extends ConsumerState<HomePage>
                       scrollDirection: Axis.horizontal,
                       itemCount: expressSessions.length,
                       padding: const EdgeInsets.only(
-                          right: AppConstants.spacingMd),
+                        right: AppConstants.spacingMd,
+                      ),
                       separatorBuilder: (context, i) =>
                           const SizedBox(width: AppConstants.spacingSm),
                       itemBuilder: (context, i) {
@@ -162,7 +184,8 @@ class _HomePageState extends ConsumerState<HomePage>
                               context.push(AppRoutes.paywallSlide);
                             } else {
                               context.push(
-                                  AppRoutes.preparationPath(session.id));
+                                AppRoutes.preparationPath(session.id),
+                              );
                             }
                           },
                         );
@@ -186,14 +209,12 @@ class _HomePageState extends ConsumerState<HomePage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Priorité du moment',
-                      style: AppTextStyles.titleLarge),
+                  Text('Priorité du moment', style: AppTextStyles.titleLarge),
                   const SizedBox(height: AppConstants.spacingMd),
                   FeaturedSessionCard(
                     emoji: '🧘',
                     categoryName: 'Découverte de la méditation',
-                    subtitle:
-                        'Commence ton voyage vers la pleine conscience.',
+                    subtitle: 'Commence ton voyage vers la pleine conscience.',
                     durationLabel: '3 séances disponibles',
                     onTap: () => context.push(
                       ref.read(categoryRouteProvider('decouverte')),

@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Règles Firebase Storage — bucket quieto-06
+//
+// Contexte : l'app télécharge les MP3 en HTTP direct par NOM de fichier,
+// sans authentification (voir audio_handler.dart). On ne peut donc pas
+// exiger l'auth ici sans casser l'app en production. Sécurité complète
+// (bloquer les non-abonnés) = chantier séparé : Firebase Auth + URLs signées
+// ou Cloud Function vérifiant l'entitlement RevenueCat côté serveur.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      // Télécharger un fichier précis par nom : autorisé (l'app en dépend).
+      allow get: if true;
+
+      // Lister / énumérer le contenu du bucket : INTERDIT.
+      // Empêche un tiers d'aspirer automatiquement tout le catalogue audio.
+      allow list: if false;
+
+      // Écriture depuis un client : interdite (upload via console/CLI/admin).
+      allow write: if false;
+    }
+  }
+}

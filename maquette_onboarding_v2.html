@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quieto — Maquette Onboarding V2</title>
+<style>
+  :root {
+    --bg: #0A1628;
+    --card: #0D2137;
+    --accent: #5CE0D8;
+    --accent-dim: rgba(92, 224, 216, 0.15);
+    --text: #FFFFFF;
+    --muted: rgba(255, 255, 255, 0.6);
+    --faint: rgba(255, 255, 255, 0.4);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #05080f;
+    font-family: -apple-system, 'Helvetica Neue', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 24px; color: var(--text);
+  }
+  h1.page-title { font-size: 15px; font-weight: 500; color: var(--faint); margin-bottom: 16px; }
+  .phone {
+    width: 375px; height: 780px; background: var(--bg);
+    border-radius: 44px; border: 6px solid #1a2438;
+    overflow: hidden; position: relative;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6);
+  }
+  #stars { position: absolute; inset: 0; z-index: 0; }
+  .screen {
+    position: absolute; inset: 0; z-index: 1;
+    display: none; flex-direction: column;
+    padding: 54px 28px 28px;
+  }
+  .screen.active { display: flex; animation: screenIn .5s ease both; }
+  @keyframes screenIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Barre de progression */
+  .progress { display: flex; gap: 4px; margin-bottom: 26px; height: 3px; }
+  .progress span { flex: 1; border-radius: 2px; background: var(--accent-dim); transition: background .3s; }
+  .progress span.on { background: var(--accent); }
+
+  .grow { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+  /* Révélation en cascade */
+  .rv { opacity: 0; transform: translateY(14px); animation: rv .5s ease-out forwards; }
+  @keyframes rv { to { opacity: 1; transform: none; } }
+  .d1 { animation-delay: .12s; } .d2 { animation-delay: .24s; } .d3 { animation-delay: .36s; }
+  .d4 { animation-delay: .48s; } .d5 { animation-delay: .60s; } .d6 { animation-delay: .72s; }
+
+  h2 { font-size: 24px; font-weight: 700; text-align: center; line-height: 1.3; margin-bottom: 10px; }
+  p.sub { font-size: 15px; color: var(--muted); text-align: center; line-height: 1.5; }
+
+  /* Options */
+  .opt {
+    background: var(--card); border: 1.5px solid transparent;
+    border-radius: 14px; padding: 15px; text-align: center;
+    font-size: 15.5px; color: var(--text); margin-bottom: 11px;
+    cursor: pointer; transition: all .18s;
+  }
+  .opt:hover { border-color: rgba(92,224,216,.4); }
+  .opt.sel { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+  /* CTA */
+  .cta {
+    background: var(--accent); color: #06302c; font-size: 16px; font-weight: 700;
+    border: none; border-radius: 18px; padding: 16px; width: 100%;
+    cursor: pointer; margin-top: 14px;
+    box-shadow: 0 8px 28px rgba(92,224,216,.35);
+    transition: transform .15s;
+  }
+  .cta:active { transform: scale(.97); }
+  .cta:disabled { opacity: .35; cursor: default; box-shadow: none; }
+
+  input.name {
+    background: var(--card); border: 1.5px solid transparent; border-radius: 14px;
+    color: var(--text); font-size: 17px; padding: 16px; width: 100%; text-align: center;
+    outline: none;
+  }
+  input.name:focus { border-color: var(--accent); }
+
+  /* Cercle de respiration */
+  .breath-wrap { display: flex; flex-direction: column; align-items: center; }
+  .breath {
+    width: 170px; height: 170px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(92,224,216,.35) 0%, rgba(92,224,216,.08) 60%, transparent 100%);
+    border: 2px solid rgba(92,224,216,.5);
+    display: flex; align-items: center; justify-content: center;
+    animation: breathe 8s ease-in-out infinite;
+    box-shadow: 0 0 60px rgba(92,224,216,.25);
+  }
+  .breath .inner {
+    width: 70px; height: 70px; border-radius: 50%;
+    background: rgba(92,224,216,.3);
+    animation: breathe 8s ease-in-out infinite;
+  }
+  @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.35); } }
+  .breath-label { margin-top: 28px; font-size: 17px; color: var(--accent); font-weight: 600; min-height: 24px; }
+
+  /* Chargement du plan */
+  .load-step { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; opacity: 0; }
+  .load-step.show { animation: rv .4s ease forwards; }
+  .load-step .check {
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent-dim);
+    color: var(--accent); font-size: 13px; display: flex; align-items: center; justify-content: center;
+  }
+  .ring {
+    width: 110px; height: 110px; border-radius: 50%; margin: 0 auto 30px;
+    border: 6px solid var(--card); border-top-color: var(--accent);
+    animation: spin 1.1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Plan / calendrier */
+  .plan-card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+  .plan-card .k { font-size: 12px; color: var(--faint); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+  .plan-card .v { font-size: 15.5px; font-weight: 600; }
+  .days { display: flex; gap: 7px; justify-content: center; margin-top: 16px; }
+  .day {
+    width: 38px; height: 48px; border-radius: 10px; background: var(--card);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--muted);
+  }
+  .day b { color: var(--text); font-size: 14px; }
+  .day.today { background: var(--accent-dim); border: 1.5px solid var(--accent); }
+  .day.today b { color: var(--accent); }
+
+  /* Avis */
+  .review { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+  .stars-row { color: #FFD166; font-size: 13px; margin-bottom: 6px; letter-spacing: 2px; }
+  .review p { font-size: 14px; line-height: 1.5; color: var(--text); }
+  .review .who { margin-top: 8px; font-size: 12px; color: var(--faint); }
+
+  /* Timeline essai */
+  .tl { position: relative; padding-left: 34px; margin-top: 8px; }
+  .tl::before { content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: var(--accent-dim); }
+  .tl-item { position: relative; margin-bottom: 26px; }
+  .tl-item .dot {
+    position: absolute; left: -34px; top: 2px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--card); border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--accent);
+  }
+  .tl-item h4 { font-size: 15px; margin-bottom: 3px; }
+  .tl-item p { font-size: 13px; color: var(--muted); line-height: 1.45; }
+
+  .skip { text-align: center; color: var(--faint); font-size: 13px; margin-top: 14px; cursor: pointer; text-decoration: underline; }
+  .footer-note { font-size: 11px; color: var(--faint); text-align: center; margin-top: 10px; }
+
+  /* Navigation maquette */
+  .nav {
+    margin-top: 18px; display: flex; gap: 10px; align-items: center;
+  }
+  .nav button {
+    background: #1a2438; color: var(--muted); border: none; border-radius: 10px;
+    padding: 10px 16px; cursor: pointer; font-size: 13px;
+  }
+  .nav .num { font-size: 13px; color: var(--faint); min-width: 110px; text-align: center; }
+</style>
+</head>
+<body>
+<h1 class="page-title">Quieto — Onboarding V2 (maquette interactive · 14 écrans)</h1>
+
+<div class="phone">
+  <canvas id="stars"></canvas>
+
+  <!-- 1. Accueil respirant -->
+  <div class="screen" data-s="1">
+    <div class="grow breath-wrap">
+      <div class="breath rv"><div class="inner"></div></div>
+      <div class="breath-label rv d2" id="breathLabel1">Inspire…</div>
+      <div style="height:36px"></div>
+      <h2 class="rv d3">Bienvenue dans Quieto</h2>
+      <p class="sub rv d4">Prends une grande inspiration.<br>Tu es au bon endroit.</p>
+    </div>
+    <button class="cta rv d5" onclick="go(2)">Commencer</button>
+  </div>
+
+  <!-- 2. Prénom -->
+  <div class="screen" data-s="2">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv">Comment tu t'appelles ?</h2>
+      <p class="sub rv d1" style="margin-bottom:26px">Pour qu'on se parle simplement.</p>
+      <input class="name rv d2" id="inpName" placeholder="Ton prénom" oninput="checkName()">
+    </div>
+    <button class="cta" id="btnName" disabled onclick="go(3)">Continuer</button>
+  </div>
+
+  <!-- 3. Intention (multi) -->
+  <div class="screen" data-s="3">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv" id="q3title">Qu'est-ce qui t'amène ici ?</h2>
+      <p class="sub rv d1" style="margin-bottom:24px">Choisis tout ce qui te parle.</p>
+      <div class="opt rv d2" onclick="multi(this,'Apaiser mon stress')">Apaiser mon stress</div>
+      <div class="opt rv d3" onclick="multi(this,'Mieux dormir')">Mieux dormir</div>
+      <div class="opt rv d4" onclick="multi(this,'Calmer mon anxiété')">Calmer mon anxiété</div>
+      <div class="opt rv d5" onclick="multi(this,'Me reconcentrer')">Me reconcentrer</div>
+      <div class="opt rv d6" onclick="multi(this,'Découvrir la méditation')">Découvrir la méditation</div>
+    </div>
+    <button class="cta" id="btn3" disabled onclick="buildPriority()">Continuer</button>
+  </div>
+
+  <!-- 4. Priorité -->
+  <div class="screen" data-s="4">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv">Et là, maintenant,<br>lequel compte le plus ?</h2>
+      <p class="sub rv d1" style="margin-bottom:24px">Ton programme démarrera par ça.</p>
+      <div id="prioBox"></div>
+    </div>
+    <button class="cta" id="btn4" disabled onclick="go(5)">Continuer</button>
+  </div>
+
+  <!-- 5. Question qui se précise -->
+  <div class="screen" data-s="5">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv" id="q5title">Comment ça se manifeste, le plus souvent ?</h2>
+      <p class="sub rv d1" style="margin-bottom:24px">Il n'y a pas de mauvaise réponse.</p>
+      <div id="q5box"></div>
+    </div>
+    <button class="cta" id="btn5" disabled onclick="go(6)">Continuer</button>
+  </div>
+
+  <!-- 6. Expérience -->
+  <div class="screen" data-s="6">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv">Où tu en es<br>avec la méditation ?</h2>
+      <div style="height:22px"></div>
+      <div class="opt rv d2" onclick="single(this,6,'Jamais essayé')">Jamais essayé, c'est tout nouveau</div>
+      <div class="opt rv d3" onclick="single(this,6,'Une ou deux fois')">J'ai testé une ou deux fois</div>
+      <div class="opt rv d4" onclick="single(this,6,'De temps en temps')">Je pratique de temps en temps</div>
+      <div class="opt rv d5" onclick="single(this,6,'Régulièrement')">Je pratique régulièrement</div>
+    </div>
+    <button class="cta" id="btn6" disabled onclick="go(7)">Continuer</button>
+  </div>
+
+  <!-- 7. Moment -->
+  <div class="screen" data-s="7">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv">Ton moment à toi,<br>ce serait quand ?</h2>
+      <div style="height:22px"></div>
+      <div class="opt rv d2" onclick="single(this,7,'Le matin, au réveil')">Le matin, au réveil</div>
+      <div class="opt rv d3" onclick="single(this,7,'En journée, pour souffler')">En journée, pour souffler</div>
+      <div class="opt rv d4" onclick="single(this,7,'Le soir, pour tout relâcher')">Le soir, pour tout relâcher</div>
+      <div class="opt rv d5" onclick="single(this,7,'Ça dépend des jours')">Ça dépend des jours</div>
+    </div>
+    <button class="cta" id="btn7" disabled onclick="go(8)">Continuer</button>
+  </div>
+
+  <!-- 8. Durée / micro-engagement -->
+  <div class="screen" data-s="8">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv">Combien de minutes<br>par jour ?</h2>
+      <p class="sub rv d1" style="margin-bottom:24px">Sois honnête — même 3 minutes<br>changent les choses.</p>
+      <div class="opt rv d2" onclick="single(this,8,'3 minutes')">3 minutes</div>
+      <div class="opt rv d3" onclick="single(this,8,'5 minutes')">5 minutes</div>
+      <div class="opt rv d4" onclick="single(this,8,'10 minutes')">10 minutes</div>
+      <div class="opt rv d5" onclick="single(this,8,'15 minutes ou plus')">15 minutes ou plus</div>
+    </div>
+    <button class="cta" id="btn8" disabled onclick="go(9)">Continuer</button>
+  </div>
+
+  <!-- 9. Création du programme -->
+  <div class="screen" data-s="9">
+    <div class="grow" style="justify-content:center">
+      <div class="ring"></div>
+      <h2 style="font-size:20px">On prépare ton programme…</h2>
+      <div style="height:30px"></div>
+      <!-- Étude Harvard (labor illusion) : montrer LES RÉPONSES de l'utilisateur
+           en cours de traitement, pas des étapes génériques -->
+      <div class="load-step" id="ls1"><div class="check">✓</div><span id="lst1">Analyse de tes réponses</span></div>
+      <div class="load-step" id="ls2"><div class="check">✓</div><span id="lst2">Sélection des séances adaptées</span></div>
+      <div class="load-step" id="ls3"><div class="check">✓</div><span id="lst3">Réglage de ton rythme quotidien</span></div>
+      <div class="load-step" id="ls4"><div class="check">✓</div><span id="lst4">Programme prêt</span></div>
+    </div>
+  </div>
+
+  <!-- 10. Plan personnalisé -->
+  <div class="screen" data-s="10">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv" id="planTitle">Voici ton programme</h2>
+      <p class="sub rv d1" style="margin-bottom:22px">Construit à partir de tes réponses.</p>
+      <div class="plan-card rv d2"><div class="k">Ton objectif n°1</div><div class="v" id="planGoal">Apaiser mon stress</div></div>
+      <div class="plan-card rv d3"><div class="k">Ton rythme</div><div class="v" id="planRhythm">5 minutes · Le soir</div></div>
+      <div class="plan-card rv d4"><div class="k">Ton niveau</div><div class="v" id="planLevel">Débutant — on commence en douceur</div></div>
+      <div class="days rv d5">
+        <div class="day today"><b>J1</b>Auj.</div><div class="day"><b>J2</b></div><div class="day"><b>J3</b></div>
+        <div class="day"><b>J4</b></div><div class="day"><b>J5</b></div><div class="day"><b>J6</b></div><div class="day"><b>J7</b></div>
+      </div>
+    </div>
+    <button class="cta rv d6" onclick="go(11)">Essayer maintenant (1 min)</button>
+  </div>
+
+  <!-- 11. Respiration guidée (aha moment) -->
+  <div class="screen" data-s="11">
+    <div class="grow breath-wrap">
+      <h2 class="rv" style="font-size:20px">30 secondes, rien que pour toi</h2>
+      <p class="sub rv d1">Suis le cercle, laisse faire.</p>
+      <div style="height:34px"></div>
+      <div class="breath rv d2"><div class="inner"></div></div>
+      <div class="breath-label rv d3" id="breathLabel2">Inspire…</div>
+      <div style="height:20px"></div>
+      <p class="sub rv d4" id="breathTimer">30 s</p>
+    </div>
+    <button class="cta" id="btnBreath" onclick="go(12)">Continuer</button>
+    <div class="skip" onclick="go(12)">Passer</div>
+  </div>
+
+  <!-- 12. Ressenti + preuve sociale -->
+  <div class="screen" data-s="12">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv" style="font-size:21px">Tu sens la différence ?</h2>
+      <p class="sub rv d1" style="margin-bottom:20px">C'est exactement ce que Quieto t'offre, chaque jour.</p>
+      <div class="review rv d2">
+        <div class="stars-row">★★★★★</div>
+        <p>« Je m'endors enfin sans ruminer. La voix est incroyablement apaisante. »</p>
+        <div class="who">— Avis App Store (à remplacer par un vrai)</div>
+      </div>
+      <div class="review rv d3">
+        <div class="stars-row">★★★★★</div>
+        <p>« 5 minutes le matin et ma journée change complètement. »</p>
+        <div class="who">— Avis App Store (à remplacer par un vrai)</div>
+      </div>
+    </div>
+    <button class="cta rv d4" onclick="go(13)">Continuer</button>
+  </div>
+
+  <!-- 13. Timeline de l'essai -->
+  <div class="screen" data-s="13">
+    <div class="progress"></div>
+    <div class="grow">
+      <h2 class="rv" style="font-size:21px">Comment fonctionne<br>ton essai gratuit</h2>
+      <div style="height:26px"></div>
+      <div class="tl">
+        <div class="tl-item rv d1"><div class="dot">🔓</div><h4>Aujourd'hui</h4><p>Accès complet à tout Quieto, gratuitement.</p></div>
+        <div class="tl-item rv d2"><div class="dot">🔔</div><h4>Jour 5</h4><p>On te prévient que l'essai se termine bientôt.</p></div>
+        <div class="tl-item rv d3"><div class="dot">★</div><h4>Jour 7</h4><p>L'abonnement démarre. Annulable à tout moment, en 2 clics.</p></div>
+      </div>
+    </div>
+    <button class="cta rv d4" onclick="go(14)">Voir mon offre</button>
+    <div class="footer-note rv d5">Sans engagement · Rappel avant la fin de l'essai</div>
+  </div>
+
+  <!-- 14. Paywall (l'existant) -->
+  <div class="screen" data-s="14">
+    <div class="grow" style="justify-content:center; text-align:center">
+      <h2 class="rv">→ Paywall actuel</h2>
+      <p class="sub rv d1" style="margin-top:12px">Ici s'ouvre ton paywall Flutter existant<br>(ciel étoilé, prix RevenueCat, timeline).<br><br>Il est déjà bien — on ne le refait pas.</p>
+      <div style="height:30px"></div>
+      <button class="cta rv d2" onclick="go(1)" style="max-width:240px;margin:0 auto">↻ Revoir la maquette</button>
+    </div>
+  </div>
+</div>
+
+<div class="nav">
+  <button onclick="prev()">← Précédent</button>
+  <div class="num" id="navNum">Écran 1 / 14</div>
+  <button onclick="next()">Suivant →</button>
+</div>
+
+<script>
+  // ── Ciel étoilé (même esprit que le paywall Flutter) ──
+  const cv = document.getElementById('stars'), ctx = cv.getContext('2d');
+  cv.width = 375; cv.height = 780;
+  let seed = 717;
+  function rnd() { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }
+  const stars = Array.from({length: 90}, () => ({ x: rnd()*375, y: rnd()*780, r: rnd()*1.3 + .3, p: rnd()*Math.PI*2, s: rnd()*.9 + .3 }));
+  function drawStars(t) {
+    ctx.clearRect(0,0,375,780);
+    for (const st of stars) {
+      const a = .25 + .55 * (0.5 + 0.5*Math.sin(t/1000*st.s + st.p));
+      ctx.fillStyle = `rgba(255,255,255,${a*.7})`;
+      ctx.beginPath(); ctx.arc(st.x, st.y, st.r, 0, 7); ctx.fill();
+    }
+    requestAnimationFrame(drawStars);
+  }
+  requestAnimationFrame(drawStars);
+
+  // ── État ──
+  const state = { name: '', goals: [], prio: '', focus: '', exp: '', moment: '', dur: '' };
+  let cur = 1;
+  const TOTAL = 14, QUIZ = [2,3,4,5,6,7,8]; // écrans avec barre de progression
+
+  function go(n) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    const scr = document.querySelector(`[data-s="${n}"]`);
+    // rejoue les animations de cascade
+    scr.querySelectorAll('.rv').forEach(el => { el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; });
+    scr.classList.add('active');
+    cur = n;
+    document.getElementById('navNum').textContent = `Écran ${n} / ${TOTAL}`;
+    // barre de progression
+    const idx = QUIZ.indexOf(n);
+    scr.querySelectorAll('.progress').forEach(p => {
+      // hors quiz (plan, avis, timeline) : barre pleine = parcours accompli
+      p.innerHTML = QUIZ.map((_, i) => `<span class="${(idx === -1 || i <= idx) ? 'on' : ''}"></span>`).join('');
+    });
+    // Ces écrans se construisent à partir des réponses : on les (re)génère
+    // toujours à l'arrivée, même en navigant avec les flèches de la maquette.
+    if (n === 4) renderPriority();
+    if (n === 5) renderQ5();
+    if (n === 9) runLoading();
+    if (n === 10) fillPlan();
+    if (n === 11) runBreath();
+    if (n === 3 && state.name) document.getElementById('q3title').textContent = `Qu'est-ce qui t'amène ici, ${state.name} ?`;
+  }
+  function next() { go(Math.min(cur+1, TOTAL)); }
+  function prev() { go(Math.max(cur-1, 1)); }
+
+  function checkName() {
+    state.name = document.getElementById('inpName').value.trim();
+    document.getElementById('btnName').disabled = !state.name;
+  }
+  function multi(el, v) {
+    el.classList.toggle('sel');
+    state.goals = state.goals.includes(v) ? state.goals.filter(g => g !== v) : [...state.goals, v];
+    document.getElementById('btn3').disabled = !state.goals.length;
+  }
+  function single(el, screen, v) {
+    el.parentElement.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+    if (screen === 6) state.exp = v;
+    if (screen === 7) state.moment = v;
+    if (screen === 8) state.dur = v;
+    document.getElementById('btn' + screen).disabled = false;
+  }
+  const ALL_GOALS = ['Apaiser mon stress', 'Mieux dormir', 'Calmer mon anxiété', 'Me reconcentrer', 'Découvrir la méditation'];
+  function buildPriority() { go(4); }
+  function renderPriority() {
+    const box = document.getElementById('prioBox');
+    // fallback : si aucun objectif coché (navigation directe), on liste tout
+    const goals = state.goals.length ? state.goals : ALL_GOALS;
+    box.innerHTML = goals.map((g, i) =>
+      `<div class="opt rv d${i+2}${g === state.prio ? ' sel' : ''}" onclick="pickPrio(this,'${g}')">${g}</div>`).join('');
+    document.getElementById('btn4').disabled = !state.prio && goals.length !== 1;
+    if (goals.length === 1 && !state.prio) pickPrio(box.querySelector('.opt'), goals[0]);
+  }
+  function pickPrio(el, v) {
+    el.parentElement.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+    state.prio = v;
+    state.focus = ''; // la question 5 dépend de la priorité : on la réinitialise
+    document.getElementById('btn4').disabled = false;
+  }
+  function renderQ5() {
+    // question 5 adaptée à la priorité (fallback stress si navigation directe)
+    const map = {
+      'Apaiser mon stress': ['Des tensions dans le corps', 'Des pensées qui tournent en boucle', 'De l\'irritabilité', 'Une fatigue qui ne part pas'],
+      'Mieux dormir': ['Je mets du temps à m\'endormir', 'Je me réveille la nuit', 'Des pensées anxieuses le soir', 'Un sommeil léger, pas réparateur'],
+      'Calmer mon anxiété': ['Une boule au ventre', 'Des pensées qui s\'emballent', 'Des moments de panique', 'Une inquiétude de fond, tout le temps'],
+      'Me reconcentrer': ['Je me disperse facilement', 'Le téléphone me happe', 'Je procrastine', 'Ma tête est toujours pleine'],
+      'Découvrir la méditation': ['Par curiosité', 'On me l\'a recommandé', 'J\'ai lu que ça faisait du bien', 'Pour prendre soin de moi'],
+    };
+    const opts = map[state.prio] || map['Apaiser mon stress'];
+    document.getElementById('q5box').innerHTML = opts.map((o, i) =>
+      `<div class="opt rv d${i+2}${o === state.focus ? ' sel' : ''}" onclick="pickFocus(this,'${o.replace(/'/g, "\\'")}')">${o}</div>`).join('');
+    document.getElementById('btn5').disabled = !state.focus;
+  }
+  function pickFocus(el, v) {
+    el.parentElement.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+    state.focus = v;
+    document.getElementById('btn5').disabled = false;
+  }
+
+  function runLoading() {
+    // Les étapes citent les VRAIES réponses de l'utilisateur (labor illusion,
+    // Buell & Norton : l'effort perçu doit porter sur SES données).
+    document.getElementById('lst1').textContent = `Objectif : ${state.prio || 'Apaiser mon stress'}`;
+    document.getElementById('lst2').textContent = `Focus : ${state.focus || 'tes priorités'}`;
+    document.getElementById('lst3').textContent = `Rythme : ${state.dur || '5 minutes'} · ${(state.moment || 'le soir').toLowerCase()}`;
+    document.getElementById('lst4').textContent = state.name ? `Le programme de ${state.name} est prêt` : 'Ton programme est prêt';
+    [1,2,3,4].forEach((i, k) => setTimeout(() => document.getElementById('ls'+i).classList.add('show'), 500 + k*750));
+    setTimeout(() => go(10), 4200);
+  }
+  function fillPlan() {
+    document.getElementById('planTitle').textContent = state.name ? `${state.name}, voici ton programme` : 'Voici ton programme';
+    document.getElementById('planGoal').textContent = state.prio || 'Apaiser mon stress';
+    document.getElementById('planRhythm').textContent = `${state.dur || '5 minutes'} · ${state.moment || 'Le soir'}`;
+    document.getElementById('planLevel').textContent = (state.exp === 'Régulièrement' || state.exp === 'De temps en temps')
+      ? 'Habitué — on approfondit' : 'Débutant — on commence en douceur';
+  }
+  let breathInt;
+  function runBreath() {
+    const lbl = document.getElementById('breathLabel2'), tmr = document.getElementById('breathTimer');
+    let t = 30; clearInterval(breathInt);
+    breathInt = setInterval(() => {
+      t--; tmr.textContent = t + ' s';
+      lbl.textContent = (Math.floor((30 - t) / 4) % 2 === 0) ? 'Inspire…' : 'Expire…';
+      if (t <= 0) clearInterval(breathInt);
+    }, 1000);
+  }
+  // label écran 1
+  setInterval(() => {
+    const l = document.getElementById('breathLabel1');
+    if (l) l.textContent = (Math.floor(Date.now() / 4000) % 2 === 0) ? 'Inspire…' : 'Expire…';
+  }, 500);
+
+  go(1);
+</script>
+</body>
+</html>

@@ -5,21 +5,23 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import 'slide_reveal.dart';
 
-class QuestionSlide extends StatelessWidget {
+/// Question à choix MULTIPLES (même style que QuestionSlide, mais on peut
+/// cocher plusieurs réponses).
+class MultiQuestionSlide extends StatelessWidget {
   final String question;
+  final String? subtitle;
   final List<String> options;
-  final String? selectedOption;
-  final ValueChanged<String> onSelect;
-
-  /// Vrai quand cette slide est affichée : déclenche la cascade d'entrée.
+  final Set<String> selected;
+  final ValueChanged<String> onToggle;
   final bool active;
 
-  const QuestionSlide({
+  const MultiQuestionSlide({
     super.key,
     required this.question,
     required this.options,
-    required this.selectedOption,
-    required this.onSelect,
+    required this.selected,
+    required this.onToggle,
+    this.subtitle,
     this.active = true,
   });
 
@@ -37,50 +39,51 @@ class QuestionSlide extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
+        if (subtitle != null) ...[
+          const SizedBox(height: AppConstants.spacingSm),
+          SlideReveal(
+            active: active,
+            delay: const Duration(milliseconds: 80),
+            child: Text(
+              subtitle!,
+              style: AppTextStyles.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
         const SizedBox(height: AppConstants.spacingXl),
         ...options.asMap().entries.map((entry) {
           final i = entry.key;
           final option = entry.value;
-          final selected = option == selectedOption;
+          final isSel = selected.contains(option);
           return SlideReveal(
             active: active,
             delay: Duration(milliseconds: 130 + i * 85),
             child: GestureDetector(
               onTap: () {
                 HapticFeedback.selectionClick();
-                onSelect(option);
+                onToggle(option);
               },
               child: AnimatedContainer(
-                duration:
-                    const Duration(milliseconds: AppConstants.animFast),
-                margin: const EdgeInsets.only(
-                    bottom: AppConstants.spacingMd),
+                duration: const Duration(milliseconds: AppConstants.animFast),
+                margin: const EdgeInsets.only(bottom: AppConstants.spacingMd),
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppConstants.spacingMd,
                   vertical: AppConstants.spacingMd,
                 ),
                 decoration: BoxDecoration(
-                  color: selected
-                      ? AppColors.accentDim
-                      : AppColors.cardSurface,
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.radiusMd),
+                  color: isSel ? AppColors.accentDim : AppColors.cardSurface,
+                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                   border: Border.all(
-                    color: selected
-                        ? AppColors.accent
-                        : Colors.transparent,
+                    color: isSel ? AppColors.accent : Colors.transparent,
                     width: 1.5,
                   ),
                 ),
                 child: Text(
                   option,
                   style: AppTextStyles.bodyLarge.copyWith(
-                    color: selected
-                        ? AppColors.accent
-                        : AppColors.textPrimary,
-                    fontWeight: selected
-                        ? FontWeight.w600
-                        : FontWeight.w400,
+                    color: isSel ? AppColors.accent : AppColors.textPrimary,
+                    fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
                   ),
                   textAlign: TextAlign.center,
                 ),

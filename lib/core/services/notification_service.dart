@@ -5,8 +5,10 @@ import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 /// Heure de rappel par défaut, dérivée de la réponse Q4 de l'onboarding
-/// (« Tu aurais plutôt 5 minutes pour toi... ? »). L'utilisateur a déjà dit
-/// quand il préfère méditer — on s'en sert au lieu d'imposer une heure.
+/// (« Quel serait ton moment à toi, dans la journée ? »). L'utilisateur a déjà
+/// dit quand il préfère souffler — on s'en sert au lieu d'imposer une heure.
+/// Repose sur les mots-clés « matin » / « journée » / « soir » présents dans
+/// les libellés de _q4Options (onboarding_page.dart).
 ({int hour, int minute}) defaultReminderTime(Map<String, String> answers) {
   final q4 = answers['q4'] ?? '';
   if (q4.contains('matin')) return (hour: 8, minute: 0);

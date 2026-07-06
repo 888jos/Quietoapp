@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import 'slide_reveal.dart';
 
 class TextInputSlide extends StatefulWidget {
   final String question;
@@ -12,6 +13,9 @@ class TextInputSlide extends StatefulWidget {
   final VoidCallback? onSubmitted;
   final FocusNode? focusNode;
 
+  /// Vrai quand cette slide est affichée : déclenche la cascade d'entrée.
+  final bool active;
+
   const TextInputSlide({
     super.key,
     required this.question,
@@ -20,6 +24,7 @@ class TextInputSlide extends StatefulWidget {
     this.initialValue = '',
     this.onSubmitted,
     this.focusNode,
+    this.active = true,
   });
 
   @override
@@ -47,46 +52,53 @@ class _TextInputSlideState extends State<TextInputSlide> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          widget.question,
-          style: AppTextStyles.titleLarge,
-          textAlign: TextAlign.center,
+        SlideReveal(
+          active: widget.active,
+          child: Text(
+            widget.question,
+            style: AppTextStyles.titleLarge,
+            textAlign: TextAlign.center,
+          ),
         ),
         const SizedBox(height: AppConstants.spacingXl),
-        TextField(
-          controller: _controller,
-          focusNode: widget.focusNode,
-          textCapitalization: TextCapitalization.words,
-          style: AppTextStyles.bodyLarge,
-          maxLength: 30,
-          inputFormatters: [
-            FilteringTextInputFormatter.deny(RegExp(r'^\s+')),
-          ],
-          decoration: InputDecoration(
-            hintText: widget.hint,
-            hintStyle: AppTextStyles.bodyMedium,
-            counterText: '',
-            filled: true,
-            fillColor: AppColors.cardSurface,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.spacingMd,
-              vertical: AppConstants.spacingMd,
+        SlideReveal(
+          active: widget.active,
+          delay: const Duration(milliseconds: 130),
+          child: TextField(
+            controller: _controller,
+            focusNode: widget.focusNode,
+            textCapitalization: TextCapitalization.words,
+            style: AppTextStyles.bodyLarge,
+            maxLength: 30,
+            inputFormatters: [
+              FilteringTextInputFormatter.deny(RegExp(r'^\s+')),
+            ],
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              hintStyle: AppTextStyles.bodyMedium,
+              counterText: '',
+              filled: true,
+              fillColor: AppColors.cardSurface,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.spacingMd,
+                vertical: AppConstants.spacingMd,
+              ),
+              border: OutlineInputBorder(
+                borderRadius:
+                    BorderRadius.circular(AppConstants.radiusMd),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius:
+                    BorderRadius.circular(AppConstants.radiusMd),
+                borderSide:
+                    const BorderSide(color: AppColors.accent, width: 1.5),
+              ),
             ),
-            border: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppConstants.radiusMd),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius:
-                  BorderRadius.circular(AppConstants.radiusMd),
-              borderSide:
-                  const BorderSide(color: AppColors.accent, width: 1.5),
-            ),
+            textInputAction: TextInputAction.done,
+            onChanged: widget.onChanged,
+            onSubmitted: (_) => widget.onSubmitted?.call(),
           ),
-          textInputAction: TextInputAction.done,
-          onChanged: widget.onChanged,
-          onSubmitted: (_) => widget.onSubmitted?.call(),
         ),
       ],
     );

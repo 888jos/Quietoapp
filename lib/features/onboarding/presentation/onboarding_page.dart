@@ -6,15 +6,20 @@ import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
-import '../../../core/ui/app_scaffold.dart';
 import '../onboarding_providers.dart';
-import 'widgets/intro_slide.dart';
+import 'widgets/breath_circle.dart';
+import 'widgets/multi_question_slide.dart';
 import 'widgets/progress_bar.dart';
 import 'widgets/question_slide.dart';
-import 'widgets/recap_slide.dart';
+import 'widgets/slide_reveal.dart';
+import 'widgets/starry_background.dart';
 import 'widgets/text_input_slide.dart';
 
+/// Onboarding V2 orienté conversion (voir maquette_onboarding_v2.html) :
+/// accueil respirant → prénom → objectifs (multi) → expérience → moment
+/// → durée → création du programme. Le 1er objectif coché nomme le programme.
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
 
@@ -28,61 +33,74 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   int _page = 0;
   bool _loading = false;
 
-  // 2 intro + 4 questions + prénom + récap « ce qu'on a compris de toi »
-  static const _totalSlides = 8;
-
-  static const _q1Options = [
-    'Un stress que je n\'arrive pas à lâcher',
-    'Une tristesse ou un vide',
-    'Des tensions avec les autres',
-    'Un sentiment de flottement',
-    'Rien de tout ça, tout roule',
+  // Vocabulaire : Quieto = espace de bien-être / santé mentale.
+  // On ne parle PAS de « méditation » dans les questions (connotation),
+  // sauf l'unique question expérience plus bas.
+  static const _goalsOptions = [
+    'Apaiser mon stress',
+    'Mieux dormir',
+    'Calmer mon anxiété',
+    'Me reconcentrer',
+    'Prendre soin de moi',
   ];
 
-  static const _q2Options = [
-    'Depuis quelques heures',
-    'Depuis quelques jours',
-    'Depuis quelques semaines',
-    'C\'est flou, ça dure depuis longtemps',
-    'Aucun souci, je viens juste essayer',
+  static const _experienceOptions = [
+    'Jamais essayé, c\'est tout nouveau',
+    'J\'ai testé une ou deux fois',
+    'Je pratique de temps en temps',
+    'Je pratique régulièrement',
   ];
 
-  static const _q3Options = [
-    'Mon sommeil',
-    'Ma concentration',
-    'Mes relations',
-    'Mon énergie au quotidien',
-    'Tout va, je veux juste prendre soin de moi',
+  // ⚠️ matin/journée/soir = mots-clés de defaultReminderTime.
+  static const _momentOptions = [
+    'Le matin, au réveil',
+    'En journée, pour souffler',
+    'Le soir, pour tout relâcher',
+    'Ça dépend des jours',
   ];
 
-  static const _q4Options = [
-    'Le matin, pour bien démarrer',
-    'Dans la journée, pour souffler',
-    'Le soir, pour décompresser',
-    'N\'importe quand, selon l\'humeur',
+  static const _minutesOptions = [
+    'Moins de 5 minutes',
+    'Environ 10 minutes',
+    'Plus de 15 minutes',
   ];
 
-  bool get _isLastSlide => _page == _totalSlides - 1;
+  /// Ordre des écrans du quiz.
+  List<String> _slideIds(OnboardingState state) => [
+        'welcome',
+        'name',
+        'goals',
+        'experience',
+        'moment',
+        'minutes',
+      ];
 
-  bool _isSlideProceedable(OnboardingState state) {
-    if (_page == 2) return state.answers.containsKey('q1');
-    if (_page == 3) return state.answers.containsKey('q2');
-    if (_page == 4) return state.answers.containsKey('q3');
-    if (_page == 5) return state.answers.containsKey('q4');
-    if (_page == 6) return state.firstName.trim().isNotEmpty;
-    return true; // 7 = récap, toujours validable
+  bool _isSlideProceedable(OnboardingState state, List<String> ids) {
+    return switch (ids[_page]) {
+      'name' => state.firstName.trim().isNotEmpty,
+      'goals' => state.goals.isNotEmpty,
+      'experience' => state.answers.containsKey('q2'),
+      'moment' => state.answers.containsKey('q4'),
+      'minutes' => state.answers.containsKey('q_minutes'),
+      _ => true,
+    };
   }
 
   Future<void> _next() async {
-    if (_isLastSlide) {
+    final state = ref.read(onboardingProvider);
+    final ids = _slideIds(state);
+    if (_page == ids.length - 1) {
       await _finish();
-    } else {
-      await _controller.nextPage(
-        duration:
-            const Duration(milliseconds: AppConstants.animNormal),
-        curve: Curves.easeInOut,
-      );
+      return;
     }
+    // L'objectif n°1 = le premier coché (il nomme le programme).
+    if (ids[_page] == 'goals' && state.goals.isNotEmpty) {
+      ref.read(onboardingProvider.notifier).setPriority(state.goals.first);
+    }
+    await _controller.nextPage(
+      duration: const Duration(milliseconds: AppConstants.animNormal),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _finish() async {
@@ -94,7 +112,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       await storage.setFirstName(state.firstName.trim());
       await storage.setOnboardingDone();
       if (!mounted) return;
-      // Met à jour le firstNameProvider pour que loading/preview lisent le bon prénom
       ref.read(firstNameProvider.notifier).state = state.firstName.trim();
       context.go(AppRoutes.onboardingLoading);
     } catch (_) {
@@ -109,172 +126,222 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     super.dispose();
   }
 
+  /// Fondu entre slides (remplace le glissement sec du PageView).
+  Widget _fade(int index, Widget child) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, c) {
+        var page = _page.toDouble();
+        if (_controller.hasClients) {
+          page = _controller.page ?? page;
+        }
+        final t = (1.0 - (page - index).abs()).clamp(0.0, 1.0);
+        return Opacity(opacity: t, child: c);
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildSlide(String id, int index, OnboardingState state) {
+    final name = state.firstName.trim();
+    final active = _page == index;
+
+    final slide = switch (id) {
+      'welcome' => Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SlideReveal(active: active, child: const BreathCircle()),
+            const SizedBox(height: AppConstants.spacingLg),
+            SlideReveal(
+              active: active,
+              delay: const Duration(milliseconds: 150),
+              child: Text(
+                'Bienvenue dans Quieto',
+                style: AppTextStyles.titleLarge,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            SlideReveal(
+              active: active,
+              delay: const Duration(milliseconds: 280),
+              child: Text(
+                'Prends une grande inspiration.\nTu es au bon endroit.',
+                style: AppTextStyles.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      'name' => TextInputSlide(
+          active: active,
+          question: "Comment tu t'appelles ?",
+          hint: 'Ton prénom',
+          initialValue: state.firstName,
+          focusNode: _firstNameFocus,
+          onChanged: (v) =>
+              ref.read(onboardingProvider.notifier).setFirstName(v),
+          onSubmitted:
+              state.firstName.trim().isNotEmpty ? _next : null,
+        ),
+      'goals' => MultiQuestionSlide(
+          active: active,
+          question: name.isEmpty
+              ? 'Qu\'est-ce qui t\'amène ici ?'
+              : 'Qu\'est-ce qui t\'amène ici $name ?',
+          subtitle: 'Choisis tout ce qui te parle.',
+          options: _goalsOptions,
+          selected: state.goals.toSet(),
+          onToggle: (g) =>
+              ref.read(onboardingProvider.notifier).toggleGoal(g),
+        ),
+      'experience' => QuestionSlide(
+          active: active,
+          question: 'Où en es-tu\navec la méditation ?',
+          options: _experienceOptions,
+          selectedOption: state.answers['q2'],
+          onSelect: (v) =>
+              ref.read(onboardingProvider.notifier).setAnswer('q2', v),
+        ),
+      'moment' => QuestionSlide(
+          active: active,
+          question: 'Quand aimerais-tu prendre\nun moment pour toi ?',
+          options: _momentOptions,
+          selectedOption: state.answers['q4'],
+          onSelect: (v) =>
+              ref.read(onboardingProvider.notifier).setAnswer('q4', v),
+        ),
+      'minutes' => QuestionSlide(
+          active: active,
+          question: 'Combien de temps peux-tu\nt\'offrir chaque jour ?',
+          options: _minutesOptions,
+          selectedOption: state.answers['q_minutes'],
+          onSelect: (v) => ref
+              .read(onboardingProvider.notifier)
+              .setAnswer('q_minutes', v),
+        ),
+      _ => const SizedBox.shrink(),
+    };
+    return _fade(index, slide);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(onboardingProvider);
-    final canProceed = _isSlideProceedable(state);
+    final ids = _slideIds(state);
+    final canProceed = _isSlideProceedable(state, ids);
+    final quizSteps = ids.length - 1;
+    final isLast = _page == ids.length - 1;
 
-    return AppScaffold(
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.spacingLg),
-          child: Column(
-            children: [
-              const SizedBox(height: AppConstants.spacingSm),
-              // Flèche retour discrète (cachée sur la première slide)
-              SizedBox(
-                height: 32,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedOpacity(
-                    opacity: _page > 0 ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: IgnorePointer(
-                      ignoring: _page == 0,
-                      child: IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios_new,
-                          color: AppColors.textMuted,
-                          size: 18,
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      // false = le clavier glisse PAR-DESSUS sans compresser la mise en page
+      // (sinon tous les widgets « se recollent » brutalement à l'arrivée sur
+      // l'écran prénom). Le champ est centré → toujours visible ; la touche
+      // OK du clavier valide et passe à la suite.
+      resizeToAvoidBottomInset: false,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: StarryBackground()),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingLg),
+              child: Column(
+                children: [
+                  const SizedBox(height: AppConstants.spacingSm),
+                  // Flèche retour (cachée sur l'accueil)
+                  SizedBox(
+                    height: 32,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedOpacity(
+                        opacity: _page > 0 ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: IgnorePointer(
+                          ignoring: _page == 0,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: AppColors.textMuted,
+                              size: 18,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              HapticFeedback.lightImpact();
+                              // Referme le clavier avant de reculer (sinon il
+                              // reste ouvert sur l'écran d'accueil).
+                              _firstNameFocus.unfocus();
+                              _controller.previousPage(
+                                duration: const Duration(
+                                    milliseconds: AppConstants.animNormal),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                          ),
                         ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          _controller.previousPage(
-                            duration: const Duration(
-                                milliseconds: AppConstants.animNormal),
-                            curve: Curves.easeInOut,
-                          );
-                        },
                       ),
                     ),
                   ),
-                ),
+                  // Barre de progression : hauteur RÉSERVÉE en permanence
+                  // (sinon la mise en page saute pendant la transition 0→1),
+                  // simple fondu à l'apparition.
+                  const SizedBox(height: AppConstants.spacingSm),
+                  SizedBox(
+                    height: 3,
+                    child: AnimatedOpacity(
+                      opacity: _page > 0 ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: OnboardingProgressBar(
+                        current: (_page - 1).clamp(0, quizSteps - 1),
+                        total: quizSteps,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  Expanded(
+                    child: PageView(
+                      controller: _controller,
+                      physics: const NeverScrollableScrollPhysics(),
+                      onPageChanged: (i) {
+                        setState(() => _page = i);
+                        if (ids.length > i && ids[i] == 'name') {
+                          // Clavier seulement une fois la transition finie
+                          // (sinon il pousse la mise en page en plein fondu).
+                          Future.delayed(
+                            const Duration(
+                                milliseconds: AppConstants.animNormal + 150),
+                            () {
+                              if (mounted && _page == i) {
+                                _firstNameFocus.requestFocus();
+                              }
+                            },
+                          );
+                        } else {
+                          _firstNameFocus.unfocus();
+                        }
+                      },
+                      children: [
+                        for (var i = 0; i < ids.length; i++)
+                          _buildSlide(ids[i], i, state),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  AppButton(
+                    label: _page == 0
+                        ? 'Commencer'
+                        : (isLast ? 'Créer mon programme' : 'Continuer'),
+                    onTap: canProceed ? _next : null,
+                    isLoading: _loading,
+                  ),
+                  const SizedBox(height: AppConstants.spacingLg),
+                ],
               ),
-              // Barre de progression cachée sur la slide récap (dernière) :
-              // y ajouter un cran la rendait moche. On garde un espacement
-              // constant pour ne pas faire sauter la mise en page.
-              if (_isLastSlide)
-                const SizedBox(height: AppConstants.spacingMd)
-              else ...[
-                const SizedBox(height: AppConstants.spacingSm),
-                OnboardingProgressBar(
-                    current: _page, total: _totalSlides),
-                const SizedBox(height: AppConstants.spacingMd),
-              ],
-              Expanded(
-                child: PageView(
-                  controller: _controller,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (i) {
-                    setState(() => _page = i);
-                    // Focus la slide prénom seulement après la fin de l'animation
-                    // (évite que le clavier monte pendant le slide)
-                    if (i == 6) {
-                      Future.delayed(
-                        const Duration(
-                            milliseconds: AppConstants.animNormal + 50),
-                        () {
-                          if (mounted) _firstNameFocus.requestFocus();
-                        },
-                      );
-                    }
-                    // Récap : referme le clavier de la slide prénom
-                    if (i == 7) _firstNameFocus.unfocus();
-                  },
-                  children: [
-                    // Slide 0 — Intro 1
-                    const IntroSlide(
-                      emoji: '🌿',
-                      title: 'Bienvenue dans Quieto',
-                      subtitle:
-                          'Un espace calme pour méditer,\nrespirer et vous recentrer.',
-                    ),
-
-                    // Slide 1 — Intro 2
-                    const IntroSlide(
-                      emoji: '🎧',
-                      title: 'Des séances guidées',
-                      subtitle:
-                          'Des méditations en français\npour tous les niveaux.',
-                    ),
-
-                    // Slide 2 — Q1
-                    QuestionSlide(
-                      question:
-                          'Qu\'est-ce qui t\'amène à méditer aujourd\'hui ?',
-                      options: _q1Options,
-                      selectedOption: state.answers['q1'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q1', v),
-                    ),
-
-                    // Slide 3 — Q2
-                    QuestionSlide(
-                      question: 'C\'est quelque chose que tu ressens... ?',
-                      options: _q2Options,
-                      selectedOption: state.answers['q2'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q2', v),
-                    ),
-
-                    // Slide 4 — Q3
-                    QuestionSlide(
-                      question: 'Qu\'est-ce que ça affecte le plus ?',
-                      options: _q3Options,
-                      selectedOption: state.answers['q3'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q3', v),
-                    ),
-
-                    // Slide 5 — Q4
-                    QuestionSlide(
-                      question:
-                          'Tu aurais plutôt 5 minutes pour toi... ?',
-                      options: _q4Options,
-                      selectedOption: state.answers['q4'],
-                      onSelect: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setAnswer('q4', v),
-                    ),
-
-                    // Slide 6 — Prénom
-                    TextInputSlide(
-                      question: "Comment tu t'appelles ?",
-                      hint: 'Ton prénom',
-                      initialValue: state.firstName,
-                      focusNode: _firstNameFocus,
-                      onChanged: (v) => ref
-                          .read(onboardingProvider.notifier)
-                          .setFirstName(v),
-                      onSubmitted: canProceed ? _next : null,
-                    ),
-
-                    // Slide 7 — Récap (effet miroir : ses propres mots,
-                    // juste avant la « création du programme »)
-                    RecapSlide(
-                      firstName: state.firstName,
-                      answers: state.answers,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppConstants.spacingMd),
-              AppButton(
-                label: _isLastSlide ? 'Créer mon programme' : 'Suivant',
-                onTap: canProceed ? _next : null,
-                isLoading: _loading,
-              ),
-              const SizedBox(height: AppConstants.spacingLg),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

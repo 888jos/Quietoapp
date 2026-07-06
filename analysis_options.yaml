@@ -9,6 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # Maquette de handoff design (copie de référence, pas compilée dans
+    # l'app) : sans cette exclusion, ses erreurs bloquent le lancement
+    # depuis VSCode avec « Errors exist in your project ».
+    - design_handoff_paywall_essai/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`

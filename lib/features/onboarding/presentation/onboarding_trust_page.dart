@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import 'widgets/slide_reveal.dart';
-import 'widgets/starry_background.dart';
+import '../../../core/ui/starry_background.dart';
 
 // VRAIS avis App Store (récupérés via l'API RSS Apple le 2026-07-03, storefront
 // FR). Textes légèrement raccourcis pour l'affichage. Note globale réelle.
@@ -50,14 +52,15 @@ const _reviews = [
 ];
 
 /// Mur d'avis qui défilent en continu (preuve sociale), après la respiration.
-class OnboardingTrustPage extends StatefulWidget {
+class OnboardingTrustPage extends ConsumerStatefulWidget {
   const OnboardingTrustPage({super.key});
 
   @override
-  State<OnboardingTrustPage> createState() => _OnboardingTrustPageState();
+  ConsumerState<OnboardingTrustPage> createState() =>
+      _OnboardingTrustPageState();
 }
 
-class _OnboardingTrustPageState extends State<OnboardingTrustPage>
+class _OnboardingTrustPageState extends ConsumerState<OnboardingTrustPage>
     with SingleTickerProviderStateMixin {
   final _scroll = ScrollController();
   late final Ticker _ticker;
@@ -66,6 +69,7 @@ class _OnboardingTrustPageState extends State<OnboardingTrustPage>
   @override
   void initState() {
     super.initState();
+    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'trust'});
     _ticker = createTicker((elapsed) {
       final dt = (elapsed - _last).inMicroseconds / 1e6;
       _last = elapsed;

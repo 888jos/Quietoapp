@@ -17,15 +17,36 @@ import 'package:timezone/timezone.dart' as tz;
   return (hour: 19, minute: 0);
 }
 
-/// Rappel quotidien de méditation.
+/// Rappel quotidien.
 ///
 /// Philosophie (cf. discussion produit) : un rappel **doux, jamais
 /// culpabilisant**. Une seule notification par jour, à une heure choisie par
-/// l'utilisateur, désactivable en un tap. Si l'utilisateur a déjà médité
-/// aujourd'hui, le rappel du jour est sauté (reprogrammé à demain).
+/// l'utilisateur, désactivable en un tap. Si l'utilisateur a déjà fait sa
+/// séance aujourd'hui, le rappel du jour est sauté (reprogrammé à demain).
+///
+/// Le texte change d'un jour à l'autre ([_bodies]) pour ne pas lasser. Une
+/// notification répétitive a un contenu figé, donc on programme les
+/// [_windowDays] prochains jours individuellement ; la fenêtre est
+/// re-glissée à chaque ouverture de l'app (cf. QuietoApp.initState) et à
+/// chaque reprogrammation.
 class NotificationService {
-  static const _dailyReminderId = 1;
+  /// Ids réservés au rappel quotidien : _firstId .. _firstId+_windowDays-1.
+  static const _firstId = 1;
+
+  /// 30 jours d'avance : bien en dessous de la limite iOS de 64 notifications
+  /// en attente, et il suffit d'ouvrir l'app une fois par mois pour que la
+  /// fenêtre glisse.
+  static const _windowDays = 30;
   static const _channelId = 'quieto_daily_reminder';
+
+  /// Textes validés (discussion produit 2026-07-18). Le titre est toujours
+  /// « Quieto ». Rotation stable par date : chaque jour calendaire a son
+  /// texte, deux jours consécutifs sont toujours différents.
+  static const _bodies = [
+    'Louane est de retour pour discuter de ce qui te pèse ;)',
+    'Tes séances t\'attendent pour relâcher la pression d\'aujourd\'hui ;)',
+    'C\'est l\'heure de ta pause, viens souffler 5 minutes ;)',
+  ];
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
@@ -84,49 +105,56 @@ class NotificationService {
     return false;
   }
 
-  /// Programme (ou reprogramme) le rappel quotidien à [hour]:[minute].
-  /// [skipToday] : ne pas notifier aujourd'hui (l'utilisateur vient de
-  /// méditer) — première occurrence demain.
+  /// Programme (ou reprogramme) le rappel quotidien à [hour]:[minute] pour
+  /// les [_windowDays] prochains jours, avec un texte différent chaque jour.
+  /// [skipToday] : ne pas notifier aujourd'hui (l'utilisateur vient de faire
+  /// sa séance) — première occurrence demain.
   Future<void> scheduleDailyReminder({
     required int hour,
     required int minute,
     bool skipToday = false,
-    String firstName = '',
   }) async {
     if (!_initialized) await init();
     try {
-      await _plugin.cancel(id: _dailyReminderId);
+      await cancelDailyReminder();
 
       final now = tz.TZDateTime.now(tz.local);
       var first =
           tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
       if (skipToday || !first.isAfter(now)) {
-        first = first.add(const Duration(days: 1));
+        first = tz.TZDateTime(
+            tz.local, now.year, now.month, now.day + 1, hour, minute);
       }
 
-      await _plugin.zonedSchedule(
-        id: _dailyReminderId,
-        title: _titleForHour(hour),
-        body: _bodyFor(firstName),
-        scheduledDate: first,
-        // Se répète chaque jour à la même heure.
-        matchDateTimeComponents: DateTimeComponents.time,
-        // Inexact : pas besoin de la permission SCHEDULE_EXACT_ALARM, et une
-        // minute près n'a aucune importance pour un rappel de méditation.
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            _channelId,
-            'Rappel quotidien',
-            channelDescription:
-                'Un rappel doux pour ton moment de méditation.',
-            importance: Importance.defaultImportance,
-            priority: Priority.defaultPriority,
+      for (var i = 0; i < _windowDays; i++) {
+        // Reconstruction explicite (et non first.add(Duration)) : garde
+        // l'heure « murale » identique même si l'heure d'été change dans
+        // la fenêtre. Dart normalise les débordements de jour/mois.
+        final date = tz.TZDateTime(
+            tz.local, first.year, first.month, first.day + i, hour, minute);
+        await _plugin.zonedSchedule(
+          id: _firstId + i,
+          title: 'Quieto',
+          body: _bodyForDate(date),
+          scheduledDate: date,
+          // Inexact : pas besoin de la permission SCHEDULE_EXACT_ALARM, et
+          // une minute près n'a aucune importance pour un rappel.
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          notificationDetails: const NotificationDetails(
+            android: AndroidNotificationDetails(
+              _channelId,
+              'Rappel quotidien',
+              channelDescription:
+                  'Ton rappel quotidien pour prendre soin de toi.',
+              importance: Importance.defaultImportance,
+              priority: Priority.defaultPriority,
+            ),
+            iOS: DarwinNotificationDetails(),
           ),
-          iOS: DarwinNotificationDetails(),
-        ),
-      );
-      debugPrint('[Notifications] rappel programmé : $first');
+        );
+      }
+      debugPrint(
+          '[Notifications] rappels programmés : $first (+$_windowDays j)');
     } catch (e) {
       debugPrint('[Notifications] scheduleDailyReminder échoué : $e');
     }
@@ -136,22 +164,20 @@ class NotificationService {
   Future<void> cancelDailyReminder() async {
     if (!_initialized) await init();
     try {
-      await _plugin.cancel(id: _dailyReminderId);
+      for (var i = 0; i < _windowDays; i++) {
+        await _plugin.cancel(id: _firstId + i);
+      }
     } catch (e) {
       debugPrint('[Notifications] cancel échoué : $e');
     }
   }
 
-  // Ton doux, jamais culpabilisant : une invitation, pas un reproche.
-  String _titleForHour(int hour) {
-    if (hour < 11) return 'Commence ta journée en douceur 🌿';
-    if (hour < 17) return 'Une petite pause pour souffler ? 🍃';
-    return 'Ton moment de calme t\'attend 🌙';
-  }
-
-  String _bodyFor(String firstName) {
-    return firstName.isEmpty
-        ? 'Quelques minutes pour toi, quand tu es prêt.'
-        : '$firstName, quelques minutes pour toi, quand tu es prêt.';
+  /// Texte du jour : indexé sur la date calendaire (jour de l'année), donc
+  /// stable d'une reprogrammation à l'autre et jamais deux jours de suite
+  /// identiques.
+  String _bodyForDate(tz.TZDateTime date) {
+    final dayOfYear =
+        date.difference(tz.TZDateTime(tz.local, date.year, 1, 1)).inDays;
+    return _bodies[dayOfYear % _bodies.length];
   }
 }

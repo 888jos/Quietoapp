@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models/category_model.dart';
-import '../../core/models/session_model.dart';
 import '../../core/services/storage_providers.dart';
 import '../explore/explore_providers.dart';
 import 'data/home_repository.dart';
@@ -10,22 +9,19 @@ final homeRepositoryProvider = Provider<HomeRepository>((ref) {
 });
 
 final categoriesProvider = Provider<List<CategoryModel>>((ref) {
-  // Exclut decouverte (Priorité du moment) et express (bloc Une minute pour toi)
+  // Exclut decouverte (Priorité du moment). Ordre voulu : actualité en
+  // tête, express (micro-méditations Flash) tout en bas.
   final all = ref
       .watch(homeRepositoryProvider)
       .fetchCategories()
-      .where((c) => c.id != 'decouverte' && c.id != 'express')
+      .where((c) => c.id != 'decouverte')
       .toList();
   final actualite = all.where((c) => c.id == 'actualite').toList();
-  final rest = all.where((c) => c.id != 'actualite').toList();
-  return [...actualite, ...rest];
-});
-
-/// Sessions du bloc Express ("Une minute pour toi") sur la Home.
-final expressSessionsProvider = Provider<List<SessionModel>>((ref) {
-  final categories = ref.watch(homeRepositoryProvider).fetchCategories();
-  final express = categories.where((c) => c.id == 'express').toList();
-  return express.isEmpty ? const [] : express.first.sessions;
+  final express = all.where((c) => c.id == 'express').toList();
+  final rest = all
+      .where((c) => c.id != 'actualite' && c.id != 'express')
+      .toList();
+  return [...actualite, ...rest, ...express];
 });
 
 final userFirstNameProvider = Provider<String>((ref) {

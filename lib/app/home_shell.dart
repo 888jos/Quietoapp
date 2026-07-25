@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
+import '../core/services/storage_providers.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../features/louane/presentation/louane_palette.dart';
 import '../features/player/presentation/widgets/mini_player.dart';
 
-class HomeShell extends StatelessWidget {
+class HomeShell extends ConsumerWidget {
   final StatefulNavigationShell shell;
 
   const HomeShell({super.key, required this.shell});
 
+  static const _nomsOnglets = ['accueil', 'louane', 'profil'];
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: shell,
@@ -23,10 +27,18 @@ class HomeShell extends StatelessWidget {
           const MiniPlayer(),
           _QuijetoNav(
             currentIndex: shell.currentIndex,
-            onTap: (index) => shell.goBranch(
-              index,
-              initialLocation: index == shell.currentIndex,
-            ),
+            onTap: (index) {
+              // Vigie : navigation entre onglets (quels espaces vivent ?).
+              if (index != shell.currentIndex && index < _nomsOnglets.length) {
+                ref.read(vigieProvider).log('onglet', {
+                  'nom': _nomsOnglets[index],
+                });
+              }
+              shell.goBranch(
+                index,
+                initialLocation: index == shell.currentIndex,
+              );
+            },
           ),
         ],
       ),
@@ -64,26 +76,19 @@ class _QuijetoNav extends StatelessWidget {
                 onTap: () => onTap(0),
               ),
               _NavItem(
-                icon: Iconsax.element_4,
-                iconActive: Iconsax.element_4_copy,
-                label: 'Explorer',
-                isActive: currentIndex == 1,
-                onTap: () => onTap(1),
-              ),
-              _NavItem(
                 icon: Icons.chat_bubble_outline_rounded,
                 iconActive: Icons.chat_bubble_rounded,
                 label: 'Louane',
-                isActive: currentIndex == 2,
+                isActive: currentIndex == 1,
                 activeColor: LouanePalette.accent,
-                onTap: () => onTap(2),
+                onTap: () => onTap(1),
               ),
               _NavItem(
                 icon: Iconsax.profile_circle,
                 iconActive: Iconsax.profile_circle_copy,
                 label: 'Profil',
-                isActive: currentIndex == 3,
-                onTap: () => onTap(3),
+                isActive: currentIndex == 2,
+                onTap: () => onTap(2),
               ),
             ],
           ),

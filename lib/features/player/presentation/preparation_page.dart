@@ -73,7 +73,7 @@ class _PreparationPageState extends ConsumerState<PreparationPage>
     if (session != null && ref.watch(sessionLockedProvider(session))) {
       _navigated = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) context.pushReplacement(AppRoutes.paywallSlide);
+        if (context.mounted) context.pushReplacement(AppRoutes.paywallDepuis('seance'));
       });
       return const Scaffold(
         backgroundColor: AppColors.background,

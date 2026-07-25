@@ -2,14 +2,23 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../config/app_constants.dart';
+import '../config/revenue_cat_config.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
+import 'vigie_service.dart';
 
 /// Provider global pour StorageService.
 /// Doit être overridé dans le ProviderScope de main.dart.
 final storageServiceProvider = Provider<StorageService>((ref) {
   throw UnimplementedError(
       'storageServiceProvider must be overridden in ProviderScope');
+});
+
+/// Vigie (mesure d'usage interne, anonyme).
+/// Doit être overridé dans le ProviderScope de main.dart.
+final vigieProvider = Provider<VigieService>((ref) {
+  throw UnimplementedError(
+      'vigieProvider must be overridden in ProviderScope');
 });
 
 /// Service des rappels quotidiens. Singleton sur la durée de vie de l'app ;
@@ -38,7 +47,9 @@ const bool _devUnlockPremium = !kReleaseMode && _kDevWantsPremiumBypass;
 class SubscriptionNotifier extends StateNotifier<bool> {
   SubscriptionNotifier(this._storage, this._devUnlock)
       : super(_devUnlock || _storage.isPremium) {
-    if (!_devUnlock) {
+    // revenueCatDisponible : sans clé dans le build, tout appel au SDK
+    // natif s'écrase (fatalError) au lieu de renvoyer une erreur.
+    if (!_devUnlock && revenueCatDisponible) {
       Purchases.addCustomerInfoUpdateListener(_handleUpdate);
     }
   }
@@ -54,9 +65,22 @@ class SubscriptionNotifier extends StateNotifier<bool> {
     _storage.setIsPremium(isPremium);
   }
 
+  /// DEV uniquement : bascule premium/gratuit à la volée (interrupteur de
+  /// test dans le profil). No-op en release, même garde-fou que le bypass.
+  /// PERSISTE le choix : un achat sandbox laisse isPremium=true dans le
+  /// stockage, et sans clé RevenueCat dans le build (lancement Xcode) rien
+  /// ne le remet jamais à false → tout reste déverrouillé, plus aucun
+  /// paywall visible (vécu le 2026-07-24). Basculer l'interrupteur doit
+  /// donc corriger le stockage aussi, durablement.
+  void devTogglePremium() {
+    if (kReleaseMode) return;
+    state = !state;
+    _storage.setIsPremium(state);
+  }
+
   @override
   void dispose() {
-    if (!_devUnlock) {
+    if (!_devUnlock && revenueCatDisponible) {
       Purchases.removeCustomerInfoUpdateListener(_handleUpdate);
     }
     super.dispose();

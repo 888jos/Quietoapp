@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import '../../../../core/theme/app_colors.dart';
+import '../theme/app_colors.dart';
 
 /// Ciel étoilé doux et CONTINU (même esprit que le paywall) : les étoiles
 /// scintillent lentement sans jamais « sauter », et quelques étoiles filantes

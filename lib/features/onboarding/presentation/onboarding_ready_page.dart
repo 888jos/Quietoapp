@@ -11,7 +11,7 @@ import '../../../core/ui/app_button.dart';
 import '../../paywall/paywall_providers.dart';
 import '../data/weekly_program.dart';
 import 'widgets/slide_reveal.dart';
-import 'widgets/starry_background.dart';
+import '../../../core/ui/starry_background.dart';
 
 /// « {Prénom}, voici ton programme » : profil reformulé à partir des
 /// réponses (pas de copier-coller du quiz) + programme de 7 jours
@@ -40,6 +40,7 @@ class _OnboardingReadyPageState extends ConsumerState<OnboardingReadyPage> {
   @override
   void initState() {
     super.initState();
+    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'ready'});
     // Précharge l'Offering RevenueCat : le paywall (3 écrans plus loin)
     // s'ouvrira avec ses prix déjà en mémoire.
     ref.read(offeringProvider.future);

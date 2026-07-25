@@ -4,6 +4,7 @@ import '../../../../core/config/app_constants.dart';
 import '../../../../core/models/category_model.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/ui/category_glyph.dart';
 import '../../../../core/ui/new_badge.dart';
 
 class CategoryListCard extends StatelessWidget {
@@ -42,9 +43,10 @@ class CategoryListCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: Text(
-                    category.emoji,
-                    style: const TextStyle(fontSize: 28),
+                  child: CategoryGlyph(
+                    categoryId: category.id,
+                    fallbackEmoji: category.emoji,
+                    size: 30,
                   ),
                 ),
               ),
@@ -63,13 +65,13 @@ class CategoryListCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (category.isNew) ...[
+                        if (category.badge != null) ...[
                           const SizedBox(width: 8),
                           Transform.translate(
                             offset: const Offset(70, -28),
                             child: Transform.scale(
                               scale: 1.125,
-                              child: const NewBadge(),
+                              child: NewBadge(label: category.badge!),
                             ),
                           ),
                         ],

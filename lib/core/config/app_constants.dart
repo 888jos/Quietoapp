@@ -1,8 +1,9 @@
 abstract final class AppConstants {
   // ── App ──────────────────────────────────────────────
   static const appName = 'Quieto';
-  // Version : source de vérité = pubspec.yaml (via package_info_plus si
-  // un affichage est nécessaire un jour).
+  // ⚠️ À METTRE À JOUR EN MÊME TEMPS QUE pubspec.yaml (version: x.y.z+n).
+  // Sert à la Vigie : comparer le funnel d'une version à l'autre.
+  static const appVersion = '1.0.9';
 
   // ── RevenueCat ───────────────────────────────────────
   static const entitlementPremium = 'premium';
@@ -21,6 +22,11 @@ abstract final class AppConstants {
   static const prefLouaneCompteurTotal = 'louane_compteur_total';
   static const prefLouaneCompteurJour = 'louane_compteur_jour';
   static const prefLouaneJour = 'louane_jour';
+  // L'écran « je ne suis pas un soignant » (3114/15) ne se montre qu'une fois.
+  static const prefLouaneDisclaimerVu = 'louane_disclaimer_vu';
+  // Variante du message d'accueil de Louane (tirée au sort, animée une seule
+  // fois à la première ouverture, réaffichée telle quelle ensuite).
+  static const prefLouaneIntroVariante = 'louane_intro_variante';
   static const prefNotificationsEnabled = 'notifications_enabled';
   static const prefReminderHour = 'reminder_hour';
   static const prefReminderMinute = 'reminder_minute';
@@ -28,6 +34,12 @@ abstract final class AppConstants {
   static const prefNotificationPromptShown = 'notification_prompt_shown';
   // Niveau de la musique d'ambiance (curseur 0..1, 0 = coupée).
   static const prefAmbientLevel = 'ambient_level';
+  // Historique d'écoute des séances (JSON {id: {fois, ts}}) : nourrit les
+  // suggestions de Louane (varier, reproposer ce qui a plu). Local uniquement.
+  static const prefEcoutesSeances = 'ecoutes_seances';
+  // Le programme de 7 jours créé par Louane (JSON ParcoursModel). Une seule
+  // clé : un programme à la fois, effacée à l'abandon ou pour recommencer.
+  static const prefParcours = 'parcours_louane';
 
   // ── Audio ────────────────────────────────────────────
   // Les MP3 sont hébergés sur Firebase Storage (bucket quieto-06) à plat

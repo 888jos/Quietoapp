@@ -1,14 +1,19 @@
 import 'package:flutter/cupertino.dart'
     show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
         CupertinoThemeData;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
-import 'package:flutter/services.dart' show HapticFeedback;
+import 'package:flutter/services.dart'
+    show Clipboard, ClipboardData, HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:purchases_flutter/purchases_flutter.dart' show Purchases;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/config/revenue_cat_config.dart';
+import '../../../core/services/ambient_music.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -95,8 +100,8 @@ class ProfilePage extends ConsumerWidget {
                                     style: AppTextStyles.titleMedium),
                                 const SizedBox(height: AppConstants.spacingSm),
                                 Text(
-                                  'Merci ! Tu as accès à toutes les séances '
-                                  'sans limite.',
+                                  'Merci ! Tu as accès à Louane et à toutes '
+                                  'les séances, sans limite.',
                                   style: AppTextStyles.bodyMedium,
                                 ),
                               ],
@@ -108,18 +113,48 @@ class ProfilePage extends ConsumerWidget {
                                     style: AppTextStyles.titleMedium),
                                 const SizedBox(height: AppConstants.spacingSm),
                                 Text(
-                                  'Accédez à toutes les séances sans limite.',
+                                  'Accédez à Louane et à toutes les séances, '
+                                  'sans limite.',
                                   style: AppTextStyles.bodyMedium,
                                 ),
                                 const SizedBox(height: AppConstants.spacingMd),
                                 AppButton(
                                   label: 'Voir les offres',
-                                  onTap: () =>
-                                      context.push(AppRoutes.paywallSlide),
+                                  onTap: () => context
+                                      .push(AppRoutes.paywallDepuis('profil')),
                                 ),
                               ],
                             ),
                     ),
+
+                    // ── DEV : bascule premium pour tester ────
+                    // Invisible en release grâce à kReleaseMode.
+                    if (!kReleaseMode) ...[
+                      const SizedBox(height: AppConstants.spacingSm),
+                      AppCard(
+                        child: Row(
+                          children: [
+                            const Text('🛠️', style: TextStyle(fontSize: 20)),
+                            const SizedBox(width: AppConstants.spacingMd),
+                            Expanded(
+                              child: Text(
+                                'Mode test : premium',
+                                style: AppTextStyles.bodyLarge
+                                    .copyWith(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            Switch(
+                              value: isPremium,
+                              onChanged: (_) => ref
+                                  .read(subscriptionProvider.notifier)
+                                  .devTogglePremium(),
+                              activeThumbColor: AppColors.accent,
+                              inactiveTrackColor: AppColors.accentDim,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: AppConstants.spacingXl),
 
@@ -154,6 +189,8 @@ class ProfilePage extends ConsumerWidget {
                         notifier.setReminderTime,
                       ),
                     ),
+                    const SizedBox(height: AppConstants.spacingSm),
+                    const _AmbientMusicCard(),
 
                     const SizedBox(height: AppConstants.spacingXl),
 
@@ -190,6 +227,26 @@ class ProfilePage extends ConsumerWidget {
                               } catch (_) {}
                             },
                           ),
+                          _ItemDivider(),
+                          // Copie l'ID anonyme RevenueCat : sert au support et
+                          // à retrouver un compte dans le dashboard (ex. accorder
+                          // un entitlement promotionnel).
+                          _TapItem(
+                            emoji: '🔑',
+                            label: 'Identifiant de support',
+                            onTap: () async {
+                              if (!revenueCatDisponible) return;
+                              final id = await Purchases.appUserID;
+                              await Clipboard.setData(ClipboardData(text: id));
+                              if (context.mounted) {
+                                _showSoftSnack(
+                                  context,
+                                  'Identifiant copié.',
+                                  emoji: '🔑',
+                                );
+                              }
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -208,6 +265,7 @@ class ProfilePage extends ConsumerWidget {
   void _showSoftSnack(
     BuildContext context,
     String message, {
+    String emoji = '🔕',
     String? actionLabel,
     VoidCallback? onAction,
   }) {
@@ -242,7 +300,7 @@ class ProfilePage extends ConsumerWidget {
           ),
           content: Row(
             children: [
-              const Text('🔕', style: TextStyle(fontSize: 18)),
+              Text(emoji, style: const TextStyle(fontSize: 18)),
               const SizedBox(width: AppConstants.spacingMd),
               Expanded(
                 child: Text(message, style: AppTextStyles.bodyMedium),
@@ -688,6 +746,106 @@ class _ItemDivider extends StatelessWidget {
       color: AppColors.accentDim,
       indent: AppConstants.spacingMd,
       endIndent: AppConstants.spacingMd,
+    );
+  }
+}
+
+/// Réglage de la musique d'ambiance (déplacé depuis la Home) : interrupteur
+/// pour couper/relancer, curseur de volume quand elle est active.
+class _AmbientMusicCard extends ConsumerWidget {
+  const _AmbientMusicCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final level = ref.watch(ambientLevelProvider);
+    final notifier = ref.read(ambientLevelProvider.notifier);
+    final active = level > 0;
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Ligne principale : pastille + texte + toggle ──
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.accentDim,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.3),
+                    width: 1.2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.music_note_rounded,
+                  color: AppColors.accent,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppConstants.spacingMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Musique d\'ambiance',
+                        style: AppTextStyles.bodyLarge
+                            .copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      'La nappe sonore douce qui\naccompagne l\'application.',
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppConstants.spacingSm),
+              Switch(
+                value: active,
+                onChanged: (_) {
+                  HapticFeedback.selectionClick();
+                  notifier.toggleMute();
+                },
+                activeThumbColor: AppColors.accent,
+                inactiveTrackColor: AppColors.accentDim,
+              ),
+            ],
+          ),
+
+          // ── Curseur de volume : apparaît quand la musique est active ──
+          AnimatedSize(
+            duration: const Duration(milliseconds: AppConstants.animNormal),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: !active
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: AppConstants.spacingSm),
+                    child: SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 2,
+                        activeTrackColor: AppColors.accent,
+                        inactiveTrackColor:
+                            AppColors.textPrimary.withValues(alpha: 0.15),
+                        thumbColor: AppColors.accent,
+                        thumbShape:
+                            const RoundSliderThumbShape(enabledThumbRadius: 7),
+                        overlayShape:
+                            const RoundSliderOverlayShape(overlayRadius: 14),
+                      ),
+                      child: Slider(
+                        value: level,
+                        onChanged: notifier.set,
+                        onChangeEnd: (_) => notifier.commit(),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

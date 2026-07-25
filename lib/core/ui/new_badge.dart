@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 
 class NewBadge extends StatelessWidget {
-  const NewBadge({super.key});
+  /// Texte affiché dans la pastille ('New !', 'Flash ⚡'…).
+  final String label;
+
+  const NewBadge({super.key, this.label = 'New !'});
 
   @override
   Widget build(BuildContext context) {
@@ -12,9 +15,9 @@ class NewBadge extends StatelessWidget {
         color: AppColors.accent,
         borderRadius: BorderRadius.circular(20),
       ),
-      child: const Text(
-        'New !',
-        style: TextStyle(
+      child: Text(
+        label,
+        style: const TextStyle(
           color: AppColors.background,
           fontSize: 10,
           fontWeight: FontWeight.bold,

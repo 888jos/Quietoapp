@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_constants.dart';
+import '../models/parcours_model.dart';
 import '../models/user_progress_model.dart';
 
 class StorageService {
@@ -87,6 +88,34 @@ class StorageService {
     }
   }
 
+  // ── Intro Louane (animée une seule fois) ─────────────
+
+  /// Non-null dès que l'accueil animé a été joué (l'entier est un vestige
+  /// des variantes tirées au sort ; seul null / non-null compte).
+  int? get louaneIntroVariante =>
+      _prefs.getInt(AppConstants.prefLouaneIntroVariante);
+
+  Future<void> setLouaneIntroVariante(int index) async {
+    try {
+      await _prefs.setInt(AppConstants.prefLouaneIntroVariante, index);
+    } catch (e, st) {
+      debugPrint('[Storage] setLouaneIntroVariante failed: $e\n$st');
+    }
+  }
+
+  // ── Disclaimer Louane (montré une seule fois) ────────
+
+  bool get louaneDisclaimerVu =>
+      _prefs.getBool(AppConstants.prefLouaneDisclaimerVu) ?? false;
+
+  Future<void> setLouaneDisclaimerVu() async {
+    try {
+      await _prefs.setBool(AppConstants.prefLouaneDisclaimerVu, true);
+    } catch (e, st) {
+      debugPrint('[Storage] setLouaneDisclaimerVu failed: $e\n$st');
+    }
+  }
+
   // ── Subscription ─────────────────────────────────
 
   bool get isPremium =>
@@ -121,6 +150,97 @@ class StorageService {
     } catch (e, st) {
       debugPrint('[Storage] saveProgress failed: $e\n$st');
     }
+  }
+
+  // ── Parcours (programme 7 jours créé par Louane) ──────
+
+  /// Le programme en cours, ou null s'il n'y en a pas (jamais créé, abandonné,
+  /// ou sauvegarde illisible — dans ce cas Louane pourra en re-proposer un).
+  ParcoursModel? loadParcours() {
+    try {
+      final raw = _prefs.getString(AppConstants.prefParcours);
+      if (raw == null) return null;
+      final parcours =
+          ParcoursModel.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      // Sauvegarde incohérente (pas 7 jours) → on repart de zéro.
+      if (parcours.jours.length != 7) return null;
+      return parcours;
+    } catch (e, st) {
+      debugPrint('[Storage] loadParcours failed: $e\n$st');
+      return null;
+    }
+  }
+
+  Future<void> saveParcours(ParcoursModel parcours) async {
+    try {
+      await _prefs.setString(
+          AppConstants.prefParcours, jsonEncode(parcours.toJson()));
+    } catch (e, st) {
+      debugPrint('[Storage] saveParcours failed: $e\n$st');
+    }
+  }
+
+  Future<void> clearParcours() async {
+    try {
+      await _prefs.remove(AppConstants.prefParcours);
+    } catch (e, st) {
+      debugPrint('[Storage] clearParcours failed: $e\n$st');
+    }
+  }
+
+  // ── Historique d'écoutes (pour Louane) ────────────────
+
+  /// Compteurs d'écoute par séance : {id: {fois, ts}} (ts = dernière écoute,
+  /// millisecondes epoch). Alimenté à chaque lancement de séance.
+  Map<String, dynamic> _lireEcoutes() {
+    try {
+      final raw = _prefs.getString(AppConstants.prefEcoutesSeances);
+      if (raw == null) return {};
+      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    } catch (e, st) {
+      debugPrint('[Storage] _lireEcoutes failed: $e\n$st');
+      return {};
+    }
+  }
+
+  Future<void> enregistreEcouteSeance(String sessionId) async {
+    try {
+      final ecoutes = _lireEcoutes();
+      final actuel = ecoutes[sessionId];
+      final fois = (actuel is Map ? (actuel['fois'] as num?)?.toInt() : 0) ?? 0;
+      ecoutes[sessionId] = {
+        'fois': fois + 1,
+        'ts': DateTime.now().millisecondsSinceEpoch,
+      };
+      await _prefs.setString(
+          AppConstants.prefEcoutesSeances, jsonEncode(ecoutes));
+    } catch (e, st) {
+      debugPrint('[Storage] enregistreEcouteSeance failed: $e\n$st');
+    }
+  }
+
+  /// Résumé compact envoyé au serveur Louane : [{id, fois, jours}], les plus
+  /// récentes d'abord, 20 max (jours = depuis la dernière écoute).
+  List<Map<String, Object>> ecoutesPourLouane() {
+    final maintenant = DateTime.now().millisecondsSinceEpoch;
+    final liste = <Map<String, Object>>[];
+    _lireEcoutes().forEach((id, valeur) {
+      if (valeur is! Map) return;
+      final fois = (valeur['fois'] as num?)?.toInt() ?? 0;
+      final ts = (valeur['ts'] as num?)?.toInt() ?? 0;
+      if (fois <= 0 || ts <= 0) return;
+      liste.add({
+        'id': id,
+        'fois': fois,
+        'jours': ((maintenant - ts) / Duration.millisecondsPerDay).floor(),
+        '_ts': ts,
+      });
+    });
+    liste.sort((a, b) => (b['_ts'] as int).compareTo(a['_ts'] as int));
+    return liste.take(20).map((e) {
+      e.remove('_ts');
+      return e;
+    }).toList();
   }
 
   // ── Notifications ─────────────────────────────────────

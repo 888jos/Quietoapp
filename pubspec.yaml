@@ -2,7 +2,7 @@ name: quieto
 description: "Quieto — application de méditation en français"
 publish_to: 'none'
 
-version: 1.0.5+6
+version: 1.0.12+15
 
 environment:
   sdk: ^3.11.1
@@ -80,6 +80,8 @@ flutter:
     - assets/images/sessions/breathing/
     - assets/images/sessions/emotion/
     - assets/images/sessions/express/
+    # Couvertures des pages catégorie (style Notion).
+    - assets/images/categories/
     # Musique d'ambiance jouée en boucle pendant l'onboarding.
     - assets/audio/
     # Audios de séances hébergés sur Firebase Storage (cf.
@@ -90,4 +92,8 @@ flutter:
     - family: HankenGrotesk
       fonts:
         - asset: assets/fonts/HankenGrotesk.ttf
+    # Serif élégante de la salutation Home. Fichier variable.
+    - family: CormorantGaramond
+      fonts:
+        - asset: assets/fonts/CormorantGaramond.ttf
 

@@ -97,7 +97,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       await _notifications.scheduleDailyReminder(
         hour: time.hour,
         minute: time.minute,
-        firstName: _storage.firstName,
       );
       state = state.copyWith(
         notificationsEnabled: true,
@@ -120,7 +119,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         hour: time.hour,
         minute: time.minute,
         skipToday: skipToday,
-        firstName: _storage.firstName,
       );
       state = state.copyWith(notificationsEnabled: true, reminderTime: time);
     } catch (_) {}
@@ -135,7 +133,6 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
         await _notifications.scheduleDailyReminder(
           hour: time.hour,
           minute: time.minute,
-          firstName: _storage.firstName,
         );
       }
     } catch (_) {}

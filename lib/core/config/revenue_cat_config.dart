@@ -9,3 +9,9 @@ const String _revenueCatKeyAndroid =
 /// Renvoie la bonne clé RevenueCat selon la plateforme.
 String get revenueCatApiKey =>
     Platform.isAndroid ? _revenueCatKeyAndroid : _revenueCatKeyIos;
+
+/// true si la clé est présente dans le build. Si elle manque (build fait
+/// sans --dart-define-from-file), AUCUN appel à Purchases ne doit partir :
+/// le SDK natif s'écrase avec un fatalError au lieu de renvoyer une erreur
+/// rattrapable (crash écran noir au lancement, vécu sur la 1.0.7 build 9).
+bool get revenueCatDisponible => revenueCatApiKey.isNotEmpty;

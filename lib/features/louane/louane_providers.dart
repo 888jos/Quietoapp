@@ -1,6 +1,9 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/storage_providers.dart';
+import '../../core/services/storage_service.dart';
+import '../../core/services/vigie_service.dart';
 import 'data/louane_message.dart';
 import 'data/louane_repository.dart';
 
@@ -10,6 +13,7 @@ final louaneRepositoryProvider = Provider<LouaneRepository>(
   // la conversation à zéro via louaneChatProvider.
   (ref) => LouaneRepository(
     ref.watch(storageServiceProvider),
+    ref.watch(vigieProvider),
     () => ref.read(subscriptionProvider),
   ),
 );
@@ -42,20 +46,136 @@ class LouaneChatState {
   }
 }
 
+/// L'accueil de Louane : trois bulles tapées à la suite à la toute première
+/// ouverture. Textes en dur : majuscule en début de message, pas d'emoji,
+/// pas de tiret long (émoticônes texte uniquement, genre ":)"). Public pour
+/// le test qui vérifie ces règles.
+const List<String> kLouaneIntro = [
+  'Hey',
+  "Moi c'est Louane",
+  "Alors dis-moi, qu'est-ce qui t'amène ici ? :)",
+];
+
+/// Les phrases d'accueil des sessions suivantes, selon l'heure locale
+/// (0-23). Plusieurs variantes par créneau, tirées au sort, pour que celui
+/// qui revient chaque jour à la même heure ne lise pas deux fois la même.
+/// Formulations neutres (jamais de « couché·e » genré). Publique pour les
+/// tests, qui vérifient aussi les règles de style sur chaque variante.
+List<String> salutationsPourHeure(int h) {
+  if (h >= 5 && h < 8) {
+    return [
+      'Déjà debout ? La journée commence à peine :)',
+      'Debout avant tout le monde ? Respect',
+      'Tu commences tôt aujourd\'hui, dis donc',
+    ];
+  }
+  if (h >= 8 && h < 12) {
+    return [
+      'Alors, elle démarre comment cette journée ?',
+      'Quoi de prévu aujourd\'hui ?',
+      'Alors, bien dormi ?',
+    ];
+  }
+  if (h >= 12 && h < 14) {
+    return [
+      'Il se passe quoi de beau ce midi ?',
+      'Alors, cette matinée ?',
+      'Petite pause de midi ? Raconte',
+    ];
+  }
+  if (h >= 14 && h < 18) {
+    return [
+      "Qu'est-ce que tu fais de beau en pleine après-midi ?",
+      'Alors, elle se passe comment cette journée ?',
+      'Contente de te voir :) Quoi de neuf ?',
+    ];
+  }
+  if (h >= 18 && h < 22) {
+    return [
+      'Alors, elle a donné quoi cette journée ?',
+      'Alors, ta journée ? Raconte-moi',
+      'Bonsoir toi :) Alors, cette journée ?',
+    ];
+  }
+  if (h >= 22 || h < 1) {
+    return [
+      'Pas encore au lit à cette heure ? :)',
+      'Tiens, encore debout à cette heure :)',
+      'La journée se termine tard, dis donc',
+    ];
+  }
+  return [
+    "Qu'est-ce que tu fais debout en pleine nuit ?",
+    "Tout le monde dort et toi t'es là :)",
+    "Tu n'arrives pas à dormir ?",
+  ];
+}
+
 class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
   final LouaneRepository _repo;
+  final VigieService _vigie;
   final bool Function() _estAbonne;
+  final StorageService _storage;
+  bool _introJouee = false;
 
-  LouaneChatNotifier(this._repo, this._estAbonne)
-      : super(const LouaneChatState(messages: [
-          LouaneMessage(
-            auteur: AuteurMessage.louane,
-            texte: "Coucou, moi c'est Louane 🌸 Je suis là, rien que pour "
-                "toi. Comment tu te sens, en ce moment ?",
-          ),
-        ]));
+  LouaneChatNotifier(this._repo, this._vigie, this._estAbonne, this._storage)
+      : super(const LouaneChatState());
 
-  /// Fin des 15 messages découverte — le mot de Louane validé (en attendant
+  String _salutationAleatoire() {
+    final variantes = salutationsPourHeure(DateTime.now().hour);
+    return variantes[Random().nextInt(variantes.length)];
+  }
+
+  /// « Hey Paul » si le prénom de l'onboarding est là, sinon « Hey ».
+  String _accroche() {
+    final prenom = _storage.firstName.trim();
+    return prenom.isEmpty
+        ? kLouaneIntro.first
+        : '${kLouaneIntro.first} $prenom';
+  }
+
+  /// L'accueil, tapé en direct par Louane (une fois par session, appelé par
+  /// la page après le disclaimer). Toute première ouverture : elle se
+  /// présente (trois bulles). Sessions suivantes : « Hey Paul » puis une
+  /// phrase adaptée à l'heure.
+  Future<void> jouerIntro() async {
+    if (_introJouee || state.messages.isNotEmpty) return;
+    _introJouee = true;
+
+    final premiereFois = _storage.louaneIntroVariante == null;
+    final bulles = [
+      LouaneMessage(auteur: AuteurMessage.louane, texte: _accroche()),
+      if (premiereFois)
+        ...kLouaneIntro.skip(1).map(
+            (t) => LouaneMessage(auteur: AuteurMessage.louane, texte: t))
+      else
+        LouaneMessage(
+          auteur: AuteurMessage.louane,
+          texte: _salutationAleatoire(),
+        ),
+    ];
+    if (premiereFois) await _storage.setLouaneIntroVariante(0);
+
+    // 0,5 s de silence, puis chaque bulle part après sa frappe. La dernière
+    // est la plus longue à taper : un poil d'attente en plus, c'est ce qui
+    // rend la frappe crédible.
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    state = state.copyWith(louaneEcrit: true);
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    state = state.copyWith(messages: [bulles.first]);
+    if (bulles.length == 3) {
+      await Future.delayed(const Duration(milliseconds: 900));
+      if (!mounted) return;
+      state = state.copyWith(messages: bulles.sublist(0, 2));
+    }
+    await Future.delayed(const Duration(milliseconds: 1700));
+    if (!mounted) return;
+    state = state.copyWith(messages: bulles, louaneEcrit: false);
+  }
+
+  /// Fin des messages découverte — le mot de Louane validé (en attendant
   /// le vrai écran d'abonnement, branché avec StoreKit plus tard).
   static const _motPaywall =
       "J'ai adoré faire ta connaissance. Pour qu'on continue à se parler "
@@ -106,13 +226,18 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
     }
 
     try {
-      final reponse = await _repo.envoyer(t, _historiquePourApi(avecUser));
+      final reponse = await _repo.envoyer(
+        t,
+        _historiquePourApi(avecUser),
+        accueil: _accueilPourApi(avecUser),
+      );
 
       // Plafond du jour atteint : pas de réponse, Louane dort — on prévient
       // la page (feuille qui glisse) sans rien ajouter au fil.
       if (reponse.plafond && reponse.texte.isEmpty) {
         _refusDeSuite++;
         _refusSousAbonne = _estAbonne();
+        _vigie.log('louane_plafond', {'refus_de_suite': _refusDeSuite});
         state = state.copyWith(
           louaneEcrit: false,
           plafondEvenement: state.plafondEvenement + 1,
@@ -125,6 +250,7 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
       if (reponse.paywall && reponse.texte.isEmpty) {
         _refusDeSuite++;
         _refusSousAbonne = _estAbonne();
+        _vigie.log('louane_paywall', {'refus_de_suite': _refusDeSuite});
         state = state.copyWith(
           messages: [
             ...state.messages,
@@ -141,15 +267,41 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
 
       // Vraie réponse de Louane (ou message de sécurité du Veilleur).
       _refusDeSuite = 0;
+      if (reponse.seanceId != null) {
+        _vigie.log('louane_seance_proposee', {'seance': reponse.seanceId!});
+      }
+      // Louane propose le programme : bouton sous la bulle, seulement s'il
+      // n'y a pas déjà un programme (le serveur vérifie aussi de son côté).
+      final proposeParcours =
+          reponse.parcoursPropose && _storage.loadParcours() == null;
+      if (proposeParcours) {
+        _vigie.log('parcours_propose');
+      }
+      // Filet : une réponse sans texte ni pièce jointe (vu quand la Voix
+      // n'envoie qu'un marqueur, strippé côté serveur) → pas de bulle vide.
+      if (reponse.texte.isEmpty &&
+          reponse.seanceId == null &&
+          !proposeParcours) {
+        _vigie.log('louane_reponse_vide');
+        state = state.copyWith(louaneEcrit: false);
+        return;
+      }
       state = state.copyWith(
         messages: [
           ...state.messages,
-          LouaneMessage(auteur: AuteurMessage.louane, texte: reponse.texte),
+          LouaneMessage(
+            auteur: AuteurMessage.louane,
+            texte: reponse.texte,
+            seanceId: reponse.seanceId,
+            avecBoutonParcours: proposeParcours,
+          ),
         ],
         louaneEcrit: false,
       );
     } catch (e) {
       // L'erreur reste visible en console — le message doux, lui, à l'écran.
+      // Vigie : un envoi qui échoue est un point de fuite technique majeur.
+      _vigie.log('louane_erreur');
       debugPrint('[Louane] envoi échoué : $e');
       state = state.copyWith(
         messages: [
@@ -165,16 +317,78 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
     }
   }
 
+  /// Glisse une bulle de Louane dans le fil SANS appel serveur : la bulle
+  /// d'ouverture du programme (« ton programme t'attend sur l'accueil »).
+  void ajouterBulleLouane(String texte) {
+    final t = texte.trim();
+    if (t.isEmpty) return;
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        LouaneMessage(auteur: AuteurMessage.louane, texte: t),
+      ],
+    );
+  }
+
+  /// La conversation complète au format API (dernier message inclus) : c'est
+  /// la matière première de la génération du programme.
+  List<Map<String, String>> historiquePourParcours() {
+    final mapped = state.messages
+        .map((m) => {
+              'role': m.estLouane ? 'assistant' : 'user',
+              'content': m.texte,
+            })
+        .toList();
+    // L'API exige que la conversation commence par un message "user".
+    while (mapped.isNotEmpty && mapped.first['role'] == 'assistant') {
+      mapped.removeAt(0);
+    }
+    return mapped;
+  }
+
+  /// Le bilan de fin de programme : composé en message utilisateur VISIBLE et
+  /// envoyé par le pipeline normal → la Mémoire retient le ressenti, et la
+  /// réponse de Louane arrive naturellement dans la conversation.
+  Future<void> envoyerBilanParcours(String ressenti, String texteLibre) {
+    final message = StringBuffer(
+      "Ça y est, j'ai terminé le programme que tu m'avais préparé. "
+      'Mon ressenti de la semaine : ${ressenti.toLowerCase()}.',
+    );
+    if (texteLibre.isNotEmpty) {
+      message.write(' $texteLibre');
+    }
+    return envoyer(message.toString());
+  }
+
+  /// Les bulles d'accueil en dur (retirées de l'historique API ci-dessous) :
+  /// envoyées à part pour que Louane sache ce qu'elle vient de dire.
+  String _accueilPourApi(List<LouaneMessage> tous) {
+    final textes = <String>[];
+    for (final m in tous) {
+      if (!m.estLouane) break;
+      textes.add(m.texte);
+    }
+    return textes.join('\n');
+  }
+
   /// Transforme la conversation au format attendu par l'API (rôles
   /// user/assistant). On retire le dernier message (envoyé séparément) et tout
   /// message "assistant" en tête (ex: le mot d'accueil), car l'API exige que
   /// la conversation commence par un message "user".
+  ///
+  /// Les lancements de séance sont RÉINJECTÉS sous leur forme marqueur
+  /// ([SEANCE:id] en fin de message, comme Louane les avait écrits) : le
+  /// serveur les strippe de ses réponses, et sans eux Louane ne sait plus
+  /// QUELLE séance elle vient de lancer — elle relançait la même en croyant
+  /// en changer.
   List<Map<String, String>> _historiquePourApi(List<LouaneMessage> tous) {
     final precedents = tous.sublist(0, tous.length - 1);
     final mapped = precedents
         .map((m) => {
               'role': m.estLouane ? 'assistant' : 'user',
-              'content': m.texte,
+              'content': m.seanceId != null
+                  ? '${m.texte} [SEANCE:${m.seanceId}]'
+                  : m.texte,
             })
         .toList();
     while (mapped.isNotEmpty && mapped.first['role'] == 'assistant') {
@@ -188,6 +402,8 @@ final louaneChatProvider =
     StateNotifierProvider<LouaneChatNotifier, LouaneChatState>(
   (ref) => LouaneChatNotifier(
     ref.watch(louaneRepositoryProvider),
+    ref.watch(vigieProvider),
     () => ref.read(subscriptionProvider),
+    ref.watch(storageServiceProvider),
   ),
 );

@@ -9,9 +9,12 @@ import '../../../app/router.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../parcours/parcours_providers.dart';
 import '../louane_providers.dart';
 import 'louane_palette.dart';
+import 'widgets/carte_seance_louane.dart';
 import 'widgets/louane_avatar.dart';
+import 'widgets/louane_disclaimer_sheet.dart';
 import 'widgets/louane_sommeil_sheet.dart';
 import 'widgets/message_bubble.dart';
 
@@ -31,9 +34,14 @@ class LouanePage extends ConsumerStatefulWidget {
   ConsumerState<LouanePage> createState() => _LouanePageState();
 }
 
-class _LouanePageState extends ConsumerState<LouanePage> {
+class _LouanePageState extends ConsumerState<LouanePage>
+    with WidgetsBindingObserver {
   final _controller = TextEditingController();
   final _scroll = ScrollController();
+
+  // Hauteur du clavier au dernier passage : sert à détecter son OUVERTURE
+  // (le fil doit alors redescendre pour ne pas cacher les derniers messages).
+  double _dernierClavier = 0;
 
   // Reconnaissance vocale (dictée).
   final SpeechToText _speech = SpeechToText();
@@ -55,11 +63,29 @@ class _LouanePageState extends ConsumerState<LouanePage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _versLeBas());
+    WidgetsBinding.instance.addObserver(this);
+    // Vigie : ouverture du chat (l'onglet Louane se construit à la 1ʳᵉ visite).
+    ref.read(vigieProvider).log('louane_ouverte');
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _versLeBas();
+      // Première visite : « je ne suis pas un soignant » (3114/15), une fois.
+      // Puis Louane tape son message d'accueil en direct (une fois aussi —
+      // jouerIntro ne fait rien si l'intro a déjà été vue).
+      final storage = ref.read(storageServiceProvider);
+      if (!storage.louaneDisclaimerVu && mounted) {
+        montrerLouaneDisclaimer(context).then((_) {
+          storage.setLouaneDisclaimerVu();
+          ref.read(louaneChatProvider.notifier).jouerIntro();
+        });
+      } else {
+        ref.read(louaneChatProvider.notifier).jouerIntro();
+      }
+    });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _chrono?.cancel();
     _speech.stop();
     _dernierMot.dispose();
@@ -98,7 +124,8 @@ class _LouanePageState extends ConsumerState<LouanePage> {
         partialResults: true,
         cancelOnError: true,
         listenMode: ListenMode.dictation,
-        autoPunctuation: true, // ponctuation auto (virgules, points, ?) comme le clavier
+        autoPunctuation:
+            true, // ponctuation auto (virgules, points, ?) comme le clavier
       ),
     );
   }
@@ -134,7 +161,8 @@ class _LouanePageState extends ConsumerState<LouanePage> {
     HapticFeedback.lightImpact();
     _chrono?.cancel(); // fige le minuteur
     setState(() => _vocal = _EtatVocal.pause);
-    await _speech.stop(); // le statut "done" verra l'état pause → reste en pause
+    await _speech
+        .stop(); // le statut "done" verra l'état pause → reste en pause
   }
 
   Future<void> _reprendreVocal() async {
@@ -214,6 +242,17 @@ class _LouanePageState extends ConsumerState<LouanePage> {
     _finaliser();
   }
 
+  // Le clavier s'ouvre (la zone visible rétrécit) → on recolle le fil en bas,
+  // sinon les derniers messages restent cachés derrière le clavier. On ne fait
+  // rien à la fermeture : la place rendue ne cache rien.
+  @override
+  void didChangeMetrics() {
+    if (!mounted) return;
+    final clavier = View.of(context).viewInsets.bottom;
+    if (clavier > _dernierClavier) _versLeBas();
+    _dernierClavier = clavier;
+  }
+
   void _versLeBas() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scroll.hasClients) {
@@ -256,31 +295,63 @@ class _LouanePageState extends ConsumerState<LouanePage> {
           children: [
             _EnTete(ecrit: chat.louaneEcrit),
             Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                itemCount: nbItems,
-                itemBuilder: (context, i) {
-                  if (i >= chat.messages.length) return const TypingBubble();
-                  final m = chat.messages[i];
-                  final bulle = MessageBubble(
-                    key: ValueKey(i),
-                    message: m,
-                    nouveau: i >= _nbVus,
-                  );
-                  // Bulle de fin des 15 messages → bouton essai gratuit
-                  // dessous (masqué si la personne s'est abonnée depuis).
-                  if (m.avecBoutonEssai &&
-                      !ref.watch(subscriptionProvider)) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [bulle, const _BoutonEssaiGratuit()],
+              // Zone morte façon Snap : un tap n'importe où dans le fil range
+              // le clavier — indispensable quand il y a trop peu de messages
+              // pour que le « défiler pour ranger » ait de quoi défiler.
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                child: ListView.builder(
+                  controller: _scroll,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  // Rebond même liste courte → le glisser range aussi le clavier.
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  itemCount: nbItems,
+                  itemBuilder: (context, i) {
+                    if (i >= chat.messages.length) return const TypingBubble();
+                    final m = chat.messages[i];
+                    final bulle = MessageBubble(
+                      key: ValueKey(i),
+                      message: m,
+                      nouveau: i >= _nbVus,
                     );
-                  }
-                  return bulle;
-                },
+                    // Bulle de fin des messages découverte → bouton essai gratuit
+                    // dessous (masqué si la personne s'est abonnée depuis).
+                    if (m.avecBoutonEssai && !ref.watch(subscriptionProvider)) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [bulle, const _BoutonEssaiGratuit()],
+                      );
+                    }
+                    // Louane propose le programme 7 jours → bouton dessous
+                    // (masqué dès qu'un programme existe : anti-doublon).
+                    if (m.avecBoutonParcours &&
+                        ref.watch(parcoursProvider) == null) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [bulle, const _BoutonCreerParcours()],
+                      );
+                    }
+                    // Louane lance une séance → la carte de lancement dessous.
+                    if (m.seanceId != null) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          bulle,
+                          CarteSeanceLouane(
+                            seanceId: m.seanceId!,
+                            nouvelle: i >= _nbVus,
+                          ),
+                        ],
+                      );
+                    }
+                    return bulle;
+                  },
+                ),
               ),
             ),
             _BarreSaisie(
@@ -344,8 +415,9 @@ class _EnTete extends StatelessWidget {
                     const SizedBox(width: 6),
                     Text(
                       ecrit ? 'écrit…' : 'en ligne',
-                      style: AppTextStyles.caption
-                          .copyWith(color: AppColors.textMuted),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -358,7 +430,7 @@ class _EnTete extends StatelessWidget {
   }
 }
 
-// ── Bouton « essai gratuit » sous la bulle de fin des 15 ──
+// ── Bouton « essai gratuit » sous la bulle de fin de découverte ──
 /// Un vrai bouton d'action : centré, généreux, avec un halo turquoise
 /// STATIQUE (une lueur animée scintille sur iOS, cf. feuille sommeil).
 class _BoutonEssaiGratuit extends StatelessWidget {
@@ -388,16 +460,80 @@ class _BoutonEssaiGratuit extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
-            onTap: () => context.push(AppRoutes.paywallSlide),
+            onTap: () => context.push(AppRoutes.paywallDepuis('louane')),
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 32, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               child: Text(
                 'Commencer mon essai gratuit',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.background,
                   fontWeight: FontWeight.w700,
                 ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Bouton « Crée-moi mon programme » (proposition de Louane) ──
+/// Même langage que le bouton essai gratuit : centré, généreux, halo
+/// turquoise statique. Ouvre l'écran de génération du programme.
+class _BoutonCreerParcours extends ConsumerWidget {
+  const _BoutonCreerParcours();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.only(top: 12, bottom: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF86ECE4), LouanePalette.accent],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: LouanePalette.accent.withValues(alpha: 0.45),
+              blurRadius: 22,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: () {
+              ref.read(vigieProvider).log('parcours_cta_tape');
+              // Le programme 7 jours est Premium : sans abonnement, le CTA
+              // mène au paywall (le backend refuse aussi la génération).
+              if (!ref.read(subscriptionProvider)) {
+                context.push(AppRoutes.paywallDepuis('parcours_creation'));
+                return;
+              }
+              context.push(AppRoutes.parcoursCreation);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome,
+                      size: 18, color: AppColors.background),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Crée-moi mon programme',
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: AppColors.background,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -470,7 +606,9 @@ class _BarreSaisie extends StatelessWidget {
                       filled: true,
                       fillColor: AppColors.cardSurface,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 12),
+                        horizontal: 18,
+                        vertical: 12,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
                         borderSide: BorderSide.none,
@@ -582,8 +720,9 @@ class _BandeauEnregistrement extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 _minutage,
-                style:
-                    AppTextStyles.caption.copyWith(color: AppColors.textMuted),
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.textMuted,
+                ),
               ),
               const SizedBox(width: 4),
             ],
@@ -688,7 +827,8 @@ class _OndesState extends State<_Ondes> with SingleTickerProviderStateMixin {
       animation: _flow,
       builder: (context, _) {
         final dm = widget.dernierMot.value;
-        final parleRecemment = widget.actif &&
+        final parleRecemment =
+            widget.actif &&
             dm != null &&
             DateTime.now().difference(dm).inMilliseconds < 380;
         // Cible : haut si on parle, bas si silence, ~0 si pause/inactif.

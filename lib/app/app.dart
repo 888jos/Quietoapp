@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/ambient_music.dart';
+import '../core/services/storage_providers.dart';
 import '../core/theme/app_theme.dart';
 import '../features/paywall/paywall_providers.dart';
 import '../features/player/player_providers.dart';
@@ -26,6 +27,28 @@ class _QuietoAppState extends ConsumerState<QuietoApp>
     // chargement pendant l'animation de montée.
     // Best-effort : on avale l'erreur, le paywall la regère via son état error.
     ref.read(offeringProvider.future).catchError((_) => null);
+    // Fait glisser la fenêtre des rappels quotidiens programmés (30 jours
+    // d'avance, textes qui tournent : pas de notification répétitive, il faut
+    // reprogrammer régulièrement). skipToday si la séance du jour est déjà
+    // faite, pour rester fidèle au « jamais redondant ».
+    final storage = ref.read(storageServiceProvider);
+    final reminderHour = storage.reminderHour;
+    final reminderMinute = storage.reminderMinute;
+    if (storage.notificationsEnabled &&
+        reminderHour != null &&
+        reminderMinute != null) {
+      final last = storage.loadProgress().lastSessionDate;
+      final now = DateTime.now();
+      final doneToday = last != null &&
+          last.year == now.year &&
+          last.month == now.month &&
+          last.day == now.day;
+      ref.read(notificationServiceProvider).scheduleDailyReminder(
+            hour: reminderHour,
+            minute: reminderMinute,
+            skipToday: doneToday,
+          );
+    }
     // Musique de fond de l'app dès le lancement (sauf si une séance est déjà
     // active, ce qui n'arrive jamais au démarrage à froid).
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -54,6 +77,9 @@ class _QuietoAppState extends ConsumerState<QuietoApp>
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
         music.pause();
+        // Vigie : note l'écran où la personne était (départ vs blocage) et
+        // pousse le lot avant qu'iOS/Android ne gèlent le process.
+        ref.read(vigieProvider).logFond();
       case AppLifecycleState.inactive:
         // Transitoire (centre de contrôle, app switcher…) : on ne coupe pas,
         // « paused » suivra si l'app part vraiment en arrière-plan.
@@ -63,14 +89,15 @@ class _QuietoAppState extends ConsumerState<QuietoApp>
 
   @override
   Widget build(BuildContext context) {
-    // Coupe la musique de fond pendant une séance (mini-player compris),
-    // la reprend dès que la séance est fermée.
+    // Séance ARRÊTÉE au bouton stop → curseur et musique reviennent au
+    // volume d'avant (sauf réglage fait pendant la séance, qui fait foi).
+    // La COUPURE en début de séance, elle, vit dans playerProvider :
+    // relancer la même séance ne change pas l'id, ce listener ne tirerait
+    // pas. Une séance qui va au bout ne passe jamais à null : la musique
+    // reste dans l'état choisi jusqu'au prochain lancement.
     ref.listen<String?>(activeSessionIdProvider, (prev, next) {
-      final music = ref.read(ambientMusicProvider);
       if (next == null) {
-        music.play();
-      } else {
-        music.pause();
+        ref.read(ambientLevelProvider.notifier).sessionStopped();
       }
     });
     return MaterialApp.router(

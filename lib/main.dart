@@ -12,6 +12,7 @@ import 'core/config/app_constants.dart';
 import 'core/config/revenue_cat_config.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/storage_providers.dart';
+import 'core/services/vigie_service.dart';
 import 'features/player/data/audio_handler.dart';
 import 'features/player/player_providers.dart';
 
@@ -43,6 +44,15 @@ void main() async {
 
   final prefs = await SharedPreferences.getInstance();
   final storageService = StorageService(prefs);
+
+  // Vigie (mesure d'usage interne, anonyme) : un événement d'ouverture par
+  // lancement, avec l'état de départ (permet funnel + rétention).
+  final vigie = VigieService(prefs);
+  vigie.log('app_ouverte', {
+    'onboarding_fait': storageService.isOnboardingDone,
+    'premium': storageService.isPremium,
+    'messages_louane_total': storageService.louaneCompteurTotal,
+  });
 
   if (revenueCatApiKey.isEmpty) {
     debugPrint(
@@ -99,6 +109,7 @@ void main() async {
     ProviderScope(
       overrides: [
         storageServiceProvider.overrideWithValue(storageService),
+        vigieProvider.overrideWithValue(vigie),
         audioHandlerProvider.overrideWithValue(audioHandler),
       ],
       child: const QuietoApp(),

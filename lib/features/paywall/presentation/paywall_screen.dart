@@ -4,7 +4,8 @@
 //  Fourni par le designer (handoff). INTÉGRÉ TEL QUEL : aucune constante (couleur,
 //  taille, espacement, courbe) n'a été modifiée. Seules adaptations autorisées :
 //    - police 'HankenGrotesk' (asset projet, cf. pubspec.yaml),
-//    - icônes Material Symbols Rounded via material_symbols_icons (glyphes exacts),
+//    - icônes Material standard (Icons.*_outlined) : les Material Symbols
+//      (police variable) s'affichaient vides en release iOS après tree-shaking,
 //    - withOpacity → withValues (équivalent, même valeur),
 //    - les offres/onStart/onRestore sont alimentés par RevenueCat depuis paywall_page.
 // =============================================================================
@@ -15,7 +16,6 @@ import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter/scheduler.dart' show Ticker;
-import 'package:material_symbols_icons/symbols.dart';
 
 // ----------------------------------------------------------------------------
 //  Tokens (verbatim du prototype)
@@ -56,9 +56,9 @@ class PaywallOffer {
 
   static const PaywallOffer placeholderAnnual = PaywallOffer(
     trialDays: 7,
-    pricePerMonth: '4,99 €',
-    billingLine: 'facturé 59,90 € par an',
-    saveBadge: 'Économise 58 %',
+    pricePerMonth: '7,50 €',
+    billingLine: 'facturé 89,99 € par an',
+    saveBadge: 'Économise 56 %',
     reminderWhen: 'Dans 5 jours',
     chargeWhen: 'Dans 7 jours',
     chargeDate: 'le 3 juillet',
@@ -66,7 +66,7 @@ class PaywallOffer {
 
   static const PaywallOffer placeholderMonthly = PaywallOffer(
     trialDays: 3,
-    pricePerMonth: '11,90 €',
+    pricePerMonth: '16,99 €',
     billingLine: 'facturé chaque mois, sans engagement',
     saveBadge: null,
     reminderWhen: 'Demain',
@@ -205,6 +205,9 @@ class _PaywallScreenState extends State<PaywallScreen>
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, cons) => SingleChildScrollView(
+                  // Clip.none : le halo de l'orbe dépasse en haut du scroll,
+                  // sinon il est coupé net (ligne visible sous la barre d'état).
+                  clipBehavior: Clip.none,
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minHeight: cons.maxHeight),
                     child: IntrinsicHeight(
@@ -307,9 +310,8 @@ class _PaywallScreenState extends State<PaywallScreen>
                       ],
                     ),
                     child: const Center(
-                      // Material Symbols Rounded: self_improvement (wght 500)
-                      child: Icon(Symbols.self_improvement,
-                          size: 47, color: _kOnTurq, weight: 500),
+                      child: Icon(Icons.self_improvement,
+                          size: 47, color: _kOnTurq),
                     ),
                   ),
                 ),
@@ -433,19 +435,19 @@ class _PaywallScreenState extends State<PaywallScreen>
     return Column(
       children: [
         _step(
-          icon: Symbols.lock_open,
+          icon: Icons.lock_open_outlined,
           title: 'Aujourd\'hui',
           desc: 'Débloque toutes les séances et Louane, en illimité.',
           last: false,
         ),
         _step(
-          icon: Symbols.notifications,
+          icon: Icons.notifications_none_outlined,
           title: _offer.reminderWhen,
           desc: 'On te prévient avant la fin de l\'essai.',
           last: false,
         ),
         _step(
-          icon: Symbols.workspace_premium,
+          icon: Icons.workspace_premium_outlined,
           title: _offer.chargeWhen,
           desc: 'Débité ${_offer.chargeDate}, annulable à tout moment.',
           last: true,
@@ -644,7 +646,7 @@ class _PaywallScreenState extends State<PaywallScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Symbols.lock, size: 14, color: _w(0.45)),
+              Icon(Icons.lock_outline, size: 14, color: _w(0.45)),
               const SizedBox(width: 6),
               Text(
                 'Sans engagement · annulable à tout moment',

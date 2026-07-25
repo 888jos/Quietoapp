@@ -14,7 +14,7 @@ import 'widgets/multi_question_slide.dart';
 import 'widgets/progress_bar.dart';
 import 'widgets/question_slide.dart';
 import 'widgets/slide_reveal.dart';
-import 'widgets/starry_background.dart';
+import '../../../core/ui/starry_background.dart';
 import 'widgets/text_input_slide.dart';
 
 /// Onboarding V2 orienté conversion (voir maquette_onboarding_v2.html) :
@@ -32,6 +32,14 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final _firstNameFocus = FocusNode();
   int _page = 0;
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Vigie : chaque étape vue est tracée → on sait exactement à quelle
+    // question les gens abandonnent l'onboarding.
+    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'welcome', 'n': 0});
+  }
 
   // Vocabulaire : Quieto = espace de bien-être / santé mentale.
   // On ne parle PAS de « méditation » dans les questions (connotation),
@@ -89,6 +97,22 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   Future<void> _next() async {
     final state = ref.read(onboardingProvider);
     final ids = _slideIds(state);
+    // Vigie : la réponse cochée sur CET écran part tout de suite — même si
+    // la personne abandonne deux questions plus loin, on sait ce qu'elle
+    // cherchait (anonyme : des cases cochées, jamais le prénom).
+    final reponse = switch (ids[_page]) {
+      'goals' => state.goals.join('|'),
+      'experience' => state.answers['q2'] ?? '',
+      'moment' => state.answers['q4'] ?? '',
+      'minutes' => state.answers['q_minutes'] ?? '',
+      _ => '',
+    };
+    if (reponse.isNotEmpty) {
+      ref.read(vigieProvider).log('onboarding_reponse', {
+        'question': ids[_page],
+        'reponse': reponse,
+      });
+    }
     if (_page == ids.length - 1) {
       await _finish();
       return;
@@ -111,6 +135,15 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       await storage.saveOnboardingAnswers(state.answers);
       await storage.setFirstName(state.firstName.trim());
       await storage.setOnboardingDone();
+      // Vigie : le profil coché (anonyme, jamais le prénom) → permet de
+      // croiser « qui arrive » avec « qui convertit » (ex. sommeil vs stress).
+      ref.read(vigieProvider).log('onboarding_fini', {
+        'objectif': state.goals.isNotEmpty ? state.goals.first : '',
+        'objectifs': state.goals.join('|'),
+        'experience': state.answers['q2'] ?? '',
+        'moment': state.answers['q4'] ?? '',
+        'minutes': state.answers['q_minutes'] ?? '',
+      });
       if (!mounted) return;
       ref.read(firstNameProvider.notifier).state = state.firstName.trim();
       context.go(AppRoutes.onboardingLoading);
@@ -306,6 +339,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                       physics: const NeverScrollableScrollPhysics(),
                       onPageChanged: (i) {
                         setState(() => _page = i);
+                        if (i < ids.length) {
+                          ref.read(vigieProvider).log('onboarding_etape',
+                              {'etape': ids[i], 'n': i});
+                        }
                         if (ids.length > i && ids[i] == 'name') {
                           // Clavier seulement une fois la transition finie
                           // (sinon il pousse la mise en page en plein fondu).

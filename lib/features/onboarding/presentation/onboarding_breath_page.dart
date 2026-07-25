@@ -1,26 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import 'widgets/breath_wave.dart';
 import 'widgets/slide_reveal.dart';
-import 'widgets/starry_background.dart';
+import '../../../core/ui/starry_background.dart';
 
 /// Mini-respiration guidée de 30 s (3 × inspire 4 s / expire 6 s) : faire
 /// RESSENTIR la valeur juste avant le paywall. Volontairement courte et
 /// passable — une vraie séance ici ferait fuir (données Headspace : 38 %
 /// d'abandon sur leur méditation d'onboarding).
-class OnboardingBreathPage extends StatefulWidget {
+class OnboardingBreathPage extends ConsumerStatefulWidget {
   const OnboardingBreathPage({super.key});
 
   @override
-  State<OnboardingBreathPage> createState() => _OnboardingBreathPageState();
+  ConsumerState<OnboardingBreathPage> createState() =>
+      _OnboardingBreathPageState();
 }
 
-class _OnboardingBreathPageState extends State<OnboardingBreathPage> {
+class _OnboardingBreathPageState extends ConsumerState<OnboardingBreathPage> {
+  @override
+  void initState() {
+    super.initState();
+    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'breath'});
+  }
+
   void _continue() => context.go(AppRoutes.onboardingTrust);
 
   @override

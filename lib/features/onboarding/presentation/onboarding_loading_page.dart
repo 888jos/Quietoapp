@@ -7,7 +7,7 @@ import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
-import 'widgets/starry_background.dart';
+import '../../../core/ui/starry_background.dart';
 
 class _PhraseData {
   final String label;
@@ -39,6 +39,7 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
   @override
   void initState() {
     super.initState();
+    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'loading'});
 
     final a = ref.read(storageServiceProvider).getOnboardingAnswers();
     final name = ref.read(firstNameProvider).trim();

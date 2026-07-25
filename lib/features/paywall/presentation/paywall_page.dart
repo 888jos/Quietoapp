@@ -38,6 +38,16 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   bool _busy = false; // achat / restauration en cours
   bool _autoClosed = false; // évite de refermer 2× quand aucune offre n'existe
 
+  // Vigie : surface d'origine (onboarding, louane, categorie, profil, seance)
+  // + heure d'ouverture → durée passée sur le paywall, et taux de conversion
+  // par surface. Aucun événement « achat » ici n'est deviné : chacun suit un
+  // vrai retour RevenueCat.
+  String _vigieSource = 'onboarding';
+  late final DateTime _vigieOuvertA;
+  bool _vigieAchete = false;
+
+  int get _vigieDureeS => DateTime.now().difference(_vigieOuvertA).inSeconds;
+
   static const _urlConfidentialite =
       'https://www.notion.so/Politique-de-Confidentialit-31de9e37b4a88093b560e0636712146e';
   static const _urlConditions =
@@ -56,6 +66,13 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     // La croix de fermeture apparaît après 3 secondes (ADR-013)
     _closeTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) _showCloseButton.value = true;
+    });
+    _vigieOuvertA = DateTime.now();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final q = GoRouterState.of(context).uri.queryParameters;
+      _vigieSource = q['src'] ?? (q['from'] == 'premium' ? 'premium' : 'onboarding');
+      ref.read(vigieProvider).log('paywall_affiche', {'source': _vigieSource});
     });
   }
 
@@ -91,6 +108,11 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
   void _dismiss() {
     HapticFeedback.lightImpact();
+    // Vigie : fermeture par la croix = un refus, avec le temps passé dessus.
+    ref.read(vigieProvider).log('paywall_ferme', {
+      'source': _vigieSource,
+      'apres_s': _vigieDureeS,
+    });
     _close();
   }
 
@@ -125,6 +147,15 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   /// Flutter ET le paywall natif → mêmes étapes, rien ne change côté paiement.
   Future<void> _finaliserAchat(CustomerInfo info) async {
     final router = GoRouter.of(context); // capturé avant les await
+    if (!_vigieAchete) {
+      _vigieAchete = true;
+      ref.read(vigieProvider).log('achat_reussi', {
+        'source': _vigieSource,
+        'apres_s': _vigieDureeS,
+      });
+      // L'achat est LE moment clé : on pousse tout de suite, sans attendre.
+      ref.read(vigieProvider).flush();
+    }
     await _onPurchaseSuccess(info);
     if (!mounted) return;
     await _showPremiumConfirmation();
@@ -146,6 +177,11 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     }
     if (_busy) return;
     setState(() => _busy = true);
+    final plan = pkg.packageType == PackageType.annual ? 'annuel' : 'mensuel';
+    ref.read(vigieProvider).log('achat_tente', {
+      'source': _vigieSource,
+      'plan': plan,
+    });
     try {
       final result = await Purchases.purchase(PurchaseParams.package(pkg));
       if (!mounted) return;
@@ -154,9 +190,13 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
       // Annulation utilisateur → silencieux (pas une erreur).
       final code = PurchasesErrorHelper.getErrorCode(e);
       if (code != PurchasesErrorCode.purchaseCancelledError) {
+        ref.read(vigieProvider).log('achat_erreur', {'plan': plan});
         _snack('L\'achat n\'a pas pu aboutir. Réessaie dans un instant.');
+      } else {
+        ref.read(vigieProvider).log('achat_annule', {'plan': plan});
       }
     } catch (_) {
+      ref.read(vigieProvider).log('achat_erreur', {'plan': plan});
       _snack('Une erreur est survenue. Réessaie dans un instant.');
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -308,20 +348,35 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     );
   }
 
-  /// Aucun abonnement à vendre (ex. Android : produits pas encore branchés sur
-  /// le Play Store + RevenueCat). On n'affiche PAS le paywall — on le referme
-  /// immédiatement pour ne pas bloquer l'utilisateur sur un écran vide. Sur iOS
-  /// l'offering existe, donc ce chemin ne se déclenche jamais.
+  /// Aucun abonnement à vendre : offre RevenueCat nulle (produits App Store
+  /// pas récupérables : en attente de validation, agrément expiré, offre
+  /// vide…). On ne referme PLUS en silence : du 24 au 25 juillet 2026, une
+  /// offre cassée (renommage « Abonnement » → « Abonnement 2 » au changement
+  /// de prix) a fait se refermer le paywall instantanément pour TOUS les
+  /// utilisateurs — impossible de payer, zéro signal. Maintenant : trace
+  /// Vigie + écran d'erreur avec réessai, comme pour une panne réseau.
   Widget _fermerSansPaywall() {
     if (!_autoClosed) {
       _autoClosed = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _close();
+      // Une seule trace par ouverture (le build peut repasser ici).
+      ref.read(vigieProvider).log('paywall_offre_vide', {
+        'source': _vigieSource,
       });
     }
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: const SizedBox.shrink(),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: AppColors.textPrimary),
+          onPressed: _close,
+        ),
+      ),
+      body: ErrorPlaceholder(
+        message: 'Les abonnements ne sont pas disponibles pour le moment. '
+            'Réessaie dans un instant.',
+        onRetry: () => ref.invalidate(offeringProvider),
+      ),
     );
   }
 

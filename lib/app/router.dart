@@ -6,12 +6,14 @@ import '../features/onboarding/presentation/onboarding_breath_page.dart';
 import '../features/onboarding/presentation/onboarding_trust_page.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/explore/presentation/category_detail_page.dart';
-import '../features/explore/presentation/explore_page.dart';
+import '../features/player/presentation/lancement_page.dart';
 import '../features/player/presentation/player_page.dart';
 import '../features/player/presentation/preparation_page.dart';
 import '../features/profile/presentation/profile_page.dart';
 import '../features/paywall/presentation/paywall_page.dart';
 import '../features/louane/presentation/louane_page.dart';
+import '../features/parcours/presentation/parcours_creation_page.dart';
+import '../features/parcours/presentation/parcours_page.dart';
 import 'home_shell.dart';
 import 'page_transitions.dart';
 import 'splash_page.dart';
@@ -27,17 +29,27 @@ abstract final class AppRoutes {
   static const paywall = '/paywall';
   // Ouverture avec montée glissée (séance premium / profil)
   static const paywallSlide = '/paywall?from=premium';
+
+  /// Comme [paywallSlide], avec la surface d'origine (louane, categorie,
+  /// profil, seance…) — la Vigie s'en sert pour savoir ce qui convertit.
+  static String paywallDepuis(String src) => '/paywall?from=premium&src=$src';
   static const shell = '/shell';
   static const home = '/home';
-  static const explore = '/explore';
   static const louane = '/louane';
   static const profile = '/profile';
+  // Le programme 7 jours créé par Louane : l'écran de génération (le moment
+  // « wow ») et l'écran du programme lui-même.
+  static const parcoursCreation = '/parcours/creation';
+  static const parcours = '/parcours';
   static const player = '/player/:sessionId';
   static const preparation = '/preparation/:sessionId';
+  // Lancement d'une séance par Louane : l'animation « je te la lance ».
+  static const lancement = '/lancement/:sessionId';
   static const category = '/category/:categoryId';
 
   static String playerPath(String sessionId) => '/player/$sessionId';
   static String preparationPath(String sessionId) => '/preparation/$sessionId';
+  static String lancementPath(String sessionId) => '/lancement/$sessionId';
   static String categoryPath(String categoryId) => '/category/$categoryId';
 }
 
@@ -126,13 +138,57 @@ final appRouter = GoRouter(
       ),
     ),
 
+    // ── Lancement par Louane (fondu, animation, puis player) ──
+    GoRoute(
+      path: AppRoutes.lancement,
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: LancementSeancePage(
+          sessionId: state.pathParameters['sessionId']!,
+        ),
+      ),
+    ),
+
+    // ── Parcours : génération (fondu, le moment « wow ») ──
+    GoRoute(
+      path: AppRoutes.parcoursCreation,
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const ParcoursCreationPage(),
+      ),
+    ),
+
+    // ── Parcours : le programme ────────────────────────
+    // Ouverture normale : monte du bas, retour en fondu. Juste après la
+    // création (?creation=1) : fondu, et la page joue sa révélation (la
+    // constellation se dessine puis monte se poser en haut).
+    GoRoute(
+      path: AppRoutes.parcours,
+      pageBuilder: (context, state) {
+        final depuisCreation = state.uri.queryParameters['creation'] == '1';
+        final page = ParcoursPage(depuisCreation: depuisCreation);
+        return depuisCreation
+            ? QuietoTransitions.fadePage(key: state.pageKey, child: page)
+            : QuietoTransitions.sheetPage(
+                key: state.pageKey, fadeBack: true, child: page);
+      },
+    ),
+
     // ── Player (moment immersif, monte du bas) ────────
+    // Depuis le lancement Louane (?via=lancement) : fondu, dans la
+    // continuité de l'animation — le Hero fait glisser le cover à sa place.
     GoRoute(
       path: AppRoutes.player,
-      pageBuilder: (context, state) => QuietoTransitions.sheetPage(
-        key: state.pageKey,
-        child: PlayerPage(sessionId: state.pathParameters['sessionId']!),
-      ),
+      pageBuilder: (context, state) {
+        final viaLancement = state.uri.queryParameters['via'] == 'lancement';
+        final page = PlayerPage(
+          sessionId: state.pathParameters['sessionId']!,
+          viaLancement: viaLancement,
+        );
+        return viaLancement
+            ? QuietoTransitions.fadePage(key: state.pageKey, child: page)
+            : QuietoTransitions.sheetPage(key: state.pageKey, child: page);
+      },
     ),
 
     // ── Shell avec bottom nav (stack isolée par tab) ──
@@ -150,14 +206,6 @@ final appRouter = GoRouter(
             GoRoute(
               path: AppRoutes.home,
               builder: (context, state) => const HomePage(),
-            ),
-          ],
-        ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AppRoutes.explore,
-              builder: (context, state) => const ExplorePage(),
             ),
           ],
         ),

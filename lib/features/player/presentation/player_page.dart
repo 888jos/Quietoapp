@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart'
-    show CupertinoAlertDialog, CupertinoDialogAction, showCupertinoDialog;
+    show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
+        CupertinoThemeData;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +12,7 @@ import '../../../core/services/storage_providers.dart';
 import '../../explore/explore_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/error_placeholder.dart';
 import '../../profile/profile_providers.dart';
@@ -19,7 +21,15 @@ import '../player_providers.dart';
 class PlayerPage extends ConsumerWidget {
   final String sessionId;
 
-  const PlayerPage({super.key, required this.sessionId});
+  /// true quand on arrive par l'écran de lancement de Louane : la flèche
+  /// retour ramène alors à la conversation (pop), pas à la page catégorie.
+  final bool viaLancement;
+
+  const PlayerPage({
+    super.key,
+    required this.sessionId,
+    this.viaLancement = false,
+  });
 
   String _formatDuration(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -28,9 +38,10 @@ class PlayerPage extends ConsumerWidget {
   }
 
   /// Après la PREMIÈRE séance terminée : propose le rappel quotidien, une
-  /// seule fois, au moment où ça a du sens (l'utilisateur vient de méditer,
-  /// il est détendu — c'est là que la permission est acceptée, pas à froid
-  /// au démarrage).
+  /// seule fois, au moment où ça a du sens (l'utilisateur vient de faire sa
+  /// séance, il est détendu — c'est là que la permission est acceptée, pas à
+  /// froid au démarrage). Il choisit lui-même l'heure du rappel ; le sélecteur
+  /// démarre sur l'heure actuelle, qui marche par définition pour lui.
   Future<void> _maybeOfferReminder(BuildContext context, WidgetRef ref) async {
     final storage = ref.read(storageServiceProvider);
     if (storage.notificationsEnabled || storage.notificationPromptShown) {
@@ -38,46 +49,25 @@ class PlayerPage extends ConsumerWidget {
     }
     await storage.setNotificationPromptShown();
 
-    // « Demain à la même heure » : l'heure à laquelle il vient de méditer
-    // est, par définition, une heure qui marche pour lui.
-    final time = TimeOfDay.now();
-    final timeLabel =
-        '${time.hour}h${time.minute.toString().padLeft(2, '0')}';
-    final firstName = storage.firstName;
-
     if (!context.mounted) return;
-    final accepted = await showCupertinoDialog<bool>(
+    final time = await showModalBottomSheet<TimeOfDay>(
       context: context,
-      builder: (ctx) => CupertinoAlertDialog(
-        title: Text(
-          firstName.isEmpty ? 'Belle séance 🌿' : 'Belle séance, $firstName 🌿',
+      backgroundColor: AppColors.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppConstants.radiusLg),
         ),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            'Tu veux qu\'on te rappelle demain vers $timeLabel ?\n'
-            'Un rappel doux, jamais insistant.',
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Plus tard'),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Oui, volontiers'),
-          ),
-        ],
       ),
+      builder: (_) => _ReminderOfferSheet(firstName: storage.firstName),
     );
-    if (accepted != true) return;
+    ref.read(vigieProvider).log('rappel_propose', {'accepte': time != null});
+    if (time == null) return;
 
     final granted =
         await ref.read(notificationServiceProvider).requestPermission();
+    ref.read(vigieProvider).log('rappel_permission', {'accordee': granted});
     if (!granted) return;
-    // skipToday : il vient de méditer, le premier rappel part demain.
+    // skipToday : il vient de faire sa séance, le premier rappel part demain.
     await ref
         .read(profileProvider.notifier)
         .enableReminderAt(time, skipToday: true);
@@ -102,7 +92,7 @@ class PlayerPage extends ConsumerWidget {
     // fait AVANT de watcher playerProvider, sinon l'auto-play démarre l'audio.
     if (ref.watch(sessionLockedProvider(session))) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) context.pushReplacement(AppRoutes.paywallSlide);
+        if (context.mounted) context.pushReplacement(AppRoutes.paywallDepuis('seance'));
       });
       return const AppScaffold(body: SizedBox.shrink());
     }
@@ -139,9 +129,13 @@ class PlayerPage extends ConsumerWidget {
               Row(
                 children: [
                   IconButton(
-                    onPressed: () => context.go(
-                      AppRoutes.categoryPath(session.categoryId),
-                    ),
+                    // Venu du chat Louane : retour à la conversation (elle
+                    // attend le ressenti). Sinon : la page de la catégorie.
+                    onPressed: () => viaLancement && context.canPop()
+                        ? context.pop()
+                        : context.go(
+                            AppRoutes.categoryPath(session.categoryId),
+                          ),
                     tooltip: 'Retour',
                     icon: const Icon(Iconsax.arrow_left_2,
                         color: AppColors.textPrimary),
@@ -154,26 +148,30 @@ class PlayerPage extends ConsumerWidget {
               ),
               const Spacer(),
 
-              // Cover
-              Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.radiusXl),
-                  border: Border.all(color: AppColors.accent, width: 2),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                      AppConstants.radiusXl - 2),
-                  child: session.imageFile != null
-                      ? Image.asset(
-                          'assets/images/${session.imageFile}',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, e, stack) =>
-                              _CoverPlaceholder(),
-                        )
-                      : _CoverPlaceholder(),
+              // Cover. Le Hero partage son tag avec l'écran de lancement
+              // Louane : en arrivant par là, le cover glisse à sa place.
+              Hero(
+                tag: 'seance-cover-${session.id}',
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.radiusXl),
+                    border: Border.all(color: AppColors.accent, width: 2),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                        AppConstants.radiusXl - 2),
+                    child: session.imageFile != null
+                        ? Image.asset(
+                            'assets/images/${session.imageFile}',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, e, stack) =>
+                                _CoverPlaceholder(),
+                          )
+                        : _CoverPlaceholder(),
+                  ),
                 ),
               ),
 
@@ -368,6 +366,91 @@ class _CoverPlaceholder extends StatelessWidget {
       height: 220,
       color: AppColors.accentDim,
       child: const Icon(Iconsax.music, size: 80, color: AppColors.accent),
+    );
+  }
+}
+
+// ── Bottom sheet proposition de rappel (fin de 1ʳᵉ séance) ──
+//
+// Renvoie l'heure choisie via Navigator.pop, ou null si « Non merci » /
+// glissé vers le bas. Même style que le sheet « Heure du rappel » du profil.
+
+class _ReminderOfferSheet extends StatefulWidget {
+  final String firstName;
+
+  const _ReminderOfferSheet({required this.firstName});
+
+  @override
+  State<_ReminderOfferSheet> createState() => _ReminderOfferSheetState();
+}
+
+class _ReminderOfferSheetState extends State<_ReminderOfferSheet> {
+  // Défaut : l'heure actuelle. Il vient de faire sa séance maintenant, donc
+  // « demain à la même heure » est le meilleur point de départ.
+  late TimeOfDay _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = TimeOfDay.now();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppConstants.spacingMd,
+        AppConstants.spacingLg,
+        AppConstants.spacingMd,
+        AppConstants.spacingLg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.firstName.isEmpty
+                ? 'Belle séance 🌿'
+                : 'Belle séance, ${widget.firstName} 🌿',
+            style: AppTextStyles.titleMedium,
+          ),
+          const SizedBox(height: AppConstants.spacingSm),
+          Text(
+            'À quelle heure veux-tu prendre soin de toi demain ?',
+            style: AppTextStyles.bodyMedium,
+          ),
+          const SizedBox(height: AppConstants.spacingMd),
+          SizedBox(
+            height: 180,
+            child: CupertinoTheme(
+              data: const CupertinoThemeData(brightness: Brightness.dark),
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                use24hFormat: true,
+                initialDateTime: DateTime(
+                    2024, 1, 1, _selected.hour, _selected.minute),
+                onDateTimeChanged: (dt) =>
+                    _selected = TimeOfDay(hour: dt.hour, minute: dt.minute),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppConstants.spacingMd),
+          AppButton(
+            label: 'Oui, rappelle-moi',
+            onTap: () => Navigator.of(context).pop(_selected),
+          ),
+          const SizedBox(height: AppConstants.spacingSm),
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Non merci',
+                style: AppTextStyles.bodyMedium,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

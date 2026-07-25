@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
+import '../../core/services/ambient_music.dart';
 import '../../core/services/storage_providers.dart';
 import '../home/home_providers.dart';
+import '../parcours/parcours_providers.dart';
 import 'data/player_repository.dart';
 import 'data/audio_handler.dart';
 
@@ -82,6 +84,10 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   /// Libère le `ref.keepAlive()` du provider pour que celui-ci puisse être
   /// détruit par l'autoDispose (appelé sur stop). Défini par le provider.
   void Function()? releaseKeepAlive;
+
+  /// Vigie : appelé quand l'utilisateur ARRÊTE la séance avant la fin
+  /// (position, durée) → mesure où les séances sont abandonnées.
+  void Function(Duration position, Duration duration)? onArret;
 
   PlayerNotifier({
     required QuietoAudioHandler handler,
@@ -197,6 +203,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
   Future<void> stop() async {
+    onArret?.call(state.position, state.duration);
     try {
       await _handler.stop();
       state = state.copyWith(status: PlayerStatus.idle);
@@ -239,7 +246,16 @@ final playerProvider = StateNotifierProvider
   }
   final handler = ref.watch(audioHandlerProvider);
   handler.completionCallback = () {
+    // Vigie : séance écoutée jusqu'au bout (l'activation par excellence).
+    ref.read(vigieProvider).log('seance_terminee', {
+      'seance': session.id,
+      'categorie': session.categoryId,
+    });
     ref.read(sessionCompletionTickProvider.notifier).state++;
+    // Programme de Louane : si c'est la séance du jour en cours, le jour est
+    // coché (le notifier vérifie tout — id, jour, une fois par jour). Lancer
+    // la même séance depuis le catalogue compte aussi : même id.
+    ref.read(parcoursProvider.notifier).seanceTerminee(session.id);
     // L'utilisateur vient de méditer : le rappel du jour n'a plus de raison
     // d'être, on le reprogramme à partir de demain (rappel doux, jamais
     // redondant).
@@ -251,7 +267,6 @@ final playerProvider = StateNotifierProvider
             hour: hour,
             minute: minute,
             skipToday: true,
-            firstName: storage.firstName,
           );
     }
   };
@@ -267,9 +282,35 @@ final playerProvider = StateNotifierProvider
   // Permet à stop() de relâcher le keepAlive → le notifier sera détruit par
   // l'autoDispose dès qu'il n'est plus écouté (mini player caché).
   notifier.releaseKeepAlive = keepAliveLink.close;
+
+  // Vigie : un notifier neuf = une séance lancée ; un stop avant la fin =
+  // un abandon, avec le pourcentage écouté (où décrochent-ils ?).
+  ref.read(vigieProvider).log('seance_lancee', {
+    'seance': session.id,
+    'categorie': session.categoryId,
+    'premium': session.isPremium,
+    'duree_min': session.durationMinutes,
+  });
+  // Historique local d'écoutes : nourrit les suggestions de Louane (varier,
+  // reproposer ce qui a plu). Ne quitte jamais le téléphone en clair : seul
+  // un résumé {id, fois, jours} part avec ses messages.
+  ref.read(storageServiceProvider).enregistreEcouteSeance(session.id);
+  notifier.onArret = (position, duration) {
+    ref.read(vigieProvider).log('seance_arretee', {
+      'seance': session.id,
+      'categorie': session.categoryId,
+      'pct': duration.inSeconds > 0
+          ? (position.inSeconds * 100 ~/ duration.inSeconds)
+          : 0,
+    });
+  };
   // Mark this session as the active one for the mini player
-  Future.microtask(
-    () => ref.read(activeSessionIdProvider.notifier).state = sessionId,
-  );
+  Future.microtask(() {
+    ref.read(activeSessionIdProvider.notifier).state = sessionId;
+    // Chaque début de séance coupe la musique d'ambiance (curseur du profil
+    // à zéro). Appelé ICI et pas seulement via le listener racine : relancer
+    // la MÊME séance ne change pas l'id, le listener ne tirerait pas.
+    ref.read(ambientLevelProvider.notifier).sessionStarted();
+  });
   return notifier;
 });

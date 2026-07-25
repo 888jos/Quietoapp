@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
+import '../../../core/ui/starry_background.dart';
 import '../home_providers.dart';
 import '../../explore/explore_providers.dart';
-import 'widgets/ambient_volume_control.dart';
 import 'widgets/category_list_card.dart';
-import 'widgets/express_card.dart';
 import 'widgets/featured_session_card.dart';
+import 'widgets/night_sky_header.dart';
+import 'widgets/parcours_card.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -28,6 +27,9 @@ class _HomePageState extends ConsumerState<HomePage>
   @override
   void initState() {
     super.initState();
+    // Vigie : arrivée sur l'accueil = ligne d'arrivée du funnel d'entrée
+    // (onboarding → paywall → home). Une fois par session (initState).
+    ref.read(vigieProvider).log('home_vue');
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: AppConstants.animSlow),
@@ -41,227 +43,160 @@ class _HomePageState extends ConsumerState<HomePage>
     super.dispose();
   }
 
+  /// Salutation selon l'heure : matin, journée, soirée, nuit.
+  static String _salutation(String name) {
+    final h = DateTime.now().hour;
+    final salut = switch (h) {
+      >= 5 && < 12 => 'Bonjour',
+      >= 12 && < 18 => 'Bel après-midi',
+      >= 18 && < 23 => 'Bonsoir',
+      _ => 'Douce nuit',
+    };
+    return name.isEmpty ? salut : '$salut $name';
+  }
+
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
-    final expressSessions = ref.watch(expressSessionsProvider);
-    final isPremium = ref.watch(subscriptionProvider);
     final firstName = ref.watch(userFirstNameProvider);
-    final salut = firstName.isEmpty ? 'Salut,' : 'Salut $firstName,';
-    final screenWidth = MediaQuery.of(context).size.width;
+    final salut = _salutation(firstName);
 
     return AppScaffold(
-      body: CustomScrollView(
-        slivers: [
-          // ── Header épinglé ────────────────────────────────
-          SliverAppBar(
-            pinned: true,
-            floating: false,
-            automaticallyImplyLeading: false,
-            backgroundColor: AppColors.background,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            surfaceTintColor: Colors.transparent,
-            toolbarHeight: 116,
-            centerTitle: false,
-            titleSpacing: 0,
-            title: FadeTransition(
+      body: Stack(
+        children: [
+          // Ciel étoilé partagé avec l'onboarding et le paywall : la Home
+          // respire la même nuit douce que le reste de l'app.
+          const Positioned.fill(child: StarryBackground()),
+          // L'aurore boréale, hors SafeArea : elle monte jusque derrière
+          // la barre d'état et se dissout sans jamais être coupée.
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 260,
+            child: AuroraSky(),
+          ),
+          // Poussière d'étoiles : fixée au fond comme l'aurore (elle ne
+          // défile pas), calée au pixel sur son ancienne place dans le
+          // header (130 → 190 sous la barre d'état). Même fondu d'arrivée
+          // que le header pour que la scène apparaisse d'un seul tenant.
+          Positioned(
+            top: MediaQuery.paddingOf(context).top + 130,
+            left: 0,
+            right: 0,
+            height: 60,
+            child: FadeTransition(
               opacity: _fadeController,
-              child: SizedBox(
-                height: 116,
-                child: Stack(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppConstants.spacingMd,
-                        AppConstants.spacingLg,
-                        AppConstants.spacingMd,
-                        AppConstants.spacingMd,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            children: [
-                              Image.asset(
-                                'assets/images/Inside app.png',
-                                height: 48,
-                              ),
-                              const SizedBox(width: AppConstants.spacingMd),
-                              Expanded(
-                                child: RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w300,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    children: [
-                                      TextSpan(text: '$salut\n'),
-                                      const TextSpan(
-                                        text: 'on fait quoi aujourd\'hui ?',
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              // Réserve la zone du bouton musique (en Stack
-                              // au-dessus) pour que le texte ne passe pas
-                              // dessous.
-                              const SizedBox(width: 40),
-                            ],
-                          ),
-                          Container(
-                            margin: const EdgeInsets.only(top: 12),
-                            width: screenWidth * 0.9,
-                            height: 1,
-                            color: AppColors.textPrimary.withValues(
-                              alpha: 0.15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Contrôle discret de la musique d'ambiance : posé en
-                    // Stack pour que le curseur se déplie au-dessus du texte
-                    // sans faire bouger la mise en page.
-                    const Positioned(
-                      top: AppConstants.spacingMd,
-                      right: AppConstants.spacingSm,
-                      child: AmbientVolumeControl(),
-                    ),
-                  ],
-                ),
-              ),
+              child: const StardustTrail(),
             ),
           ),
+          SafeArea(
+            bottom: false,
+            child: CustomScrollView(
+              slivers: [
+                // ── Header : ciel de nuit (lune, brume qui dérive,
+                // salutation seule). Une scène, presque pas de texte.
+                SliverToBoxAdapter(
+                  child: FadeTransition(
+                    opacity: _fadeController,
+                    child: NightSkyHeader(greeting: salut),
+                  ),
+                ),
 
-          // ── Une minute pour toi (Express) ─────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppConstants.spacingMd,
-              AppConstants.spacingSm,
-              0,
-              0,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(
-                      right: AppConstants.spacingMd,
-                    ),
-                    child: Row(
+                // ── Programme en cours (créé par Louane) ──────────
+                // Invisible sans programme actif : la carte se rend vide.
+                // Pas de padding vertical ici : l'espacement vit DANS la
+                // carte (il disparaît avec elle). Elle se place juste sous
+                // le header, bien détachée de « Priorité du moment ».
+                const SliverPadding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacingMd,
+                  ),
+                  sliver: SliverToBoxAdapter(child: ParcoursCard()),
+                ),
+
+                // ── Priorité du moment ────────────────────────────
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppConstants.spacingMd,
+                    AppConstants.spacingSm,
+                    AppConstants.spacingMd,
+                    0,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Une minute pour toi',
+                          'Priorité du moment',
                           style: AppTextStyles.titleLarge,
                         ),
-                        const SizedBox(width: AppConstants.spacingXs),
-                        const Text('⚡', style: TextStyle(fontSize: 20)),
+                        const SizedBox(height: AppConstants.spacingMd),
+                        FeaturedSessionCard(
+                          emoji: '🧘',
+                          categoryId: 'decouverte',
+                          categoryName: 'Découverte de la méditation',
+                          subtitle:
+                              'Commence ton voyage vers la pleine conscience.',
+                          durationLabel: '3 séances disponibles',
+                          onTap: () {
+                            // Vigie : où cliquent-ils depuis l'accueil ?
+                            ref.read(vigieProvider).log('categorie_ouverte',
+                                {'categorie': 'decouverte', 'source': 'priorite'});
+                            context.push(
+                              ref.read(categoryRouteProvider('decouverte')),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  SizedBox(
-                    height: 170,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: expressSessions.length,
-                      padding: const EdgeInsets.only(
-                        right: AppConstants.spacingMd,
-                      ),
-                      separatorBuilder: (context, i) =>
-                          const SizedBox(width: AppConstants.spacingSm),
-                      itemBuilder: (context, i) {
-                        final session = expressSessions[i];
-                        return ExpressCard(
-                          session: session,
-                          onTap: () {
-                            if (session.isPremium && !isPremium) {
-                              context.push(AppRoutes.paywallSlide);
-                            } else {
-                              context.push(
-                                AppRoutes.preparationPath(session.id),
-                              );
-                            }
-                          },
+                ),
+
+                // ── Catégories disponibles ────────────────────────
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppConstants.spacingMd,
+                    AppConstants.spacingLg,
+                    AppConstants.spacingMd,
+                    0,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: Text(
+                      'Catégories disponibles',
+                      style: AppTextStyles.titleLarge,
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppConstants.spacingMd,
+                    AppConstants.spacingMd,
+                    AppConstants.spacingMd,
+                    0,
+                  ),
+                  sliver: SliverList.separated(
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppConstants.spacingSm),
+                    itemCount: categories.length,
+                    itemBuilder: (context, i) => CategoryListCard(
+                      category: categories[i],
+                      onTap: () {
+                        ref.read(vigieProvider).log('categorie_ouverte',
+                            {'categorie': categories[i].id, 'source': 'liste'});
+                        context.push(
+                          ref.read(categoryRouteProvider(categories[i].id)),
                         );
                       },
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Priorité du moment ────────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppConstants.spacingMd,
-              AppConstants.spacingLg,
-              AppConstants.spacingMd,
-              0,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Priorité du moment', style: AppTextStyles.titleLarge),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  FeaturedSessionCard(
-                    emoji: '🧘',
-                    categoryName: 'Découverte de la méditation',
-                    subtitle: 'Commence ton voyage vers la pleine conscience.',
-                    durationLabel: '3 séances disponibles',
-                    onTap: () => context.push(
-                      ref.read(categoryRouteProvider('decouverte')),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Catégories disponibles ────────────────────────
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppConstants.spacingMd,
-              AppConstants.spacingLg,
-              AppConstants.spacingMd,
-              0,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Catégories disponibles',
-                style: AppTextStyles.titleLarge,
-              ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppConstants.spacingMd,
-              AppConstants.spacingMd,
-              AppConstants.spacingMd,
-              0,
-            ),
-            sliver: SliverList.separated(
-              separatorBuilder: (_, _) =>
-                  const SizedBox(height: AppConstants.spacingSm),
-              itemCount: categories.length,
-              itemBuilder: (context, i) => CategoryListCard(
-                category: categories[i],
-                onTap: () => context.push(
-                  ref.read(categoryRouteProvider(categories[i].id)),
                 ),
-              ),
-            ),
-          ),
 
-          const SliverPadding(
-            padding: EdgeInsets.only(bottom: AppConstants.spacingXl),
+                const SliverPadding(
+                  padding: EdgeInsets.only(bottom: AppConstants.spacingXl),
+                ),
+              ],
+            ),
           ),
         ],
       ),

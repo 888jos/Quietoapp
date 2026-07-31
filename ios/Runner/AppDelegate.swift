@@ -12,5 +12,7 @@ import UIKit
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    SanteMentaleChannel.register(
+      messenger: engineBridge.applicationRegistrar.messenger())
   }
 }

@@ -7,6 +7,7 @@ import 'package:just_audio/just_audio.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/models/session_model.dart';
 import '../../../core/models/user_progress_model.dart';
+import '../../../core/services/health_service.dart';
 import '../../../core/services/storage_service.dart';
 
 class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
@@ -26,6 +27,16 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
   double _pendingSeconds = 0; // temps écouté pas encore sauvegardé
   static const _flushThresholdSeconds = 10; // sauvegarde tous les ~10s
   static const _maxNaturalDeltaMs = 2000; // au-delà = saut, on ignore
+
+  // ── Apple Santé (pleine conscience) ──────────────────
+  // Chaque période d'écoute continue (play → pause/stop/fin) est envoyée à
+  // Apple Santé comme une session de pleine conscience. On borne la fin au
+  // dernier instant où l'audio progressait vraiment, pour ne jamais compter
+  // un temps de pause (interruption, appel, etc.).
+  DateTime? _mindfulStart; // début du segment d'écoute en cours
+  DateTime? _lastListeningAt; // dernier instant d'écoute réelle constaté
+  static const _minMindfulSegmentSeconds = 30; // en dessous : pas envoyé
+  static const _mindfulGapSeconds = 120; // trou de 2 min = nouveau segment
 
   // File d'écriture : toutes les modifs du progress (temps écouté ET statut
   // "complétée") passent par là, l'une après l'autre. Ça empêche deux
@@ -74,6 +85,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> initSession(SessionModel session) async {
     // Sauvegarde le temps écouté de la séance précédente avant d'en changer.
     await _flushListening();
+    _closeMindfulSegment();
     _session = session;
     _lastCountedPosition = Duration.zero;
     _pendingSeconds = 0;
@@ -173,6 +185,15 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       final player = _player;
       if (player == null) return;
+      // Filet Apple Santé : pour ceux qui n'ont pas vu la page d'onboarding
+      // (anciens comptes) ou qui ont répondu « Plus tard », la demande
+      // d'accès arrive au premier play. La feuille iOS ne s'affiche qu'une
+      // seule fois, ensuite l'appel est invisible.
+      if (!_storage.isHealthPromptSeen) {
+        unawaited(HealthService.instance
+            .requestAuthorization()
+            .then((_) => _storage.setHealthPromptSeen()));
+      }
       // A completed player needs to seek to 0 before it can play again.
       if (player.processingState == ProcessingState.completed) {
         await player.seek(Duration.zero);
@@ -189,6 +210,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       await _player?.pause();
       await _flushListening();
+      _closeMindfulSegment();
       _broadcastState();
     } catch (e, st) {
       debugPrint('[Audio] pause() failed: $e\n$st');
@@ -230,6 +252,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     try {
       await _player?.stop();
       await _flushListening();
+      _closeMindfulSegment();
       _broadcastState();
       await super.stop();
     } catch (e, st) {
@@ -274,6 +297,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     // Les deux passent par la file d'écriture → exécutées l'une après l'autre,
     // jamais en même temps, donc aucune ne peut écraser l'autre.
     await _flushListening();
+    _closeMindfulSegment();
     try {
       await _mutateProgress((p) => p.markCompleted(session.id));
     } catch (e, st) {
@@ -307,10 +331,36 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     final deltaMs = pos.inMilliseconds - _lastCountedPosition.inMilliseconds;
     _lastCountedPosition = pos;
     if (deltaMs <= 0 || deltaMs > _maxNaturalDeltaMs) return; // saut/retour
+
+    // Segment Apple Santé : si l'écoute a repris après un long trou (pause
+    // système non signalée, interruption…), on clôt l'ancien segment avant
+    // d'en ouvrir un nouveau.
+    final now = DateTime.now();
+    final last = _lastListeningAt;
+    if (last != null && now.difference(last).inSeconds > _mindfulGapSeconds) {
+      _closeMindfulSegment();
+    }
+    _mindfulStart ??= now;
+    _lastListeningAt = now;
+
     _pendingSeconds += deltaMs / 1000.0;
     if (_pendingSeconds >= _flushThresholdSeconds) {
       _flushListening();
     }
+  }
+
+  /// Clôt le segment d'écoute en cours et l'envoie à Apple Santé.
+  /// La fin retenue est le dernier instant d'écoute réelle, jamais "maintenant"
+  /// (pour ne pas compter un temps de pause). Les segments trop courts sont
+  /// ignorés. L'envoi est silencieux : un échec n'affecte jamais la lecture.
+  void _closeMindfulSegment() {
+    final start = _mindfulStart;
+    final end = _lastListeningAt;
+    _mindfulStart = null;
+    _lastListeningAt = null;
+    if (start == null || end == null) return;
+    if (end.difference(start).inSeconds < _minMindfulSegmentSeconds) return;
+    unawaited(HealthService.instance.writeMindfulness(start, end));
   }
 
   /// Persiste les secondes écoutées accumulées dans le total cumulé.
@@ -334,6 +384,7 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
 
   Future<void> dispose() async {
     await _flushListening();
+    _closeMindfulSegment();
     for (final sub in _playerSubs) {
       await sub.cancel();
     }

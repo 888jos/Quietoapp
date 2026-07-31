@@ -39,6 +39,18 @@ class StorageService {
     }
   }
 
+  // ── Apple Santé ──────────────────────────────────────
+
+  /// Vrai dès que la proposition de connexion à Apple Santé a été faite
+  /// (page d'onboarding « Connecter », ou filet au premier play). Évite de
+  /// redemander à quelqu'un qui a déjà vu la feuille d'autorisation iOS.
+  bool get isHealthPromptSeen =>
+      _prefs.getBool(AppConstants.prefHealthPromptSeen) ?? false;
+
+  Future<void> setHealthPromptSeen() async {
+    await _prefs.setBool(AppConstants.prefHealthPromptSeen, true);
+  }
+
   // ── User profile ─────────────────────────────────────
 
   String get firstName =>

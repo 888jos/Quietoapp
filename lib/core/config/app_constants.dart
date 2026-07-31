@@ -3,7 +3,11 @@ abstract final class AppConstants {
   static const appName = 'Quieto';
   // ⚠️ À METTRE À JOUR EN MÊME TEMPS QUE pubspec.yaml (version: x.y.z+n).
   // Sert à la Vigie : comparer le funnel d'une version à l'autre.
-  static const appVersion = '1.0.9';
+  static const appVersion = '1.0.13';
+
+  // ── Support ──────────────────────────────────────────
+  // Adresse affichée dans « Nous contacter » (profil).
+  static const supportEmail = 'contact@cofonde.com';
 
   // ── RevenueCat ───────────────────────────────────────
   static const entitlementPremium = 'premium';
@@ -32,6 +36,8 @@ abstract final class AppConstants {
   static const prefReminderMinute = 'reminder_minute';
   // La proposition de rappel post-première-séance ne se fait qu'une fois.
   static const prefNotificationPromptShown = 'notification_prompt_shown';
+  // Proposition de connexion à Apple Santé déjà faite (onboarding ou player).
+  static const prefHealthPromptSeen = 'health_prompt_seen';
   // Niveau de la musique d'ambiance (curseur 0..1, 0 = coupée).
   static const prefAmbientLevel = 'ambient_level';
   // Historique d'écoute des séances (JSON {id: {fois, ts}}) : nourrit les

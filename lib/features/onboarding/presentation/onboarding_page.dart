@@ -6,14 +6,11 @@ import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../onboarding_providers.dart';
-import 'widgets/breath_circle.dart';
 import 'widgets/multi_question_slide.dart';
 import 'widgets/progress_bar.dart';
 import 'widgets/question_slide.dart';
-import 'widgets/slide_reveal.dart';
 import '../../../core/ui/starry_background.dart';
 import 'widgets/text_input_slide.dart';
 
@@ -38,7 +35,17 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     super.initState();
     // Vigie : chaque étape vue est tracée → on sait exactement à quelle
     // question les gens abandonnent l'onboarding.
-    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'welcome', 'n': 0});
+    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'name', 'n': 0});
+    // Le prénom est désormais le premier écran (l'accueil est assuré par la
+    // page connexion juste avant). Le clavier n'arrive qu'une fois le fondu
+    // fini ET la cascade posée : s'il surgit pendant la transition, l'arrivée
+    // paraît sèche.
+    Future.delayed(
+      const Duration(milliseconds: 800),
+      () {
+        if (mounted && _page == 0) _firstNameFocus.requestFocus();
+      },
+    );
   }
 
   // Vocabulaire : Quieto = espace de bien-être / santé mentale.
@@ -73,9 +80,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     'Plus de 15 minutes',
   ];
 
-  /// Ordre des écrans du quiz.
+  /// Ordre des écrans du quiz. (L'accueil est la page connexion, juste
+  /// avant : pas de doublon « Bienvenue » ici.)
   List<String> _slideIds(OnboardingState state) => [
-        'welcome',
         'name',
         'goals',
         'experience',
@@ -180,32 +187,6 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final active = _page == index;
 
     final slide = switch (id) {
-      'welcome' => Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SlideReveal(active: active, child: const BreathCircle()),
-            const SizedBox(height: AppConstants.spacingLg),
-            SlideReveal(
-              active: active,
-              delay: const Duration(milliseconds: 150),
-              child: Text(
-                'Bienvenue dans Quieto',
-                style: AppTextStyles.titleLarge,
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: AppConstants.spacingMd),
-            SlideReveal(
-              active: active,
-              delay: const Duration(milliseconds: 280),
-              child: Text(
-                'Prends une grande inspiration.\nTu es au bon endroit.',
-                style: AppTextStyles.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
       'name' => TextInputSlide(
           active: active,
           question: "Comment tu t'appelles ?",
@@ -263,7 +244,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
     final state = ref.watch(onboardingProvider);
     final ids = _slideIds(state);
     final canProceed = _isSlideProceedable(state, ids);
-    final quizSteps = ids.length - 1;
+    final quizSteps = ids.length;
     final isLast = _page == ids.length - 1;
 
     return Scaffold(
@@ -283,37 +264,37 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               child: Column(
                 children: [
                   const SizedBox(height: AppConstants.spacingSm),
-                  // Flèche retour (cachée sur l'accueil)
+                  // Flèche retour : entre les questions, elle recule d'un
+                  // écran ; sur la première (prénom), elle ramène à la page
+                  // connexion (utile pour qui a tapé « sans compte » et
+                  // change d'avis).
                   SizedBox(
                     height: 32,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: AnimatedOpacity(
-                        opacity: _page > 0 ? 1.0 : 0.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: IgnorePointer(
-                          ignoring: _page == 0,
-                          child: IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: AppColors.textMuted,
-                              size: 18,
-                            ),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () {
-                              HapticFeedback.lightImpact();
-                              // Referme le clavier avant de reculer (sinon il
-                              // reste ouvert sur l'écran d'accueil).
-                              _firstNameFocus.unfocus();
-                              _controller.previousPage(
-                                duration: const Duration(
-                                    milliseconds: AppConstants.animNormal),
-                                curve: Curves.easeInOut,
-                              );
-                            },
-                          ),
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new,
+                          color: AppColors.textMuted,
+                          size: 18,
                         ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          // Referme le clavier avant de reculer (sinon il
+                          // reste ouvert sur l'écran d'arrivée).
+                          _firstNameFocus.unfocus();
+                          if (_page == 0) {
+                            context.go(AppRoutes.onboardingConnexion);
+                            return;
+                          }
+                          _controller.previousPage(
+                            duration: const Duration(
+                                milliseconds: AppConstants.animNormal),
+                            curve: Curves.easeInOut,
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -323,13 +304,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   const SizedBox(height: AppConstants.spacingSm),
                   SizedBox(
                     height: 3,
-                    child: AnimatedOpacity(
-                      opacity: _page > 0 ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: OnboardingProgressBar(
-                        current: (_page - 1).clamp(0, quizSteps - 1),
-                        total: quizSteps,
-                      ),
+                    child: OnboardingProgressBar(
+                      current: _page.clamp(0, quizSteps - 1),
+                      total: quizSteps,
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingMd),
@@ -367,9 +344,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   ),
                   const SizedBox(height: AppConstants.spacingMd),
                   AppButton(
-                    label: _page == 0
-                        ? 'Commencer'
-                        : (isLast ? 'Créer mon programme' : 'Continuer'),
+                    label: isLast ? 'Créer mon programme' : 'Continuer',
                     onTap: canProceed ? _next : null,
                     isLoading: _loading,
                   ),

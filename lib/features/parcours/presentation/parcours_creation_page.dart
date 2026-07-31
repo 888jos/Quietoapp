@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/services/health_service.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -121,6 +122,11 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
     setState(() => _phase = _Phase.attente);
     _demarrerProgression();
     try {
+      // Cache santé normalement déjà chaud (page Louane) ; borné à 2 s pour
+      // ne jamais retarder la création du programme.
+      await HealthService.instance
+          .resumeSanteMentale()
+          .timeout(const Duration(seconds: 2), onTimeout: () => '');
       final historique =
           ref.read(louaneChatProvider.notifier).historiquePourParcours();
       // L'attente est un moment (filmable) : 6 s minimum, même si le serveur

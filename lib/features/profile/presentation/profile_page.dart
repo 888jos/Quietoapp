@@ -1,24 +1,26 @@
 import 'package:flutter/cupertino.dart'
     show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
         CupertinoThemeData;
-import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart'
     show Clipboard, ClipboardData, HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_auth/firebase_auth.dart' show User;
 import 'package:purchases_flutter/purchases_flutter.dart' show Purchases;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/config/revenue_cat_config.dart';
 import '../../../core/services/ambient_music.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_card.dart';
+import '../../../core/ui/boutons_connexion.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../profile_providers.dart';
 
@@ -127,34 +129,16 @@ class ProfilePage extends ConsumerWidget {
                             ),
                     ),
 
-                    // ── DEV : bascule premium pour tester ────
-                    // Invisible en release grâce à kReleaseMode.
-                    if (!kReleaseMode) ...[
-                      const SizedBox(height: AppConstants.spacingSm),
-                      AppCard(
-                        child: Row(
-                          children: [
-                            const Text('🛠️', style: TextStyle(fontSize: 20)),
-                            const SizedBox(width: AppConstants.spacingMd),
-                            Expanded(
-                              child: Text(
-                                'Mode test : premium',
-                                style: AppTextStyles.bodyLarge
-                                    .copyWith(fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            Switch(
-                              value: isPremium,
-                              onChanged: (_) => ref
-                                  .read(subscriptionProvider.notifier)
-                                  .devTogglePremium(),
-                              activeThumbColor: AppColors.accent,
-                              inactiveTrackColor: AppColors.accentDim,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    const SizedBox(height: AppConstants.spacingXl),
+
+                    // ── Compte ───────────────────────────────
+                    // Optionnel : l'app marche sans. Sert à retrouver sa
+                    // progression en changeant de téléphone, et à savoir
+                    // qui utilise Quieto.
+                    Text('Mon compte', style: AppTextStyles.titleMedium),
+                    const SizedBox(height: AppConstants.spacingSm),
+                    _buildCompteCard(
+                        context, ref, ref.watch(utilisateurProvider).value),
 
                     const SizedBox(height: AppConstants.spacingXl),
 
@@ -194,14 +178,20 @@ class ProfilePage extends ConsumerWidget {
 
                     const SizedBox(height: AppConstants.spacingXl),
 
-                    // ── Informations légales ─────────────────
-                    Text('Informations légales',
+                    // ── Aide et informations ─────────────────
+                    Text('Aide et informations',
                         style: AppTextStyles.titleMedium),
                     const SizedBox(height: AppConstants.spacingSm),
                     AppCard(
                       padding: EdgeInsets.zero,
                       child: Column(
                         children: [
+                          _TapItem(
+                            emoji: '✉️',
+                            label: 'Nous contacter',
+                            onTap: () => _contacter(context),
+                          ),
+                          _ItemDivider(),
                           _TapItem(
                             emoji: '📄',
                             label: 'Politique de confidentialité',
@@ -227,26 +217,6 @@ class ProfilePage extends ConsumerWidget {
                               } catch (_) {}
                             },
                           ),
-                          _ItemDivider(),
-                          // Copie l'ID anonyme RevenueCat : sert au support et
-                          // à retrouver un compte dans le dashboard (ex. accorder
-                          // un entitlement promotionnel).
-                          _TapItem(
-                            emoji: '🔑',
-                            label: 'Identifiant de support',
-                            onTap: () async {
-                              if (!revenueCatDisponible) return;
-                              final id = await Purchases.appUserID;
-                              await Clipboard.setData(ClipboardData(text: id));
-                              if (context.mounted) {
-                                _showSoftSnack(
-                                  context,
-                                  'Identifiant copié.',
-                                  emoji: '🔑',
-                                );
-                              }
-                            },
-                          ),
                         ],
                       ),
                     ),
@@ -258,6 +228,223 @@ class ProfilePage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Carte « Mon compte » : boutons de connexion si personne n'est
+  /// connecté, sinon l'e-mail du compte avec déconnexion et suppression
+  /// (la suppression est exigée par Apple dès qu'on propose un compte).
+  Widget _buildCompteCard(BuildContext context, WidgetRef ref, User? compte) {
+    final auth = ref.read(authServiceProvider);
+
+    if (compte == null) {
+      return AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('🔐 Garde ta progression', style: AppTextStyles.titleMedium),
+            const SizedBox(height: AppConstants.spacingSm),
+            Text(
+              'Connecte-toi pour retrouver Quieto si tu changes de téléphone.',
+              style: AppTextStyles.bodyMedium,
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            if (auth.appleDisponible) ...[
+              BoutonConnexionApple(
+                onTap: () => _connexion(context, ref, apple: true),
+              ),
+              const SizedBox(height: AppConstants.spacingSm),
+            ],
+            BoutonConnexionGoogle(
+              onTap: () => _connexion(context, ref, apple: false),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('🔐 Compte connecté', style: AppTextStyles.titleMedium),
+          const SizedBox(height: AppConstants.spacingSm),
+          Text(
+            compte.email ?? compte.displayName ?? '',
+            style: AppTextStyles.bodyMedium,
+          ),
+          const SizedBox(height: AppConstants.spacingMd),
+          AppButton(
+            label: 'Se déconnecter',
+            variant: AppButtonVariant.secondary,
+            onTap: () => _confirmerDeconnexion(context, ref),
+          ),
+          const SizedBox(height: AppConstants.spacingMd),
+          Center(
+            child: GestureDetector(
+              onTap: () => _confirmerSuppression(context, ref),
+              child: Text(
+                'Supprimer mon compte',
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.error),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _connexion(
+    BuildContext context,
+    WidgetRef ref, {
+    required bool apple,
+  }) async {
+    final auth = ref.read(authServiceProvider);
+    final resultat =
+        apple ? await auth.connexionApple() : await auth.connexionGoogle();
+    if (!context.mounted) return;
+    switch (resultat) {
+      case AuthResultat.ok:
+        _showSoftSnack(context, 'Te voilà connecté.', emoji: '🔐');
+      case AuthResultat.annule:
+        break;
+      case AuthResultat.erreur:
+        _showSoftSnack(
+          context,
+          'La connexion n\'a pas fonctionné. Réessaie dans un instant.',
+          emoji: '🌧️',
+        );
+    }
+  }
+
+  /// Petite confirmation avant la déconnexion : on rassure (rien n'est
+  /// supprimé, l'abonnement et la progression restent) pour ne pas confondre
+  /// avec la suppression de compte.
+  void _confirmerDeconnexion(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+        ),
+        title: Text('Te déconnecter ?', style: AppTextStyles.titleMedium),
+        content: Text(
+          'Rien n\'est supprimé : ton abonnement et ta progression restent '
+          'sur ce téléphone. Tu pourras te reconnecter quand tu veux.',
+          style: AppTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Annuler',
+              style: AppTextStyles.bodyMedium
+                  .copyWith(color: AppColors.textMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await ref.read(authServiceProvider).deconnexion();
+              if (!context.mounted) return;
+              _showSoftSnack(context, 'Tu es déconnecté.', emoji: '👋');
+            },
+            child: Text(
+              'Se déconnecter',
+              style:
+                  AppTextStyles.bodyMedium.copyWith(color: AppColors.accent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmerSuppression(BuildContext context, WidgetRef ref) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+        ),
+        title: Text('Supprimer ton compte ?', style: AppTextStyles.titleMedium),
+        content: Text(
+          'Ton compte sera effacé pour de bon. Tes séances et ton '
+          'abonnement restent liés à ton téléphone.',
+          style: AppTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Annuler',
+              style: AppTextStyles.bodyMedium
+                  .copyWith(color: AppColors.textMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              final ok =
+                  await ref.read(authServiceProvider).supprimerCompte();
+              if (!context.mounted) return;
+              _showSoftSnack(
+                context,
+                ok
+                    ? 'Compte supprimé.'
+                    : 'Par sécurité, reconnecte-toi puis réessaie '
+                        'la suppression.',
+                emoji: ok ? '🗑️' : '🔐',
+              );
+            },
+            child: Text(
+              'Supprimer',
+              style:
+                  AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Ouvre l'app Mail pré-remplie ; si aucune app mail n'est installée,
+  /// copie l'adresse pour que la personne puisse écrire autrement.
+  Future<void> _contacter(BuildContext context) async {
+    // La version et l'identifiant RevenueCat aident à retrouver la
+    // personne (abonnement, quotas) sans lui demander quoi que ce soit.
+    String? idSupport;
+    if (revenueCatDisponible) {
+      try {
+        idSupport = await Purchases.appUserID;
+      } catch (_) {}
+    }
+    final corps = '\n\n----------\nQuieto ${AppConstants.appVersion}'
+        '${idSupport != null ? '\nIdentifiant : $idSupport' : ''}';
+    final uri = Uri(
+      scheme: 'mailto',
+      path: AppConstants.supportEmail,
+      query: 'subject=${Uri.encodeComponent('Quieto : question')}'
+          '&body=${Uri.encodeComponent(corps)}',
+    );
+    var ouvert = false;
+    try {
+      ouvert = await launchUrl(uri);
+    } catch (_) {}
+    if (!ouvert) {
+      await Clipboard.setData(
+        const ClipboardData(text: AppConstants.supportEmail),
+      );
+      if (context.mounted) {
+        _showSoftSnack(
+          context,
+          'Adresse copiée : ${AppConstants.supportEmail}',
+          emoji: '✉️',
+        );
+      }
+    }
   }
 
   /// SnackBar « zen » : flottant, arrondi, aux couleurs du thème, avec une

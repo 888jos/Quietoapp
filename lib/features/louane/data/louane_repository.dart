@@ -1,5 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/parcours_model.dart';
+import '../../../core/services/health_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/vigie_service.dart';
 import 'heure_paris.dart';
@@ -33,12 +34,17 @@ class LouaneReponse {
   /// [PARCOURS] strippé côté serveur) → l'app affiche le bouton dessous.
   final bool parcoursPropose;
 
+  /// Dernier message découverte : Louane vient de faire son au revoir →
+  /// le bouton « essai gratuit » s'affiche directement sous cette bulle.
+  final bool finDecouverte;
+
   const LouaneReponse({
     this.texte = '',
     this.paywall = false,
     this.plafond = false,
     this.seanceId,
     this.parcoursPropose = false,
+    this.finDecouverte = false,
   });
 }
 
@@ -91,6 +97,13 @@ class LouaneRepository {
       // Réponses d'onboarding (objectifs, expérience, moment, durée) →
       // Louane adapte son accompagnement et ses suggestions de séances.
       'profil': _storage.getOnboardingAnswers(),
+      // Résumé des évaluations bien-être d'Apple Santé (niveau grossier,
+      // jamais le score). Cache mémoire → lecture synchrone, jamais bloquant.
+      'sante': HealthService.instance.resumeSanteCache,
+      // Appareil compatible Apple Santé (iPhone) → Louane sait ce qui est
+      // possible ici (minutes dans Santé, questionnaires) et n'en parle
+      // jamais sur Android.
+      'santeDispo': HealthService.instance.disponible,
       'abonne': _abonne(),
       // Résumé d'écoutes {id, fois, jours} → Louane varie ses suggestions
       // et peut reproposer une séance qui a plu.
@@ -141,6 +154,7 @@ class LouaneRepository {
       plafond: plafond,
       seanceId: (seanceId != null && seanceId.isNotEmpty) ? seanceId : null,
       parcoursPropose: data['parcoursPropose'] == true,
+      finDecouverte: data['finDecouverte'] == true,
     );
   }
 }

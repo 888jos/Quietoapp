@@ -1,5 +1,6 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/parcours_model.dart';
+import '../../../core/services/health_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/vigie_service.dart';
 
@@ -41,6 +42,9 @@ class ParcoursRepository {
       'historique': historique,
       'memoire': _storage.louaneMemoire,
       'profil': _storage.getOnboardingAnswers(),
+      // Résumé des évaluations bien-être d'Apple Santé (niveau grossier,
+      // jamais le score) → le programme se dose en douceur si besoin.
+      'sante': HealthService.instance.resumeSanteCache,
       'prenom': _storage.firstName,
       'abonne': _abonne(),
       'vigie': _vigie.id,

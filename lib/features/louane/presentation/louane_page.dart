@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import '../../../app/router.dart';
+import '../../../core/services/health_service.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -66,6 +67,10 @@ class _LouanePageState extends ConsumerState<LouanePage>
     WidgetsBinding.instance.addObserver(this);
     // Vigie : ouverture du chat (l'onglet Louane se construit à la 1ʳᵉ visite).
     ref.read(vigieProvider).log('louane_ouverte');
+    // Chauffe en arrière-plan le résumé des évaluations Apple Santé : les
+    // messages suivants partiront avec (lecture synchrone du cache). Peut
+    // afficher la feuille HealthKit UNE fois pour les comptes d'avant.
+    unawaited(HealthService.instance.resumeSanteMentale());
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _versLeBas();
       // Première visite : « je ne suis pas un soignant » (3114/15), une fois.

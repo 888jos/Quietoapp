@@ -1,7 +1,9 @@
 import 'package:go_router/go_router.dart';
+import '../features/onboarding/presentation/onboarding_connexion_page.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/onboarding_loading_page.dart';
 import '../features/onboarding/presentation/onboarding_ready_page.dart';
+import '../features/onboarding/presentation/onboarding_health_page.dart';
 import '../features/onboarding/presentation/onboarding_breath_page.dart';
 import '../features/onboarding/presentation/onboarding_trust_page.dart';
 import '../features/home/presentation/home_page.dart';
@@ -21,9 +23,13 @@ import 'splash_page.dart';
 // Noms de routes — toujours utiliser ces constantes pour naviguer
 abstract final class AppRoutes {
   static const splash = '/';
+  // Première étape : créer son compte (Apple/Google), jamais bloquant.
+  static const onboardingConnexion = '/onboarding-connexion';
   static const onboarding = '/onboarding';
   static const onboardingLoading = '/onboarding-loading';
   static const onboardingReady = '/onboarding-ready';
+  // Connexion Apple Santé — proposée uniquement sur iOS, entre ready et breath.
+  static const onboardingSante = '/onboarding-sante';
   static const onboardingBreath = '/onboarding-breath';
   static const onboardingTrust = '/onboarding-trust';
   static const paywall = '/paywall';
@@ -68,6 +74,15 @@ final appRouter = GoRouter(
 
     // ── Onboarding (fondu respirant entre chaque étape) ──
     GoRoute(
+      path: AppRoutes.onboardingConnexion,
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: OnboardingConnexionPage(
+          preview: state.uri.queryParameters['preview'] == '1',
+        ),
+      ),
+    ),
+    GoRoute(
       path: AppRoutes.onboarding,
       pageBuilder: (context, state) => QuietoTransitions.fadePage(
         key: state.pageKey,
@@ -86,6 +101,13 @@ final appRouter = GoRouter(
       pageBuilder: (context, state) => QuietoTransitions.fadePage(
         key: state.pageKey,
         child: const OnboardingReadyPage(),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.onboardingSante,
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const OnboardingHealthPage(),
       ),
     ),
     GoRoute(

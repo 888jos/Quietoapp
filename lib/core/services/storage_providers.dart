@@ -65,19 +65,6 @@ class SubscriptionNotifier extends StateNotifier<bool> {
     _storage.setIsPremium(isPremium);
   }
 
-  /// DEV uniquement : bascule premium/gratuit à la volée (interrupteur de
-  /// test dans le profil). No-op en release, même garde-fou que le bypass.
-  /// PERSISTE le choix : un achat sandbox laisse isPremium=true dans le
-  /// stockage, et sans clé RevenueCat dans le build (lancement Xcode) rien
-  /// ne le remet jamais à false → tout reste déverrouillé, plus aucun
-  /// paywall visible (vécu le 2026-07-24). Basculer l'interrupteur doit
-  /// donc corriger le stockage aussi, durablement.
-  void devTogglePremium() {
-    if (kReleaseMode) return;
-    state = !state;
-    _storage.setIsPremium(state);
-  }
-
   @override
   void dispose() {
     if (!_devUnlock && revenueCatDisponible) {

@@ -4,8 +4,23 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Schéma d'URL exigé par la connexion Google (retour vers l'app après
+	     l'écran Google). Valeur = REVERSED_CLIENT_ID de GoogleService-Info.plist. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.162423121353-ejmm0n1j94tlfgco55p8b4mlu5hn5u79</string>
+			</array>
+		</dict>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Quieto ajoute tes minutes d'écoute dans Santé, rubrique Pleine conscience, pour suivre ta pratique.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Quieto lit tes dernières évaluations de bien-être de l'app Santé (niveau global uniquement, jamais tes réponses détaillées) pour que Louane puisse adapter ton accompagnement et ton programme.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Quieto utilise le micro pour que tu puisses parler à Louane.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

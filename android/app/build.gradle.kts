@@ -22,7 +22,9 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.quieto.quieto"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Version installée sur ce Mac (celle par défaut de Flutter est absente
+    // → « failed to strip debug symbols » au build release).
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -37,7 +39,9 @@ android {
 
     defaultConfig {
         applicationId = "com.quieto.quieto"
-        minSdk = flutter.minSdkVersion
+        // Android 8.0 minimum : exigé par le plugin `health` (Apple Santé /
+        // Health Connect). Couvre ~99 % des appareils actifs.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

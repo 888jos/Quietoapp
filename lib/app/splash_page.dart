@@ -89,7 +89,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
     if (_navigated || !mounted) return;
     _navigated = true;
     final done = ref.read(storageServiceProvider).isOnboardingDone;
-    context.go(done ? AppRoutes.home : AppRoutes.onboarding);
+    context.go(done ? AppRoutes.home : AppRoutes.onboardingConnexion);
   }
 
   @override

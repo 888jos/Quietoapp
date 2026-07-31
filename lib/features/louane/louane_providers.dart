@@ -294,6 +294,9 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
             texte: reponse.texte,
             seanceId: reponse.seanceId,
             avecBoutonParcours: proposeParcours,
+            // Dernier message découverte : l'au revoir de Louane porte
+            // directement le bouton « essai gratuit ».
+            avecBoutonEssai: reponse.finDecouverte,
           ),
         ],
         louaneEcrit: false,

@@ -15,6 +15,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/config/revenue_cat_config.dart';
 import '../../../core/services/ambient_music.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/health_service.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -175,6 +176,10 @@ class ProfilePage extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppConstants.spacingSm),
                     const _AmbientMusicCard(),
+                    if (HealthService.instance.disponible) ...[
+                      const SizedBox(height: AppConstants.spacingSm),
+                      const _AppleHealthCard(),
+                    ],
 
                     const SizedBox(height: AppConstants.spacingXl),
 
@@ -933,6 +938,151 @@ class _ItemDivider extends StatelessWidget {
       color: AppColors.accentDim,
       indent: AppConstants.spacingMd,
       endIndent: AppConstants.spacingMd,
+    );
+  }
+}
+
+/// Connexion à Apple Santé depuis le profil : pour ceux qui ont répondu
+/// « Plus tard » pendant l'onboarding, ou pour vérifier que c'est bien relié.
+/// L'état affiché s'appuie sur l'écriture Pleine conscience, le seul statut
+/// que HealthKit accepte de révéler (les refus de lecture restent cachés).
+class _AppleHealthCard extends ConsumerStatefulWidget {
+  const _AppleHealthCard();
+
+  @override
+  ConsumerState<_AppleHealthCard> createState() => _AppleHealthCardState();
+}
+
+class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
+    with WidgetsBindingObserver {
+  String _etat = '';
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _charger();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Au retour dans l'app (ex. la personne revient de l'app Santé après
+  /// avoir rouvert l'accès) : l'état se remet à jour tout seul, et si la
+  /// connexion vient d'être accordée, on relit les évaluations pour Louane.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final avant = _etat;
+    _charger().then((_) {
+      if (avant != 'autorise' && _etat == 'autorise') {
+        HealthService.instance.reconnecter();
+      }
+    });
+  }
+
+  Future<void> _charger() async {
+    final etat = await HealthService.instance.etatConnexion();
+    if (mounted) setState(() => _etat = etat);
+  }
+
+  Future<void> _connecter() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    await HealthService.instance.reconnecter();
+    // La feuille système ne reviendra plus : inutile que le premier play
+    // retente la demande (filet du handler audio).
+    await ref.read(storageServiceProvider).setHealthPromptSeen();
+    await _charger();
+    if (mounted) setState(() => _busy = false);
+  }
+
+  /// La feuille système ne s'affiche qu'une fois : après un refus, seul
+  /// l'app Santé permet de rouvrir l'accès. On l'ouvre directement.
+  Future<void> _ouvrirSante() async {
+    try {
+      await launchUrl(
+        Uri.parse('x-apple-health://'),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final connecte = _etat == 'autorise';
+    final refuse = _etat == 'refuse';
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.accentDim,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.3),
+                    width: 1.2,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: const Text('❤️', style: TextStyle(fontSize: 20)),
+              ),
+              const SizedBox(width: AppConstants.spacingMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Apple Santé',
+                        style: AppTextStyles.bodyLarge
+                            .copyWith(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      connecte
+                          ? 'Connecté. Tes minutes de calme\nsont ajoutées dans Santé.'
+                          : refuse
+                              ? 'Accès refusé pour l\'instant.\nÇa se rouvre dans l\'app Santé.'
+                              : 'Tes minutes de calme dans Santé,\net Louane lit tes questionnaires.',
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
+                ),
+              ),
+              if (connecte) ...[
+                const SizedBox(width: AppConstants.spacingSm),
+                const Icon(Icons.check_circle,
+                    color: AppColors.accent, size: 22),
+              ],
+            ],
+          ),
+          if (!connecte) ...[
+            const SizedBox(height: AppConstants.spacingMd),
+            AppButton(
+              label: refuse ? 'Ouvrir l\'app Santé' : 'Connecter',
+              variant: AppButtonVariant.secondary,
+              isLoading: _busy,
+              onTap: refuse ? _ouvrirSante : _connecter,
+            ),
+            if (refuse) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Text(
+                'Dans Santé : ta photo de profil, puis Apps,\n'
+                'puis Quieto, et active ce que tu veux partager.',
+                style: AppTextStyles.caption,
+              ),
+            ],
+          ],
+        ],
+      ),
     );
   }
 }

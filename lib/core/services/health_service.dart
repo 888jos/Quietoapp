@@ -63,6 +63,30 @@ class HealthService {
     }
   }
 
+  /// État de la connexion à Santé, vu par l'écriture Pleine conscience
+  /// (HealthKit cache volontairement les refus de lecture) :
+  /// 'autorise', 'refuse', 'jamais', ou '' hors iPhone.
+  Future<String> etatConnexion() async {
+    if (!_supported) return '';
+    try {
+      return await _canalSante.invokeMethod<String>('etatEcriture') ?? '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  /// (Re)connexion depuis le profil : relance la demande d'accès même si
+  /// elle a déjà été tentée dans cette session, puis relit les évaluations.
+  /// Ainsi, si la personne vient d'ouvrir l'accès, Louane le voit sans
+  /// redémarrer l'app.
+  Future<void> reconnecter() async {
+    if (!_supported) return;
+    _authRequestedThisRun = false;
+    await requestAuthorization();
+    _resumeSante = null;
+    await resumeSanteMentale();
+  }
+
   // ── Évaluations de bien-être (questionnaires app Santé) ──
 
   /// Valeur instantanée pour les payloads Louane/parcours : ne déclenche

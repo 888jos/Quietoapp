@@ -195,9 +195,20 @@ class StorageService {
   Future<void> clearParcours() async {
     try {
       await _prefs.remove(AppConstants.prefParcours);
+      await _prefs.remove(AppConstants.prefParcoursEtoilesCelebrees);
     } catch (e, st) {
       debugPrint('[Storage] clearParcours failed: $e\n$st');
     }
+  }
+
+  /// Nombre de jours du programme dont l'étoile a déjà été célébrée
+  /// (allumage animé sur la page programme). Compare au nombre de jours
+  /// faits pour ne jamais rejouer une célébration.
+  int get parcoursEtoilesCelebrees =>
+      _prefs.getInt(AppConstants.prefParcoursEtoilesCelebrees) ?? 0;
+
+  Future<void> setParcoursEtoilesCelebrees(int n) async {
+    await _prefs.setInt(AppConstants.prefParcoursEtoilesCelebrees, n);
   }
 
   // ── Historique d'écoutes (pour Louane) ────────────────

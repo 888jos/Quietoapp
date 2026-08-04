@@ -59,8 +59,10 @@ const List<String> kLouaneIntro = [
 /// Les phrases d'accueil des sessions suivantes, selon l'heure locale
 /// (0-23). Plusieurs variantes par créneau, tirées au sort, pour que celui
 /// qui revient chaque jour à la même heure ne lise pas deux fois la même.
-/// Formulations neutres (jamais de « couché·e » genré). Publique pour les
-/// tests, qui vérifient aussi les règles de style sur chaque variante.
+/// Formulations neutres (jamais de « couché·e » genré). La bulle d'avant dit
+/// déjà « Hey prénom » : donc JAMAIS de bonjour/bonsoir/salut ici, sinon
+/// Louane salue deux fois de suite (effet robot). Publique pour les tests,
+/// qui vérifient aussi les règles de style sur chaque variante.
 List<String> salutationsPourHeure(int h) {
   if (h >= 5 && h < 8) {
     return [
@@ -94,7 +96,7 @@ List<String> salutationsPourHeure(int h) {
     return [
       'Alors, elle a donné quoi cette journée ?',
       'Alors, ta journée ? Raconte-moi',
-      'Bonsoir toi :) Alors, cette journée ?',
+      'Enfin le soir :) Tu peux souffler un peu ?',
     ];
   }
   if (h >= 22 || h < 1) {

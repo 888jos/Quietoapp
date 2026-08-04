@@ -21,6 +21,21 @@ enum SanteMentaleChannel {
         derniersScores { scores in
           DispatchQueue.main.async { result(scores) }
         }
+      case "etatEcriture":
+        // Statut de l'ÉCRITURE Pleine conscience : le seul que HealthKit
+        // accepte de révéler (les refus de lecture restent invisibles).
+        // Sert à la carte « Apple Santé » du profil.
+        guard HKHealthStore.isHealthDataAvailable(),
+              let type = HKObjectType.categoryType(forIdentifier: .mindfulSession)
+        else {
+          result("")
+          return
+        }
+        switch HKHealthStore().authorizationStatus(for: type) {
+        case .sharingAuthorized: result("autorise")
+        case .sharingDenied: result("refuse")
+        default: result("jamais")
+        }
       case "demanderAutorisation":
         // UNE seule feuille système : écriture Pleine conscience + lecture
         // des deux évaluations. false sous iOS < 18 → le Dart retombe sur le

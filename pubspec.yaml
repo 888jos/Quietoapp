@@ -2,7 +2,7 @@ name: quieto
 description: "Quieto — application de méditation en français"
 publish_to: 'none'
 
-version: 1.0.13+18
+version: 1.0.14+19
 
 environment:
   sdk: ^3.11.1
@@ -50,6 +50,9 @@ dependencies:
   google_sign_in: ^6.3.0
   sign_in_with_apple: ^8.1.0
   crypto: ^3.0.7
+  # Carte de partage du programme (stories) : capture PNG + feuille système.
+  share_plus: ^11.0.0
+  path_provider: ^2.1.4
 
 # Force path_provider sur une version SANS le package natif `objective_c`.
 # La 2.6.0 (via objective_c / native-assets) ne s'embarque pas correctement sur

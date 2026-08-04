@@ -1,7 +1,12 @@
+import 'dart:io' show File;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderRepaintBoundary;
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/models/parcours_model.dart';
@@ -16,6 +21,8 @@ import '../../louane/presentation/widgets/louane_avatar.dart';
 import '../../onboarding/presentation/widgets/slide_reveal.dart';
 import '../../player/player_providers.dart';
 import '../parcours_providers.dart';
+import 'widgets/carte_partage_parcours.dart';
+import 'widgets/constellation_etat.dart';
 import 'widgets/constellation_reveal.dart';
 
 /// Les ressentis proposés au bilan de fin de semaine. Textes en dur :
@@ -44,6 +51,7 @@ const List<String> kEncouragementsParcours = [
 
 /// Les trois temps de l'arrivée depuis la création : la constellation se
 /// dessine au centre, monte se poser en haut, puis le contenu se révèle.
+/// Un tap pendant le dessin saute l'arrivée.
 enum _PhaseArrivee { dessin, montee, pose }
 
 /// Le programme de 7 jours, version « chemin d'étoiles » : la constellation
@@ -76,6 +84,14 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
   final _cleScene = GlobalKey();
   Rect? _rectCible;
 
+  /// Étoile fraîchement gagnée à célébrer (allumage + vibration), une fois.
+  int? _jourACelebrer;
+
+  // La carte de partage : montée hors champ le temps de la capture.
+  final _cleCarte = GlobalKey();
+  bool _carteMontee = false;
+  bool _partageEnCours = false;
+
   @override
   void initState() {
     super.initState();
@@ -83,7 +99,72 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
       _arrivee = _PhaseArrivee.dessin;
       _overlaySurScene = true;
     }
+    // Séance du jour finie depuis la dernière visite (retour du player,
+    // ou réouverture de l'app) : l'étoile s'allumera à l'affichage.
+    _detecterCelebration(ref.read(parcoursProvider), notifie: false);
     ref.read(vigieProvider).log('parcours_ouvert');
+  }
+
+  /// Compare les jours faits au dernier décompte célébré : s'il y a du
+  /// nouveau, l'étoile du dernier jour fait s'allume (une seule fois,
+  /// persisté tout de suite pour ne jamais rejouer).
+  void _detecterCelebration(ParcoursModel? parcours, {required bool notifie}) {
+    if (parcours == null) return;
+    final faits = parcours.joursTermines.length;
+    final storage = ref.read(storageServiceProvider);
+    if (faits <= 0 || faits <= storage.parcoursEtoilesCelebrees) return;
+    storage.setParcoursEtoilesCelebrees(faits);
+    if (notifie) {
+      setState(() => _jourACelebrer = faits);
+    } else {
+      _jourACelebrer = faits;
+    }
+  }
+
+  /// Capture la carte story (1080 x 1920) et ouvre la feuille de partage.
+  /// La carte est montée hors champ le temps du rendu, puis démontée.
+  Future<void> _partagerCarte() async {
+    if (_partageEnCours) return;
+    _partageEnCours = true;
+    ref.read(vigieProvider).log('parcours_partage');
+    try {
+      setState(() => _carteMontee = true);
+      // La carte doit avoir été peinte au moins une fois avant la capture.
+      await WidgetsBinding.instance.endOfFrame;
+      final frontiere = _cleCarte.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+      if (frontiere == null) return;
+      final image = await frontiere.toImage(pixelRatio: 3);
+      final octets = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (octets == null) return;
+      final fichier = File(
+          '${(await getTemporaryDirectory()).path}/quieto_programme.png');
+      await fichier.writeAsBytes(octets.buffer.asUint8List());
+      if (!mounted) return;
+      // Origine du partage : obligatoire sur iPad (ancre du popover).
+      final boite = context.findRenderObject() as RenderBox?;
+      await SharePlus.instance.share(ShareParams(
+        files: [XFile(fichier.path, mimeType: 'image/png')],
+        sharePositionOrigin: boite != null
+            ? boite.localToGlobal(Offset.zero) & boite.size
+            : null,
+      ));
+    } catch (e) {
+      debugPrint('[Parcours] partage échoué : $e');
+    } finally {
+      if (mounted) setState(() => _carteMontee = false);
+      _partageEnCours = false;
+    }
+  }
+
+  /// Tap pendant le dessin : on saute l'arrivée.
+  void _passerArrivee() {
+    if (_arrivee != _PhaseArrivee.dessin) return;
+    ref.read(vigieProvider).log('parcours_arrivee_passee');
+    setState(() {
+      _arrivee = _PhaseArrivee.pose;
+      _overlaySurScene = false;
+    });
   }
 
   /// Le dessin est fini : on mesure la place du hero dans la page (scroll
@@ -167,6 +248,10 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Séance finie pendant que cette page attend sous le player : la
+    // célébration se prépare ici et se jouera au retour (page visible).
+    ref.listen(parcoursProvider,
+        (_, parcours) => _detecterCelebration(parcours, notifie: true));
     final parcours = ref.watch(parcoursProvider);
     if (parcours == null) {
       // Plus de programme (abandon depuis un autre écran) : rien à montrer.
@@ -195,6 +280,20 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
             height: 240,
             child: AuroraSky(),
           ),
+          // La carte de partage, hors champ le temps de la capture (le
+          // RepaintBoundary se photographie très bien en dehors de l'écran).
+          if (_carteMontee)
+            Positioned(
+              left: -1000,
+              top: 0,
+              child: RepaintBoundary(
+                key: _cleCarte,
+                child: CartePartageParcours(
+                  prenom: ref.read(storageServiceProvider).firstName,
+                  parcours: parcours,
+                ),
+              ),
+            ),
           SafeArea(
             child: LayoutBuilder(builder: (context, contraintes) {
               // Départ de la constellation voyageuse : grande, centrée.
@@ -229,6 +328,15 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                         child: ConstellationReveal(onDone: _lancerMontee),
                       ),
                     ),
+                  // Un tap pendant le dessin saute l'arrivée (pendant la
+                  // montée, 800 ms, on laisse finir).
+                  if (_arrivee == _PhaseArrivee.dessin)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _passerArrivee,
+                      ),
+                    ),
                 ],
               );
             }),
@@ -255,6 +363,13 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                             color: AppColors.textPrimary, size: 20),
                       ),
                       const Spacer(),
+                      // Partager sa semaine en story : discret, même gamme
+                      // que le menu.
+                      IconButton(
+                        onPressed: _partagerCarte,
+                        icon: const Icon(Icons.ios_share,
+                            color: AppColors.textMuted, size: 20),
+                      ),
                       IconButton(
                         onPressed: _confirmerAbandon,
                         icon: const Icon(Icons.more_horiz,
@@ -279,7 +394,10 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                           child: AnimatedOpacity(
                             duration: const Duration(milliseconds: 400),
                             opacity: pose ? 1 : 0,
-                            child: _ConstellationEtat(parcours: parcours),
+                            child: ConstellationEtat(
+                              parcours: parcours,
+                              jourNouveau: _jourACelebrer,
+                            ),
                           ),
                         ),
                         const SizedBox(height: AppConstants.spacingSm),
@@ -394,132 +512,6 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
               ],
     );
   }
-}
-
-// ── Le hero : la constellation de la semaine, version état ──
-// Les étoiles des jours faits brillent, celle du jour courant pulse
-// doucement, les suivantes attendent, éteintes. Même géométrie que la
-// révélation de l'écran de création.
-
-class _ConstellationEtat extends StatefulWidget {
-  final ParcoursModel parcours;
-
-  const _ConstellationEtat({required this.parcours});
-
-  @override
-  State<_ConstellationEtat> createState() => _ConstellationEtatState();
-}
-
-class _ConstellationEtatState extends State<_ConstellationEtat>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1600),
-  )..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      child: CustomPaint(
-        painter: _ConstellationEtatPainter(
-          pulse: CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
-          faits: {
-            for (final j in widget.parcours.jours)
-              if (widget.parcours.jourTermine(j.jour)) j.jour,
-          },
-          jourCourant: widget.parcours.tousJoursTermines
-              ? 0
-              : widget.parcours.jourCourant,
-        ),
-        size: Size.infinite,
-      ),
-    );
-  }
-}
-
-class _ConstellationEtatPainter extends CustomPainter {
-  _ConstellationEtatPainter({
-    required this.pulse,
-    required this.faits,
-    required this.jourCourant,
-  }) : super(repaint: pulse);
-
-  final Animation<double> pulse;
-  final Set<int> faits;
-  final int jourCourant; // 0 = plus de jour courant (semaine finie)
-
-  // LA même géométrie que la constellation voyageuse (révélation) : quand
-  // elle se pose sur le hero, chaque étoile tombe pile sur son double.
-  Offset _pos(int i, Size size) => positionEtoileConstellation(i, size);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Les traits : allumés jusqu'au dernier jour fait, éteints ensuite.
-    for (var i = 0; i < 6; i++) {
-      final a = _pos(i, size);
-      final b = _pos(i + 1, size);
-      final marche = faits.contains(i + 2) ||
-          (i + 2 == jourCourant && faits.contains(i + 1));
-      canvas.drawLine(
-        a,
-        b,
-        Paint()
-          ..color = marche
-              ? AppColors.accent.withValues(alpha: 0.45)
-              : Colors.white.withValues(alpha: 0.10)
-          ..strokeWidth = marche ? 1.3 : 1.0
-          ..strokeCap = StrokeCap.round,
-      );
-    }
-
-    for (var i = 1; i <= 7; i++) {
-      final pos = _pos(i - 1, size);
-      final fait = faits.contains(i);
-      final courant = i == jourCourant;
-      final double alphaLabel;
-
-      if (fait) {
-        canvas.drawCircle(
-          pos,
-          7,
-          Paint()
-            ..color = AppColors.accent.withValues(alpha: 0.35)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-        );
-        canvas.drawCircle(
-            pos, 2.6, Paint()..color = Colors.white.withValues(alpha: 0.95));
-        alphaLabel = 0.8;
-      } else if (courant) {
-        final p = pulse.value;
-        canvas.drawCircle(
-          pos,
-          8 + 4 * p,
-          Paint()
-            ..color = AppColors.accent.withValues(alpha: 0.25 + 0.30 * p)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-        );
-        canvas.drawCircle(
-            pos, 3.0, Paint()..color = Colors.white.withValues(alpha: 0.95));
-        alphaLabel = 0.9;
-      } else {
-        canvas.drawCircle(
-            pos, 2.2, Paint()..color = Colors.white.withValues(alpha: 0.20));
-        alphaLabel = 0.35;
-      }
-
-      peindreLabelJour(canvas, pos, i, alphaLabel);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ConstellationEtatPainter old) =>
-      old.faits.length != faits.length || old.jourCourant != jourCourant;
 }
 
 // ── Un jour sur le chemin ────────────────────────────────

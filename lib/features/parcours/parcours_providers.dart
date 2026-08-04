@@ -79,6 +79,9 @@ class ParcoursNotifier extends StateNotifier<ParcoursModel?> {
   /// Persiste et installe un programme fraîchement généré.
   Future<void> enregistrer(ParcoursModel parcours) async {
     await _storage.saveParcours(parcours);
+    // Nouveau programme = compteur de célébrations remis à zéro (aucun
+    // allumage fantôme hérité du programme d'avant).
+    await _storage.setParcoursEtoilesCelebrees(0);
     state = parcours;
   }
 

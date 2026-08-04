@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:quieto/core/models/parcours_model.dart';
 import 'package:quieto/features/parcours/presentation/parcours_creation_page.dart';
 import 'package:quieto/features/parcours/presentation/parcours_page.dart';
+import 'package:quieto/features/parcours/presentation/widgets/carte_partage_parcours.dart';
 
 /// Le programme 7 jours créé par Louane : sérialisation, avancement des
 /// jours (1 jour par jour calendaire) et règles de style des textes en dur.
@@ -93,6 +94,7 @@ void main() {
       ...kEtapesCreationParcours,
       ...kRessentisBilan,
       ...kEncouragementsParcours,
+      kSignatureCartePartage,
     ];
     for (final t in textes) {
       expect(t.trim(), isNotEmpty);

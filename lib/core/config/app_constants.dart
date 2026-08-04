@@ -3,7 +3,7 @@ abstract final class AppConstants {
   static const appName = 'Quieto';
   // ⚠️ À METTRE À JOUR EN MÊME TEMPS QUE pubspec.yaml (version: x.y.z+n).
   // Sert à la Vigie : comparer le funnel d'une version à l'autre.
-  static const appVersion = '1.0.13';
+  static const appVersion = '1.0.14';
 
   // ── Support ──────────────────────────────────────────
   // Adresse affichée dans « Nous contacter » (profil).
@@ -46,6 +46,7 @@ abstract final class AppConstants {
   // Le programme de 7 jours créé par Louane (JSON ParcoursModel). Une seule
   // clé : un programme à la fois, effacée à l'abandon ou pour recommencer.
   static const prefParcours = 'parcours_louane';
+  static const prefParcoursEtoilesCelebrees = 'parcours_etoiles_celebrees';
 
   // ── Audio ────────────────────────────────────────────
   // Les MP3 sont hébergés sur Firebase Storage (bucket quieto-06) à plat

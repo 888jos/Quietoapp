@@ -45,6 +45,9 @@ class ParcoursRepository {
       // Résumé des évaluations bien-être d'Apple Santé (niveau grossier,
       // jamais le score) → le programme se dose en douceur si besoin.
       'sante': HealthService.instance.resumeSanteCache,
+      // Résumé d'écoutes {id, fois, jours} → le programme s'appuie sur ce
+      // qu'elle connaît déjà sans remplir la semaine de séances usées.
+      'ecoutes': _storage.ecoutesPourLouane(),
       'prenom': _storage.firstName,
       'abonne': _abonne(),
       'vigie': _vigie.id,

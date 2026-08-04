@@ -99,6 +99,20 @@ void main() {
         jourLocalEnFrancais(DateTime(2024, 12, 25)), 'mercredi 25 décembre');
   });
 
+  test('les salutations horaires ne redisent jamais bonjour', () {
+    // La bulle d'avant dit déjà « Hey prénom » : un deuxième bonjour dans
+    // la même volée fait robot (vu en prod : « Hey Paulo » + « Bonsoir toi »).
+    const bonjours = ['bonjour', 'bonsoir', 'salut', 'coucou', 'hey', 'hello'];
+    for (var h = 0; h < 24; h++) {
+      for (final m in salutationsPourHeure(h)) {
+        for (final mot in bonjours) {
+          expect(m.toLowerCase().contains(mot), isFalse,
+              reason: 'deuxième bonjour (« $mot ») dans : $m');
+        }
+      }
+    }
+  });
+
   test('textes d\'accueil : majuscule au début, sans emoji ni tiret long', () {
     const interdits = ['—', '–'];
     final emoji = RegExp(

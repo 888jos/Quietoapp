@@ -1,10 +1,14 @@
 package com.quieto.quieto
 
-import com.ryanheise.audioservice.AudioServiceActivity
+import com.ryanheise.audioservice.AudioServiceFragmentActivity
 
-// AudioServiceActivity (et pas FlutterActivity) : oblige l'activité et le
-// service audio à partager le MÊME moteur Flutter. Avec FlutterActivity,
-// Android lançait l'app en double (une copie invisible pour le service),
-// d'où la musique d'accueil jouée deux fois avec un écho impossible à couper
-// depuis le profil (bug parents, version 1.0.12).
-class MainActivity : AudioServiceActivity()
+// AudioServiceFragmentActivity et surtout PAS :
+// - FlutterActivity : l'app se lançait en double (une copie invisible pour le
+//   service audio), musique d'accueil jouée deux fois (bug parents, 1.0.12) ;
+// - AudioServiceActivity : le plugin `health` (Apple Santé / Health Connect)
+//   exige une ComponentActivity au démarrage → ClassCastException, crash
+//   SYSTÉMATIQUE à l'ouverture sur tout appareil avec Health Connect
+//   (incident 1.0.13 build 18, retirée par Google le 5 août 2026).
+// Cette variante partage le moteur Flutter avec le service audio ET hérite
+// de FragmentActivity, ce qui satisfait les deux plugins.
+class MainActivity : AudioServiceFragmentActivity()

@@ -79,6 +79,11 @@ class AuthService {
         OAuthProvider('apple.com').credential(
           idToken: credentialApple.identityToken,
           rawNonce: brut,
+          // Depuis firebase_auth 5.2, le code d'autorisation d'Apple est
+          // obligatoire en plus du jeton : sans lui, Firebase répond
+          // « invalid-credential / Invalid OAuth response from apple.com »
+          // (l'erreur vue par le testeur Apple, refus 2.1(a) du 2026-08-05).
+          accessToken: credentialApple.authorizationCode,
         ),
       );
 

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart'
     show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
         CupertinoThemeData;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart'
@@ -179,6 +180,12 @@ class ProfilePage extends ConsumerWidget {
                     if (HealthService.instance.disponible) ...[
                       const SizedBox(height: AppConstants.spacingSm),
                       const _AppleHealthCard(),
+                    ],
+                    // Interrupteur premium de test (tournage des vidéos) :
+                    // jamais compilé dans les builds boutique.
+                    if (!kReleaseMode) ...[
+                      const SizedBox(height: AppConstants.spacingSm),
+                      const _PremiumTestCard(),
                     ],
 
                     const SizedBox(height: AppConstants.spacingXl),
@@ -1081,6 +1088,63 @@ class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
               ),
             ],
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Interrupteur « Premium de test » : donne l'accès premium à la volée pour
+/// tourner les vidéos (paywall, programme, Louane sans limite). N'existe que
+/// hors release : un build App Store ou Google Play ne le compile même pas.
+class _PremiumTestCard extends ConsumerWidget {
+  const _PremiumTestCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final premium = ref.watch(subscriptionProvider);
+    return AppCard(
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: AppColors.accentDim,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.3),
+                width: 1.2,
+              ),
+            ),
+            alignment: Alignment.center,
+            child: const Text('🎬', style: TextStyle(fontSize: 20)),
+          ),
+          const SizedBox(width: AppConstants.spacingMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Premium de test',
+                    style: AppTextStyles.bodyLarge
+                        .copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  'Pour tourner les vidéos.\nInvisible dans les versions boutique.',
+                  style: AppTextStyles.caption,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppConstants.spacingSm),
+          Switch(
+            value: premium,
+            onChanged: (v) => ref
+                .read(subscriptionProvider.notifier)
+                .devForcerPremium(v),
+            activeThumbColor: AppColors.accent,
+            inactiveTrackColor: AppColors.accentDim,
+          ),
         ],
       ),
     );

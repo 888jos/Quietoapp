@@ -14,8 +14,11 @@ import 'widgets/slide_reveal.dart';
 
 /// Connexion à Apple Santé (iOS uniquement, juste après « Voici ton
 /// programme ») : on propose d'ajouter automatiquement les minutes d'écoute
-/// dans Santé > Pleine conscience. « Plus tard » ne ferme pas la porte :
-/// la demande système reviendra au premier play (filet dans le handler audio).
+/// dans Santé > Pleine conscience. Un seul bouton, qui mène toujours à la
+/// feuille d'autorisation système : Apple interdit tout bouton « Plus tard »
+/// sur un écran qui précède une demande de permission (guideline 5.1.1(iv),
+/// refus du 2026-08-05). C'est dans la feuille système que l'utilisateur
+/// accepte ou refuse.
 class OnboardingHealthPage extends ConsumerStatefulWidget {
   const OnboardingHealthPage({super.key});
 
@@ -42,11 +45,6 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
     await HealthService.instance.requestAuthorization();
     await ref.read(storageServiceProvider).setHealthPromptSeen();
     if (!mounted) return;
-    context.go(AppRoutes.onboardingBreath);
-  }
-
-  void _skip() {
-    ref.read(vigieProvider).log('onboarding_sante', {'choix': 'plus_tard'});
     context.go(AppRoutes.onboardingBreath);
   }
 
@@ -145,30 +143,12 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
                     active: true,
                     delay: const Duration(milliseconds: 470),
                     child: AppButton(
-                      label: 'Connecter à Apple Santé',
+                      label: 'Continuer',
                       isLoading: _connecting,
                       onTap: _connect,
                     ),
                   ),
-                  const SizedBox(height: AppConstants.spacingSm),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: _skip,
-                    child: const Padding(
-                      padding: EdgeInsets.all(AppConstants.spacingSm),
-                      child: Text(
-                        'Plus tard',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 13,
-                          decoration: TextDecoration.underline,
-                          decorationColor: AppColors.textMuted,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AppConstants.spacingSm),
+                  const SizedBox(height: AppConstants.spacingMd),
                 ],
               ),
             ),

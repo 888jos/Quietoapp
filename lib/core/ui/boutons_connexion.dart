@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../config/app_constants.dart';
 
-/// Boutons de connexion aux couleurs officielles des marques, comme sur
-/// toutes les apps : Apple en noir avec la pomme blanche, Google en blanc
-/// avec le « G » multicolore. Seule la forme (arrondi, hauteur) suit le
-/// style Quieto pour que la page reste cohérente.
+/// Boutons de connexion aux couleurs officielles des marques. Apple exige
+/// son bouton officiel (guideline 4, refus du 2026-08-05) : on utilise donc
+/// celui du paquet sign_in_with_apple, en blanc car nos fonds sont sombres.
+/// Google reste dessiné maison, en blanc avec le « G » multicolore.
 
 class BoutonConnexionApple extends StatelessWidget {
   final VoidCallback? onTap;
@@ -14,20 +15,43 @@ class BoutonConnexionApple extends StatelessWidget {
 
   const BoutonConnexionApple({super.key, this.onTap, this.isLoading = false});
 
+  static const _hauteur = 52.0;
+
   @override
   Widget build(BuildContext context) {
-    return _BoutonMarque(
-      onTap: onTap,
-      isLoading: isLoading,
-      background: Colors.black,
-      foreground: Colors.white,
-      label: 'Continuer avec Apple',
-      // La pomme Material est décalée un poil vers le haut pour être
-      // optiquement centrée face au texte, comme le bouton officiel.
-      logo: const Padding(
-        padding: EdgeInsets.only(bottom: 2),
-        child: Icon(Icons.apple, color: Colors.white, size: 24),
-      ),
+    if (isLoading) {
+      // Même gabarit que le bouton officiel, avec la roue d'attente.
+      return Container(
+        height: _hauteur,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SignInWithAppleButton(
+      onPressed: onTap == null
+          ? null
+          : () {
+              onTap!();
+              scheduleMicrotask(() => HapticFeedback.mediumImpact());
+            },
+      text: 'Continuer avec Apple',
+      height: _hauteur,
+      style: SignInWithAppleButtonStyle.white,
+      borderRadius: BorderRadius.circular(AppConstants.radiusLg),
     );
   }
 }

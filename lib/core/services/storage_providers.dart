@@ -33,41 +33,45 @@ final firstNameProvider = StateProvider<String>((ref) {
   return ref.read(storageServiceProvider).firstName;
 });
 
-/// DEV : passe ce flag à true pour bypasser le paywall pendant le développement.
-/// Garde-fou : grâce à `!kReleaseMode`, un build de RELEASE force TOUJOURS le
-/// paywall (peu importe la valeur ci-dessous) — impossible de shipper le bypass.
-const bool _kDevWantsPremiumBypass = false;
-const bool _devUnlockPremium = !kReleaseMode && _kDevWantsPremiumBypass;
-
 /// Notifier qui maintient l'état "isPremium" en temps réel.
 /// Écoute les mises à jour de RevenueCat via [Purchases.addCustomerInfoUpdateListener]
 /// pour réagir instantanément à tout changement (achat, restauration, annulation,
 /// expiration en milieu de session, etc.). Sans ça, l'état ne serait rafraîchi
 /// qu'au prochain démarrage de l'app.
 class SubscriptionNotifier extends StateNotifier<bool> {
-  SubscriptionNotifier(this._storage, this._devUnlock)
-      : super(_devUnlock || _storage.isPremium) {
+  SubscriptionNotifier(this._storage) : super(_storage.isPremium) {
     // revenueCatDisponible : sans clé dans le build, tout appel au SDK
     // natif s'écrase (fatalError) au lieu de renvoyer une erreur.
-    if (!_devUnlock && revenueCatDisponible) {
+    if (revenueCatDisponible) {
       Purchases.addCustomerInfoUpdateListener(_handleUpdate);
     }
   }
 
   final StorageService _storage;
-  final bool _devUnlock;
+
+  /// DEV : premium forcé par l'interrupteur du profil (tournage des vidéos).
+  /// Jamais persisté, et neutralisé en release (le bouton n'y existe pas et
+  /// la méthode ne fait rien) : impossible de shipper le bypass.
+  bool _devForce = false;
+
+  void devForcerPremium(bool actif) {
+    if (kReleaseMode) return;
+    _devForce = actif;
+    state = actif || _storage.isPremium;
+  }
 
   void _handleUpdate(CustomerInfo info) {
     final isPremium = info.entitlements.active
         .containsKey(AppConstants.entitlementPremium);
-    state = isPremium;
-    // Persiste pour que le prochain démarrage parte avec le bon état.
+    // Persiste pour que le prochain démarrage parte avec le bon état
+    // (jamais le forçage de test, uniquement le vrai statut).
     _storage.setIsPremium(isPremium);
+    state = _devForce || isPremium;
   }
 
   @override
   void dispose() {
-    if (!_devUnlock && revenueCatDisponible) {
+    if (revenueCatDisponible) {
       Purchases.removeCustomerInfoUpdateListener(_handleUpdate);
     }
     super.dispose();
@@ -78,8 +82,5 @@ class SubscriptionNotifier extends StateNotifier<bool> {
 /// API identique à avant : `ref.watch(subscriptionProvider)` renvoie un `bool`.
 final subscriptionProvider =
     StateNotifierProvider<SubscriptionNotifier, bool>((ref) {
-  return SubscriptionNotifier(
-    ref.watch(storageServiceProvider),
-    _devUnlockPremium,
-  );
+  return SubscriptionNotifier(ref.watch(storageServiceProvider));
 });

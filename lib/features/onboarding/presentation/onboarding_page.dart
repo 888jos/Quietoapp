@@ -14,7 +14,7 @@ import 'widgets/question_slide.dart';
 import '../../../core/ui/starry_background.dart';
 import 'widgets/text_input_slide.dart';
 
-/// Onboarding V2 orienté conversion (voir maquette_onboarding_v2.html) :
+/// Onboarding V2 orienté conversion :
 /// accueil respirant → prénom → objectifs (multi) → expérience → moment
 /// → durée → création du programme. Le 1er objectif coché nomme le programme.
 class OnboardingPage extends ConsumerStatefulWidget {

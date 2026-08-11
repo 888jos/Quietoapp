@@ -58,3 +58,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Captures d'écran QA (lourdes, régénérées à chaque session de test)
+rapports-qa/captures/

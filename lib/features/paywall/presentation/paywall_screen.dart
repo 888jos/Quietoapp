@@ -36,7 +36,7 @@ Color _t(double o) =>
 enum PaywallPlan { annual, monthly }
 
 class PaywallOffer {
-  final int trialDays; // 7 / 3  -> sous-titre + "X jours gratuits"
+  final int trialDays; // 7 / 3  -> "X jours gratuits" (carte tarif)
   final String pricePerMonth; // gros chiffre turquoise, ex "4,99 €"
   final String billingLine; // sous-ligne carte, ex "facturé 59,90 € par an"
   final String? saveBadge; // badge, ex "Économise 58 %" (null = pas de badge)
@@ -224,9 +224,12 @@ class _PaywallScreenState extends State<PaywallScreen>
                             const SizedBox(height: 24),
                             _timeline(),
                             const SizedBox(height: 22),
-                            _priceCard(),
-                            const SizedBox(height: 8),
+                            // Espace flexible AVANT la carte tarif : elle descend
+                            // contre le bloc d'action, la timeline garde tout
+                            // l'espace libre de l'écran.
                             const Expanded(child: SizedBox()),
+                            _priceCard(),
+                            const SizedBox(height: 16),
                             _actionBlock(),
                           ],
                         ),
@@ -323,33 +326,18 @@ class _PaywallScreenState extends State<PaywallScreen>
     );
   }
 
-  // ---- Titre + sous-titre
+  // ---- Titre
   Widget _titleBlock() {
-    return Column(
-      children: [
-        const Text(
-          'Comment marche\nton essai',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.w700,
-            height: 1.1,
-            letterSpacing: -0.56, // -0.02em * 28
-          ),
-        ),
-        const SizedBox(height: 9),
-        Text(
-          '${_offer.trialDays} jours gratuits, puis tu décides.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: _w(0.6),
-            fontSize: 15,
-            fontWeight: FontWeight.w400,
-            height: 1.4,
-          ),
-        ),
-      ],
+    return const Text(
+      'Comment marche\nton essai',
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        color: Colors.white,
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        height: 1.1,
+        letterSpacing: -0.56, // -0.02em * 28
+      ),
     );
   }
 
@@ -432,24 +420,46 @@ class _PaywallScreenState extends State<PaywallScreen>
 
   // ---- Timeline d'essai (3 étapes)
   Widget _timeline() {
+    // Mots-clés en blanc quasi pur + semi-gras : c'est le contraste avec le
+    // reste de la phrase qui les fait ressortir, pas la taille.
+    TextSpan em(String t) => TextSpan(
+          text: t,
+          style: TextStyle(color: _w(0.96), fontWeight: FontWeight.w600),
+        );
+    TextSpan tx(String t) => TextSpan(text: t);
+
     return Column(
       children: [
         _step(
           icon: Icons.lock_open_outlined,
           title: 'Aujourd\'hui',
-          desc: 'Débloque toutes les séances et Louane, en illimité.',
+          desc: [
+            em('Toutes les méditations'),
+            tx(', ton '),
+            em('programme personnalisé'),
+            tx(' et '),
+            em('Louane'),
+            tx(' en illimité.'),
+          ],
           last: false,
         ),
         _step(
           icon: Icons.notifications_none_outlined,
           title: _offer.reminderWhen,
-          desc: 'On te prévient avant la fin de l\'essai.',
+          desc: [
+            em('On te prévient'),
+            tx(' avant la fin de l\'essai (aucune mauvaise surprise).'),
+          ],
           last: false,
         ),
         _step(
           icon: Icons.workspace_premium_outlined,
           title: _offer.chargeWhen,
-          desc: 'Débité ${_offer.chargeDate}, annulable à tout moment.',
+          desc: [
+            tx('Ton abonnement commence '),
+            em(_offer.chargeDate),
+            tx('.'),
+          ],
           last: true,
         ),
       ],
@@ -459,7 +469,7 @@ class _PaywallScreenState extends State<PaywallScreen>
   Widget _step({
     required IconData icon,
     required String title,
-    required String desc,
+    required List<TextSpan> desc,
     required bool last,
   }) {
     return IntrinsicHeight(
@@ -486,7 +496,7 @@ class _PaywallScreenState extends State<PaywallScreen>
                     child: Container(
                       width: 2,
                       margin: const EdgeInsets.only(top: 5),
-                      constraints: const BoxConstraints(minHeight: 18),
+                      constraints: const BoxConstraints(minHeight: 26),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
@@ -503,7 +513,7 @@ class _PaywallScreenState extends State<PaywallScreen>
           // texte
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(top: 1, bottom: last ? 0 : 22),
+              padding: EdgeInsets.only(top: 1, bottom: last ? 0 : 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -517,11 +527,11 @@ class _PaywallScreenState extends State<PaywallScreen>
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    desc,
+                  Text.rich(
+                    TextSpan(children: desc),
                     style: TextStyle(
-                      color: _w(0.6),
-                      fontSize: 13,
+                      color: _w(0.72),
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w400,
                       height: 1.42,
                     ),
@@ -646,11 +656,16 @@ class _PaywallScreenState extends State<PaywallScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_outline, size: 14, color: _w(0.45)),
+              const Icon(Icons.lock_outline, size: 15, color: _kTurq),
               const SizedBox(width: 6),
               Text(
                 'Sans engagement · annulable à tout moment',
-                style: TextStyle(color: _w(0.45), fontSize: 12, height: 1.0),
+                style: TextStyle(
+                  color: _w(0.78),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.0,
+                ),
               ),
             ],
           ),
@@ -690,17 +705,10 @@ class _PaywallScreenState extends State<PaywallScreen>
             ),
           ),
         ),
-        // mention de renouvellement automatique (exigée par Apple, règle 3.1.2)
+        // légal — liens Conditions/Confidentialité exigés par Apple (règle 3.1.2).
+        // Le paragraphe de renouvellement auto a été retiré : la feuille de
+        // paiement Apple affiche déjà ces conditions à l'achat.
         const SizedBox(height: 14),
-        Text(
-          "L'abonnement se renouvelle automatiquement au tarif indiqué ci-dessus, "
-          "sauf annulation au moins 24 h avant la fin de la période en cours. "
-          "Gère ou résilie ton abonnement dans les réglages de ton compte.",
-          textAlign: TextAlign.center,
-          style: TextStyle(color: _w(0.4), fontSize: 11, height: 1.35),
-        ),
-        // légal
-        const SizedBox(height: 11),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

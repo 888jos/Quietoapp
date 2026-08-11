@@ -37,6 +37,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
 
   bool _busy = false; // achat / restauration en cours
   bool _autoClosed = false; // évite de refermer 2× quand aucune offre n'existe
+  bool _erreurTracee = false; // une seule trace Vigie par ouverture en erreur
 
   // Vigie : surface d'origine (onboarding, louane, categorie, profil, seance)
   // + heure d'ouverture → durée passée sur le paywall, et taux de conversion
@@ -63,6 +64,18 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   @override
   void initState() {
     super.initState();
+    // Le préchargement fait au lancement peut avoir échoué : à froid, le
+    // réseau/le store ne sont pas toujours prêts, et cet échec resterait en
+    // cache TOUTE la session (offeringProvider n'a pas d'autoDispose). C'était
+    // le bug « abonnements indisponibles » de la 1.0.14 (36 % des ouvertures).
+    // Donc à CHAQUE ouverture : si le cache n'a pas une offre achetable, on
+    // recharge — la personne navigue, le réseau est disponible maintenant.
+    final offres = ref.read(offeringProvider);
+    final achetable =
+        offres.valueOrNull?.availablePackages.isNotEmpty ?? false;
+    if (!offres.isLoading && !achetable) {
+      ref.invalidate(offeringProvider);
+    }
     // La croix de fermeture apparaît après 3 secondes (ADR-013)
     _closeTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) _showCloseButton.value = true;
@@ -281,6 +294,23 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     };
   }
 
+  /// Les placeholders du design embarquent des dates d'exemple (« le 3 juillet »).
+  /// Quand ils servent (debug sans produits, package manquant côté RC), on
+  /// recalcule les dates à partir d'aujourd'hui : une date fausse ne doit
+  /// JAMAIS s'afficher, seuls les prix d'exemple restent.
+  PaywallOffer _placeholderAvecVraiesDates(PaywallOffer p) {
+    final reminder = p.trialDays - 2;
+    return PaywallOffer(
+      trialDays: p.trialDays,
+      pricePerMonth: p.pricePerMonth,
+      billingLine: p.billingLine,
+      saveBadge: p.saveBadge,
+      reminderWhen: reminder <= 1 ? 'Demain' : 'Dans $reminder jours',
+      chargeWhen: 'Dans ${p.trialDays} jours',
+      chargeDate: _chargeDate(p.trialDays),
+    );
+  }
+
   String _chargeDate(int trial) {
     const mois = [
       'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
@@ -323,18 +353,28 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: _close,
+      error: (e, _) {
+        // Panne de chargement (réseau…) : jusqu'ici invisible dans la Vigie —
+        // seule l'offre vide était tracée. Une trace par ouverture.
+        if (!_erreurTracee) {
+          _erreurTracee = true;
+          ref.read(vigieProvider).log('paywall_erreur_chargement', {
+            'source': _vigieSource,
+          });
+        }
+        return Scaffold(
+          appBar: AppBar(
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: _close,
+            ),
           ),
-        ),
-        body: ErrorPlaceholder(
-          message: 'Aucun abonnement disponible pour le moment.',
-          onRetry: () => ref.invalidate(offeringProvider),
-        ),
-      ),
+          body: ErrorPlaceholder(
+            message: 'Aucun abonnement disponible pour le moment.',
+            onRetry: () => ref.invalidate(offeringProvider),
+          ),
+        );
+      },
       data: (offering) {
         // Aucun produit sur cette plateforme (Android tant que Play + RC ne
         // sont pas branchés) : en DEBUG on affiche quand même le paywall
@@ -402,6 +442,13 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
       if (p.packageType == PackageType.annual) annuel = p;
       if (p.packageType == PackageType.monthly) mensuel = p;
     }
+    // Release : offre présente mais AUCUN forfait annuel/mensuel résolu →
+    // le paywall montrerait les prix d'exemple avec un CTA mort (_onStart
+    // reçoit null). Mieux vaut l'écran « indisponible » avec réessai — et la
+    // trace paywall_offre_vide, sinon ce cas est invisible dans la Vigie.
+    if (!kDebugMode && annuel == null && mensuel == null) {
+      return _fermerSansPaywall();
+    }
     int? savePct;
     if (annuel != null &&
         mensuel != null &&
@@ -412,10 +459,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     }
     final offreAnnuel = annuel != null
         ? _buildOffer(annuel, annuel: true, savePct: savePct)
-        : PaywallOffer.placeholderAnnual;
+        : _placeholderAvecVraiesDates(PaywallOffer.placeholderAnnual);
     final offreMensuel = mensuel != null
         ? _buildOffer(mensuel, annuel: false)
-        : PaywallOffer.placeholderMonthly;
+        : _placeholderAvecVraiesDates(PaywallOffer.placeholderMonthly);
 
     return Scaffold(
       backgroundColor: AppColors.background,

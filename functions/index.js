@@ -705,17 +705,24 @@ async function appelVoix(client, historique, message, heure, jour, prenom, memoi
     max_tokens: 1000,
     // Le prompt système est coupé en deux : le bloc FIXE (personnalité +
     // catalogue + offre de parcours + lancement de séance, identique à
-    // chaque appel) est mis en CACHE Anthropic → relu à 10 % du tarif dès
-    // le 2ᵉ message d'une conversation (TTL 5 min). Le bloc VARIABLE
+    // chaque appel) est mis en CACHE Anthropic → relu à 10 % du tarif.
+    // TTL 1 h (et non 5 min) : le cache est PARTAGÉ entre tous les
+    // utilisateurs, mais notre trafic (~150 msgs/jour) laisse souvent plus
+    // de 5 min entre deux messages → avec le TTL court, les logs montraient
+    // 2 réécritures complètes (6 673 tokens à 125 %) pour 1 lecture. À 1 h,
+    // l'écriture coûte 2× mais n'arrive qu'après une vraie accalmie ; le
+    // reste de la journée, tout le monde lit à 10 %. Le bloc VARIABLE
     // (heure, mémoire, profil, parcours en cours, écoutes) vient après le
     // point de cache. ⚠️ Ne rien insérer avant ou dans le bloc fixe qui
     // varie d'un appel à l'autre, sinon le cache ne prend plus jamais.
+    // (Les prompts Haiku — Plume, Mémoire, Veilleur — font 300 à 1 000
+    // tokens : sous le minimum cachable de Haiku (4 096), inutile d'essayer.)
     system: [
       {
         type: "text",
         text: PROMPT_VOIX + CONSIGNE_CATALOGUE + CONSIGNE_PARCOURS_OFFRE +
           CONSIGNE_SEANCE_LANCEMENT + CONSIGNE_PRESENTATION,
-        cache_control: { type: "ephemeral" },
+        cache_control: { type: "ephemeral", ttl: "1h" },
       },
       {
         type: "text",

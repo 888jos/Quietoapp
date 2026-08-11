@@ -5,7 +5,7 @@
 //  Version simple, sans streaming (on l'ajoutera plus tard).
 // ============================================================
 
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const Anthropic = require("@anthropic-ai/sdk");
 
@@ -1215,6 +1215,83 @@ exports.trace = onCall(
     }
     await lot.commit();
     return { ok: true };
+  });
+
+// ============================================================
+//  Cloud Function "revenuecat" — la BOÎTE AUX LETTRES des abonnements.
+//  RevenueCat appelle cette URL (webhook) à chaque nouvelle : essai démarré,
+//  essai converti en payant, annulation, remboursement… C'est la seule façon
+//  de connaître l'ISSUE d'un essai : elle se joue chez Apple/Google des jours
+//  après, app fermée. Chaque nouvelle est rangée dans vigie_events avec l'ID
+//  Vigie de la personne (étiquette `vigie` posée par l'app via setAttributes
+//  à partir de la 1.0.15) pour croiser comportement pendant l'essai × issue.
+//  Sécurité : RevenueCat doit présenter le jeton RC_WEBHOOK_SECRET dans
+//  l'en-tête Authorization, sinon 401.
+// ============================================================
+const RC_WEBHOOK_SECRET = defineSecret("RC_WEBHOOK_SECRET");
+
+// Type RevenueCat (+ contexte) → type Vigie, en français comme le reste.
+function typeVigieDepuisRc(e) {
+  const essai = e.period_type === "TRIAL";
+  switch (e.type) {
+    case "INITIAL_PURCHASE": return essai ? "essai_demarre" : "achat_direct";
+    case "RENEWAL": return e.is_trial_conversion ? "essai_converti" : "abo_renouvele";
+    case "CANCELLATION": return essai ? "essai_annule" : "abo_annule";
+    case "UNCANCELLATION": return essai ? "essai_reactive" : "abo_reactive";
+    case "EXPIRATION": return essai ? "essai_expire" : "abo_expire";
+    case "BILLING_ISSUE": return "facturation_probleme";
+    case "PRODUCT_CHANGE": return "abo_changement";
+    case "TRANSFER": return "abo_transfert";
+    case "TEST": return "rc_test";
+    default: return ("rc_" + String(e.type || "inconnu").toLowerCase()).slice(0, 40);
+  }
+}
+
+exports.revenuecat = onRequest(
+  { secrets: [RC_WEBHOOK_SECRET], maxInstances: 1, concurrency: 8 },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).send("POST uniquement");
+      return;
+    }
+    if (req.get("Authorization") !== RC_WEBHOOK_SECRET.value()) {
+      res.status(401).send("non autorisé");
+      return;
+    }
+    const e = req.body && req.body.event;
+    if (!e || typeof e !== "object" || typeof e.type !== "string") {
+      res.status(400).send("payload inattendu");
+      return;
+    }
+
+    // L'étiquette posée par l'app (setAttributes). À défaut (versions d'app
+    // antérieures à la 1.0.15), on retombe sur l'ID RevenueCat : l'événement
+    // est quand même compté, juste pas encore croisable avec le parcours.
+    const attrs = e.subscriber_attributes || {};
+    const etiquette = attrs.vigie && typeof attrs.vigie.value === "string" ?
+      attrs.vigie.value : "";
+    const vigie = (etiquette || String(e.app_user_id || "rc_inconnu")).slice(0, 40);
+
+    await db.collection("vigie_events").doc().set({
+      vigie,
+      session: "revenuecat",
+      version: "webhook",
+      type: typeVigieDepuisRc(e),
+      props: nettoyerProps({
+        produit: e.product_id,
+        magasin: e.store,
+        env: e.environment,
+        prix: e.price_in_purchased_currency,
+        devise: e.currency,
+        raison: e.cancel_reason,
+        // Un remboursement arrive en CANCELLATION avec cette raison précise.
+        remboursement: e.cancel_reason === "CUSTOMER_SUPPORT" || undefined,
+        rc_user: e.app_user_id,
+      }),
+      tsc: Number(e.event_timestamp_ms) || null,
+      ts: FieldValue.serverTimestamp(),
+    });
+    res.status(200).json({ ok: true });
   });
 
 // ============================================================

@@ -1,0 +1,47 @@
+{
+  "_doc": "Catalogue des séances Quieto pour l'agent Bibliothécaire de Louane. Règle premium : catégorie marquée premium => toutes ses séances sont premium. Express : par séance. Découverte : gratuit. Garder ce fichier synchro avec lib/features/explore/data/explore_repository.dart.",
+  "_legende": { "premium": "true = nécessite Quieto Premium, false = accessible en gratuit" },
+  "seances": [
+    { "id": "express_1", "titre": "Avant un appel difficile", "but": "s'ancrer avant un appel", "duree_min": 1, "categorie": "express", "fichier": "express-avant-un-appel-difficile.mp3", "premium": false },
+    { "id": "express_2", "titre": "Transports bondés", "but": "calme dans la foule", "duree_min": 2, "categorie": "express", "fichier": "express-transports-bondes.mp3", "premium": false },
+    { "id": "express_3", "titre": "Petit déjeuner", "but": "gratitude au réveil", "duree_min": 2, "categorie": "express", "fichier": "express-petit-dejeuner.mp3", "premium": false },
+    { "id": "express_4", "titre": "Juste avant de dormir", "but": "relâcher avant le sommeil", "duree_min": 3, "categorie": "express", "fichier": "express-juste-avant-de-dormir.mp3", "premium": false },
+    { "id": "express_5", "titre": "Coup de stress au boulot", "but": "reprendre le contrôle", "duree_min": 2, "categorie": "express", "fichier": "express-coup-de-stress-au-boulot.mp3", "premium": true },
+    { "id": "express_6", "titre": "Après une dispute", "but": "se reconnecter à soi", "duree_min": 2, "categorie": "express", "fichier": "express-apres-une-dispute.mp3", "premium": true },
+    { "id": "express_7", "titre": "Réveil en panique", "but": "calmer l'angoisse au réveil", "duree_min": 2, "categorie": "express", "fichier": "express-reveil-en-panique.mp3", "premium": true },
+    { "id": "express_8", "titre": "Avant une présentation", "but": "calmer le trac", "duree_min": 2, "categorie": "express", "fichier": "express-avant-une-presentation.mp3", "premium": true },
+
+    { "id": "decouverte_1", "titre": "Ma première méditation", "but": "intro pour débutants", "duree_min": 6, "categorie": "decouverte", "fichier": "01-decouverte-premiere-meditation.mp3", "premium": false },
+    { "id": "decouverte_2", "titre": "Observer sans juger", "but": "accueillir ses pensées", "duree_min": 7, "categorie": "decouverte", "fichier": "02-decouverte-observer-sans-juger.mp3", "premium": false },
+    { "id": "decouverte_3", "titre": "Le moment présent", "but": "revenir ici et maintenant", "duree_min": 6, "categorie": "decouverte", "fichier": "03-decouverte-moment-present.mp3", "premium": false },
+
+    { "id": "actualite_1", "titre": "Quand le monde brûle", "but": "déconnecter du bruit info", "duree_min": 7, "categorie": "actualite", "fichier": "23-actualite-quand-le-monde-brule.mp3", "premium": true },
+    { "id": "actualite_2", "titre": "La guerre en bruit de fond", "but": "sérénité malgré l'actu", "duree_min": 8, "categorie": "actualite", "fichier": "24-actualite-la-guerre-en-bruit-de-fond.mp3", "premium": true },
+    { "id": "actualite_3", "titre": "Débrancher quand tout crie", "but": "pause loin des écrans", "duree_min": 8, "categorie": "actualite", "fichier": "25-actualite-debrancher-quand-tout-crie.mp3", "premium": true },
+    { "id": "actualite_4", "titre": "Recul sur l'actualité", "but": "poser son téléphone", "duree_min": 13, "categorie": "actualite", "fichier": "26-actualite-recul-sur-lactualite.mp3", "premium": true },
+    { "id": "actualite_5", "titre": "Pause info", "but": "prendre de la hauteur", "duree_min": 7, "categorie": "actualite", "fichier": "27-actualite-pause-info.mp3", "premium": true },
+
+    { "id": "stress_1", "titre": "Quand le stress prend le dessus", "but": "respiration anti-stress", "duree_min": 7, "categorie": "stress", "fichier": "08-stress-quand-le-stress-prend-le-dessus.mp3", "premium": true },
+    { "id": "stress_2", "titre": "Respiration 4-7-8", "but": "scan corporel", "duree_min": 5, "categorie": "stress", "fichier": "09-stress-respiration-4-7-8.mp3", "premium": true },
+    { "id": "stress_3", "titre": "Relâche", "but": "relâcher les muscles", "duree_min": 9, "categorie": "stress", "fichier": "10-stress-relache.mp3", "premium": true },
+    { "id": "stress_4", "titre": "Ancrage", "but": "revenir à soi en 3 min", "duree_min": 6, "categorie": "stress", "fichier": "11-stress-ancrage.mp3", "premium": true },
+    { "id": "stress_5", "titre": "Le voyageur qui s'arrête", "but": "calme profond", "duree_min": 12, "categorie": "stress", "fichier": "12-stress-le-voyageur-qui-sarrete.mp3", "premium": true },
+
+    { "id": "sleep_1", "titre": "Détente du soir", "but": "préparer l'endormissement", "duree_min": 13, "categorie": "sleep", "fichier": "13-sommeil-detente-du-soir.mp3", "premium": true },
+    { "id": "sleep_2", "titre": "Visualisation apaisante", "but": "voyage mental apaisant", "duree_min": 7, "categorie": "sleep", "fichier": "14-sommeil-visualisation-apaisante.mp3", "premium": true },
+    { "id": "sleep_3", "titre": "Rituel pré-sommeil", "but": "signaler au corps de dormir", "duree_min": 7, "categorie": "sleep", "fichier": "15-sommeil-rituel-pre-sommeil.mp3", "premium": true },
+    { "id": "sleep_4", "titre": "Entre deux mondes", "but": "respiration lente", "duree_min": 7, "categorie": "sleep", "fichier": "16-sommeil-entre-deux-mondes.mp3", "premium": true },
+    { "id": "sleep_5", "titre": "Plongée dans le silence", "but": "dissoudre les pensées", "duree_min": 6, "categorie": "sleep", "fichier": "17-sommeil-plongee-dans-le-silence.mp3", "premium": true },
+
+    { "id": "breathing_1", "titre": "Cohérence cardiaque", "but": "équilibrer le système nerveux", "duree_min": 4, "categorie": "breathing", "fichier": "04-respiration-coherence-cardiaque.mp3", "premium": true },
+    { "id": "breathing_2", "titre": "Respiration alternée", "but": "équilibrer les hémisphères", "duree_min": 5, "categorie": "breathing", "fichier": "05-respiration-respiration-alternee.mp3", "premium": true },
+    { "id": "breathing_3", "titre": "Souffle apaisant", "but": "calmer l'agitation", "duree_min": 8, "categorie": "breathing", "fichier": "06-respiration-souffle-apaisant.mp3", "premium": true },
+    { "id": "breathing_4", "titre": "Expansion thoracique", "but": "libérer la respiration", "duree_min": 9, "categorie": "breathing", "fichier": "07-respiration-expansion-thoracique.mp3", "premium": true },
+
+    { "id": "emotion_1", "titre": "Apprendre à s'aimer", "but": "regard doux sur soi", "duree_min": 8, "categorie": "emotion", "fichier": "18-emotion-apprendre-a-saimer.mp3", "premium": true },
+    { "id": "emotion_2", "titre": "Joie et énergie", "but": "retrouver la vitalité", "duree_min": 9, "categorie": "emotion", "fichier": "19-emotion-joie-et-energie.mp3", "premium": true },
+    { "id": "emotion_3", "titre": "De l'anxiété au sourire", "but": "anxiété vers légèreté", "duree_min": 14, "categorie": "emotion", "fichier": "20-emotion-de-lanxiete-au-sourire.mp3", "premium": true },
+    { "id": "emotion_4", "titre": "Peur et courage", "but": "apprivoiser la peur", "duree_min": 7, "categorie": "emotion", "fichier": "21-emotion-peur-et-courage.mp3", "premium": true },
+    { "id": "emotion_5", "titre": "L'amour", "but": "amour inconditionnel", "duree_min": 8, "categorie": "emotion", "fichier": "22-emotion-lamour.mp3", "premium": true }
+  ]
+}

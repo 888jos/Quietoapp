@@ -90,6 +90,8 @@ class VigieService {
 
   void _retiensEcran(String type, Map<String, Object?> props) {
     switch (type) {
+      case 'ecran':
+        _dernierEcran = '${props['nom'] ?? '?'}';
       case 'onboarding_etape':
         _dernierEcran = 'onboarding_${props['etape'] ?? '?'}';
       case 'paywall_affiche':

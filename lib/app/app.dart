@@ -16,10 +16,19 @@ class QuietoApp extends ConsumerStatefulWidget {
 
 class _QuietoAppState extends ConsumerState<QuietoApp>
     with WidgetsBindingObserver {
+  /// Dernière route notée par le greffier (évite les doublons quand le
+  /// routeur notifie sans changement de page).
+  String _derniereRoute = '';
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Greffier d'écrans (Vigie) : note automatiquement CHAQUE changement de
+    // page, y compris les pages futures — rien à ajouter quand une page naît,
+    // rien à retirer quand une page disparaît. On enregistre le MOTIF de la
+    // route ('/player/:sessionId'), jamais les valeurs : zéro donnée sensible.
+    appRouter.routerDelegate.addListener(_surChangementDeRoute);
     // Préchauffe les offres RevenueCat dès le lancement, pour TOUS les
     // utilisateurs (nouveaux comme abonnés revenant directement à la home).
     // Couplé au retrait d'autoDispose sur offeringProvider, les prix restent
@@ -60,8 +69,17 @@ class _QuietoAppState extends ConsumerState<QuietoApp>
 
   @override
   void dispose() {
+    appRouter.routerDelegate.removeListener(_surChangementDeRoute);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _surChangementDeRoute() {
+    final conf = appRouter.routerDelegate.currentConfiguration;
+    final route = conf.fullPath.isEmpty ? conf.uri.path : conf.fullPath;
+    if (route == _derniereRoute) return;
+    _derniereRoute = route;
+    ref.read(vigieProvider).log('ecran', {'nom': route});
   }
 
   /// Coupe la musique de fond quand l'app part en arrière-plan ou que le

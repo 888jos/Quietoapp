@@ -67,6 +67,11 @@ void main() async {
       await Purchases.setLogLevel(LogLevel.debug);
       await Purchases.configure(PurchasesConfiguration(revenueCatApiKey))
           .timeout(const Duration(seconds: 6));
+      // Étiquette Vigie sur le profil RevenueCat : le webhook (backend) s'en
+      // sert pour relier l'issue d'un essai — convertie ou annulée des jours
+      // plus tard chez Apple/Google, app fermée — au parcours anonyme de
+      // vigie_events. Posée à chaque lancement : se répare toute seule.
+      await Purchases.setAttributes({'vigie': vigie.id});
       debugPrint('[Main] RevenueCat configuré avec succès');
     } catch (e) {
       debugPrint('[Main] ERREUR configuration RevenueCat : $e');

@@ -11,6 +11,8 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../config/revenue_cat_config.dart';
+import 'storage_providers.dart';
+import 'vigie_service.dart';
 
 /// Connexion au compte utilisateur (Firebase Auth).
 ///
@@ -26,12 +28,17 @@ final utilisateurProvider = StreamProvider<User?>(
   (ref) => FirebaseAuth.instance.authStateChanges(),
 );
 
-final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+final authServiceProvider =
+    Provider<AuthService>((ref) => AuthService(ref.read(vigieProvider)));
 
 /// Résultat d'une tentative de connexion, pour que l'UI sache quoi afficher.
 enum AuthResultat { ok, annule, erreur }
 
 class AuthService {
+  AuthService(this._vigie);
+
+  final VigieService _vigie;
+
   FirebaseAuth get _auth => FirebaseAuth.instance;
 
   /// Le bouton Apple ne se montre que sur iPhone/iPad : sur Android le
@@ -119,6 +126,10 @@ class AuthService {
     if (user == null || !revenueCatDisponible) return;
     try {
       await Purchases.logIn(user.uid);
+      // Repose l'étiquette Vigie : au passage anonyme → compte, RevenueCat
+      // change de profil, et le webhook doit garder le lien avec le parcours
+      // (surtout si l'achat suit dans la même session, pendant l'onboarding).
+      await Purchases.setAttributes({'vigie': _vigie.id});
       final email = user.email;
       if (email != null && email.isNotEmpty) {
         await Purchases.setEmail(email);

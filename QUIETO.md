@@ -1,40 +1,55 @@
 # Quieto — c'est quoi ?
 
 > Document de présentation. À donner tel quel à une IA (ou une personne) pour comprendre vite ce qu'est Quieto et où le projet va.
-> Mainteneur : Cofonde · Version de l'app : **1.0.4** · Plateformes : **iOS + Android**
+> Mainteneur : Cofonde · Version de l'app : **1.0.15** · Plateformes : **iOS + Android**
+> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu).
 
 ## En une phrase
-**Quieto est une application de méditation guidée en français**, pensée pour rendre la méditation simple et accessible : des séances courtes, ancrées dans les vrais moments de la journée (un appel difficile, les transports, juste avant de dormir…).
+**Quieto est une application de méditation guidée en français**, pensée pour rendre la méditation simple et accessible : des séances courtes, ancrées dans les vrais moments de la journée (un appel difficile, les transports, juste avant de dormir…), et **Louane**, une compagnonne IA qui accompagne l'utilisateur au quotidien.
 
 ## Pour qui / quel problème
 Des francophones stressés, qui dorment mal, ou en surcharge mentale (boulot, actualité, émotions). Débutants comme habitués. Le pari : pas de jargon, pas de gamification compliquée — juste une voix qui guide et une ambiance calme.
 
 ## Le but
 Devenir **l'app de méditation francophone de référence** (face à Petit BamBou, Calm, Headspace).
-La différenciation : la **simplicité** et **l'ancrage dans le quotidien** — des micro-méditations (1 à 3 min) pour des situations concrètes, là où les concurrents proposent surtout des programmes longs et génériques.
+- **Phase 1 : le marché français** — prendre la place de n°2 français (vacante), viser 30-40 k$/mois.
+- **Phase 2 : l'international.**
+
+La différenciation : la **simplicité**, **l'ancrage dans le quotidien** (micro-méditations de 1 à 3 min pour des situations concrètes, là où les concurrents proposent des programmes longs et génériques) et **Louane**, le compagnon IA qu'aucun concurrent n'a.
+
+## La fonctionnalité principale : Louane
+Une **compagnonne IA** intégrée à l'app — un personnage dessiné en code (visage rond turquoise, yeux qui clignent, sourire), pas une image. Elle :
+- **discute** avec l'utilisateur (chat) et recommande la bonne séance selon son humeur ;
+- **compose le « programme »** : un parcours personnalisé de 7 jours, avec étoiles de progression.
+
+Côté serveur : Cloud Functions `louane` et `genererParcours` (Claude — Voix sur Sonnet, rôles Plume/Mémoire/Veilleur sur Haiku). C'est la meilleure surface de conversion de l'app — Louane reste accessible aux utilisateurs gratuits, c'est voulu.
 
 ## Ce que Quieto fait aujourd'hui
 **Parcours utilisateur :**
-Onboarding personnalisé (quelques questions sur ton état émotionnel + ton prénom) → Accueil personnalisé → Explorer les catégories → Écran de préparation → Lecteur audio (avec mini-lecteur qui suit l'utilisateur) → Profil avec statistiques (minutes méditées, séances terminées).
+Onboarding personnalisé (questions sur ton état émotionnel + prénom + proposition Apple Santé) → compte Apple / Google ou « Continuer sans compte » → Accueil personnalisé → Louane (chat + programme 7 jours) ou Explorer les catégories → Lecteur audio (contrôles sur écran verrouillé, mini-lecteur qui suit l'utilisateur) → Profil avec statistiques (minutes méditées, séances terminées) et carte de partage.
 
-**Contenu :** 7 catégories, **35 séances** de 1 à 14 min (Express, Découverte, Stress & Anxiété, Sommeil, Respiration, Émotions, Actualité & Surcharge mentale). Liste complète dans `SEANCES.md`.
+**Contenu :** 7 catégories, **35 séances** de 1 à 14 min (Express « Une minute pour toi », Découverte, Actualité & Surcharge mentale, Stress & Anxiété, Sommeil, Respiration, Émotions). Le catalogue est défini dans `lib/features/explore/data/explore_repository.dart`.
+
+**Apple Santé / Health Connect :** les minutes de pleine conscience sont enregistrées dans l'app Santé du téléphone.
 
 **Modèle économique :** freemium.
-- **Gratuit** : la catégorie Découverte + les Express de base.
-- **Premium** : tout le reste, via un abonnement à **4,99 €/mois**, avec **essai gratuit de 7 jours**.
+- **Gratuit** : la catégorie Découverte + les Express de base, et Louane (non bridée).
+- **Premium** : tout le reste — **essai gratuit de 7 jours**, puis **89 €/an** ou **16,90 €/mois**. Stratégie assumée : l'annuel d'abord (le mensuel est volontairement cher pour ancrer le prix).
 - Paiements gérés par RevenueCat (App Store + Google Play).
 
-**Technique :** app **Flutter** (un seul code pour iOS + Android). Les audios sont hébergés sur **Firebase Storage** et lus en streaming (donc, aujourd'hui, connexion requise pour écouter).
+**Analytics :** la « Vigie », outil maison — événements envoyés par l'app à la Cloud Function `trace` → Firestore, webhook RevenueCat pour l'issue des essais, dashboard local (`~/dev/Quieto IA/analytics`).
+
+**Technique :** app **Flutter** (un seul code pour iOS + Android). Audios hébergés sur **Firebase Storage**, lus en streaming (connexion requise). Backend : Cloud Functions (`~/dev/quieto-backend`).
 
 ## Ce que Quieto va devenir (vision / prochaines étapes)
+- **Mieux convertir** — chantier en cours : paywall plus transparent (« 0 € aujourd'hui, 89 € le [date], rappel la veille »), croisement comportement × conversion via la Vigie.
 - **Écoute hors-ligne** — télécharger / mettre en cache les séances pour écouter sans connexion.
 - **Plus de contenu** — de nouvelles séances et catégories ajoutées régulièrement.
 - **Rappels & habitude** — notifications et séries (streaks) pour aider à méditer chaque jour.
-- **Autres langues** — une version anglaise et une ouverture à l'international.
-- **Louane** — un **compagnon IA** intégré à l'app : il discute avec l'utilisateur, lui recommande la bonne séance selon son humeur, et l'accompagne au quotidien. *(Vision — pas encore construit.)*
+- **International** (phase 2) — version anglaise et ouverture au-delà du marché français.
 
 ## Stack technique (pour une IA dev)
-Flutter / Dart · Riverpod (état) · go_router (navigation) · just_audio + audio_service (lecture audio + contrôles écran verrouillé) · RevenueCat (`purchases_flutter`, abonnements) · Firebase Storage (audios) · shared_preferences (stockage local des préférences et de la progression).
+Flutter / Dart · Riverpod (état) · go_router (navigation) · just_audio + audio_service (lecture audio + contrôles écran verrouillé) · RevenueCat (`purchases_flutter`, abonnements) · Firebase — projet `quieto-06` : Auth (Apple / Google / anonyme), Cloud Functions, Storage (audios), App Check · shared_preferences (préférences et progression locales).
 
 ## Direction artistique (design system)
 
@@ -95,7 +110,8 @@ Réutiliser ces composants plutôt que de redessiner des boutons/cartes à la ma
 Fonds clairs · un 2ᵉ accent coloré · coins carrés · ombres dures/noires · texte gris peu lisible · animations rapides ou qui clignotent · grosses illustrations lourdes quand un dessin en code suffit.
 
 ## Pour aller plus loin (docs du projet)
-- `SEANCES.md` — catalogue complet des 35 séances.
+- `lib/features/explore/data/explore_repository.dart` — le catalogue complet des 35 séances (l'ancien `SEANCES.md` n'existe plus).
 - `SPECS.md` — spécifications produit détaillées.
 - `ARCHITECTURE.md` — structure technique du code.
 - `DECISIONS.md` — choix techniques et pourquoi.
+- `~/dev/JOURNAL-QUIETO.md` — journal de bord (état du projet, chiffres clés, prochaines actions).

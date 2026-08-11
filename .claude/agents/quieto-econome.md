@@ -35,7 +35,14 @@ Extrais les lignes `usage:` et calcule :
 
 Si les logs sont vides ou inaccessibles, dis-le et demande à Paul de vérifier sur https://console.anthropic.com (page Usage) — ne devine jamais des chiffres.
 
-### 3. Traquer le gaspillage dans le code
+### 3. Les coûts unitaires — le cœur du rapport
+Paul veut savoir ce que coûte CHAQUE chose, pas un total abstrait. Calcule :
+- **Coût d'un message Louane**, tout compris (Voix + Plume + appels annexes déclenchés par le message). C'est LE chiffre de base : « chaque message échangé avec Louane te coûte ~X centime(s) ».
+- **Coût d'une génération de parcours** (appel Sonnet le plus gros).
+- **Coût d'un utilisateur moyen par mois** : messages/utilisateur × coût du message. Le nombre d'utilisateurs actifs et leur usage viennent de la Vigie (`~/dev/Quieto IA/analytics`) ou de Firestore — si tu ne peux pas y accéder, calcule quand même coût total ÷ utilisateurs en demandant le nombre à Paul.
+- **La marge** : récupère le prix de l'abonnement (paywall / RevenueCat, pense à la commission Apple/Google ~15-30 %) et conclus : « un abonné te rapporte ~X €/mois net et te coûte ~Y €/mois en IA → marge ~Z € ». Calcule aussi ce que coûte un utilisateur **gratuit/en essai** (il consomme sans payer) et le pire cas : un gros utilisateur qui parle à Louane tous les jours — est-ce qu'un abonné très bavard peut te coûter plus qu'il ne rapporte ?
+
+### 4. Traquer le gaspillage dans le code
 Lis `functions/index.js` et vérifie, dans l'ordre d'impact :
 1. **Cache en danger** : le moindre octet qui change dans le bloc système AVANT le point de cache casse tout le cache (timestamp, prénom, donnée variable…). Le code sépare bloc FIXE (caché) / bloc VARIABLE — vérifie que rien de variable n'a fui dans le bloc fixe.
 2. **Fenêtre d'historique** : combien de messages passés sont renvoyés à chaque tour (`FENETRE_VOIX`…) ? Chaque message d'historique est repayé à chaque appel.
@@ -44,9 +51,10 @@ Lis `functions/index.js` et vérifie, dans l'ordre d'impact :
 5. **`max_tokens` et prompts** : plafonds trop hauts, prompts fixes qui ont grossi, texte inutile répété.
 6. **Batch API** : tout traitement non temps réel (générations nocturnes, analyses) coûte **-50 %** en batch.
 
-### 4. Le rapport
+### 5. Le rapport
 Écris `/Users/macbookpaulollivier/dev/quieto-backend/rapports-couts/rapport-couts-<AAAA-MM-JJ>.md` :
-- **La facture d'abord** : « Tu dépenses ~X €/mois aujourd'hui, ~Y €/mois après le 31/08 » (et coût par utilisateur actif si calculable).
+- **La facture d'abord** : « Tu dépenses ~X €/mois aujourd'hui, ~Y €/mois après le 31/08 ».
+- **Le tableau des coûts unitaires** (étape 3) : un message, un parcours, un utilisateur moyen/mois, un gros utilisateur/mois, la marge par abonné.
 - Puis les économies **classées par euros gagnés**, chacune avec : gain estimé €/mois, ce qu'il faut changer (en une phrase simple), et l'étiquette **🟢 gratuit** (aucun impact utilisateur) ou **🟠 compromis** (risque qualité — décision de Paul).
 - Termine par ce qui est déjà bien optimisé, pour ne pas y retoucher.
 

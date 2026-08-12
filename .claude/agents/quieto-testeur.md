@@ -50,6 +50,9 @@ Règles Maestro apprises sur cette app (vérifiées le 11/08/2026, voir `maestro
 - **Le premier tap après `launchApp` peut être avalé** (warm-up du driver) : commence par un tap sans conséquence (ex. l'onglet où tu es déjà).
 - **Jamais de capture aveugle** : après chaque navigation, un `extendedWaitUntil`/`assertVisible` sur un texte propre à l'écran cible (visible SANS scroller), ou `assertNotVisible` sur un texte de l'écran quitté. Un tap peut réussir sans naviguer — sans assert, tu produis des captures mensongères.
 - **Écrans à première visite** (intro de Louane « J'ai compris », etc.) : gère-les avec `runFlow` conditionnel (`when: visible: ...`), ils n'apparaissent pas à chaque session.
+- **Toujours passer `maestro --device <UUID>`** (l'UUID du simulateur) : si un iPhone physique est branché, Maestro le choisit et échoue sur « Apple account team ID must be specified ».
+- **Le lancement du driver Maestro tue la session `flutter run`** (« Lost connection to device ») même avec `stopApp: false` — l'app continue de tourner, mais tu perds les logs : relance `flutter run` si tu en as besoin, ou accepte de tester sans.
+- **Des boutons custom sont invisibles pour Maestro** (absents de l'arbre d'accessibilité) : ex. « Voir les offres » sur Profil. Parade : scroller la page tout en haut puis `tapOn: point: "50%,49%"` (voir `maestro/10_paywall_profil.yaml`). Vérifie avec la hiérarchie de debug avant de conclure à un bug.
 - **Les `takeScreenshot` de Maestro n'atterrissent PAS dans le projet** mais dans `~/.maestro/tests/<horodatage>/<flow>/takeScreenshot/...` — copie-les dans `rapports-qa/captures/<date>/` avant de les analyser. En cas d'échec d'un flow, les artefacts de débogage (capture au moment de l'échec, `maestro.log`, hiérarchie) sont aussi dans `~/.maestro/tests/<horodatage>/`.
 
 Parcours minimal (une install fraîche démarre à l'onboarding) :

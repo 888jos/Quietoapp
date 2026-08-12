@@ -74,7 +74,10 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     final achetable =
         offres.valueOrNull?.availablePackages.isNotEmpty ?? false;
     if (!offres.isLoading && !achetable) {
-      ref.invalidate(offeringProvider);
+      // Pas `ref.invalidate` ici : dans initState il fait crasher la page
+      // (il écoute le ProviderScope, interdit avant la fin d'initState).
+      ProviderScope.containerOf(context, listen: false)
+          .invalidate(offeringProvider);
     }
     // La croix de fermeture apparaît après 3 secondes (ADR-013)
     _closeTimer = Timer(const Duration(seconds: 3), () {

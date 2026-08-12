@@ -2,24 +2,27 @@
 
 ## Variables à configurer avant le build
 
-### RevenueCat (obligatoire pour la prod)
+### RevenueCat (obligatoire pour la prod) — maj 12/08/2026
 
-La clé API est dans `lib/core/config/revenue_cat_config.dart` :
+Les clés ne sont **plus dans le code** : elles vivent dans `.env.json` (non versionné, à la racine du repo) et sont injectées au build via
 
-```dart
-const String revenueCatApiKey = 'appl_tQodjeAtfHBnYjPSgcQUGjiRAvi';
+```bash
+flutter run --dart-define-from-file=.env.json     # idem pour flutter build ipa / appbundle
 ```
+
+`lib/core/config/revenue_cat_config.dart` les lit avec `String.fromEnvironment('REVENUE_CAT_KEY')` (iOS) et `REVENUE_CAT_KEY_ANDROID`. ⚠️ Sans ce flag, les clés sont vides et les achats ne marchent pas (paywall sans produits).
 
 RevenueCat est initialisé automatiquement dans `main.dart` au démarrage.
 Obtenir ou renouveler les clés sur : https://app.revenuecat.com → Project Settings → API Keys
 
 ---
 
-## Ajouter des fichiers audio
+## Ajouter des fichiers audio (maj 12/08/2026)
 
-1. Placer les fichiers `.mp3` dans `assets/audio/`
-2. Vérifier que le nom correspond exactement au champ `audioFile` dans `HomeRepository`
-3. `flutter pub get` (les assets sont déclarés via `assets/audio/` dans pubspec.yaml)
+Les séances sont sur **Firebase Storage** (projet `quieto-06`), lues en streaming — plus rien à embarquer dans l'app.
+
+1. Uploader le `.mp3` **à plat** dans le bucket Storage (pas de sous-dossiers) : le lecteur ne garde que le nom de fichier du champ `audioFile` et construit l'URL avec `AppConstants.audioBaseUrl` (voir `audio_handler.dart`). Nom en ASCII pur — voir ADR-024.
+2. Déclarer la séance dans `lib/features/explore/data/explore_repository.dart` **et** dans le catalogue backend `quieto-backend/functions/catalogue_seances.json` (« garder synchro avec l'app ») pour que Louane et `genererParcours` la connaissent.
 
 Format recommandé : MP3 128kbps, mono, normalisé à -16 LUFS.
 
@@ -46,7 +49,7 @@ Pour la lecture en arrière-plan, ajouter dans `ios/Runner/Info.plist` :
 ## Android — Configuration
 
 ### Bundle ID
-`com.quieto.quieto` — dans `android/app/build.gradle.kts` : `applicationId`. ⚠️ Différent de l'iOS (`com.quietoapp.app`) — à aligner avant la release Android.
+`com.quieto.quieto` — dans `android/app/build.gradle.kts` : `applicationId`. ⚠️ Différent de l'iOS (`com.quietoapp.app`) — c'est resté ainsi en prod (l'app est sortie sur les deux stores avec ces IDs), ne plus chercher à les aligner. (maj 12/08/2026)
 
 ### Permissions (AndroidManifest.xml)
 `just_audio` ne nécessite pas de permissions supplémentaires pour les assets locaux.
@@ -63,14 +66,13 @@ Pour la lecture en arrière-plan, ajouter dans `ios/Runner/Info.plist` :
 
 ---
 
-## Checklist avant release
+## Checklist avant release (maj 12/08/2026)
 
-- [ ] Remplacer les clés RevenueCat placeholders
-- [ ] Ajouter les vrais fichiers audio dans `assets/audio/`
-- [ ] Configurer Bundle ID iOS et Android
-- [ ] Activer la lecture audio en arrière-plan (iOS Info.plist)
 - [ ] Tester le flow d'achat en sandbox RevenueCat
 - [ ] `flutter analyze` → 0 issue
 - [ ] `flutter test` → tous verts
-- [ ] Build release iOS : `flutter build ipa`
-- [ ] Build release Android : `flutter build appbundle`
+- [ ] Build release iOS : `flutter build ipa --dart-define-from-file=.env.json`
+- [ ] Build release Android : `flutter build appbundle --dart-define-from-file=.env.json`
+- [ ] Mettre à jour `QUIETO.md` + la fiche mémoire fonctionnalités (règle de release)
+
+(Les anciens points « clés placeholders », « audio dans assets/ », « configurer les Bundle ID », « background audio iOS » sont réglés depuis longtemps — voir sections ci-dessus.)

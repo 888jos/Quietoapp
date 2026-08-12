@@ -208,6 +208,8 @@ Note : `CategoryBubble` (scroll horizontal) supprimé — le scroll horizontal d
 
 ## ADR-019 — Paywall natif RevenueCat (PaywallView)
 
+> ⚠️ Remplacée par **ADR-025** (12/08/2026) — le paywall est redevenu un écran Flutter maison.
+
 **Décision** : `PaywallPage` utilise `PaywallView` de `purchases_ui_flutter`. L'UI du paywall est entièrement gérée par RevenueCat depuis son dashboard — plus de code Flutter custom pour les offres, le pricing ou le design.
 
 **Pourquoi** : Maintenir un paywall Flutter custom (texte hardcodé, prix fixe, logique d'achat) impliquait de recompiler et republier l'app à chaque changement d'offre ou de prix. `PaywallView` charge la configuration depuis le dashboard RevenueCat en temps réel, permet les A/B tests natifs, et gère automatiquement les états de chargement, les erreurs et la restauration des achats.
@@ -297,3 +299,35 @@ assets/images/sessions/
 **Pourquoi** : La transition directe onboarding → paywall est abrupte. La page de loading crée une attente intentionnelle (5s) qui suggère une personnalisation en cours (engagement psychologique). Les animations de vagues et particules renforcent l'atmosphère apaisante de l'app. La page preview montre à l'utilisateur les séances qui l'attendent, justifiant ainsi l'abonnement avant d'arriver sur le paywall.
 
 **Implémentation** : `OnboardingLoadingPage` est un `ConsumerStatefulWidget` avec `TickerProviderStateMixin` (3 `AnimationController` : progression 5000ms, vagues 2000ms en boucle, particules 3000ms en boucle). `_WavePainter` et `_ParticlePainter` sont des `CustomPainter` — rendu bas niveau via `Canvas.drawOval` / `Canvas.drawCircle`. `OnboardingPreviewPage` est un `ConsumerWidget` — zéro état local. Le prénom est mis à jour dans `firstNameProvider` (StateProvider) immédiatement après la sauvegarde dans SharedPreferences, pour que les deux pages lisent le bon prénom sans re-lecture du stockage.
+
+---
+
+## ADR-025 — Retour au paywall Flutter maison (remplace ADR-019)
+
+*Consignée le 12/08/2026 (Scribe) — décision prise durant l'été 2026, branche `feat/paywall-flutter`.*
+
+**Décision** : Le paywall est de nouveau un écran Flutter maison (`lib/features/paywall/presentation/paywall_screen.dart`) ; le `PaywallView` natif de `purchases_ui_flutter` n'est plus utilisé. Les offres et prix réels restent chargés depuis RevenueCat (`purchases_flutter`).
+
+**Pourquoi** : le chantier conversion exigeait un contrôle total de l'écran — d'après les commits : paywall jamais fermé en silence (`f16eb92`, release 1.0.12), prix réels RevenueCat + bypass dev coupé (`fa09657`), cache + préchargement des offres et croix isolée (`4aeef03`), et étiquette Vigie de la surface d'origine `?from=premium&src=…` (`7d9a5c5`, 1.0.15).
+
+**Sources** : historique git de `feat/paywall-flutter`, `app/router.dart` (`AppRoutes.paywallDepuis`).
+
+---
+
+## ADR-026 — App verrouillée en mode portrait
+
+*Consignée le 12/08/2026 (Scribe) — décision du 11/08/2026, commit `531dda1`.*
+
+**Décision** : L'app ne bascule plus jamais en paysage — verrou posé côté Flutter, `ios/Runner/Info.plist` (`UIRequiresFullScreen`) et manifest Android. Le « mode paysage pour le player » de la roadmap SPECS est abandonné.
+
+**À vérifier** : comportement réel en penchant le téléphone au prochain build (note du journal de bord).
+
+---
+
+## ADR-027 — Tarifs : stratégie « annuel d'abord »
+
+*Consignée le 12/08/2026 (Scribe) — stratégie assumée par Paul (journal de bord, 11-12/08/2026).*
+
+**Décision** : Essai gratuit 7 jours puis **89 €/an** ou **16,90 €/mois**. Le mensuel est volontairement cher pour ancrer le prix ; on ne remet pas le mensuel en avant.
+
+**Pourquoi** : l'annuel est la base du revenu stable (le churn mensuel est rapide) ; objectif 30-40 k$/mois sur le marché français (~3 200 abonnés au mix 80/20 actuel).

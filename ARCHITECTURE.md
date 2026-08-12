@@ -1,61 +1,34 @@
 # Architecture — Quieto
 
+> Maj 12/08/2026 — ajout des features Louane & Parcours, nav 3 onglets (Accueil / Louane / Profil), stack et navigation resynchronisées avec le code (v1.0.15+22).
+
 ## Vue d'ensemble
 
 Quieto suit une **architecture feature-first** avec une séparation stricte entre logique métier et UI.
 
 ```
 lib/
-├── app/              # Racine de l'app (routing, shell de navigation)
+├── app/              # Racine : router.dart (routes + AppRoutes), home_shell.dart (bottom nav), splash, transitions
 ├── core/             # Partagé entre toutes les features
-│   ├── config/       # Constantes globales (AppConstants, AppRoutes)
-│   ├── models/       # Entités de données (immuables)
-│   ├── services/     # Services techniques (StorageService, storage_providers)
-│   ├── theme/        # Design system (couleurs, typographie, thème)
-│   └── ui/           # Composants réutilisables (AppButton, AppCard…)
+│   ├── config/       # AppConstants, RevenueCatConfig (AppRoutes vit dans app/router.dart)
+│   ├── models/       # CategoryModel, SessionModel, ParcoursModel, UserProgressModel
+│   ├── services/     # StorageService, AuthService, HealthService, NotificationService, AmbientMusic, VigieService
+│   ├── theme/        # Design system (couleurs, typographie, thème, transitions fondu)
+│   └── ui/           # AppButton, AppCard, AppScaffold, StarryBackground, boutons de connexion…
 └── features/         # Domaines métier
-    ├── onboarding/
-    │   ├── presentation/
-    │   │   ├── onboarding_page.dart
-    │   │   └── widgets/
-    │   │       ├── intro_slide.dart
-    │   │       ├── question_slide.dart
-    │   │       ├── text_input_slide.dart
-    │   │       └── progress_bar.dart
-    │   └── onboarding_providers.dart
-    ├── home/
-    │   ├── data/
-    │   │   └── home_repository.dart
-    │   ├── presentation/
-    │   │   ├── home_page.dart
-    │   │   └── widgets/
-    │   │       ├── featured_session_card.dart
-    │   │       └── category_list_card.dart
-    │   └── home_providers.dart
-    ├── explore/
-    │   ├── data/
-    │   │   └── explore_repository.dart
-    │   ├── presentation/
-    │   │   ├── explore_page.dart
-    │   │   ├── category_detail_page.dart
-    │   │   └── widgets/
-    │   │       └── session_card.dart
-    │   └── explore_providers.dart
-    ├── player/
-    │   ├── data/
-    │   │   ├── player_repository.dart
-    │   │   └── audio_handler.dart     # QuietoAudioHandler (BaseAudioHandler + SeekHandler)
-    │   ├── presentation/
-    │   │   ├── preparation_page.dart  # Écran de préparation (5s timer + fade) avant chaque séance
-    │   │   ├── player_page.dart
-    │   │   └── widgets/
-    │   │       └── mini_player.dart   # Mini player persistant (au-dessus de la bottom nav)
-    │   └── player_providers.dart      # activeSessionIdProvider (StateProvider<String?>)
-    ├── profile/
-    │   ├── presentation/
-    │   │   └── profile_page.dart
-    │   └── profile_providers.dart
-    └── paywall/
+    ├── onboarding/   # V2 conversion : connexion (Apple/Google), questions, loading, ready,
+    │                 #   santé (iOS), respiration (breath), trust — + data/weekly_program.dart
+    ├── home/         # Accueil : home_page + widgets (night_sky_header, glowing_moon, parcours_card…)
+    ├── louane/       # Compagnonne IA : louane_page (chat), louane_avatar (dessiné en code),
+    │                 #   carte_seance_louane, rituel sommeil, data/ (repository, messages, heure de Paris)
+    ├── parcours/     # Programme 7 jours créé par Louane : parcours_creation_page (le moment « wow »),
+    │                 #   parcours_page, constellation d'étoiles, carte de partage
+    ├── explore/      # Catalogue : data/explore_repository.dart (LES 35 séances),
+    │                 #   category_detail_page — il n'y a PLUS de page « Explorer » dans la nav
+    ├── player/       # preparation_page, lancement_page (animation Louane), player_page,
+    │                 #   mini_player, data/audio_handler.dart (QuietoAudioHandler)
+    ├── profile/      # profile_page (stats, réglages, compte)
+    └── paywall/      # Paywall Flutter maison : paywall_page + paywall_screen (offres via RevenueCat)
 ```
 
 ## Stack technique
@@ -67,9 +40,17 @@ lib/
 | Audio | `just_audio ^0.9.36` |
 | Audio background | `audio_service ^0.18.0` |
 | Stockage local | `shared_preferences ^2.2.0` |
-| Achats in-app | `purchases_flutter ^9.14.0` + `purchases_ui_flutter ^9.14.0` (RevenueCat) |
-| Icônes | `iconsax_flutter ^1.0.0` |
+| Achats in-app | `purchases_flutter ^9.14.0` + `purchases_ui_flutter ^9.0.0` (RevenueCat) |
+| Firebase | `firebase_core`, `firebase_auth`, `firebase_app_check`, `cloud_functions` (Louane, trace, genererParcours) |
+| Comptes | `google_sign_in`, `sign_in_with_apple` (+ `crypto`) |
+| Santé | `health ^13.3.1` (Apple Santé / Health Connect) |
+| Notifications | `flutter_local_notifications ^22.0.0` + `timezone` / `flutter_timezone` |
+| Voix (Louane) | `speech_to_text ^7.4.0`, `flutter_tts ^4.2.5` |
+| Partage | `share_plus ^11.0.0` + `path_provider` (version contrainte — voir le commentaire dans `pubspec.yaml`) |
+| Icônes | `iconsax_flutter ^1.0.0`, `material_symbols_icons` |
 | Liens URL | `url_launcher ^6.3.0` |
+
+(maj 12/08/2026 — liste resynchronisée avec `pubspec.yaml`)
 
 ## Flux de données
 
@@ -98,23 +79,33 @@ Regroupe un ensemble de `SessionModel`. Champs clés : `isPremium` (bool — acc
 ### SessionModel
 Unité de contenu : une séance de méditation avec son fichier audio (`audioFile` — chemin ASCII relatif sous `assets/audio/`), son image de couverture optionnelle (`imageFile` — chemin sous `assets/images/sessions/<categorie>/`), sa durée, et son statut premium.
 
+### ParcoursModel (ajouté — maj 12/08/2026)
+Le programme 7 jours créé par Louane : 7 `ParcoursJour` (une séance du catalogue par jour + un mot d'elle). Généré par la Cloud Function `genererParcours`, persisté en SharedPreferences ; les infos de séance (titre, durée, premium) sont résolues côté serveur et stockées dans le modèle pour que l'affichage ne casse jamais si le catalogue bouge.
+
 ### UserProgressModel
 Suivi de la progression utilisateur : sessions complétées, positions sauvegardées, total de minutes. Sérialisé en JSON dans SharedPreferences.
 
 ## Navigation
 
 ```
-/ (splash)  ──► /onboarding ──► /onboarding-loading ──► /onboarding-ready ──► /paywall (PaywallView RevenueCat, onDismiss → /home) ──► /home
-            └─► StatefulShellRoute (HomeShell + bottom nav)
-                  ├─ branch 0 : /home    → HomePage    (stack isolée)
-                  ├─ branch 1 : /explore → ExplorePage (stack isolée)
-                  └─ branch 2 : /profile → ProfilePage (stack isolée)
+/ (splash) ──► /onboarding-connexion (compte Apple/Google, jamais bloquant)
+           ──► /onboarding (questions) ──► /onboarding-loading ──► /onboarding-ready
+           ──► /onboarding-sante (iOS uniquement) ──► /onboarding-breath ──► /onboarding-trust
+           ──► /paywall ──► /home
+           └─► StatefulShellRoute (HomeShell + bottom nav « Accueil / Louane / Profil »)
+                 ├─ branch 0 : /home    → HomePage   (stack isolée)
+                 ├─ branch 1 : /louane  → LouanePage (stack isolée)
+                 └─ branch 2 : /profile → ProfilePage (stack isolée)
 
-/preparation/:sessionId (hors shell — context.push depuis session card → fade 300ms → /player)
-/player/:sessionId      (hors shell — context.push depuis preparation ou mini player)
-/paywall                (hors shell — context.go depuis onboarding / context.push depuis profil)
+/preparation/:sessionId (hors shell — fade avant la séance → /player)
+/lancement/:sessionId   (hors shell — animation « je te la lance » quand Louane lance une séance)
+/player/:sessionId      (hors shell — depuis preparation, lancement ou mini player)
+/parcours/creation      (hors shell — génération du programme 7 jours, le moment « wow »)
+/parcours               (hors shell — l'écran du programme)
+/paywall                (hors shell — `?from=premium&src=…` : la Vigie note la surface d'origine)
 /category/:categoryId   (hors shell — context.push, retour possible)
 ```
+(maj 12/08/2026 — routes resynchronisées avec `app/router.dart` ; l'onglet Explorer a laissé sa place à Louane)
 
 ### Choisir le bon type de navigation
 

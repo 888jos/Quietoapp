@@ -13,8 +13,10 @@
 git clone https://github.com/agencymape-coder/Quieto.git
 cd Quieto
 flutter pub get
-flutter run
+flutter run --dart-define-from-file=.env.json
 ```
+
+⚠️ `.env.json` (clés RevenueCat, non versionné) est obligatoire — sans le flag, les achats ne fonctionnent pas (voir `CONFIG.md`). (maj 12/08/2026)
 
 ## Conventions de code
 
@@ -98,12 +100,13 @@ class _MyAnimatedWidgetState extends ConsumerState<MyAnimatedWidget>
 }
 ```
 
-## Branches
+## Branches (maj 12/08/2026)
 
 - `main` — production stable
-- `develop` — intégration continue
-- `feat/xxx` — nouvelle feature
-- `fix/xxx` — correction de bug
+- `feat/xxx` — nouvelle feature (ex. réels : `feat/paywall-flutter`, `feat/vigie-conversion`)
+- `hotfix/xxx` / `fix/xxx` — correction de bug
+
+(Il n'y a pas de branche `develop` : les features partent de `main` et y reviennent.)
 
 ## Commit convention
 
@@ -114,16 +117,14 @@ refactor: restructuration de player_providers
 chore: mise à jour des dépendances
 ```
 
-## Dev : bypasser le paywall
+## Dev : bypasser le paywall (maj 12/08/2026)
 
-Pendant le développement, mettre `_devUnlockPremium = true` dans `lib/core/services/storage_providers.dart` pour accéder aux catégories premium sans abonnement.
-
-> **Règle** : Remettre à `false` avant toute release — ne jamais committer `true` sur `main` en production.
+L'ancienne constante `_devUnlockPremium` n'existe plus. En debug, un **interrupteur dans le profil** force le premium (`SubscriptionNotifier.devForcerPremium`, `lib/core/services/storage_providers.dart`) — jamais persisté et neutralisé en release (`kReleaseMode`) : impossible de shipper le bypass par erreur.
 
 ## Pull Requests
 
-1. Branch depuis `develop`
-2. PR vers `develop`
+1. Branch depuis `main`
+2. PR vers `main`
 3. Description claire de ce qui change
 4. `flutter analyze` doit passer sans erreur
 5. `flutter test` doit passer

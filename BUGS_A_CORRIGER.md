@@ -3,6 +3,7 @@
 > Backlog des bugs trouvés par l'équipe d'agents de nuit (24/06/2026) et **vérifiés**.
 > Rapport complet : `../Quieto IA/rapports-nuit/rapport-nuit-1.md`.
 > ⚠️ **Aucun n'est urgent** — rien de cassé en production. À traiter quand tu veux.
+> 🔎 **Point de contrôle du 12/08/2026** : chaque bug re-vérifié dans le code. Bugs 1 à 7 : **toujours ouverts** (nuances notées en italique dans les fiches). Bug 8 : **résolu**.
 
 ---
 
@@ -20,6 +21,7 @@
 - **Fichier** : `lib/features/player/data/audio_handler.dart` (~126-149)
 - **Fix** : nom de fichier unique par séance (`quieto_artwork_<id>.png`) + try/catch (omettre l'image plutôt que crasher).
 - **Sévérité** : moyen-faible
+- *Vérifié 12/08/2026 : partiellement atténué — le **chargement** de l'artwork est maintenant dans un try/catch (fallback logo), mais l'**écriture** (`tempFile.writeAsBytes`) reste non protégée et le chemin est toujours fixe (`quieto_artwork.png`).*
 
 ### 2. Bouton « retour » du lecteur incohérent
 - **Pour l'utilisateur** : une séance Express lancée depuis l'accueil renvoie vers un écran jamais visité au lieu de l'accueil ; casse le retour Android.
@@ -27,6 +29,7 @@
 - **Fichier** : `lib/features/player/presentation/player_page.dart` (~142-147)
 - **Fix** : `context.canPop() ? context.pop() : context.go(home)` (pattern déjà présent ailleurs dans le code).
 - **Sévérité** : faible
+- *Vérifié 12/08/2026 : toujours ouvert pour le cas général — seul le cas « venu du chat Louane » (`viaLancement`) fait maintenant un `pop()` ; sinon, `go('/category/<id>')` systématique.*
 
 ### 3. Écran de démarrage trop long
 - **Pour l'utilisateur** : splash de 5,5 s fixes à chaque ouverture, même quand l'app est prête → friction / décrochage.
@@ -54,6 +57,7 @@
 - **Fichier** : `lib/core/services/storage_service.dart` (~77-84)
 - **Fix** : retourner un booléen de succès ou rethrow ciblé.
 - **Sévérité** : faible
+- *Vérifié 12/08/2026 : l'échec est maintenant loggé (`debugPrint` dans le try/catch de `saveProgress`) mais toujours avalé — pas de signal au code appelant.*
 
 ### 7. Lecteur audio jamais libéré (fuite bénigne)
 - **Technique** : `dispose()` du handler jamais appelé → le dernier AudioPlayer reste vivant tant que l'app tourne.
@@ -61,10 +65,11 @@
 - **Fix** : brancher le nettoyage sur le cycle de vie. ⚠️ **Bénin — à faire prudemment** (risque d'introduire un vrai bug pour peu de gain).
 - **Sévérité** : très faible
 
-### 8. Lien cassé dans la doc
+### 8. Lien cassé dans la doc — ✅ RÉSOLU (12/08/2026)
 - **Technique** : `QUIETO.md` renvoie à `SEANCES.md`, qui n'existe pas.
 - **Fix** : corriger le lien vers la vraie source (`lib/features/explore/data/explore_repository.dart`).
 - **Sévérité** : trivial
+- *Résolu par la réécriture de `QUIETO.md` (commit `28ab240`) : le doc pointe désormais vers `explore_repository.dart` et précise que l'ancien `SEANCES.md` n'existe plus.*
 
 ---
 

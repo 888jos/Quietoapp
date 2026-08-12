@@ -2,6 +2,8 @@
 
 8 scripts pour les micro-méditations de la catégorie "Une minute pour toi". Tonalité **directe, tutoyée, langage du quotidien**.
 
+> Maj 12/08/2026 : les MP3 ne sont plus dans `assets/audio/` — ils sont hébergés **à plat** sur Firebase Storage (seul le nom de fichier compte, ex. `1-avant-un-appel.mp3`). Les chemins `assets/audio/express/…` ci-dessous sont l'ancienne convention, gardée comme référence de nommage.
+
 > Les paragraphes servent de pauses naturelles. Les voix IA (ElevenLabs etc.) gèrent automatiquement le rythme entre les phrases. Pour un enregistrement personnel, marque une pause d'1 à 3 secondes entre chaque paragraphe.
 
 ---

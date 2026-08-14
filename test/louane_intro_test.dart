@@ -65,15 +65,33 @@ void main() {
     expect(notifier.state.messages, isEmpty);
 
     await notifier.jouerIntro();
-    expect(notifier.state.messages, hasLength(2));
+    final nbBulles = notifier.state.messages.length;
+    expect(nbBulles, greaterThanOrEqualTo(2));
     expect(notifier.state.messages.first.texte, 'Hey Paul');
-    expect(salutationsPourHeure(DateTime.now().hour),
-        contains(notifier.state.messages[1].texte));
+    // La salutation peut être découpée en plusieurs messages (une fin de
+    // phrase = un nouveau message) : recollée, elle doit être une variante.
+    final suite =
+        notifier.state.messages.skip(1).map((m) => m.texte).join(' ');
+    expect(salutationsPourHeure(DateTime.now().hour), contains(suite));
     expect(notifier.state.louaneEcrit, isFalse);
 
     // Et rejouer l'accueil dans la même session ne fait rien.
     await notifier.jouerIntro();
-    expect(notifier.state.messages, hasLength(2));
+    expect(notifier.state.messages, hasLength(nbBulles));
+  });
+
+  test('une salutation se découpe à chaque fin de phrase', () {
+    expect(bullesDepuisSalutation('Bien dormi ? Sois honnête :)'),
+        ['Bien dormi ?', 'Sois honnête :)']);
+    expect(bullesDepuisSalutation('Mi-journée :) Tu tiens le rythme ?'),
+        ['Mi-journée :)', 'Tu tiens le rythme ?']);
+    expect(
+        bullesDepuisSalutation('Tout le monde dort... Nous, on peut parler'),
+        ['Tout le monde dort...', 'Nous, on peut parler']);
+    // Une virgule ne coupe pas : une seule phrase = un seul message.
+    expect(
+        bullesDepuisSalutation('La journée se lève à peine, prends ton temps'),
+        ['La journée se lève à peine, prends ton temps']);
   });
 
   test('les salutations collent au créneau horaire', () {

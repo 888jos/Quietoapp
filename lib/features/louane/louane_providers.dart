@@ -120,6 +120,24 @@ List<String> salutationsPourHeure(int h) {
   ];
 }
 
+/// Découpe une phrase d'accueil en messages successifs : une fin de phrase
+/// (`.`, `?`, `!`, `...` ou une émoticône `:)`) suivie d'une relance devient
+/// un nouveau message — un humain n'enchaîne pas deux phrases dans le même
+/// texto. « Bien dormi ? Sois honnête :) » → deux messages. Publique pour
+/// les tests.
+List<String> bullesDepuisSalutation(String texte) {
+  final parts = <String>[];
+  final fins = RegExp(r'(\.\.\.|[.?!]|:\))\s+');
+  var debut = 0;
+  for (final m in fins.allMatches(texte)) {
+    parts.add(texte.substring(debut, m.end).trim());
+    debut = m.end;
+  }
+  final reste = texte.substring(debut).trim();
+  if (reste.isNotEmpty) parts.add(reste);
+  return parts.isEmpty ? [texte] : parts;
+}
+
 class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
   final LouaneRepository _repo;
   final VigieService _vigie;
@@ -158,30 +176,27 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
         ...kLouaneIntro.skip(1).map(
             (t) => LouaneMessage(auteur: AuteurMessage.louane, texte: t))
       else
-        LouaneMessage(
-          auteur: AuteurMessage.louane,
-          texte: _salutationAleatoire(),
-        ),
+        // La salutation se découpe à chaque fin de phrase : « Bien dormi ?
+        // Sois honnête :) » = deux messages, comme un humain.
+        ...bullesDepuisSalutation(_salutationAleatoire()).map(
+            (t) => LouaneMessage(auteur: AuteurMessage.louane, texte: t)),
     ];
     if (premiereFois) await _storage.setLouaneIntroVariante(0);
 
-    // 0,5 s de silence, puis chaque bulle part après sa frappe. La dernière
-    // est la plus longue à taper : un poil d'attente en plus, c'est ce qui
-    // rend la frappe crédible.
+    // 0,5 s de silence, puis chaque bulle part après sa frappe (durée liée
+    // à sa longueur) : c'est ce qui rend la frappe crédible.
     await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
-    state = state.copyWith(louaneEcrit: true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    state = state.copyWith(messages: [bulles.first]);
-    if (bulles.length == 3) {
-      await Future.delayed(const Duration(milliseconds: 900));
+    for (var i = 0; i < bulles.length; i++) {
+      state = state.copyWith(louaneEcrit: true);
+      await Future.delayed(Duration(
+          milliseconds: (bulles[i].texte.length * 30).clamp(700, 1700)));
       if (!mounted) return;
-      state = state.copyWith(messages: bulles.sublist(0, 2));
+      state = state.copyWith(
+        messages: bulles.sublist(0, i + 1),
+        louaneEcrit: i < bulles.length - 1,
+      );
     }
-    await Future.delayed(const Duration(milliseconds: 1700));
-    if (!mounted) return;
-    state = state.copyWith(messages: bulles, louaneEcrit: false);
   }
 
   /// Fin des messages découverte — le mot de Louane validé (en attendant

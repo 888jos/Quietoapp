@@ -770,9 +770,9 @@ function consigneSante(sante, pourParcours = false, santeDispo = false) {
   const resultat = typeof sante === "string" ? sante.trim() : "";
   if (pourParcours) {
     if (!resultat) return "";
-    return "\n\nSON ÉVALUATION APPLE SANTÉ (questionnaires de bien-être " +
-      "remplis dans l'app Santé de son iPhone, qu'elle a accepté de " +
-      "partager avec Quieto — niveau global uniquement) :\n" + resultat +
+    return "\n\nSES SIGNAUX APPLE SANTÉ (état d'esprit consigné, sommeil, " +
+      "lumière du jour, questionnaires de bien-être — qu'elle a accepté de " +
+      "partager avec Quieto, toujours en niveau global) :\n" + resultat +
       "\nSers-t'en pour doser le programme : niveau élevé → semaine très " +
       "douce, séances apaisantes et courtes, progression en pente légère. " +
       "Dans TOUS les textes du programme (titre, sous-titre, messages), " +
@@ -790,26 +790,27 @@ function consigneSante(sante, pourParcours = false, santeDispo = false) {
   }
   const capacites = "\n\nAPPLE SANTÉ (elle est sur iPhone) : Quieto ajoute " +
     "automatiquement ses minutes d'écoute dans Santé > Pleine conscience. " +
-    "Et sur les iPhone récents, si elle remplit les questionnaires de " +
-    "bien-être de l'app Santé (Parcourir > Bien-être mental) et partage " +
-    "l'accès avec Quieto, tu vois son niveau global et tu peux adapter ton " +
+    "Et sur les iPhone récents, si elle partage l'accès avec Quieto, tu " +
+    "vois ses signaux de bien-être en niveau global : son état d'esprit " +
+    "consigné, son sommeil, sa lumière du jour, et ses questionnaires de " +
+    "bien-être (Parcourir > Bien-être mental) — de quoi adapter ton " +
     "accompagnement et le programme.\n";
   if (!resultat) {
     return capacites +
-      "AUCUNE ÉVALUATION VISIBLE actuellement (pas remplie, iPhone trop " +
+      "AUCUN SIGNAL VISIBLE actuellement (rien de consigné, iPhone trop " +
       "ancien, ou accès non partagé — impossible de savoir lequel : ne " +
       "l'affirme jamais). Si elle en parle ou demande un programme adapté " +
-      "au questionnaire, dis simplement que tu ne vois pas d'évaluation " +
-      "pour l'instant et explique comment faire dans Santé. Tu peux " +
+      "à ses données Santé, dis simplement que tu ne vois rien pour " +
+      "l'instant et explique comment ouvrir l'accès dans Santé. Tu peux " +
       "mentionner cette possibilité UNE fois si le moment s'y prête, sans " +
       "jamais insister.";
   }
   return capacites +
-    "SON ÉVALUATION (niveau global uniquement, qu'elle a accepté de " +
+    "SES SIGNAUX (niveau global uniquement, qu'elle a accepté de " +
     "partager) :\n" + resultat + "\n" +
-    "Si elle t'en parle ou demande un programme « adapté à mes réponses au " +
-    "questionnaire », dis avec naturel que tu as vu son évaluation dans " +
-    "Santé, et sers-t'en pour personnaliser. RÈGLES STRICTES : tu n'es pas " +
+    "Si elle t'en parle ou demande un programme « adapté à mes données " +
+    "Santé », dis avec naturel que tu as vu ses signaux dans Santé, et " +
+    "sers-t'en pour personnaliser. RÈGLES STRICTES : tu n'es pas " +
     "soignante → jamais de diagnostic, jamais de vocabulaire médical (ne " +
     "prononce pas « dépression », « GAD-7 », « PHQ-9 », « score », " +
     "« symptôme ») ; parle de tension intérieure, de moral, de charge " +
@@ -1121,7 +1122,7 @@ exports.louane = onCall(
   // prêt). Absent (vieilles apps / Android / refus) = pas de consigne.
   // ⚠️ Donnée sensible : ne JAMAIS l'écrire dans les logs ni dans Firestore.
   const sante = typeof request.data.sante === "string" ?
-    request.data.sante.slice(0, 300) : "";
+    request.data.sante.slice(0, 600) : "";
   // Appareil compatible Apple Santé (iPhone) → Louane sait ce qui est
   // possible ici, même sans évaluation à lire. Absent (vieilles apps) = non.
   const santeDispo = request.data.santeDispo === true;
@@ -1754,7 +1755,7 @@ exports.genererParcours = onCall(
     // Résumé des évaluations bien-être d'Apple Santé (niveau grossier).
     // ⚠️ Donnée sensible : ne JAMAIS l'écrire dans les logs ni dans Firestore.
     const sante = typeof request.data.sante === "string" ?
-      request.data.sante.slice(0, 300) : "";
+      request.data.sante.slice(0, 600) : "";
     // Historique d'écoute {id, fois, jours} : mêmes données que le chat.
     const ecoutes = Array.isArray(request.data.ecoutes) ? request.data.ecoutes : [];
     const abonne = request.data.abonne === true;

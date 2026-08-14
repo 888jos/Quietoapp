@@ -1151,7 +1151,13 @@ exports.louane = onCall(
     heure: (typeof heure === "string" && heure.includes(":")) ?
       parseInt(heure.split(":")[0], 10) : null,
     carMessage: message.length,
+    // ⚠️ Depuis les bulles (14/08/2026), l'historique compte des BULLES, pas
+    // des tours de parole : échelle ~2× vs avant. Jamais comparé tel quel.
     nbMessagesHistorique: historique.length,
+    // Le contexte Apple Santé était-il fourni ? (booléen uniquement — le
+    // contenu ne sort JAMAIS d'ici.) Sert à croiser « conversations
+    // nourries par Santé » × conversion.
+    avecSante: sante.length > 0,
   };
 
   // Limite atteinte (gratuit épuisé ou plafond du jour) : on ne fait PAS tourner
@@ -1262,6 +1268,7 @@ exports.louane = onCall(
     parcoursPropose,
     seanceLancee: seance ? seance.id : "",
     carReponse: reponseFinale.length,
+    nbBulles: bulles.length || 1, // suivi du découpage en petits messages
   });
 
   // Niveau 2 = danger. On donne le message de sécurité validé (3114/15) — mais UNE

@@ -104,17 +104,35 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
                                     AppColors.accent.withValues(alpha: 0.35),
                               ),
                             ),
-                            child: Text(
-                              'Quand tu écoutes une séance, tes minutes de '
-                              'calme sont ajoutées dans l\'app Santé. Tu vois '
-                              'tes progrès jour après jour. Et si tu remplis '
-                              'les questionnaires de bien-être de Santé, '
-                              'Louane pourra en tenir compte.',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textPrimary,
-                                height: 1.6,
-                              ),
-                              textAlign: TextAlign.center,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Tes minutes de calme sont ajoutées dans '
+                                  'l\'app Santé. Et si tu le permets, Louane '
+                                  'tient compte de tes signaux de bien-être : '
+                                  'ton état d\'esprit, ton sommeil, tes '
+                                  'évaluations. Toujours en niveau global, '
+                                  'jamais le détail.',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.textPrimary,
+                                    height: 1.6,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(
+                                    height: AppConstants.spacingMd),
+                                Text(
+                                  'Sur l\'écran suivant, appuie sur '
+                                  '« Tout activer » : c\'est ce qui permet à '
+                                  'Louane de vraiment s\'adapter à toi.',
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.accent,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.6,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
                           ),
                         ),

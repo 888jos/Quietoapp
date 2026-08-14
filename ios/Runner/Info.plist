@@ -20,7 +20,7 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Quieto ajoute tes minutes d'écoute dans Santé, rubrique Pleine conscience, pour suivre ta pratique.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Quieto lit tes dernières évaluations de bien-être de l'app Santé (niveau global uniquement, jamais tes réponses détaillées) pour que Louane puisse adapter ton accompagnement et ton programme.</string>
+	<string>Quieto lit tes signaux de bien-être de l'app Santé : état d'esprit, sommeil, lumière du jour et évaluations de bien-être. Toujours en niveau global, jamais le détail de tes réponses ni de tes journées, pour que Louane puisse adapter ton accompagnement et ton programme.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Quieto utilise le micro pour que tu puisses parler à Louane.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

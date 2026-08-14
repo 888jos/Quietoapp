@@ -125,20 +125,52 @@ class HealthService {
       'depression': 'questionnaire humeur (PHQ-9)',
     };
     const niveaux = {'faible': 'faible', 'modere': 'modéré', 'eleve': 'élevé'};
+    const ressentis = {
+      'agreable': 'plutôt agréable',
+      'neutre': 'plutôt neutre',
+      'desagreable': 'plutôt désagréable',
+    };
+    const nuits = {
+      'court': 'plutôt courte',
+      'correct': 'correcte',
+      'bon': 'bonne',
+    };
+    String quand(int jours) => jours == 0
+        ? 'aujourd\'hui'
+        : jours == 1
+            ? 'hier'
+            : 'il y a $jours jours';
     final phrases = <String>[];
     for (final s in scores) {
       if (s is! Map) continue;
-      final libelle = libelles[s['type']];
-      final niveau = niveaux[s['niveau']];
       final jours = s['jours'];
-      if (libelle == null || niveau == null || jours is! int) continue;
-      if (jours > 90) continue; // trop ancien pour guider un programme
-      final quand = jours == 0
-          ? 'aujourd\'hui'
-          : jours == 1
-              ? 'hier'
-              : 'il y a $jours jours';
-      phrases.add('Évaluation Apple Santé ($quand) : $libelle, niveau $niveau.');
+      if (jours is! int || jours > 90) continue; // trop ancien pour guider
+      switch (s['type']) {
+        case 'anxiete':
+        case 'depression':
+          final libelle = libelles[s['type']];
+          final niveau = niveaux[s['niveau']];
+          if (libelle == null || niveau == null) break;
+          phrases.add('Évaluation Apple Santé (${quand(jours)}) : $libelle, '
+              'niveau $niveau.');
+        case 'etat_esprit':
+          final ressenti = ressentis[s['niveau']];
+          final nb = s['nb'];
+          if (ressenti == null || nb is! int) break;
+          phrases.add('État d\'esprit consigné dans Santé ($nb fois sur les '
+              '7 derniers jours, dernier ${quand(jours)}) : $ressenti.');
+        case 'sommeil':
+          final nuit = nuits[s['niveau']];
+          final heures = s['heures'];
+          if (nuit == null || heures is! num) break;
+          phrases.add('Sommeil de la dernière nuit (Apple Santé) : '
+              '~${heures}h, nuit $nuit.');
+        case 'lumiere':
+          final minutes = s['minutesParJour'];
+          if (minutes is! int) break;
+          phrases.add('Lumière du jour : ~$minutes min/jour en moyenne '
+              'cette semaine.');
+      }
     }
     return phrases.join(' ');
   }

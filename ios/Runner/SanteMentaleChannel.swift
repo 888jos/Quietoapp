@@ -1,12 +1,34 @@
 import Flutter
 import HealthKit
 
-/// Canal natif `quieto/sante_mentale` : lit la plus récente évaluation
-/// anxiété (GAD-7) et humeur (PHQ-9) de l'app Santé (iOS 18+) et renvoie un
-/// NIVEAU grossier (faible/modere/eleve), jamais le score brut ni les
-/// réponses. Tout échec (iOS < 18, refus, aucune donnée) → liste vide,
+/// Canal natif `quieto/sante_mentale` : lit les signaux bien-être de l'app
+/// Santé (iOS 18+) et renvoie des NIVEAUX grossiers, jamais le détail brut :
+/// - évaluations anxiété (GAD-7) et humeur (PHQ-9) → faible/modere/eleve ;
+/// - état d'esprit consigné (7 derniers jours) → agreable/neutre/desagreable ;
+/// - sommeil de la dernière nuit → court/correct/bon (+ heures arrondies) ;
+/// - lumière du jour → minutes/jour en moyenne sur 7 jours.
+/// Tout échec (iOS < 18, refus, aucune donnée) → liste vide,
 /// silencieusement : le chat Louane ne doit jamais dépendre de cette lecture.
 enum SanteMentaleChannel {
+
+  /// Les types LUS : tout le pan santé mentale + le sommeil (décision Paul
+  /// 14/08/2026). Chaque type doit être réellement exploité dans le résumé
+  /// ci-dessous (exigence App Review sur les données santé).
+  @available(iOS 18.0, *)
+  private static func typesLecture() -> Set<HKObjectType> {
+    var lecture: Set<HKObjectType> = [
+      HKScoredAssessmentType(.GAD7),
+      HKScoredAssessmentType(.PHQ9),
+      HKSampleType.stateOfMindType(),
+    ]
+    if let sommeil = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
+      lecture.insert(sommeil)
+    }
+    if let lumiere = HKObjectType.quantityType(forIdentifier: .timeInDaylight) {
+      lecture.insert(lumiere)
+    }
+    return lecture
+  }
 
   static func register(messenger: FlutterBinaryMessenger) {
     let channel = FlutterMethodChannel(
@@ -56,10 +78,8 @@ enum SanteMentaleChannel {
   @available(iOS 18.0, *)
   private static func demanderAutorisation(completion: @escaping (Bool) -> Void) {
     let store = HKHealthStore()
-    let lecture: Set<HKObjectType> =
-      [HKScoredAssessmentType(.GAD7), HKScoredAssessmentType(.PHQ9)]
     let ecriture: Set<HKSampleType> = [HKCategoryType(.mindfulSession)]
-    store.requestAuthorization(toShare: ecriture, read: lecture) { ok, _ in
+    store.requestAuthorization(toShare: ecriture, read: typesLecture()) { ok, _ in
       // ok = la feuille a été traitée, PAS « lecture accordée » : les refus
       // de lecture sont invisibles par design HealthKit.
       completion(ok)
@@ -73,7 +93,7 @@ enum SanteMentaleChannel {
     let phq9 = HKScoredAssessmentType(.PHQ9)
     // Idempotent : la feuille système ne sort que si ces types n'ont jamais
     // été proposés. Déjà répondu → aucune UI, les requêtes suivent.
-    store.requestAuthorization(toShare: nil, read: [gad7, phq9]) { _, erreur in
+    store.requestAuthorization(toShare: nil, read: typesLecture()) { _, erreur in
       if erreur != nil {
         completion([])
         return
@@ -82,6 +102,11 @@ enum SanteMentaleChannel {
       let groupe = DispatchGroup()
       let verrou = NSLock()
       var scores: [[String: Any]] = []
+      func ajouter(_ map: [String: Any]) {
+        verrou.lock()
+        scores.append(map)
+        verrou.unlock()
+      }
 
       func lire(_ type: HKScoredAssessmentType,
                 _ convertir: @escaping (HKSample) -> [String: Any]?) {
@@ -93,9 +118,7 @@ enum SanteMentaleChannel {
         ) { _, echantillons, _ in
           defer { groupe.leave() }
           guard let e = echantillons?.first, let map = convertir(e) else { return }
-          verrou.lock()
-          scores.append(map)
-          verrou.unlock()
+          ajouter(map)
         }
         store.execute(requete)
       }
@@ -111,6 +134,75 @@ enum SanteMentaleChannel {
         return ["type": "depression",
                 "niveau": niveau(phq9: a.risk),
                 "jours": anciennete(a.startDate)]
+      }
+
+      // État d'esprit : moyenne de valence des consignations des 7 derniers
+      // jours → un mot, jamais les émotions détaillées.
+      groupe.enter()
+      let depuis7j = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+      let predEsprit = HKQuery.predicateForSamples(withStart: depuis7j, end: nil)
+      let requeteEsprit = HKSampleQuery(
+        sampleType: HKSampleType.stateOfMindType(), predicate: predEsprit,
+        limit: HKObjectQueryNoLimit, sortDescriptors: nil
+      ) { _, echantillons, _ in
+        defer { groupe.leave() }
+        let humeurs = (echantillons as? [HKStateOfMind]) ?? []
+        guard !humeurs.isEmpty else { return }
+        let moyenne = humeurs.map(\.valence).reduce(0, +) / Double(humeurs.count)
+        let ressenti = moyenne > 0.15 ? "agreable"
+          : (moyenne < -0.15 ? "desagreable" : "neutre")
+        let dernier = humeurs.map(\.startDate).max() ?? Date()
+        ajouter(["type": "etat_esprit", "niveau": ressenti,
+                 "nb": humeurs.count, "jours": anciennete(dernier)])
+      }
+      store.execute(requeteEsprit)
+
+      // Sommeil : total dormi sur les ~32 dernières heures (la dernière
+      // nuit, peu importe l'heure du coucher) → heures arrondies + niveau.
+      if let typeSommeil = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
+        groupe.enter()
+        let predSommeil = HKQuery.predicateForSamples(
+          withStart: Date().addingTimeInterval(-32 * 3600), end: nil)
+        let requeteSommeil = HKSampleQuery(
+          sampleType: typeSommeil, predicate: predSommeil,
+          limit: HKObjectQueryNoLimit, sortDescriptors: nil
+        ) { _, echantillons, _ in
+          defer { groupe.leave() }
+          let dodo = ((echantillons as? [HKCategorySample]) ?? []).filter { e in
+            switch HKCategoryValueSleepAnalysis(rawValue: e.value) {
+            case .asleepUnspecified, .asleepCore, .asleepDeep, .asleepREM:
+              return true
+            default:
+              return false
+            }
+          }
+          guard !dodo.isEmpty else { return }
+          let heures = dodo.reduce(0.0) {
+            $0 + $1.endDate.timeIntervalSince($1.startDate)
+          } / 3600
+          guard heures > 1 else { return } // bruit de capteur
+          let qualite = heures < 6 ? "court" : (heures < 7.5 ? "correct" : "bon")
+          ajouter(["type": "sommeil", "niveau": qualite,
+                   "heures": (heures * 10).rounded() / 10, "jours": 0])
+        }
+        store.execute(requeteSommeil)
+      }
+
+      // Lumière du jour : minutes/jour en moyenne sur 7 jours.
+      if let typeLumiere = HKObjectType.quantityType(forIdentifier: .timeInDaylight) {
+        groupe.enter()
+        let predLumiere = HKQuery.predicateForSamples(withStart: depuis7j, end: nil)
+        let requeteLumiere = HKStatisticsQuery(
+          quantityType: typeLumiere, quantitySamplePredicate: predLumiere,
+          options: .cumulativeSum
+        ) { _, stats, _ in
+          defer { groupe.leave() }
+          guard let somme = stats?.sumQuantity()?.doubleValue(for: .minute()),
+                somme > 0 else { return }
+          ajouter(["type": "lumiere",
+                   "minutesParJour": Int((somme / 7).rounded()), "jours": 0])
+        }
+        store.execute(requeteLumiere)
       }
 
       groupe.notify(queue: .main) { completion(scores) }

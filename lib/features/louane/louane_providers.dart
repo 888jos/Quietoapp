@@ -288,21 +288,36 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
         state = state.copyWith(louaneEcrit: false);
         return;
       }
-      state = state.copyWith(
-        messages: [
-          ...state.messages,
-          LouaneMessage(
-            auteur: AuteurMessage.louane,
-            texte: reponse.texte,
-            seanceId: reponse.seanceId,
-            avecBoutonParcours: proposeParcours,
-            // Dernier message découverte : l'au revoir de Louane porte
-            // directement le bouton « essai gratuit ».
-            avecBoutonEssai: reponse.finDecouverte,
-          ),
-        ],
-        louaneEcrit: false,
-      );
+      // Réponse en plusieurs petites bulles tapées à la suite (comme
+      // l'accueil) : le serveur envoie le découpage, l'app anime la frappe.
+      // Les pièces jointes (séance, boutons) vont sur la DERNIÈRE bulle.
+      final bulles =
+          reponse.bulles.isNotEmpty ? reponse.bulles : [reponse.texte];
+      for (var i = 0; i < bulles.length; i++) {
+        final derniere = i == bulles.length - 1;
+        if (i > 0) {
+          state = state.copyWith(louaneEcrit: true);
+          // Frappe crédible : durée liée à la longueur de la bulle qui vient.
+          await Future.delayed(Duration(
+              milliseconds: (bulles[i].length * 25).clamp(700, 1800)));
+          if (!mounted) return;
+        }
+        state = state.copyWith(
+          messages: [
+            ...state.messages,
+            LouaneMessage(
+              auteur: AuteurMessage.louane,
+              texte: bulles[i],
+              seanceId: derniere ? reponse.seanceId : null,
+              avecBoutonParcours: derniere && proposeParcours,
+              // Dernier message découverte : l'au revoir de Louane porte
+              // directement le bouton « essai gratuit ».
+              avecBoutonEssai: derniere && reponse.finDecouverte,
+            ),
+          ],
+          louaneEcrit: !derniere,
+        );
+      }
     } catch (e) {
       // L'erreur reste visible en console — le message doux, lui, à l'écran.
       // Vigie : un envoi qui échoue est un point de fuite technique majeur.

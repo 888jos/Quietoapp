@@ -23,6 +23,12 @@ String jourLocalEnFrancais(DateTime d) {
 /// [plafond] = les 40 messages du jour sont atteints (abonné) → Louane dort.
 class LouaneReponse {
   final String texte;
+
+  /// La même réponse découpée en petits messages successifs (2-3 max, décidé
+  /// par Louane côté serveur). Vide sur les vieux serveurs → l'app affiche
+  /// [texte] d'un bloc, comme avant.
+  final List<String> bulles;
+
   final bool paywall;
   final bool plafond;
 
@@ -40,6 +46,7 @@ class LouaneReponse {
 
   const LouaneReponse({
     this.texte = '',
+    this.bulles = const [],
     this.paywall = false,
     this.plafond = false,
     this.seanceId,
@@ -150,6 +157,13 @@ class LouaneRepository {
 
     return LouaneReponse(
       texte: (data['reponse'] as String?)?.trim() ?? '',
+      bulles: (data['bulles'] is List)
+          ? (data['bulles'] as List)
+              .whereType<String>()
+              .map((b) => b.trim())
+              .where((b) => b.isNotEmpty)
+              .toList()
+          : const [],
       paywall: paywall,
       plafond: plafond,
       seanceId: (seanceId != null && seanceId.isNotEmpty) ? seanceId : null,

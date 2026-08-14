@@ -93,63 +93,46 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
                           active: true,
                           delay: const Duration(milliseconds: 240),
                           child: Container(
-                            padding:
-                                const EdgeInsets.all(AppConstants.spacingMd),
+                            padding: const EdgeInsets.all(
+                              AppConstants.spacingMd,
+                            ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(
                                 AppConstants.radiusLg,
                               ),
                               border: Border.all(
-                                color:
-                                    AppColors.accent.withValues(alpha: 0.35),
+                                color: AppColors.accent.withValues(alpha: 0.35),
                               ),
                             ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  'Tes minutes de calme sont ajoutées dans '
-                                  'l\'app Santé, et Louane tient compte de '
-                                  'tes signaux de bien-être (état d\'esprit, '
-                                  'sommeil, évaluations) — toujours en '
-                                  'niveau global, jamais le détail.',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                    height: 1.6,
-                                  ),
-                                  textAlign: TextAlign.center,
+                            // LE message à retenir, seul dans l'encadré :
+                            // gros, au centre, « Tout activer » en accent —
+                            // la personne doit le voir avant la feuille Apple.
+                            child: Text.rich(
+                              TextSpan(
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.45,
                                 ),
-                                const SizedBox(
-                                    height: AppConstants.spacingMd),
-                                // LE message à retenir : gros, au centre,
-                                // « Tout activer » en accent — la personne
-                                // doit le voir avant la feuille Apple.
-                                Text.rich(
+                                children: [
+                                  const TextSpan(text: 'Appuie sur '),
                                   TextSpan(
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1.45,
+                                    text: '« Tout activer »',
+                                    style: TextStyle(
+                                      color: AppColors.accent,
+                                      fontWeight: FontWeight.w800,
                                     ),
-                                    children: [
-                                      const TextSpan(text: 'Appuie sur '),
-                                      TextSpan(
-                                        text: '« Tout activer »',
-                                        style: TextStyle(
-                                          color: AppColors.accent,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const TextSpan(
-                                        text: ' pour qu\'on puisse te '
-                                            'suivre de la meilleure '
-                                            'manière possible.',
-                                      ),
-                                    ],
                                   ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                                  const TextSpan(
+                                    text:
+                                        ' pour qu\'on puisse te '
+                                        'suivre de la meilleure '
+                                        'manière possible.',
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ),
                         ),
@@ -355,9 +338,12 @@ class _ArrowPainter extends CustomPainter {
     final path = Path()
       ..moveTo(size.width * 0.138, size.height * 0.43)
       ..cubicTo(
-        size.width * 0.10, size.height * 0.82,
-        size.width * 0.36, size.height * 0.32,
-        size.width * 0.508, size.height * 0.56,
+        size.width * 0.10,
+        size.height * 0.82,
+        size.width * 0.36,
+        size.height * 0.32,
+        size.width * 0.508,
+        size.height * 0.56,
       );
 
     final metric = path.computeMetrics().first;

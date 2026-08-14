@@ -11,6 +11,7 @@ import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../parcours/parcours_providers.dart';
+import '../data/louane_message.dart';
 import '../louane_providers.dart';
 import 'louane_palette.dart';
 import 'widgets/carte_seance_louane.dart';
@@ -291,6 +292,20 @@ class _LouanePageState extends ConsumerState<LouanePage>
       }
     });
 
+    // L'abonnement s'active en pleine conversation (essai pris depuis le
+    // paywall) → fine ligne discrète dans le fil, et la discussion reprend
+    // naturellement. Jamais sur un fil vide : une nouvelle session déjà
+    // abonnée n'a rien à marquer.
+    ref.listen(subscriptionProvider, (avant, apres) {
+      if (avant == false &&
+          apres == true &&
+          ref.read(louaneChatProvider).messages.isNotEmpty) {
+        ref
+            .read(louaneChatProvider.notifier)
+            .ajouterLigneSysteme('Essai Premium activé');
+      }
+    });
+
     final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
 
     return Scaffold(
@@ -319,6 +334,23 @@ class _LouanePageState extends ConsumerState<LouanePage>
                   itemBuilder: (context, i) {
                     if (i >= chat.messages.length) return const TypingBubble();
                     final m = chat.messages[i];
+                    // Ligne système : fine, centrée, discrète (façon
+                    // séparateur de date iMessage) — pas une bulle.
+                    if (m.auteur == AuteurMessage.systeme) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Center(
+                          child: Text(
+                            m.texte,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.35),
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
                     final bulle = MessageBubble(
                       key: ValueKey(i),
                       message: m,

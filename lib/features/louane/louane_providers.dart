@@ -339,9 +339,13 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
 
   /// Glisse une bulle de Louane dans le fil SANS appel serveur : la bulle
   /// d'ouverture du programme (« ton programme t'attend sur l'accueil »).
+  /// Anti-doublon : recréer un programme (supprimer puis re-cliquer) ne doit
+  /// pas empiler la même bulle à chaque fois — si elle est déjà dans le fil,
+  /// on la garde, c'est tout.
   void ajouterBulleLouane(String texte) {
     final t = texte.trim();
     if (t.isEmpty) return;
+    if (state.messages.any((m) => m.estLouane && m.texte == t)) return;
     state = state.copyWith(
       messages: [
         ...state.messages,
@@ -350,10 +354,29 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
     );
   }
 
+  /// Fine ligne d'information centrée dans le fil (jamais envoyée au
+  /// serveur). Une seule fois par texte : pas de doublon si l'événement
+  /// se redéclenche.
+  void ajouterLigneSysteme(String texte) {
+    final t = texte.trim();
+    if (t.isEmpty) return;
+    if (state.messages
+        .any((m) => m.auteur == AuteurMessage.systeme && m.texte == t)) {
+      return;
+    }
+    state = state.copyWith(
+      messages: [
+        ...state.messages,
+        LouaneMessage(auteur: AuteurMessage.systeme, texte: t),
+      ],
+    );
+  }
+
   /// La conversation complète au format API (dernier message inclus) : c'est
   /// la matière première de la génération du programme.
   List<Map<String, String>> historiquePourParcours() {
     final mapped = state.messages
+        .where((m) => m.auteur != AuteurMessage.systeme)
         .map((m) => {
               'role': m.estLouane ? 'assistant' : 'user',
               'content': m.texte,
@@ -385,6 +408,7 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
   String _accueilPourApi(List<LouaneMessage> tous) {
     final textes = <String>[];
     for (final m in tous) {
+      if (m.auteur == AuteurMessage.systeme) continue;
       if (!m.estLouane) break;
       textes.add(m.texte);
     }
@@ -404,6 +428,7 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
   List<Map<String, String>> _historiquePourApi(List<LouaneMessage> tous) {
     final precedents = tous.sublist(0, tous.length - 1);
     final mapped = precedents
+        .where((m) => m.auteur != AuteurMessage.systeme)
         .map((m) => {
               'role': m.estLouane ? 'assistant' : 'user',
               'content': m.seanceId != null

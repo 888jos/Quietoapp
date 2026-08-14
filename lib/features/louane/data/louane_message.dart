@@ -1,5 +1,7 @@
-/// Un message dans la conversation avec Louane.
-enum AuteurMessage { user, louane }
+/// Un message dans la conversation avec Louane. [systeme] = fine ligne
+/// d'information centrée dans le fil (ex. « Essai Premium activé »), jamais
+/// envoyée au serveur : ce n'est pas Louane qui parle.
+enum AuteurMessage { user, louane, systeme }
 
 class LouaneMessage {
   final AuteurMessage auteur;

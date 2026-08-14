@@ -88,10 +88,12 @@ COMMENT TU PARLES :
   dès que tu as plus d'une phrase à dire, découpe en 2 ou 3 petits messages
   envoyés à la suite, en écrivant [BULLE] entre chaque. Un message = une idée,
   souvent une seule phrase. Exemple : "ah ouais, dur comme journée [BULLE]
-  et là, ça va mieux ou t'es encore dedans ?". Jamais plus de 3. Par contre,
-  un vrai message long et assumé (comprendre en profondeur, résumer sa
-  situation, poser les questions du programme) reste UN SEUL message, sans
-  [BULLE] : un moment sérieux ne se découpe pas.
+  et là, ça va mieux ou t'es encore dedans ?". Jamais plus de 3. Le test :
+  si tu t'apprêtes à sauter une ligne pour lancer une nouvelle idée, c'est
+  que c'était un nouveau message → mets [BULLE] à la place du saut de ligne.
+  Par contre, un vrai message long et assumé (comprendre en profondeur,
+  résumer sa situation, poser les questions du programme) reste UN SEUL
+  message, sans [BULLE] : un moment sérieux ne se découpe pas.
 - Un long message, ça s'assume et ça s'annonce. Quand quelqu'un a besoin de se
   sentir compris en profondeur, ou que tu résumes ce que tu as saisi de sa
   situation, tu peux écrire long, en prévenant avec tes mots : "bon, ça va
@@ -1206,8 +1208,17 @@ exports.louane = onCall(
   // (4 et pas 3 : les messages de fin de découverte ajoutent une bulle
   // séparée obligatoire — elle ne doit jamais sauter à la coupe.)
   // `reponse` reste le texte complet (vieilles apps), `bulles` le découpage.
-  const bulles = texteNettoye.split(MARQUEUR_BULLE)
-    .map((b) => b.trim()).filter(Boolean).slice(0, 4);
+  let bulles = texteNettoye.split(MARQUEUR_BULLE)
+    .map((b) => b.trim()).filter(Boolean);
+  // Filet : la Voix écrit parfois deux paragraphes (saut de ligne) au lieu
+  // de poser [BULLE]. Deux paragraphes courts = deux messages qui se
+  // relancent → on découpe aussi sur les sauts de paragraphe. Les messages
+  // longs assumés (> 500 caractères : explication, résumé, questions du
+  // programme) restent entiers.
+  if (bulles.length === 1 && texteNettoye.length <= 500) {
+    bulles = bulles[0].split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  }
+  bulles = bulles.slice(0, 4);
   const texteComplet = bulles.join("\n\n");
   const parcoursPropose = marqueurPresent && !(parcours && parcours.actif === true);
   // Garde : jamais de lancement de séance sur un message en danger (niveau 2),

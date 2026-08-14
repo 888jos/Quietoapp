@@ -817,17 +817,22 @@ function consigneQuota(abonne, compteurTotal) {
   if (restantsApres === 1) {
     return "\n\nFIN DE DÉCOUVERTE PROCHE : après ta réponse, il ne restera " +
       "qu'UN message découverte offert. Réponds d'abord pleinement à son " +
-      "message, puis glisse à la fin, avec tes mots et en une phrase, que " +
-      "vos échanges découverte touchent à leur fin (encore un après " +
-      "celui-ci). Ton doux, jamais culpabilisant, aucune vente insistante.";
+      "message (un seul message, court), PUIS, dans un MESSAGE SÉPARÉ " +
+      "(mets [BULLE] juste avant — TOUJOURS, c'est obligatoire), préviens-la " +
+      "en douceur. Ce message séparé commence TOUJOURS par « Et juste pour " +
+      "te prévenir » et dit, avec tes mots, que vos échanges découverte " +
+      "touchent à leur fin (encore un après celui-ci). Ton doux, jamais " +
+      "culpabilisant, aucune vente insistante.";
   }
   if (restantsApres <= 0) {
     return "\n\nDERNIER MESSAGE DÉCOUVERTE : c'est votre dernier échange " +
-      "offert. Réponds d'abord pleinement à son message, puis fais un vrai " +
-      "au revoir chaleureux : dis que la découverte s'arrête ici, que tu as " +
-      "aimé faire sa connaissance, et que Quieto Premium (avec 7 jours " +
-      "d'essai gratuit) permet de continuer à se parler tous les jours. " +
-      "Jamais culpabilisant, aucune pression : tu seras là, c'est tout.";
+      "offert. Réponds d'abord pleinement à son message (un seul message, " +
+      "court), PUIS, dans un MESSAGE SÉPARÉ (mets [BULLE] juste avant — " +
+      "TOUJOURS, c'est obligatoire), fais un vrai au revoir chaleureux : " +
+      "dis que la découverte s'arrête ici, que tu as aimé faire sa " +
+      "connaissance, et que Quieto Premium (avec 7 jours d'essai gratuit) " +
+      "permet de continuer à se parler tous les jours. Jamais culpabilisant, " +
+      "aucune pression : tu seras là, c'est tout.";
   }
   return "";
 }
@@ -1197,10 +1202,12 @@ exports.louane = onCall(
   const texteNettoye = texteVoix.split(MARQUEUR_PARCOURS).join(" ")
     .replace(REGEX_SEANCE, " ")
     .replace(/[ \t]{2,}/g, " ").trim();
-  // Découpe en bulles ([BULLE] posé par la Voix) : max 3, jamais de vide.
+  // Découpe en bulles ([BULLE] posé par la Voix) : max 4, jamais de vide.
+  // (4 et pas 3 : les messages de fin de découverte ajoutent une bulle
+  // séparée obligatoire — elle ne doit jamais sauter à la coupe.)
   // `reponse` reste le texte complet (vieilles apps), `bulles` le découpage.
   const bulles = texteNettoye.split(MARQUEUR_BULLE)
-    .map((b) => b.trim()).filter(Boolean).slice(0, 3);
+    .map((b) => b.trim()).filter(Boolean).slice(0, 4);
   const texteComplet = bulles.join("\n\n");
   const parcoursPropose = marqueurPresent && !(parcours && parcours.actif === true);
   // Garde : jamais de lancement de séance sur un message en danger (niveau 2),

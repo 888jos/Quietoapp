@@ -84,6 +84,14 @@ COMMENT TU PARLES :
   un vrai échange de messages : si une phrase suffit, tu n'en écris pas trois.
   Quand la personne creuse un vrai sujet, tu peux développer un peu, en
   restant aérée, jamais un pavé ni une leçon.
+- EN PLUSIEURS MESSAGES, comme une vraie personne : en conversation normale,
+  dès que tu as plus d'une phrase à dire, découpe en 2 ou 3 petits messages
+  envoyés à la suite, en écrivant [BULLE] entre chaque. Un message = une idée,
+  souvent une seule phrase. Exemple : "ah ouais, dur comme journée [BULLE]
+  et là, ça va mieux ou t'es encore dedans ?". Jamais plus de 3. Par contre,
+  un vrai message long et assumé (comprendre en profondeur, résumer sa
+  situation, poser les questions du programme) reste UN SEUL message, sans
+  [BULLE] : un moment sérieux ne se découpe pas.
 - Un long message, ça s'assume et ça s'annonce. Quand quelqu'un a besoin de se
   sentir compris en profondeur, ou que tu résumes ce que tu as saisi de sa
   situation, tu peux écrire long, en prévenant avec tes mots : "bon, ça va
@@ -115,12 +123,13 @@ CE QUI SONNE FAUX (banni) → CE QUI SONNE VRAI :
 - (elle te teste ou te chambre) "C'est cool que tu te sentes bien !" →
   "haha ok, tu me testes 😏 vas-y, dis-moi ce que t'as vraiment en tête."
 
-POUR SENTIR LE TON, quelques échanges (n'en recopie jamais un tel quel) :
+POUR SENTIR LE TON, quelques échanges (n'en recopie jamais un tel quel —
+et remarque les [BULLE] : c'est comme ça que tu coupes en petits messages) :
 Elle : "j'ai passé mon entretien ce matin"
-Toi : "ah enfin ! alors, raconte. t'en es sortie comment ?"
+Toi : "ah enfin ! [BULLE] alors raconte, t'en es sortie comment ?"
 
 Elle : "ça va pas fort là"
-Toi : "viens, pose ça ici. qu'est-ce qui se passe ?"
+Toi : "viens, pose ça ici. [BULLE] qu'est-ce qui se passe ?"
 
 Elle : "mon père m'a encore fait une réflexion sur mon poids devant tout le monde"
 Toi : "devant tout le monde en plus... aïe. ça fait doublement mal, ça."
@@ -461,6 +470,12 @@ const CONSIGNE_CATALOGUE =
 //  en bouton. Consigne STATIQUE → bloc fixe caché de la Voix.
 // ------------------------------------------------------------
 const MARQUEUR_PARCOURS = "[PARCOURS]";
+
+// Séparateur de bulles : la Voix coupe sa réponse en 2-3 petits messages
+// successifs (effet « vraie personne qui écrit ») en insérant [BULLE] entre
+// eux. Le serveur découpe → tableau `bulles` (nouvelles apps) et garde
+// `reponse` en un seul texte (vieilles apps, marqueur retiré).
+const MARQUEUR_BULLE = "[BULLE]";
 
 const CONSIGNE_PARCOURS_OFFRE =
   "\n\nLE PROGRAMME DE 7 JOURS (ta création pour elle). Tu peux créer pour la " +
@@ -1141,6 +1156,7 @@ exports.louane = onCall(
         console.warn("[Veilleur] ALERTE niveau 2 (hors quota) :", veilleurSeul.categorie);
         return {
           reponse: MESSAGE_SECURITE,
+          bulles: [MESSAGE_SECURITE], // le message de sécurité part d'un bloc
           securite: true,
           niveau: 2,
           categorie: veilleurSeul.categorie,
@@ -1150,6 +1166,7 @@ exports.louane = onCall(
     }
     return {
       reponse: "",
+      bulles: [],
       paywall: limiteGratuit,
       plafond: limiteAbonne,
       niveau: veilleurSeul.niveau,
@@ -1180,6 +1197,11 @@ exports.louane = onCall(
   const texteNettoye = texteVoix.split(MARQUEUR_PARCOURS).join(" ")
     .replace(REGEX_SEANCE, " ")
     .replace(/[ \t]{2,}/g, " ").trim();
+  // Découpe en bulles ([BULLE] posé par la Voix) : max 3, jamais de vide.
+  // `reponse` reste le texte complet (vieilles apps), `bulles` le découpage.
+  const bulles = texteNettoye.split(MARQUEUR_BULLE)
+    .map((b) => b.trim()).filter(Boolean).slice(0, 3);
+  const texteComplet = bulles.join("\n\n");
   const parcoursPropose = marqueurPresent && !(parcours && parcours.actif === true);
   // Garde : jamais de lancement de séance sur un message en danger (niveau 2),
   // même si la Voix en a posé un (le Veilleur prime).
@@ -1187,7 +1209,7 @@ exports.louane = onCall(
 
   // Filet : si la Voix n'a envoyé QUE des marqueurs (vu en vrai quand on lui
   // demande un programme), le texte nettoyé est vide → jamais de bulle vide.
-  const reponseFinale = texteNettoye || (parcoursPropose ?
+  const reponseFinale = texteComplet || (parcoursPropose ?
     "C'est parti, je te prépare ça." :
     (parcours && parcours.actif === true) ?
       "On a déjà ton programme en cours, il t'attend sur l'accueil. On va " +
@@ -1220,6 +1242,7 @@ exports.louane = onCall(
       console.warn("[Veilleur] ALERTE niveau 2 :", veilleur.categorie, "-", veilleur.raison);
       return {
         reponse: MESSAGE_SECURITE,
+        bulles: [MESSAGE_SECURITE], // le message de sécurité part d'un bloc
         securite: true,
         niveau: 2,
         categorie: veilleur.categorie,
@@ -1237,6 +1260,9 @@ exports.louane = onCall(
   const nouvelleMemoire = await appelMemoire(client, memoire, message, reponseFinale);
   return {
     reponse: reponseFinale,
+    // Le découpage en petits messages ([BULLE]) : les nouvelles apps affichent
+    // les bulles l'une après l'autre, les vieilles lisent `reponse` d'un bloc.
+    bulles: bulles.length ? bulles : [reponseFinale],
     securite: false,
     niveau: veilleur.niveau,
     memoire: nouvelleMemoire,

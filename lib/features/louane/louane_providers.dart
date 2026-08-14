@@ -66,50 +66,57 @@ const List<String> kLouaneIntro = [
 List<String> salutationsPourHeure(int h) {
   if (h >= 5 && h < 8) {
     return [
-      'Déjà debout ? La journée commence à peine :)',
-      'Debout avant tout le monde ? Respect',
-      'Tu commences tôt aujourd\'hui, dis donc',
+      'Déjà debout ? Le monde dort encore à moitié',
+      'La journée se lève à peine, prends ton temps',
+      'Tôt ce matin... Profite, tout est calme',
+      'Grosse journée devant toi ?',
     ];
   }
   if (h >= 8 && h < 12) {
     return [
       'Alors, elle démarre comment cette journée ?',
-      'Quoi de prévu aujourd\'hui ?',
-      'Alors, bien dormi ?',
+      "Dis-moi tout, y a quoi au menu aujourd'hui ?",
+      'Bien dormi ? Sois honnête :)',
+      'En forme ce matin ?',
     ];
   }
   if (h >= 12 && h < 14) {
     return [
-      'Il se passe quoi de beau ce midi ?',
+      'Petite pause de midi ? Raconte-moi ta matinée',
       'Alors, cette matinée ?',
-      'Petite pause de midi ? Raconte',
+      'Mi-journée :) Tu tiens le rythme ?',
+      'Il se passe quoi de beau ce midi ?',
     ];
   }
   if (h >= 14 && h < 18) {
     return [
-      "Qu'est-ce que tu fais de beau en pleine après-midi ?",
-      'Alors, elle se passe comment cette journée ?',
-      'Contente de te voir :) Quoi de neuf ?',
+      "En pleine après-midi... C'est souvent là que ça tire un peu, non ?",
+      'Ça me fait plaisir de te voir :) Quoi de neuf ?',
+      "Alors, où t'en es de ta journée ?",
+      'Viens, on souffle cinq minutes',
     ];
   }
   if (h >= 18 && h < 22) {
     return [
       'Alors, elle a donné quoi cette journée ?',
-      'Alors, ta journée ? Raconte-moi',
-      'Enfin le soir :) Tu peux souffler un peu ?',
+      'Enfin le soir... Tu peux souffler un peu ?',
+      "Il s'est passé quoi de marquant aujourd'hui ?",
+      'Pose ton sac, raconte-moi',
     ];
   }
   if (h >= 22 || h < 1) {
     return [
-      'Pas encore au lit à cette heure ? :)',
-      'Tiens, encore debout à cette heure :)',
-      'La journée se termine tard, dis donc',
+      'Pas encore au lit, toi :)',
+      'La journée est enfin finie... Elle était comment ?',
+      "C'est l'heure où la tête commence à tourner, non ?",
+      "Fin de journée en douceur, j'espère",
     ];
   }
   return [
     "Qu'est-ce que tu fais debout en pleine nuit ?",
-    "Tout le monde dort et toi t'es là :)",
-    "Tu n'arrives pas à dormir ?",
+    'Tout le monde dort... Nous, on peut parler',
+    'La nuit est longue quand la tête tourne, hein',
+    'Les pensées qui tournent à cette heure, je connais',
   ];
 }
 

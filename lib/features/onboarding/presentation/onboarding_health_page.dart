@@ -108,11 +108,10 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
                               children: [
                                 Text(
                                   'Tes minutes de calme sont ajoutées dans '
-                                  'l\'app Santé. Et si tu le permets, Louane '
-                                  'tient compte de tes signaux de bien-être : '
-                                  'ton état d\'esprit, ton sommeil, tes '
-                                  'évaluations. Toujours en niveau global, '
-                                  'jamais le détail.',
+                                  'l\'app Santé, et Louane tient compte de '
+                                  'tes signaux de bien-être (état d\'esprit, '
+                                  'sommeil, évaluations) — toujours en '
+                                  'niveau global, jamais le détail.',
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     color: AppColors.textPrimary,
                                     height: 1.6,
@@ -121,14 +120,32 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
                                 ),
                                 const SizedBox(
                                     height: AppConstants.spacingMd),
-                                Text(
-                                  'Sur l\'écran suivant, appuie sur '
-                                  '« Tout activer » : c\'est ce qui permet à '
-                                  'Louane de vraiment s\'adapter à toi.',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.accent,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.6,
+                                // LE message à retenir : gros, au centre,
+                                // « Tout activer » en accent — la personne
+                                // doit le voir avant la feuille Apple.
+                                Text.rich(
+                                  TextSpan(
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.45,
+                                    ),
+                                    children: [
+                                      const TextSpan(text: 'Appuie sur '),
+                                      TextSpan(
+                                        text: '« Tout activer »',
+                                        style: TextStyle(
+                                          color: AppColors.accent,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const TextSpan(
+                                        text: ' pour qu\'on puisse te '
+                                            'suivre de la meilleure '
+                                            'manière possible.',
+                                      ),
+                                    ],
                                   ),
                                   textAlign: TextAlign.center,
                                 ),

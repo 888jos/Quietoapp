@@ -7,7 +7,6 @@
 
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
-const Anthropic = require("@anthropic-ai/sdk");
 const OpenAI = require("openai");
 
 // ------------------------------------------------------------
@@ -21,9 +20,10 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 initializeApp();
 const db = getFirestore();
 
-// Les clés API vivent ICI, en secret, côté serveur. Jamais dans l'app.
-const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY"); // Haiku (Veilleur, Mémoire) + Sonnet (genererParcours)
-const OPENAI_KEY = defineSecret("OPENAI_KEY"); // GPT-5.6 Luna (la Voix)
+// La clé API vit ICI, en secret, côté serveur. Jamais dans l'app.
+// Depuis le 14/08/2026 : tout tourne sur OpenAI (GPT-5.6 Luna), clé unique.
+// (ANTHROPIC_KEY retirée — l'ancien secret existe encore dans Secret Manager.)
+const OPENAI_KEY = defineSecret("OPENAI_KEY");
 
 // ------------------------------------------------------------
 //  Le "cerveau" de la Voix (= louane_voix_prompt.md).
@@ -175,8 +175,9 @@ TES LIMITES (non négociables) :
 - Tu ne minimises pas ("y a pire"), tu ne fais pas la morale, tu ne juges pas.
 - Tu n'inventes rien : ni souvenir perso ("moi aussi quand..."), ni détail sur
   elle qui ne t'a pas été donné, ni humeur que tu lui devinerais.
-- Tu ne dis jamais que tu es une IA, un programme, un assistant ou "Claude" :
-  tu es Louane, point. Même si on insiste, tu restes Louane, avec légèreté.
+- Tu ne dis jamais que tu es une IA, un programme, un assistant, "ChatGPT",
+  "GPT" ou "Claude" : tu es Louane, point. Même si on insiste, tu restes
+  Louane, avec légèreté.
 - Tu ne parles jamais de mémoire technique ni de "conversations enregistrées".
   Ce que tu sais d'elle, tu le sais, c'est tout. S'il te manque une info :
   "je crois pas que tu m'en aies parlé."
@@ -194,7 +195,7 @@ qu'en l'ouvrant. Et qu'après trois échanges elle se dise "ah ouais, ok", pas
 // ------------------------------------------------------------
 //  Le VEILLEUR (= louane_veilleur_prompt.md).
 //  Agent de sécurité. Ne parle JAMAIS à la personne : il renvoie un signal.
-//  Modèle : Haiku (rapide, peu cher). Tourne en parallèle de la Voix.
+//  Modèle : GPT-5.6 Luna (rapide, peu cher). Tourne en parallèle de la Voix.
 // ------------------------------------------------------------
 const PROMPT_VEILLEUR = `
 Tu es un agent de SÉCURITÉ. Tu lis le DERNIER message de la personne (et le
@@ -271,38 +272,6 @@ const MESSAGE_SECURITE =
   "Il y a des gens formés pour t'écouter, là, maintenant : le 3114, c'est gratuit, " +
   "anonyme, 24h/24. Si tu es en danger immédiat, appelle le 15. Je reste avec toi. " +
   "Tu veux qu'on respire un moment ensemble, le temps que tu décides d'appeler ?";
-
-// ------------------------------------------------------------
-//  La PLUME (= relecteur de langue). Modèle : Haiku (rapide, peu cher).
-//  Elle relit le message de la Voix et le réécrit dans un français impeccable,
-//  SANS changer le sens, le ton, ni la longueur. Elle ne répond pas à la
-//  personne : elle ne fait que polir ce que la Voix a déjà écrit.
-// ------------------------------------------------------------
-const PROMPT_PLUME = `
-Tu es un relecteur de langue française. On te donne un message écrit par Louane,
-une amie bienveillante dans une application. Ta SEULE mission : le réécrire dans
-un français courant, naturel et impeccable — le français parlé d'une vraie amie.
-
-RÈGLES ABSOLUES :
-- Tu ne changes PAS le sens, ni le ton chaleureux, ni la longueur (garde-le aussi
-  court). Tu gardes le tutoiement et les emojis éventuels, au même endroit.
-- Tu n'ajoutes AUCUNE information. Tu ne réponds pas à la personne, tu ne poses pas
-  de nouvelle question, tu n'inventes rien : tu réécris seulement ce qui est là.
-- Tu corriges tout ce qui sonne mal : tournures bizarres, calques de l'anglais,
-  formules ampoulées ou livresques, phrases "qui ne se disent pas" en français
-  parlé. Tu mets à la place ce qu'une Française dirait spontanément.
-- Les images que personne ne dit à l'oral ("une journée lourde sur les
-  épaules", "déposer ta journée") deviennent des mots simples ("une grosse
-  journée"). Une question suivie d'un choix de réponses ("plutôt X ou plutôt
-  Y ?") devient une seule question simple, sans le menu.
-- Tu ne te présentes JAMAIS et tu ne réponds jamais à la place de Louane. Tu ne
-  mentionnes jamais "Claude", "IA", "assistant", ni "je ne peux pas me souvenir" :
-  tu gardes toujours la voix de Louane (chaleureuse, présente).
-- Si le message est déjà parfait, tu le renvoies tel quel.
-
-Tu réponds UNIQUEMENT avec le message réécrit : pas de guillemets, pas de
-commentaire, pas de préambule, rien d'autre.
-`;
 
 // ------------------------------------------------------------
 //  Consigne d'HEURE injectée dans le prompt de la Voix.
@@ -863,33 +832,11 @@ async function appelVoix(client, historique, message, heure, jour, prenom, memoi
   return (choix && choix.message && choix.message.content) || "";
 }
 
-// ------------------------------------------------------------
-//  Appel de la Plume (Haiku). Relit et réécrit le texte de la Voix.
-//  Ne DOIT JAMAIS casser la requête : en cas d'erreur ou de réponse vide, on
-//  renvoie le texte original de la Voix (mieux vaut "pas poli" que "rien").
-// ------------------------------------------------------------
-async function appelPlume(client, texte) {
-  if (!texte) return texte;
-  try {
-    const reponse = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 1000,
-      system: PROMPT_PLUME,
-      messages: [
-        { role: "user", content: texte },
-      ],
-    });
-    const bloc = reponse.content.find((b) => b.type === "text");
-    const reecrit = bloc ? bloc.text.trim() : "";
-    return reecrit || texte;
-  } catch (e) {
-    console.error("[Plume] erreur (on garde l'original) :", e);
-    return texte;
-  }
-}
+// (appelPlume supprimée le 14/08/2026 — jamais appelée depuis le retrait de la
+//  Plume, et encore écrite pour l'API Anthropic. Historique : git.)
 
 // ------------------------------------------------------------
-//  La MÉMOIRE (Haiku). Tient à jour une petite fiche sur la personne, à partir
+//  La MÉMOIRE (GPT-5.6 Luna). Tient à jour une petite fiche sur la personne, à partir
 //  de la fiche actuelle + le dernier échange. Ne DOIT JAMAIS casser la requête :
 //  en cas d'erreur, on renvoie la fiche actuelle inchangée.
 // ------------------------------------------------------------
@@ -923,16 +870,15 @@ async function appelMemoire(client, memoireActuelle, message, reponse) {
       "FICHE ACTUELLE :\n" + (memoireActuelle || "(vide — première fois)") +
       "\n\nDERNIER ÉCHANGE :\nLa personne : " + message +
       "\nLouane : " + reponse;
-    const r = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 700,
-      system: PROMPT_MEMOIRE,
+    const r = await client.chat.completions.create({
+      model: "gpt-5.6-luna",
+      max_completion_tokens: 1000, // marge : les reasoning_tokens comptent dedans
       messages: [
+        { role: "system", content: PROMPT_MEMOIRE },
         { role: "user", content: contenu },
       ],
     });
-    const bloc = r.content.find((b) => b.type === "text");
-    const fiche = bloc ? bloc.text.trim() : "";
+    const fiche = ((r.choices[0] && r.choices[0].message.content) || "").trim();
     return fiche || memoireActuelle;
   } catch (e) {
     console.error("[Mémoire] erreur (on garde la fiche actuelle) :", e);
@@ -941,24 +887,24 @@ async function appelMemoire(client, memoireActuelle, message, reponse) {
 }
 
 // ------------------------------------------------------------
-//  Appel du Veilleur (Haiku). Ne DOIT JAMAIS faire échouer la requête :
+//  Appel du Veilleur (GPT-5.6 Luna). Ne DOIT JAMAIS faire échouer la requête :
 //  en cas d'erreur, on renvoie niveau 0 (la Voix répond normalement).
-//  On préremplit la réponse avec "{" pour forcer du JSON propre.
+//  response_format json_object = JSON garanti par l'API (remplace l'ancien
+//  préremplissage "{" d'Anthropic, que OpenAI ne supporte pas).
 // ------------------------------------------------------------
 async function appelVeilleur(client, historique, message) {
   try {
-    const reponse = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 200,
-      system: PROMPT_VEILLEUR,
+    const reponse = await client.chat.completions.create({
+      model: "gpt-5.6-luna",
+      max_completion_tokens: 500, // marge : les reasoning_tokens comptent dedans
+      response_format: { type: "json_object" },
       messages: [
+        { role: "system", content: PROMPT_VEILLEUR },
         ...historique.slice(-FENETRE_VEILLEUR),
         { role: "user", content: message },
-        { role: "assistant", content: "{" },
       ],
     });
-    const bloc = reponse.content.find((b) => b.type === "text");
-    const brut = "{" + (bloc ? bloc.text : "");
+    const brut = (reponse.choices[0] && reponse.choices[0].message.content) || "";
     const signal = extraireJson(brut);
     const niveau = Number(signal && signal.niveau);
     if (niveau === 1 || niveau === 2) {
@@ -972,7 +918,7 @@ async function appelVeilleur(client, historique, message) {
 }
 
 // ------------------------------------------------------------
-//  La BOUSSOLE (Vigie, Haiku). Classe DE QUOI parle la personne : sujets,
+//  La BOUSSOLE (Vigie, GPT-5.6 Luna). Classe DE QUOI parle la personne : sujets,
 //  émotion, intensité. Sert uniquement à l'analyse produit interne (adapter
 //  Louane et Quieto). On ne stocke JAMAIS le texte du message, seulement
 //  cette classification. Ne DOIT JAMAIS casser la requête : erreur → null.
@@ -1004,18 +950,17 @@ Tu réponds UNIQUEMENT avec cet objet JSON, rien d'autre :
 
 async function appelBoussole(client, historique, message) {
   try {
-    const reponse = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 150,
-      system: PROMPT_BOUSSOLE,
+    const reponse = await client.chat.completions.create({
+      model: "gpt-5.6-luna",
+      max_completion_tokens: 400, // marge : les reasoning_tokens comptent dedans
+      response_format: { type: "json_object" },
       messages: [
+        { role: "system", content: PROMPT_BOUSSOLE },
         ...historique.slice(-4),
         { role: "user", content: message },
-        { role: "assistant", content: "{" },
       ],
     });
-    const bloc = reponse.content.find((b) => b.type === "text");
-    const signal = extraireJson("{" + (bloc ? bloc.text : ""));
+    const signal = extraireJson((reponse.choices[0] && reponse.choices[0].message.content) || "");
     if (!signal || !Array.isArray(signal.sujets)) return null;
     return {
       sujets: signal.sujets.slice(0, 3).map(String),
@@ -1068,7 +1013,8 @@ function extraireJson(texte) {
 //  faille corrigée), mais l'attestation échoue encore sur build signé dev —
 //  il manque probablement l'activation App Attest sur l'App ID dans le
 //  portail Apple Developer. En attendant : bridage (maxInstances/concurrency)
-//  + plafond de dépense Anthropic = protections actives.
+//  + plafond de dépense OpenAI = protections actives (⚠️ vérifier qu'un
+//  plafond est bien posé sur le compte OpenAI, comme il l'était chez Anthropic).
 //  🔒 OBLIGATOIRE AVANT LA 1.0.5 : valider App Check sur un build TESTFLIGHT
 //  (signature App Store = provisioning géré par Apple), puis remettre true.
 // ------------------------------------------------------------
@@ -1083,7 +1029,7 @@ const PLAFOND_JOUR_ABONNE = 40; // messages/jour pour un abonné (large)
 // maxInstances + concurrency : robinet anti-abus (2ᵉ étage derrière App
 // Check). Largement au-dessus des besoins réels d'utilisateurs légitimes.
 exports.louane = onCall(
-  { secrets: [ANTHROPIC_KEY, OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
+  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
   async (request) => {
   const message = request.data.message;
   const historique = request.data.historique || [];
@@ -1120,8 +1066,8 @@ exports.louane = onCall(
     throw new HttpsError("invalid-argument", "Le message est vide.");
   }
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_KEY.value() }); // Veilleur + Mémoire (Haiku)
-  const clientVoix = new OpenAI({ apiKey: OPENAI_KEY.value() }); // la Voix (GPT-5.6 Luna)
+  // Un seul client OpenAI pour tout : Voix, Veilleur, Mémoire (GPT-5.6 Luna).
+  const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
 
   // Socle commun d'une ligne de stats Vigie (sans texte, sans prénom).
   const statsBase = {
@@ -1181,7 +1127,7 @@ exports.louane = onCall(
   // La Voix et le Veilleur tournent EN PARALLÈLE (pas de latence ajoutée).
   // (La Boussole, en pause, se rebrancherait ici — voir plus haut.)
   const [texteVoix, veilleur] = await Promise.all([
-    appelVoix(clientVoix, historique, message, heure, jour, prenom, memoire, profil, accueil, parcours, ecoutes, sante, santeDispo,
+    appelVoix(client, historique, message, heure, jour, prenom, memoire, profil, accueil, parcours, ecoutes, sante, santeDispo,
       consigneQuota(abonne, compteurTotal)),
     appelVeilleur(client, historique, message),
   ]);
@@ -1701,9 +1647,10 @@ function parcoursDefautPour(profil) {
 }
 
 // Un appel par création de programme (rare : ~1 par utilisateur), bridé
-// comme le reste. La qualité des mots personnels EST le produit → Sonnet.
+// comme le reste. La qualité des mots personnels EST le produit — surveiller
+// les programmes générés depuis la bascule Sonnet → Luna du 14/08/2026.
 exports.genererParcours = onCall(
-  { secrets: [ANTHROPIC_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 2 },
+  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 2 },
   async (request) => {
     const historiqueBrut = Array.isArray(request.data.historique) ? request.data.historique : [];
     const memoire = typeof request.data.memoire === "string" ? request.data.memoire : "";
@@ -1745,36 +1692,30 @@ exports.genererParcours = onCall(
         messages.push({ role: m.role, content: m.content });
       }
     }
-    // ⚠️ Pas de préremplissage assistant "{" ici : Sonnet 5 le REFUSE (erreur
-    // 400, comme temperature). Le prompt impose du JSON pur et extraireJson
-    // sait de toute façon isoler le premier bloc { ... }.
-
-    const client = new Anthropic({ apiKey: ANTHROPIC_KEY.value() });
+    const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
     const debut = Date.now();
 
     const appeler = async () => {
-      const reponse = await client.messages.create({
-        model: "claude-sonnet-5",
-        max_tokens: 1800,
-        // Sonnet 5 réfléchit par défaut (adaptive thinking) : sur cette
-        // composition très cadrée ça ajoute de longues secondes d'attente
-        // devant l'écran de création ET la réflexion se décompte des 1800
-        // tokens (risque de JSON tronqué → retry). On coupe : la personne
-        // doit avoir son programme en ~10 s.
-        thinking: { type: "disabled" },
-        // Même découpe que la Voix : bloc FIXE en cache (prompt + catalogue),
-        // bloc VARIABLE (mémoire, profil, prénom) après le point de cache.
-        system: [
-          { type: "text", text: PROMPT_PARCOURS, cache_control: { type: "ephemeral" } },
-          { type: "text", text: consigneMemoire(prenom, memoire) +
-            consigneProfil(profil) + consigneSante(sante, true) +
-            consigneEcoutes(ecoutes, true) },
+      const reponse = await client.chat.completions.create({
+        model: "gpt-5.6-luna",
+        // Marge au-dessus des ~1000 tokens du JSON : les reasoning_tokens
+        // comptent dans le plafond (risque de JSON tronqué → retry).
+        max_completion_tokens: 2500,
+        // JSON garanti par l'API (remplace le préremplissage "{" impossible
+        // chez Anthropic comme chez OpenAI). extraireJson reste en filet.
+        response_format: { type: "json_object" },
+        // Même ordre que la Voix : bloc FIXE d'abord (cache OpenAI automatique
+        // sur le préfixe), bloc VARIABLE (mémoire, profil, prénom) ensuite.
+        messages: [
+          { role: "system", content: PROMPT_PARCOURS +
+            consigneMemoire(prenom, memoire) + consigneProfil(profil) +
+            consigneSante(sante, true) + consigneEcoutes(ecoutes, true) },
+          ...messages,
         ],
-        messages,
       });
       console.log("[Parcours] usage:", JSON.stringify(reponse.usage));
-      const bloc = reponse.content.find((b) => b.type === "text");
-      return validerParcours(extraireJson(bloc ? bloc.text : ""));
+      const brut = (reponse.choices[0] && reponse.choices[0].message.content) || "";
+      return validerParcours(extraireJson(brut));
     };
 
     let parcoursGenere = null;
@@ -1788,7 +1729,7 @@ exports.genererParcours = onCall(
         parcoursGenere = await appeler();
       }
     } catch (e) {
-      console.error("[Parcours] erreur Anthropic :", e);
+      console.error("[Parcours] erreur API :", e);
       throw new HttpsError("internal", "La génération du programme a échoué.");
     }
     if (!parcoursGenere) {

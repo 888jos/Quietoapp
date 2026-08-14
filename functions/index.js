@@ -8,6 +8,7 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
 const Anthropic = require("@anthropic-ai/sdk");
+const OpenAI = require("openai");
 
 // ------------------------------------------------------------
 //  VIGIE (analyse produit interne) : Firestore via le SDK admin.
@@ -20,8 +21,9 @@ const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 initializeApp();
 const db = getFirestore();
 
-// La clé API vit ICI, en secret, côté serveur. Jamais dans l'app.
-const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY");
+// Les clés API vivent ICI, en secret, côté serveur. Jamais dans l'app.
+const ANTHROPIC_KEY = defineSecret("ANTHROPIC_KEY"); // Haiku (Veilleur, Mémoire) + Sonnet (genererParcours)
+const OPENAI_KEY = defineSecret("OPENAI_KEY"); // GPT-5.6 Luna (la Voix)
 
 // ------------------------------------------------------------
 //  Le "cerveau" de la Voix (= louane_voix_prompt.md).
@@ -822,54 +824,43 @@ const FENETRE_VOIX = 8; // 4 échanges (8 messages) — le fil récent suffit, l
 const FENETRE_VEILLEUR = 6; // 3 échanges — assez pour le contexte de sécurité
 
 // ------------------------------------------------------------
-//  Appel de la Voix (Sonnet 5). Peut échouer → l'erreur remonte (l'app affiche
-//  son message de repli).
-//  ⚠️ Sonnet 5 REFUSE le paramètre temperature (erreur 400) : ne pas le remettre.
+//  Appel de la Voix (GPT-5.6 Luna, OpenAI — bascule du 14/08/2026, avant :
+//  claude-sonnet-5). Peut échouer → l'erreur remonte (l'app affiche
+//  son message de repli). Pas de temperature : on reste sur le défaut.
 // ------------------------------------------------------------
 async function appelVoix(client, historique, message, heure, jour, prenom, memoire, profil, accueil, parcours, ecoutes, sante, santeDispo, quota) {
-  const reponse = await client.messages.create({
-    model: "claude-sonnet-5",
-    max_tokens: 1000,
-    // Le prompt système est coupé en deux : le bloc FIXE (personnalité +
-    // catalogue + offre de parcours + lancement de séance, identique à
-    // chaque appel) est mis en CACHE Anthropic → relu à 10 % du tarif.
-    // TTL 1 h (et non 5 min) : le cache est PARTAGÉ entre tous les
-    // utilisateurs, mais notre trafic (~150 msgs/jour) laisse souvent plus
-    // de 5 min entre deux messages → avec le TTL court, les logs montraient
-    // 2 réécritures complètes (6 673 tokens à 125 %) pour 1 lecture. À 1 h,
-    // l'écriture coûte 2× mais n'arrive qu'après une vraie accalmie ; le
-    // reste de la journée, tout le monde lit à 10 %. Le bloc VARIABLE
-    // (heure, mémoire, profil, parcours en cours, écoutes) vient après le
-    // point de cache. ⚠️ Ne rien insérer avant ou dans le bloc fixe qui
-    // varie d'un appel à l'autre, sinon le cache ne prend plus jamais.
-    // (Les prompts Haiku — Plume, Mémoire, Veilleur — font 300 à 1 000
-    // tokens : sous le minimum cachable de Haiku (4 096), inutile d'essayer.)
-    system: [
+  const reponse = await client.chat.completions.create({
+    model: "gpt-5.6-luna",
+    // Luna "réfléchit" un peu avant d'écrire : ces reasoning_tokens comptent
+    // dans le plafond → marge au-dessus des ~1000 tokens de réponse utile.
+    max_completion_tokens: 1500,
+    messages: [
+      // Le prompt système garde l'ordre FIXE puis VARIABLE : le cache OpenAI
+      // est AUTOMATIQUE sur le préfixe (≥ 1024 tokens, lecture à prix réduit,
+      // rien à configurer, cf. prompt_tokens_details.cached_tokens dans les
+      // logs). ⚠️ Ne rien insérer avant ou dans le bloc fixe qui varie d'un
+      // appel à l'autre, sinon le cache ne prend plus jamais.
       {
-        type: "text",
-        text: PROMPT_VOIX + CONSIGNE_CATALOGUE + CONSIGNE_PARCOURS_OFFRE +
-          CONSIGNE_SEANCE_LANCEMENT + CONSIGNE_PRESENTATION,
-        cache_control: { type: "ephemeral", ttl: "1h" },
-      },
-      {
-        type: "text",
-        text: consigneHeure(heure) + consigneJour(jour) +
+        role: "system",
+        content: PROMPT_VOIX + CONSIGNE_CATALOGUE + CONSIGNE_PARCOURS_OFFRE +
+          CONSIGNE_SEANCE_LANCEMENT + CONSIGNE_PRESENTATION +
+          consigneHeure(heure) + consigneJour(jour) +
           consigneMemoire(prenom, memoire) + consigneProfil(profil) +
           consigneAccueil(accueil) + consigneParcours(parcours) +
           consigneEcoutes(ecoutes) + consigneSante(sante, false, santeDispo) +
           (quota || ""),
       },
-    ],
-    messages: [
       ...historique.slice(-FENETRE_VOIX),
       { role: "user", content: message },
     ],
   });
   // Suivi des coûts réels (base de l'agent comptable) + preuve que le cache
-  // prend (cache_read_input_tokens > 0 à partir du 2ᵉ message).
+  // prend. ⚠️ Format OpenAI : prompt_tokens / completion_tokens /
+  // prompt_tokens_details.cached_tokens (plus les champs Anthropic
+  // input_tokens / cache_read_input_tokens — adapter quieto-econome).
   console.log("[Voix] usage:", JSON.stringify(reponse.usage));
-  const bloc = reponse.content.find((b) => b.type === "text");
-  return bloc ? bloc.text : "";
+  const choix = reponse.choices && reponse.choices[0];
+  return (choix && choix.message && choix.message.content) || "";
 }
 
 // ------------------------------------------------------------
@@ -1092,7 +1083,7 @@ const PLAFOND_JOUR_ABONNE = 40; // messages/jour pour un abonné (large)
 // maxInstances + concurrency : robinet anti-abus (2ᵉ étage derrière App
 // Check). Largement au-dessus des besoins réels d'utilisateurs légitimes.
 exports.louane = onCall(
-  { secrets: [ANTHROPIC_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
+  { secrets: [ANTHROPIC_KEY, OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
   async (request) => {
   const message = request.data.message;
   const historique = request.data.historique || [];
@@ -1129,7 +1120,8 @@ exports.louane = onCall(
     throw new HttpsError("invalid-argument", "Le message est vide.");
   }
 
-  const client = new Anthropic({ apiKey: ANTHROPIC_KEY.value() });
+  const client = new Anthropic({ apiKey: ANTHROPIC_KEY.value() }); // Veilleur + Mémoire (Haiku)
+  const clientVoix = new OpenAI({ apiKey: OPENAI_KEY.value() }); // la Voix (GPT-5.6 Luna)
 
   // Socle commun d'une ligne de stats Vigie (sans texte, sans prénom).
   const statsBase = {
@@ -1189,7 +1181,7 @@ exports.louane = onCall(
   // La Voix et le Veilleur tournent EN PARALLÈLE (pas de latence ajoutée).
   // (La Boussole, en pause, se rebrancherait ici — voir plus haut.)
   const [texteVoix, veilleur] = await Promise.all([
-    appelVoix(client, historique, message, heure, jour, prenom, memoire, profil, accueil, parcours, ecoutes, sante, santeDispo,
+    appelVoix(clientVoix, historique, message, heure, jour, prenom, memoire, profil, accueil, parcours, ecoutes, sante, santeDispo,
       consigneQuota(abonne, compteurTotal)),
     appelVeilleur(client, historique, message),
   ]);
@@ -1258,11 +1250,11 @@ exports.louane = onCall(
     // Déjà alerté → on laisse Louane continuer (on ne répète pas le numéro).
   }
 
-  // Hors danger : la réponse de la Voix part TELLE QUELLE — c'est Opus (le même
-  // modèle cohérent que Claude) qui écrit déjà un français impeccable, avec tout
-  // le contexte. (Plume retirée : un 2e agent sans contexte cassait le personnage
-  // et la cohérence.) La Mémoire met à jour la fiche (avec le texte nettoyé,
-  // pour que le marqueur ne fuie jamais dans la fiche).
+  // Hors danger : la réponse de la Voix part TELLE QUELLE — la Voix (GPT-5.6
+  // Luna depuis le 14/08/2026) écrit avec tout le contexte. (Plume retirée :
+  // un 2e agent sans contexte cassait le personnage et la cohérence.) La
+  // Mémoire met à jour la fiche (avec le texte nettoyé, pour que le marqueur
+  // ne fuie jamais dans la fiche).
   const nouvelleMemoire = await appelMemoire(client, memoire, message, reponseFinale);
   return {
     reponse: reponseFinale,

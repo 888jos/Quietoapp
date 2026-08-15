@@ -119,7 +119,7 @@ List<String> accueilDeRepli(String prenom, Map<String, String> profil) {
     debutante
         ? '$duree $moment, en partant de zéro : c\'est exactement comme ça '
             'que ça tient.'
-        : '$duree $moment — c\'est jouable, même les jours chargés.',
+        : '$duree $moment, c\'est jouable même les jours chargés.',
     // 3 · l'invitation
     prenom.isEmpty
         ? 'Viens, on essaie tout de suite. Trente secondes, pas plus.'

@@ -54,14 +54,18 @@ class AccueilLouaneRepository {
       }).timeout(_delaiMax);
       final data = result.data as Map;
       final bulles = (data['bulles'] as List?)
-              ?.map((b) => b.toString().trim())
+              ?.map((b) => avecMajuscule(b.toString().trim()))
               .where((b) => b.isNotEmpty)
+              .take(2)
               .toList() ??
           const <String>[];
       if (bulles.isEmpty) {
         return (bulles: accueilDeRepli(prenom, profil), repli: true);
       }
-      return (bulles: bulles, repli: false);
+      // La dernière bulle ne vient jamais du modèle : c'est l'invitation à
+      // l'exercice, donc le bouton. Elle doit être exactement la même pour
+      // tout le monde, à la virgule près.
+      return (bulles: [...bulles, kInvitationEssai], repli: false);
     } catch (_) {
       // Réseau coupé, serveur en froid, délai dépassé : la personne ne doit
       // jamais le savoir.
@@ -70,10 +74,31 @@ class AccueilLouaneRepository {
   }
 }
 
+/// La dernière bulle de l'accueil, toujours identique : elle amène l'exercice
+/// de respiration, donc le bouton. Écrite à la main, jamais générée — une
+/// invitation à agir se teste et se garde stable.
+const kInvitationEssai =
+    'On a qu\'à essayer tout de suite pendant 30 secondes et tu me diras si '
+    'ça te fait du bien ;)';
+
+/// Majuscule en début de bulle. Le modèle écrit souvent en minuscule pour
+/// faire naturel ; en début de message, ça se lit comme une phrase coupée.
+/// On cherche la première LETTRE (une bulle peut ouvrir sur un guillemet ou
+/// une ponctuation) et on la relève si besoin.
+String avecMajuscule(String texte) {
+  for (var i = 0; i < texte.length; i++) {
+    final c = texte[i];
+    if (c.toLowerCase() == c.toUpperCase()) continue; // pas une lettre
+    if (c == c.toUpperCase()) return texte; // déjà en majuscule
+    return texte.replaceRange(i, i + 1, c.toUpperCase());
+  }
+  return texte;
+}
+
 /// Le résumé écrit à l'avance, construit à partir des mêmes réponses. Il doit
 /// tenir tout seul : c'est lui que verront les gens sans réseau. Même
-/// structure en trois temps que la consigne serveur — le fond, les
-/// habitudes, l'invitation — pour que les deux versions se ressemblent.
+/// structure que la consigne serveur : le fond, puis les habitudes, puis
+/// l'invitation commune.
 List<String> accueilDeRepli(String prenom, Map<String, String> profil) {
   final priorite = (profil['q1'] ?? '').trim().isNotEmpty
       ? profil['q1']!.trim()
@@ -116,13 +141,13 @@ List<String> accueilDeRepli(String prenom, Map<String, String> profil) {
     parPriorite[priorite] ??
         'Tu es venue chercher un peu de calme, et c\'est déjà un vrai pas.',
     // 2 · les habitudes
-    debutante
-        ? '$duree $moment, en partant de zéro : c\'est exactement comme ça '
-            'que ça tient.'
-        : '$duree $moment, c\'est jouable même les jours chargés.',
-    // 3 · l'invitation
-    prenom.isEmpty
-        ? 'Viens, on essaie tout de suite. Trente secondes, pas plus.'
-        : 'Viens $prenom, on essaie tout de suite. Trente secondes, pas plus.',
+    avecMajuscule(
+      debutante
+          ? '$duree $moment, en partant de zéro : c\'est exactement comme ça '
+              'que ça tient.'
+          : '$duree $moment, c\'est jouable même les jours chargés.',
+    ),
+    // 3 · l'invitation, la même que sur le chemin serveur
+    kInvitationEssai,
   ];
 }

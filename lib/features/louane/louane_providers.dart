@@ -66,7 +66,7 @@ const List<String> kLouaneIntro = [
 List<String> salutationsPourHeure(int h) {
   if (h >= 5 && h < 8) {
     return [
-      'Déjà debout ? Le monde dort encore à moitié',
+      'Déjà debout ?',
       'La journée se lève à peine, prends ton temps',
       'Tôt ce matin... Profite, tout est calme',
       'Grosse journée devant toi ?',
@@ -75,8 +75,8 @@ List<String> salutationsPourHeure(int h) {
   if (h >= 8 && h < 12) {
     return [
       'Alors, elle démarre comment cette journée ?',
-      "Dis-moi tout, y a quoi au menu aujourd'hui ?",
-      'Bien dormi ? Sois honnête :)',
+      "Alors, qu'est-ce que t'as prévu aujourd'hui ?",
+      "Alors, t'as bien dormi ?",
       'En forme ce matin ?',
     ];
   }
@@ -90,18 +90,22 @@ List<String> salutationsPourHeure(int h) {
   }
   if (h >= 14 && h < 18) {
     return [
-      "En pleine après-midi... C'est souvent là que ça tire un peu, non ?",
       'Ça me fait plaisir de te voir :) Quoi de neuf ?',
       "Alors, où t'en es de ta journée ?",
-      'Viens, on souffle cinq minutes',
+      'Tu tiens le coup cet aprèm ?',
+      "Il te reste beaucoup à faire aujourd'hui ?",
+      "T'arrives à souffler entre deux trucs ?",
+      'Ça avance ta journée ?',
+      'Tu peux te poser deux minutes là ?',
     ];
   }
   if (h >= 18 && h < 22) {
     return [
       'Alors, elle a donné quoi cette journée ?',
-      'Enfin le soir... Tu peux souffler un peu ?',
-      "Il s'est passé quoi de marquant aujourd'hui ?",
-      'Pose ton sac, raconte-moi',
+      "Alors, comment s'est passé aujourd'hui ?",
+      'Tu fais quoi de ta soirée ?',
+      "T'as réussi à souffler un peu aujourd'hui ?",
+      'Ta soirée commence comment ?',
     ];
   }
   if (h >= 22 || h < 1) {
@@ -114,9 +118,12 @@ List<String> salutationsPourHeure(int h) {
   }
   return [
     "Qu'est-ce que tu fais debout en pleine nuit ?",
-    'Tout le monde dort... Nous, on peut parler',
-    'La nuit est longue quand la tête tourne, hein',
-    'Les pensées qui tournent à cette heure, je connais',
+    "Qu'est-ce qui se passe ? Pourquoi t'es toujours debout ?",
+    "T'arrives pas à dormir ?",
+    "Tu veux qu'on parle un peu ?",
+    "Ça fait longtemps que t'es debout ?",
+    'Il se passe quoi cette nuit ?',
+    "T'as essayé de dormir ou pas encore ?",
   ];
 }
 

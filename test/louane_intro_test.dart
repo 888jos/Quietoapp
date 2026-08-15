@@ -81,13 +81,15 @@ void main() {
   });
 
   test('une salutation se découpe à chaque fin de phrase', () {
-    expect(bullesDepuisSalutation('Bien dormi ? Sois honnête :)'),
-        ['Bien dormi ?', 'Sois honnête :)']);
+    expect(
+        bullesDepuisSalutation(
+            "Qu'est-ce qui se passe ? Pourquoi t'es toujours debout ?"),
+        ["Qu'est-ce qui se passe ?", "Pourquoi t'es toujours debout ?"]);
     expect(bullesDepuisSalutation('Mi-journée :) Tu tiens le rythme ?'),
         ['Mi-journée :)', 'Tu tiens le rythme ?']);
     expect(
-        bullesDepuisSalutation('Tout le monde dort... Nous, on peut parler'),
-        ['Tout le monde dort...', 'Nous, on peut parler']);
+        bullesDepuisSalutation('Tôt ce matin... Profite, tout est calme'),
+        ['Tôt ce matin...', 'Profite, tout est calme']);
     // Une virgule ne coupe pas : une seule phrase = un seul message.
     expect(
         bullesDepuisSalutation('La journée se lève à peine, prends ton temps'),
@@ -98,7 +100,7 @@ void main() {
     expect(salutationsPourHeure(6).first, contains('Déjà debout'));
     expect(salutationsPourHeure(9).first, contains('démarre'));
     expect(salutationsPourHeure(13).first, contains('midi'));
-    expect(salutationsPourHeure(15).first, contains('après-midi'));
+    expect(salutationsPourHeure(15).first, contains('te voir'));
     expect(salutationsPourHeure(20).first, contains('donné quoi'));
     expect(salutationsPourHeure(23).first, contains('au lit'));
     expect(salutationsPourHeure(0).first, contains('au lit'));

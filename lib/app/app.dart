@@ -78,7 +78,15 @@ class _QuietoAppState extends ConsumerState<QuietoApp>
 
   void _surChangementDeRoute() {
     final conf = appRouter.routerDelegate.currentConfiguration;
-    final route = conf.fullPath.isEmpty ? conf.uri.path : conf.fullPath;
+    // PAS conf.fullPath : go_router en exclut par construction tout ce qui
+    // est ouvert par context.push (RouteMatchList.fullPath saute les
+    // ImperativeRouteMatch) → on lisait la page du DESSOUS, et le garde-fou
+    // anti-doublon jetait l'événement. Résultat mesuré sur 30 j : le paywall
+    // ouvert depuis le profil, une catégorie ou Louane n'était noté 0 fois
+    // sur 99, le lecteur 0 fois sur 22. Le dernier match, lui, est toujours
+    // l'écran réellement affiché. `.route.path` renvoie le MOTIF
+    // (`/player/:sessionId`), jamais les valeurs : rien de sensible ne part.
+    final route = conf.lastOrNull?.route.path ?? conf.uri.path;
     if (route == _derniereRoute) return;
     _derniereRoute = route;
     ref.read(vigieProvider).log('ecran', {'nom': route});

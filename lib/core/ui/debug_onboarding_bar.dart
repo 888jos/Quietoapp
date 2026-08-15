@@ -44,7 +44,7 @@ class _Etape {
 }
 
 /// L'onboarding dans l'ordre réel : connexion → quiz (5 questions) → fin de
-/// questionnaire → santé (iOS) → respiration → confiance → paywall.
+/// questionnaire → respiration → santé (iOS) → avis → paywall.
 ///
 /// La fin du questionnaire dépend du drapeau [kAccueilLouaneOnboarding] :
 /// l'écran fusionné (le compteur, puis Louane), ou l'ancien couple
@@ -62,9 +62,9 @@ final _etapes = <_Etape>[
     const _Etape(AppRoutes.onboardingLoading, 'création'),
     const _Etape(AppRoutes.onboardingReady, 'prêt'),
   ],
-  const _Etape(AppRoutes.onboardingSante, 'santé'),
   const _Etape(AppRoutes.onboardingBreath, 'respiration'),
-  const _Etape(AppRoutes.onboardingTrust, 'confiance'),
+  const _Etape(AppRoutes.onboardingSante, 'santé'),
+  const _Etape(AppRoutes.onboardingTrust, 'avis'),
   const _Etape(AppRoutes.paywall, 'paywall'),
 ];
 

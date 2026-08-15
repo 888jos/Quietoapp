@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,7 +32,11 @@ class _OnboardingBreathPageState extends ConsumerState<OnboardingBreathPage> {
     ref.read(vigieProvider).log('onboarding_etape', {'etape': 'breath'});
   }
 
-  void _continue() => context.go(AppRoutes.onboardingTrust);
+  /// Après l'exercice : Apple Santé sur iPhone (l'écran n'existe pas
+  /// ailleurs), puis les avis, puis le mur de paiement.
+  void _continue() => context.go(
+        Platform.isIOS ? AppRoutes.onboardingSante : AppRoutes.onboardingTrust,
+      );
 
   @override
   Widget build(BuildContext context) {

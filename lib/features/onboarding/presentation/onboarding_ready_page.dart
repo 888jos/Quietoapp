@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -189,11 +188,9 @@ class _OnboardingReadyPageState extends ConsumerState<OnboardingReadyPage> {
                     delay: const Duration(milliseconds: 680),
                     child: AppButton(
                       label: 'Essayer maintenant (30 s)',
-                      // Sur iPhone, on propose d'abord la connexion à Apple
-                      // Santé ; ailleurs, direct vers la respiration.
-                      onTap: () => context.go(Platform.isIOS
-                          ? AppRoutes.onboardingSante
-                          : AppRoutes.onboardingBreath),
+                      // Le bouton promet « 30 s » : il ouvre la respiration.
+                      // Apple Santé vient après l'exercice.
+                      onTap: () => context.go(AppRoutes.onboardingBreath),
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingLg),

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
@@ -261,11 +260,9 @@ class _OnboardingComprehensionPageState
 
   void _continuer() {
     HapticFeedback.lightImpact();
-    // Sur iPhone, on propose d'abord la connexion à Apple Santé ; ailleurs,
-    // direct vers la respiration. (Même enchaînement qu'avant.)
-    context.go(Platform.isIOS
-        ? AppRoutes.onboardingSante
-        : AppRoutes.onboardingBreath);
+    // Le bouton promet « 30 s » : il ouvre la respiration, rien d'autre.
+    // Apple Santé vient APRÈS l'exercice (cf. onboarding_breath_page).
+    context.go(AppRoutes.onboardingBreath);
   }
 
   /// Progression d'une sous-étape de la mue, entre [debut] et [fin].

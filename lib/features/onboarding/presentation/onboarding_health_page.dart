@@ -45,7 +45,7 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
     await HealthService.instance.requestAuthorization();
     await ref.read(storageServiceProvider).setHealthPromptSeen();
     if (!mounted) return;
-    context.go(AppRoutes.onboardingBreath);
+    context.go(AppRoutes.onboardingTrust);
   }
 
   @override

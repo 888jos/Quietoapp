@@ -33,7 +33,7 @@ abstract final class AppRoutes {
   static const onboardingComprehension = '/onboarding-comprehension';
   static const onboardingLoading = '/onboarding-loading';
   static const onboardingReady = '/onboarding-ready';
-  // Connexion Apple Santé — proposée uniquement sur iOS, entre ready et breath.
+  // Connexion Apple Santé — proposée uniquement sur iOS, APRÈS la respiration.
   static const onboardingSante = '/onboarding-sante';
   static const onboardingBreath = '/onboarding-breath';
   static const onboardingTrust = '/onboarding-trust';

@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +7,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/starry_background.dart';
+import 'widgets/cercle_comprehension.dart';
 
 class _PhraseData {
   final String label;
@@ -35,6 +35,14 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
   bool _navigated = false;
 
   late final List<_PhraseData> _phrases;
+
+  /// Palier de 2 % déjà « cliqué » (cf. la micro-vibration du compteur).
+  int _dernierPalier = 0;
+
+  /// Temps écoulé depuis le dernier cliquetis : en dessous de [_minEntreTicks],
+  /// le moteur haptique sature et se met à avaler les impulsions.
+  final _depuisTick = Stopwatch()..start();
+  static const _minEntreTicks = 55; // ms
 
   @override
   void initState() {
@@ -86,12 +94,30 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
     _progressController.addStatusListener((status) {
       if (status == AnimationStatus.completed && !_navigated) {
         _navigated = true;
+        // Arrivée à 100 % : une impulsion plus franche que les cliquetis,
+        // celle qui « pose » le compteur.
+        HapticFeedback.mediumImpact();
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) context.go(AppRoutes.onboardingReady);
         });
       }
     });
     _progressAnim.addListener(() {
+      // ── Le cliquetis du compteur ──────────────────────────────────
+      // Un tick tous les 2 %, façon molette : la courbe easeInOut fait
+      // qu'il s'emballe au milieu puis se pose à l'arrivée. Le garde-fou
+      // de temps évite de noyer le Taptic Engine au plus vite de la montée
+      // (il ignorerait les impulsions, et le rythme paraîtrait haché).
+      final palier = (_progressAnim.value * 50).floor();
+      if (palier > _dernierPalier &&
+          _depuisTick.elapsedMilliseconds >= _minEntreTicks) {
+        _dernierPalier = palier;
+        _depuisTick.reset();
+        HapticFeedback.selectionClick();
+      }
+      // ── L'arrivée d'une phrase ────────────────────────────────────
+      // Impact plus marqué que le cliquetis : on sent que quelque chose
+      // vient de se poser, pas que le chiffre avance.
       for (var i = 0; i < _phrases.length; i++) {
         if (_progressAnim.value >= _phrases[i].threshold &&
             !_vibratedPhrases.contains(i)) {
@@ -138,47 +164,21 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
                   SizedBox(
                     width: 220,
                     height: 220,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        AnimatedBuilder(
-                          animation: _waveController,
-                          builder: (context, _) => CustomPaint(
-                            size: const Size(220, 220),
-                            painter: _WavePainter(
-                              wavePhase: _waveController.value,
-                            ),
+                    child: AnimatedBuilder(
+                      animation:
+                          Listenable.merge([_progressAnim, _waveController]),
+                      builder: (context, _) => CercleComprehension(
+                        phaseOndes: _waveController.value,
+                        progression: _progressAnim.value,
+                        centre: Text(
+                          '${(_progressAnim.value * 100).round()}%',
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w300,
+                            color: AppColors.textPrimary,
                           ),
                         ),
-                        AnimatedBuilder(
-                          animation: _progressAnim,
-                          builder: (context, _) => SizedBox(
-                            width: 120,
-                            height: 120,
-                            child: CircularProgressIndicator(
-                              value: _progressAnim.value,
-                              color: AppColors.accent,
-                              backgroundColor: AppColors.cardSurface,
-                              strokeWidth: 8,
-                            ),
-                          ),
-                        ),
-                        AnimatedBuilder(
-                          animation: _progressAnim,
-                          builder: (context, _) {
-                            final percent =
-                                (_progressAnim.value * 100).round();
-                            return Text(
-                              '$percent%',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w300,
-                                color: AppColors.textPrimary,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                      ),
                     ),
                   ),
 
@@ -242,44 +242,4 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
       ),
     );
   }
-}
-
-// ── Painter : vagues concentriques ───────────────────────────────────────────
-
-class _WavePainter extends CustomPainter {
-  final double wavePhase; // 0.0 → 1.0, avance chaque frame
-
-  const _WavePainter({required this.wavePhase});
-
-  static const double _offset2 = 400 / 2000;
-  static const double _offset3 = 800 / 2000;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    _drawEllipse(canvas, center, wavePhase, 0.04, 105, 98);
-    _drawEllipse(
-        canvas, center, (wavePhase + _offset2) % 1.0, 0.06, 90, 84);
-    _drawEllipse(
-        canvas, center, (wavePhase + _offset3) % 1.0, 0.08, 75, 70);
-  }
-
-  void _drawEllipse(Canvas canvas, Offset center, double phase,
-      double opacity, double baseRx, double baseRy) {
-    final scale = 1.0 + 0.05 * math.sin(2 * math.pi * phase);
-    final paint = Paint()
-      ..color = AppColors.accent.withValues(alpha: opacity)
-      ..style = PaintingStyle.fill;
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: center,
-        width: baseRx * 2 * scale,
-        height: baseRy * 2 * scale,
-      ),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_WavePainter old) => old.wavePhase != wavePhase;
 }

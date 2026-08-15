@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/config/feature_flags.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/app_button.dart';
@@ -18,24 +19,37 @@ import 'widgets/text_input_slide.dart';
 /// accueil respirant → prénom → objectifs (multi) → expérience → moment
 /// → durée → création du programme. Le 1er objectif coché nomme le programme.
 class OnboardingPage extends ConsumerStatefulWidget {
-  const OnboardingPage({super.key});
+  const OnboardingPage({super.key, this.questionInitiale = 0});
+
+  /// Question d'ouverture du quiz, lue dans `?q=N`. Toujours 0 en usage
+  /// normal : seule la barre de debug s'en sert pour atterrir directement
+  /// sur une question donnée.
+  final int questionInitiale;
 
   @override
   ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
 class _OnboardingPageState extends ConsumerState<OnboardingPage> {
-  final _controller = PageController();
+  late final PageController _controller;
   final _firstNameFocus = FocusNode();
   int _page = 0;
   bool _loading = false;
 
+  /// Nombre de questions du quiz (la liste ne dépend pas de l'état).
+  int get _nbQuestions => _slideIds(const OnboardingState()).length;
+
   @override
   void initState() {
     super.initState();
+    _page = widget.questionInitiale.clamp(0, _nbQuestions - 1);
+    _controller = PageController(initialPage: _page);
     // Vigie : chaque étape vue est tracée → on sait exactement à quelle
     // question les gens abandonnent l'onboarding.
-    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'name', 'n': 0});
+    ref.read(vigieProvider).log('onboarding_etape', {
+      'etape': _slideIds(const OnboardingState())[_page],
+      'n': _page,
+    });
     // Le prénom est désormais le premier écran (l'accueil est assuré par la
     // page connexion juste avant). Le clavier n'arrive qu'une fois le fondu
     // fini ET la cascade posée : s'il surgit pendant la transition, l'arrivée
@@ -46,6 +60,19 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         if (mounted && _page == 0) _firstNameFocus.requestFocus();
       },
     );
+  }
+
+  /// Le routeur réutilise cet écran d'une question à l'autre (`?q=N` ne
+  /// change pas la route) : `initialPage` n'a donc lieu qu'à la première
+  /// construction, on rattrape les sauts suivants ici. Debug uniquement.
+  @override
+  void didUpdateWidget(covariant OnboardingPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.questionInitiale == oldWidget.questionInitiale) return;
+    final cible = widget.questionInitiale.clamp(0, _nbQuestions - 1);
+    if (cible != _page && _controller.hasClients) {
+      _controller.jumpToPage(cible);
+    }
   }
 
   // Vocabulaire : Quieto = espace de bien-être / santé mentale.
@@ -153,7 +180,11 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
       });
       if (!mounted) return;
       ref.read(firstNameProvider.notifier).state = state.firstName.trim();
-      context.go(AppRoutes.onboardingLoading);
+      // Fin de questionnaire : l'écran fusionné (compteur ▸ Louane ▸ résumé)
+      // ou, drapeau baissé, l'ancien couple création + « voici ton programme ».
+      context.go(kAccueilLouaneOnboarding
+          ? AppRoutes.onboardingComprehension
+          : AppRoutes.onboardingLoading);
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }

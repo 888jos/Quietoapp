@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import '../features/onboarding/presentation/onboarding_comprehension_page.dart';
 import '../features/onboarding/presentation/onboarding_connexion_page.dart';
 import '../features/onboarding/presentation/onboarding_page.dart';
 import '../features/onboarding/presentation/onboarding_loading_page.dart';
@@ -26,6 +27,10 @@ abstract final class AppRoutes {
   // Première étape : créer son compte (Apple/Google), jamais bloquant.
   static const onboardingConnexion = '/onboarding-connexion';
   static const onboarding = '/onboarding';
+  // Fin de questionnaire fusionnée (kAccueilLouaneOnboarding) : le compteur,
+  // Louane qui naît du cercle, son résumé. Remplace le couple loading + ready,
+  // qui reste en place derrière le drapeau.
+  static const onboardingComprehension = '/onboarding-comprehension';
   static const onboardingLoading = '/onboarding-loading';
   static const onboardingReady = '/onboarding-ready';
   // Connexion Apple Santé — proposée uniquement sur iOS, entre ready et breath.
@@ -86,7 +91,20 @@ final appRouter = GoRouter(
       path: AppRoutes.onboarding,
       pageBuilder: (context, state) => QuietoTransitions.fadePage(
         key: state.pageKey,
-        child: const OnboardingPage(),
+        child: OnboardingPage(
+          // `?q=N` : atterrir directement sur une question du quiz. Sert
+          // à la barre de debug (cf. debug_onboarding_bar.dart) ; absent
+          // du parcours normal, qui démarre toujours à 0.
+          questionInitiale:
+              int.tryParse(state.uri.queryParameters['q'] ?? '') ?? 0,
+        ),
+      ),
+    ),
+    GoRoute(
+      path: AppRoutes.onboardingComprehension,
+      pageBuilder: (context, state) => QuietoTransitions.fadePage(
+        key: state.pageKey,
+        child: const OnboardingComprehensionPage(),
       ),
     ),
     GoRoute(

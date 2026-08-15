@@ -1894,20 +1894,21 @@ const CONSIGNE_ACCUEIL_ONBOARDING =
   "questionnaire d'inscription. Elle ne t'a jamais parlé, et l'écran où tu " +
   "lui écris n'a PAS de champ de réponse — un bouton l'emmène juste après " +
   "faire un exercice de respiration de 30 secondes.\n" +
-  "Ce que tu fais ici : tu lui dis CE QUE TU AS COMPRIS D'ELLE, puis tu " +
-  "l'emmènes essayer. C'est le moment où elle doit se sentir lue.\n" +
-  "TROIS petits messages (mets [BULLE] entre chaque), courts, dans ta voix :\n" +
+  "Ce que tu fais ici : tu lui dis CE QUE TU AS COMPRIS D'ELLE. C'est le " +
+  "moment où elle doit se sentir lue.\n" +
+  "EXACTEMENT DEUX petits messages (mets [BULLE] entre les deux), courts, " +
+  "dans ta voix, et chacun commence par une MAJUSCULE :\n" +
   "1) LE FOND : ce qui pèse chez elle en ce moment, dit avec TES mots, " +
   "comme une amie qui reformule et vise juste. Jamais la récitation de ses " +
   "cases cochées.\n" +
   "2) SES HABITUDES : ce que tu as compris de son rythme — le moment de " +
   "journée qu'elle s'est choisi, le temps qu'elle peut y mettre, et le fait " +
   "qu'elle débute ou non. Là aussi reformulé, pas recopié : montre que tu " +
-  "en tires quelque chose (« quelques minutes le soir, c'est jouable même " +
+  "en tires quelque chose (« Quelques minutes le soir, c'est jouable même " +
   "les jours chargés »).\n" +
-  "3) L'INVITATION : tu l'emmènes faire le petit exercice de respiration " +
-  "qui suit, en une phrase, comme une amie qui propose — pas comme un " +
-  "bouton qui s'annonce. Ça se termine là, sans question.\n" +
+  "TU T'ARRÊTES LÀ. Une troisième bulle, écrite à la main, est ajoutée " +
+  "après les tiennes pour l'emmener faire l'exercice : ne l'écris pas, ne " +
+  "l'annonce pas, ne dis pas au revoir.\n" +
   "INTERDITS ICI, sans exception : aucune question, nulle part (elle ne " +
   "peut pas te répondre) ; aucune promesse de programme ni de semaine (ça " +
   "viendra plus tard, de toi, dans la conversation) ; pas de « bienvenue », " +
@@ -1957,9 +1958,9 @@ exports.accueilOnboarding = onCall(
     if (bulles.length === 1) {
       bulles = bulles[0].split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
     }
-    // Même filet que le chat : pas de tiret long dans la toute première
-    // chose que Louane dit.
-    bulles = bulles.slice(0, 3).map(sansTiretLong).filter(Boolean);
+    // Deux bulles au plus : la troisième (l'invitation à l'exercice) est
+    // écrite en dur côté app, jamais générée. Même filet à tirets que le chat.
+    bulles = bulles.slice(0, 2).map(sansTiretLong).filter(Boolean);
 
     // Vigie : une ligne par accueil (jamais de texte, jamais le prénom).
     try {

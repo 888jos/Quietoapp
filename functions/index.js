@@ -1241,7 +1241,10 @@ exports.louane = onCall(
   if (bulles.length === 1 && texteNettoye.length <= 500) {
     bulles = bulles[0].split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
   }
-  bulles = bulles.slice(0, 4);
+  // Aucun tiret long ne sort du chat non plus (le nettoyage vient APRÈS le
+  // découpage : il ne doit pas effacer les sauts de ligne qui servent à
+  // séparer les bulles).
+  bulles = bulles.slice(0, 4).map(sansTiretLong).filter(Boolean);
   const texteComplet = bulles.join("\n\n");
   const parcoursPropose = marqueurPresent && !(parcours && parcours.actif === true);
   // Garde : jamais de lancement de séance sur un message en danger (niveau 2),
@@ -1563,10 +1566,16 @@ TU RÉPONDS UNIQUEMENT avec cet objet JSON, rien d'autre, aucun texte autour :
 }
 `;
 
-// Filet derrière la consigne : aucun tiret long ne sort d'ici.
+// Filet derrière la consigne : aucun tiret long ne sort d'ici. La consigne
+// seule ne suffit pas — le modèle en repose régulièrement, et ça s'entend
+// tout de suite (« ça fait IA »). Remplacé par une virgule, comme à l'oral.
+//
+// ⚠️ On n'avale QUE les espaces et tabulations autour du tiret, jamais les
+// retours à la ligne : la Voix s'en sert pour séparer ses bulles quand elle
+// oublie [BULLE], et un \n mangé ici recollerait deux messages en un.
 function sansTiretLong(texte) {
-  return String(texte || "").replace(/\s*[—–]\s*/g, ", ")
-    .replace(/\s{2,}/g, " ").trim();
+  return String(texte || "").replace(/[ \t]*[—–][ \t]*/g, ", ")
+    .replace(/[ \t]{2,}/g, " ").trim();
 }
 
 // ------------------------------------------------------------
@@ -1948,7 +1957,9 @@ exports.accueilOnboarding = onCall(
     if (bulles.length === 1) {
       bulles = bulles[0].split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
     }
-    bulles = bulles.slice(0, 3);
+    // Même filet que le chat : pas de tiret long dans la toute première
+    // chose que Louane dit.
+    bulles = bulles.slice(0, 3).map(sansTiretLong).filter(Boolean);
 
     // Vigie : une ligne par accueil (jamais de texte, jamais le prénom).
     try {

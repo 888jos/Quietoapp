@@ -1865,3 +1865,109 @@ exports.genererParcours = onCall(
 
     return { ok: true, parcours: parcoursGenere, fallback };
   });
+
+// ============================================================
+//  ACCUEIL D'ONBOARDING (15/08/2026)
+//  Remplace la fausse création de programme en fin de questionnaire : Louane
+//  accueille la personne en 2-3 bulles écrites à partir de ses réponses.
+//
+//  Fonction SÉPARÉE de `louane`, à dessein :
+//   - pas de Veilleur (la personne n'a encore rien écrit à surveiller),
+//   - pas de Mémoire (la conversation n'a pas commencé),
+//   - pas de quota (ce n'est pas un message qu'elle a envoyé),
+//   → un seul appel modèle, ~0,1 ¢, et zéro risque pour le chat existant.
+//
+//  L'app a un repli local ET un délai d'attente : si cette fonction tombe ou
+//  traîne, l'onboarding continue sans que rien ne paraisse cassé.
+// ============================================================
+const CONSIGNE_ACCUEIL_ONBOARDING =
+  "\n\nCE MESSAGE-CI EST PARTICULIER : la personne vient de finir le " +
+  "questionnaire d'inscription. Elle ne t'a jamais parlé, et l'écran où tu " +
+  "lui écris n'a PAS de champ de réponse — un bouton l'emmène juste après " +
+  "faire un exercice de respiration de 30 secondes.\n" +
+  "Ce que tu fais ici : tu lui dis CE QUE TU AS COMPRIS D'ELLE, puis tu " +
+  "l'emmènes essayer. C'est le moment où elle doit se sentir lue.\n" +
+  "TROIS petits messages (mets [BULLE] entre chaque), courts, dans ta voix :\n" +
+  "1) LE FOND : ce qui pèse chez elle en ce moment, dit avec TES mots, " +
+  "comme une amie qui reformule et vise juste. Jamais la récitation de ses " +
+  "cases cochées.\n" +
+  "2) SES HABITUDES : ce que tu as compris de son rythme — le moment de " +
+  "journée qu'elle s'est choisi, le temps qu'elle peut y mettre, et le fait " +
+  "qu'elle débute ou non. Là aussi reformulé, pas recopié : montre que tu " +
+  "en tires quelque chose (« quelques minutes le soir, c'est jouable même " +
+  "les jours chargés »).\n" +
+  "3) L'INVITATION : tu l'emmènes faire le petit exercice de respiration " +
+  "qui suit, en une phrase, comme une amie qui propose — pas comme un " +
+  "bouton qui s'annonce. Ça se termine là, sans question.\n" +
+  "INTERDITS ICI, sans exception : aucune question, nulle part (elle ne " +
+  "peut pas te répondre) ; aucune promesse de programme ni de semaine (ça " +
+  "viendra plus tard, de toi, dans la conversation) ; pas de « bienvenue », " +
+  "pas de présentation de l'app, pas de liste, aucun marqueur technique, " +
+  "aucune séance nommée.";
+
+exports.accueilOnboarding = onCall(
+  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
+  async (request) => {
+    const prenom = typeof request.data.prenom === "string" ? request.data.prenom.slice(0, 40) : "";
+    const heure = request.data.heure;
+    const jour = request.data.jour;
+    const profil = (request.data.profil && typeof request.data.profil === "object") ?
+      request.data.profil : null;
+    const vigie = typeof request.data.vigie === "string" ? request.data.vigie.slice(0, 40) : "";
+    const session = typeof request.data.session === "string" ? request.data.session.slice(0, 40) : "";
+
+    const debut = Date.now();
+    const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
+
+    const reponse = await client.chat.completions.create({
+      model: "gpt-5.6-luna",
+      // Trois bulles courtes : la marge sert aux reasoning_tokens de Luna.
+      max_completion_tokens: 800,
+      messages: [
+        {
+          // Même ordre FIXE → VARIABLE que la Voix : PROMPT_VOIX en tête,
+          // donc le cache OpenAI peut prendre sur le préfixe partagé.
+          role: "system",
+          content: PROMPT_VOIX + consigneHeure(heure) + consigneJour(jour) +
+            consigneMemoire(prenom, "") + consigneProfil(profil) +
+            CONSIGNE_ACCUEIL_ONBOARDING,
+        },
+        {
+          role: "user",
+          content: "(elle vient de terminer le questionnaire d'inscription — accueille-la)",
+        },
+      ],
+    });
+    console.log("[Accueil] usage:", JSON.stringify(reponse.usage));
+
+    const choix = reponse.choices && reponse.choices[0];
+    const texte = (choix && choix.message && choix.message.content) || "";
+    // Même découpage que la Voix, plus strict : 3 bulles au maximum, et le
+    // filet du saut de paragraphe quand Luna oublie le marqueur.
+    let bulles = texte.split(MARQUEUR_BULLE).map((b) => b.trim()).filter(Boolean);
+    if (bulles.length === 1) {
+      bulles = bulles[0].split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+    }
+    bulles = bulles.slice(0, 3);
+
+    // Vigie : une ligne par accueil (jamais de texte, jamais le prénom).
+    try {
+      await db.collection("vigie_events").add({
+        vigie,
+        session,
+        version: "",
+        type: "onboarding_accueil_serveur",
+        props: {
+          ms: Date.now() - debut,
+          nbBulles: bulles.length,
+          objectif: String((profil && profil.q1) || "").slice(0, 60),
+        },
+        tsc: null,
+        ts: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      console.error("[Vigie] écriture onboarding_accueil échouée (ignorée) :", e);
+    }
+
+    return { bulles };
+  });

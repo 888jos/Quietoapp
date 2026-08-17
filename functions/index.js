@@ -1368,6 +1368,10 @@ exports.trace = onCall(
       request.data.evenements.slice(0, TRACE_MAX_EVENEMENTS) : [];
     const version = typeof request.data.version === "string" ?
       request.data.version.slice(0, 20) : "";
+    // Plateforme, envoyée par l'app à partir de la 1.0.18. Liste blanche :
+    // tout autre contenu (macos des tests, chaîne forgée…) devient "".
+    const os = ["ios", "android"].includes(request.data.os) ?
+      request.data.os : "";
 
     if (!vigie || evenements.length === 0) {
       return { ok: false };
@@ -1381,6 +1385,7 @@ exports.trace = onCall(
         vigie,
         session,
         version,
+        ...(os ? { os } : {}),
         type: e.type.slice(0, 40),
         props: nettoyerProps(e.props),
         // tsc = horloge du téléphone (ordre réel des événements dans la

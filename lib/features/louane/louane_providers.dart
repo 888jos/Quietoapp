@@ -72,13 +72,25 @@ const Map<String, String> kObjectifsEnMots = {
   'Prendre soin de moi': 'prendre soin de toi',
 };
 
+/// Quand la personne a coché LES CINQ réponses, les réciter ferait inventaire
+/// (et ne prouverait rien : elle a tout pris). Louane le dit franchement et
+/// lui rend la main — la seule variante qui rouvre la question. Deux phrases :
+/// [bullesDepuisSalutation] la coupe en deux bulles sur le « :) ». Publique
+/// pour les tests.
+const String kQuestionIntroToutCoche =
+    "J'ai vu que t'avais coché les cinq réponses quand je t'ai demandé ce "
+    "qui t'amenait :) Du coup c'est encore un peu flou pour moi, tu pourrais "
+    "me dire ce qui t'amène le plus, selon toi ?";
+
 /// La troisième bulle de la toute première ouverture : reformule TOUS les
 /// objectifs cochés (le quiz est à choix multiples — un seul objectif redit
 /// alors que la personne en a coché trois, et Louane a l'air de n'avoir
 /// écouté qu'à moitié). Un seul : « t'es surtout là pour X » ; plusieurs :
-/// « t'es là pour X, Y et Z ». Repli sur la question générique de
-/// [kLouaneIntro] si rien d'exploitable (vieux compte, onboarding sauté,
-/// objectifs renommés). Publique pour les tests.
+/// « t'es là pour X, Y et Z » ; les cinq : [kQuestionIntroToutCoche]. Le
+/// « bien » de « c'est bien ça ? » adoucit la confirmation (demande de Paul).
+/// Repli sur la question générique de [kLouaneIntro] si rien d'exploitable
+/// (vieux compte, onboarding sauté, objectifs renommés). Publique pour les
+/// tests.
 String questionIntroDepuisProfil(Map<String, String> profil) {
   final enMots = (profil['goals'] ?? '')
       .split('|')
@@ -91,15 +103,16 @@ String questionIntroDepuisProfil(Map<String, String> profil) {
     if (seul == null) return kLouaneIntro.last;
     enMots.add(seul);
   }
+  if (enMots.length == kObjectifsEnMots.length) return kQuestionIntroToutCoche;
   if (enMots.length == 1) {
     return "Du coup si j'ai bien compris, t'es surtout là pour "
-        "${enMots.first}, c'est ça ?";
+        "${enMots.first}, c'est bien ça ?";
   }
   final tous = enMots.length == 2
       ? '${enMots.first} et ${enMots.last}'
       : '${enMots.sublist(0, enMots.length - 1).join(', ')} '
           'et ${enMots.last}';
-  return "Du coup si j'ai bien compris, t'es là pour $tous, c'est ça ?";
+  return "Du coup si j'ai bien compris, t'es là pour $tous, c'est bien ça ?";
 }
 
 /// Les phrases d'accueil des sessions suivantes, selon l'heure locale
@@ -223,15 +236,19 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
     _introJouee = true;
 
     final premiereFois = _storage.louaneIntroVariante == null;
+    // La question d'ouverture reprend les objectifs de l'onboarding : la
+    // personne y a déjà dit ce qui l'amène, Louane montre qu'elle a suivi.
+    // Seule la variante « tout coché » se découpe (deux phrases, deux
+    // bulles) : le découpeur isolerait le « :) » final de la générique.
+    final question = questionIntroDepuisProfil(_storage.getOnboardingAnswers());
     final bulles = [
       LouaneMessage(auteur: AuteurMessage.louane, texte: _accroche()),
       if (premiereFois) ...[
         LouaneMessage(auteur: AuteurMessage.louane, texte: kLouaneIntro[1]),
-        // La question d'ouverture reprend l'objectif de l'onboarding : la
-        // personne y a déjà dit ce qui l'amène, Louane montre qu'elle a suivi.
-        LouaneMessage(
-            auteur: AuteurMessage.louane,
-            texte: questionIntroDepuisProfil(_storage.getOnboardingAnswers())),
+        ...(question == kQuestionIntroToutCoche
+                ? bullesDepuisSalutation(question)
+                : [question])
+            .map((t) => LouaneMessage(auteur: AuteurMessage.louane, texte: t)),
       ] else
         // La salutation se découpe à chaque fin de phrase : « Bien dormi ?
         // Sois honnête :) » = deux messages, comme un humain.

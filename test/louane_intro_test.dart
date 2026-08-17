@@ -59,7 +59,24 @@ void main() {
     expect(notifier.state.messages, hasLength(3));
     expect(notifier.state.messages[2].texte,
         contains('surtout là pour apaiser ton stress'));
-    expect(notifier.state.messages[2].texte, contains("c'est ça ?"));
+    expect(notifier.state.messages[2].texte, contains("c'est bien ça ?"));
+  });
+
+  test('tout coché : Louane le dit et rend la main, en deux bulles', () async {
+    // Les cinq réponses cochées : les réciter ferait inventaire. Louane
+    // l'avoue et repose la question — la seule variante en deux bulles.
+    SharedPreferences.setMockInitialValues({
+      AppConstants.prefOnboardingAnswers: jsonEncode({
+        'goals': 'Apaiser mon stress|Mieux dormir|Calmer mon anxiété|'
+            'Me reconcentrer|Prendre soin de moi',
+      }),
+    });
+    final notifier = await creerNotifier();
+    await notifier.jouerIntro();
+
+    expect(notifier.state.messages, hasLength(4));
+    expect(notifier.state.messages[2].texte, contains('les cinq réponses'));
+    expect(notifier.state.messages[3].texte, contains("t'amène le plus"));
   });
 
   test('plusieurs objectifs cochés : la question les reprend TOUS', () {
@@ -104,12 +121,18 @@ void main() {
       expect(questionIntroDepuisProfil({'goals': o}), isNot(kLouaneIntro.last),
           reason: 'pas de reformulation pour : $o');
     }
-    // Et tout cocher donne une phrase qui reste une seule question propre.
-    final toutCoche = questionIntroDepuisProfil({'goals': objectifs.join('|')});
-    expect(toutCoche,
-        contains('apaiser ton stress, mieux dormir, calmer ton anxiété, '
-            'te reconcentrer et prendre soin de toi'));
-    expect('?'.allMatches(toutCoche), hasLength(1));
+    // Quatre cochés : on énumère encore (c'est exactement ce qu'elle a pris).
+    final quatre = questionIntroDepuisProfil({
+      'goals': objectifs.take(4).join('|'),
+    });
+    expect(quatre,
+        contains('apaiser ton stress, mieux dormir, calmer ton anxiété '
+            'et te reconcentrer'));
+    expect(quatre, contains("c'est bien ça ?"));
+    // Les cinq : plus d'inventaire, la variante « tout coché ».
+    expect(questionIntroDepuisProfil({'goals': objectifs.join('|')}),
+        kQuestionIntroToutCoche);
+    expect(bullesDepuisSalutation(kQuestionIntroToutCoche), hasLength(2));
   });
 
   test('l\'accroche utilise le prénom de l\'onboarding', () async {

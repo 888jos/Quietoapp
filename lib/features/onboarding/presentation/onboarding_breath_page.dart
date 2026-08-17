@@ -26,17 +26,30 @@ class OnboardingBreathPage extends ConsumerStatefulWidget {
 }
 
 class _OnboardingBreathPageState extends ConsumerState<OnboardingBreathPage> {
+  /// Pour savoir si la respiration est vécue ou expédiée : l'exercice dure
+  /// 30 s, donc en dessous la personne n'a pas ressenti grand-chose — et
+  /// c'est l'écran censé donner envie de payer, juste avant le paywall.
+  late final DateTime _ouverte;
+
   @override
   void initState() {
     super.initState();
+    _ouverte = DateTime.now();
     ref.read(vigieProvider).log('onboarding_etape', {'etape': 'breath'});
   }
 
   /// Après l'exercice : Apple Santé sur iPhone (l'écran n'existe pas
   /// ailleurs), puis les avis, puis le mur de paiement.
-  void _continue() => context.go(
-        Platform.isIOS ? AppRoutes.onboardingSante : AppRoutes.onboardingTrust,
-      );
+  /// [passe] : sortie par le lien « Passer » et non par « Continuer ».
+  void _continue({required bool passe}) {
+    ref.read(vigieProvider).log('onboarding_respiration', {
+      'secondes': DateTime.now().difference(_ouverte).inSeconds,
+      'passe': passe,
+    });
+    context.go(
+      Platform.isIOS ? AppRoutes.onboardingSante : AppRoutes.onboardingTrust,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,11 +86,14 @@ class _OnboardingBreathPageState extends ConsumerState<OnboardingBreathPage> {
                       ],
                     ),
                   ),
-                  AppButton(label: 'Continuer', onTap: _continue),
+                  AppButton(
+                    label: 'Continuer',
+                    onTap: () => _continue(passe: false),
+                  ),
                   const SizedBox(height: AppConstants.spacingSm),
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: _continue,
+                    onTap: () => _continue(passe: true),
                     child: const Padding(
                       padding: EdgeInsets.all(AppConstants.spacingSm),
                       child: Text(

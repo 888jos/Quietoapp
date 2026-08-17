@@ -39,10 +39,21 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
   Future<void> _connect() async {
     if (_connecting) return;
     setState(() => _connecting = true);
-    ref.read(vigieProvider).log('onboarding_sante', {'choix': 'connecter'});
+    // Capturé avant les await : après, la page peut être démontée et `ref`
+    // ne doit plus être lu.
+    final vigie = ref.read(vigieProvider);
+    vigie.log('onboarding_sante', {'choix': 'connecter'});
     // Affiche la feuille d'autorisation iOS et attend la réponse. Quoi que
     // choisisse l'utilisateur, on continue le flux sans bloquer.
     await HealthService.instance.requestAuthorization();
+    // Ce que la personne a RÉELLEMENT accordé. `onboarding_sante` ne mesure
+    // que le tap sur le bouton et n'a qu'une seule valeur possible (Apple
+    // interdit un « Plus tard »), donc il ne dit rien du choix fait DANS la
+    // feuille iOS. 'autorise' | 'refuse' | 'jamais' | '' hors iPhone — lu
+    // via l'écriture, HealthKit cachant volontairement les refus de lecture.
+    vigie.log('onboarding_sante_resultat', {
+      'etat': await HealthService.instance.etatConnexion(),
+    });
     await ref.read(storageServiceProvider).setHealthPromptSeen();
     if (!mounted) return;
     context.go(AppRoutes.onboardingTrust);

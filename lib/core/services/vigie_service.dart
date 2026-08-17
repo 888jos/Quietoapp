@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:cloud_functions/cloud_functions.dart';
@@ -128,6 +129,10 @@ class VigieService {
         'vigie': _id,
         'session': _session,
         'version': AppConstants.appVersion,
+        // 'ios' / 'android' : le dashboard sépare les deux plateformes.
+        // Avant ce champ (≤ 1.0.17), il devait la DEVINER (écran Apple
+        // Santé vu, magasin RevenueCat…) — maintenant elle est dite.
+        'os': Platform.operatingSystem,
         'evenements': lot,
       });
     } catch (e) {

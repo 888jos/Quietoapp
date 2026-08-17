@@ -329,7 +329,7 @@ class _PaywallScreenState extends State<PaywallScreen>
   // ---- Titre
   Widget _titleBlock() {
     return const Text(
-      'Comment marche\nton essai',
+      'Comment marche\nton essai gratuit',
       textAlign: TextAlign.center,
       style: TextStyle(
         color: Colors.white,
@@ -420,46 +420,28 @@ class _PaywallScreenState extends State<PaywallScreen>
 
   // ---- Timeline d'essai (3 étapes)
   Widget _timeline() {
-    // Mots-clés en blanc quasi pur + semi-gras : c'est le contraste avec le
-    // reste de la phrase qui les fait ressortir, pas la taille.
-    TextSpan em(String t) => TextSpan(
-          text: t,
-          style: TextStyle(color: _w(0.96), fontWeight: FontWeight.w600),
-        );
-    TextSpan tx(String t) => TextSpan(text: t);
-
+    // Descriptions en une seule graisse / une seule couleur : la hiérarchie se
+    // joue entre le titre et la phrase, pas à l'intérieur de la phrase.
     return Column(
       children: [
         _step(
           icon: Icons.lock_open_outlined,
           title: 'Aujourd\'hui',
-          desc: [
-            em('Toutes les méditations'),
-            tx(', ton '),
-            em('programme personnalisé'),
-            tx(' et '),
-            em('Louane'),
-            tx(' en illimité.'),
-          ],
+          desc: 'Toutes les méditations, ton programme personnalisé '
+              'et Louane en illimité.',
           last: false,
         ),
         _step(
           icon: Icons.notifications_none_outlined,
           title: _offer.reminderWhen,
-          desc: [
-            em('On te prévient'),
-            tx(' avant la fin de l\'essai (aucune mauvaise surprise).'),
-          ],
+          desc: 'On te prévient avant la fin de l\'essai '
+              '(aucune mauvaise surprise).',
           last: false,
         ),
         _step(
           icon: Icons.workspace_premium_outlined,
           title: _offer.chargeWhen,
-          desc: [
-            tx('Ton abonnement commence '),
-            em(_offer.chargeDate),
-            tx('.'),
-          ],
+          desc: 'Ton abonnement commence ${_offer.chargeDate}.',
           last: true,
         ),
       ],
@@ -469,7 +451,7 @@ class _PaywallScreenState extends State<PaywallScreen>
   Widget _step({
     required IconData icon,
     required String title,
-    required List<TextSpan> desc,
+    required String desc,
     required bool last,
   }) {
     return IntrinsicHeight(
@@ -521,19 +503,20 @@ class _PaywallScreenState extends State<PaywallScreen>
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 16.5,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
+                      fontSize: 17.5,
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
+                      letterSpacing: -0.35, // -0.02em
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text.rich(
-                    TextSpan(children: desc),
+                  const SizedBox(height: 5),
+                  Text(
+                    desc,
                     style: TextStyle(
-                      color: _w(0.72),
+                      color: _w(0.62),
                       fontSize: 14.5,
                       fontWeight: FontWeight.w400,
-                      height: 1.42,
+                      height: 1.45,
                     ),
                   ),
                 ],

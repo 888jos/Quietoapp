@@ -91,13 +91,7 @@ final appRouter = GoRouter(
       path: AppRoutes.onboarding,
       pageBuilder: (context, state) => QuietoTransitions.fadePage(
         key: state.pageKey,
-        child: OnboardingPage(
-          // `?q=N` : atterrir directement sur une question du quiz. Sert
-          // à la barre de debug (cf. debug_onboarding_bar.dart) ; absent
-          // du parcours normal, qui démarre toujours à 0.
-          questionInitiale:
-              int.tryParse(state.uri.queryParameters['q'] ?? '') ?? 0,
-        ),
+        child: const OnboardingPage(),
       ),
     ),
     GoRoute(

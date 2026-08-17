@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../config/app_constants.dart';
@@ -49,24 +48,13 @@ class SubscriptionNotifier extends StateNotifier<bool> {
 
   final StorageService _storage;
 
-  /// DEV : premium forcé par l'interrupteur du profil (tournage des vidéos).
-  /// Jamais persisté, et neutralisé en release (le bouton n'y existe pas et
-  /// la méthode ne fait rien) : impossible de shipper le bypass.
-  bool _devForce = false;
-
-  void devForcerPremium(bool actif) {
-    if (kReleaseMode) return;
-    _devForce = actif;
-    state = actif || _storage.isPremium;
-  }
-
   void _handleUpdate(CustomerInfo info) {
     final isPremium = info.entitlements.active
         .containsKey(AppConstants.entitlementPremium);
     // Persiste pour que le prochain démarrage parte avec le bon état
     // (jamais le forçage de test, uniquement le vrai statut).
     _storage.setIsPremium(isPremium);
-    state = _devForce || isPremium;
+    state = isPremium;
   }
 
   @override

@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/ambient_music.dart';
 import '../core/services/storage_providers.dart';
 import '../core/theme/app_theme.dart';
-import '../core/ui/debug_onboarding_bar.dart';
 import '../features/paywall/paywall_providers.dart';
 import '../features/player/player_providers.dart';
 import 'router.dart';
@@ -133,17 +131,6 @@ class _QuietoAppState extends ConsumerState<QuietoApp>
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: appRouter,
-      // Outil de dev uniquement : les flèches d'onboarding en haut à gauche.
-      // `kDebugMode` est une constante → en release le builder vaut null et
-      // la barre n'existe même pas dans le binaire.
-      builder: kDebugMode
-          ? (context, child) => Stack(
-                children: [
-                  child ?? const SizedBox.shrink(),
-                  const DebugOnboardingBar(),
-                ],
-              )
-          : null,
     );
   }
 }

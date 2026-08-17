@@ -60,37 +60,46 @@ const List<String> kLouaneIntro = [
   "Alors dis-moi, qu'est-ce qui t'amène ici ? :)",
 ];
 
-/// La question d'ouverture quand l'onboarding a été rempli. Louane vient d'y
-/// lire les réponses (écran de compréhension) : redemander « qu'est-ce qui
-/// t'amène ? » sonnerait comme si elle n'avait rien écouté. Elle reformule
-/// donc ce qu'elle a compris et le fait confirmer — une phrase par objectif
-/// prioritaire, jamais la case cochée telle quelle. Publique pour les tests
-/// (mêmes règles de style que [kLouaneIntro]).
-const Map<String, String> kQuestionIntroParPriorite = {
-  'Apaiser mon stress': "Du coup si j'ai bien compris, t'es surtout là pour "
-      "apaiser ton stress, c'est ça ?",
-  'Mieux dormir': "Du coup si j'ai bien compris, t'es surtout là pour "
-      "retrouver de vraies nuits, c'est ça ?",
-  'Calmer mon anxiété': "Du coup si j'ai bien compris, t'es surtout là pour "
-      "calmer ton anxiété, c'est ça ?",
-  'Me reconcentrer': "Du coup si j'ai bien compris, t'es surtout là pour "
-      "retrouver ta concentration, c'est ça ?",
-  'Prendre soin de moi': "Du coup si j'ai bien compris, t'es surtout là pour "
-      "prendre enfin un peu soin de toi, c'est ça ?",
+/// Chaque objectif du quiz, tourné vers la personne. VOLONTAIREMENT calqué
+/// sur les mots des cartes cochées (retour de Paul, 17/08) : la preuve que
+/// Louane a écouté, c'est de redire les mots que la personne a choisis, pas
+/// d'en inventer de plus jolis. Publique pour les tests.
+const Map<String, String> kObjectifsEnMots = {
+  'Apaiser mon stress': 'apaiser ton stress',
+  'Mieux dormir': 'mieux dormir',
+  'Calmer mon anxiété': 'calmer ton anxiété',
+  'Me reconcentrer': 'te reconcentrer',
+  'Prendre soin de moi': 'prendre soin de toi',
 };
 
-/// La troisième bulle de la toute première ouverture : reformule l'objectif
-/// prioritaire (`q1`, sinon le premier objectif coché — même repli que
-/// l'accueil d'onboarding), et retombe sur la question générique de
-/// [kLouaneIntro] si rien n'est stocké (vieux compte, onboarding sauté,
-/// objectif inconnu). Publique pour les tests.
+/// La troisième bulle de la toute première ouverture : reformule TOUS les
+/// objectifs cochés (le quiz est à choix multiples — un seul objectif redit
+/// alors que la personne en a coché trois, et Louane a l'air de n'avoir
+/// écouté qu'à moitié). Un seul : « t'es surtout là pour X » ; plusieurs :
+/// « t'es là pour X, Y et Z ». Repli sur la question générique de
+/// [kLouaneIntro] si rien d'exploitable (vieux compte, onboarding sauté,
+/// objectifs renommés). Publique pour les tests.
 String questionIntroDepuisProfil(Map<String, String> profil) {
-  final priorite = (profil['q1'] ?? '').trim().isNotEmpty
-      ? profil['q1']!.trim()
-      : (profil['goals'] ?? '')
-          .split('|')
-          .firstWhere((g) => g.isNotEmpty, orElse: () => '');
-  return kQuestionIntroParPriorite[priorite] ?? kLouaneIntro.last;
+  final enMots = (profil['goals'] ?? '')
+      .split('|')
+      .map((g) => kObjectifsEnMots[g.trim()])
+      .whereType<String>()
+      .toList();
+  // Profil sans liste mais avec une priorité (`q1`) : elle fait l'affaire.
+  if (enMots.isEmpty) {
+    final seul = kObjectifsEnMots[(profil['q1'] ?? '').trim()];
+    if (seul == null) return kLouaneIntro.last;
+    enMots.add(seul);
+  }
+  if (enMots.length == 1) {
+    return "Du coup si j'ai bien compris, t'es surtout là pour "
+        "${enMots.first}, c'est ça ?";
+  }
+  final tous = enMots.length == 2
+      ? '${enMots.first} et ${enMots.last}'
+      : '${enMots.sublist(0, enMots.length - 1).join(', ')} '
+          'et ${enMots.last}';
+  return "Du coup si j'ai bien compris, t'es là pour $tous, c'est ça ?";
 }
 
 /// Les phrases d'accueil des sessions suivantes, selon l'heure locale

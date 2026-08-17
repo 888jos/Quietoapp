@@ -51,31 +51,47 @@ void main() {
     // redemande pas, elle reformule et fait confirmer.
     SharedPreferences.setMockInitialValues({
       AppConstants.prefOnboardingAnswers:
-          jsonEncode({'q1': 'Apaiser mon stress'}),
+          jsonEncode({'goals': 'Apaiser mon stress'}),
     });
     final notifier = await creerNotifier();
     await notifier.jouerIntro();
 
     expect(notifier.state.messages, hasLength(3));
-    expect(notifier.state.messages[2].texte, contains('apaiser ton stress'));
+    expect(notifier.state.messages[2].texte,
+        contains('surtout là pour apaiser ton stress'));
     expect(notifier.state.messages[2].texte, contains("c'est ça ?"));
   });
 
-  test('sans priorité, le premier objectif coché sert de base', () {
+  test('plusieurs objectifs cochés : la question les reprend TOUS', () {
+    // Le quiz est à choix multiples : n'en redire qu'un, c'est n'avoir
+    // écouté qu'à moitié. Avec les mots des cartes, dans l'ordre coché.
     expect(questionIntroDepuisProfil({'goals': 'Mieux dormir|Me reconcentrer'}),
-        contains('de vraies nuits'));
+        contains('pour mieux dormir et te reconcentrer'));
+    expect(
+        questionIntroDepuisProfil({
+          'goals': 'Apaiser mon stress|Mieux dormir|Prendre soin de moi',
+        }),
+        contains('pour apaiser ton stress, mieux dormir '
+            'et prendre soin de toi'));
+    // Un objectif renommé/inconnu est ignoré, les autres tiennent.
+    expect(
+        questionIntroDepuisProfil({'goals': 'Objectif disparu|Mieux dormir'}),
+        contains('surtout là pour mieux dormir'));
   });
 
   test('sans réponse d\'onboarding, la question générique reste', () {
-    // Vieux compte, onboarding sauté ou objectif inconnu : le repli est la
+    // Vieux compte, onboarding sauté ou objectifs inconnus : le repli est la
     // question ouverte historique, jamais une phrase à côté de la plaque.
     expect(questionIntroDepuisProfil({}), kLouaneIntro.last);
-    expect(questionIntroDepuisProfil({'q1': 'Objectif disparu'}),
+    expect(questionIntroDepuisProfil({'goals': 'Objectif disparu'}),
         kLouaneIntro.last);
+    // Profil sans liste mais avec une priorité : elle fait l'affaire.
+    expect(questionIntroDepuisProfil({'q1': 'Calmer mon anxiété'}),
+        contains('calmer ton anxiété'));
   });
 
-  test('chaque objectif de l\'onboarding a sa reformulation', () {
-    // Les intitulés doivent suivre ceux du questionnaire (weekly_program.dart) :
+  test('chaque objectif du quiz a ses mots', () {
+    // Les intitulés doivent suivre ceux du questionnaire (onboarding_page) :
     // un objectif renommé là-bas sans mise à jour ici retomberait en générique.
     const objectifs = [
       'Apaiser mon stress',
@@ -85,9 +101,15 @@ void main() {
       'Prendre soin de moi',
     ];
     for (final o in objectifs) {
-      expect(questionIntroDepuisProfil({'q1': o}), isNot(kLouaneIntro.last),
+      expect(questionIntroDepuisProfil({'goals': o}), isNot(kLouaneIntro.last),
           reason: 'pas de reformulation pour : $o');
     }
+    // Et tout cocher donne une phrase qui reste une seule question propre.
+    final toutCoche = questionIntroDepuisProfil({'goals': objectifs.join('|')});
+    expect(toutCoche,
+        contains('apaiser ton stress, mieux dormir, calmer ton anxiété, '
+            'te reconcentrer et prendre soin de toi'));
+    expect('?'.allMatches(toutCoche), hasLength(1));
   });
 
   test('l\'accroche utilise le prénom de l\'onboarding', () async {
@@ -187,7 +209,12 @@ void main() {
         unicode: true);
     final textes = [
       ...kLouaneIntro,
-      ...kQuestionIntroParPriorite.values,
+      // Les questions d'ouverture composées : chaque objectif seul, un duo,
+      // et la totale — les règles de style valent pour toutes.
+      for (final o in kObjectifsEnMots.keys)
+        questionIntroDepuisProfil({'goals': o}),
+      questionIntroDepuisProfil({'goals': 'Apaiser mon stress|Mieux dormir'}),
+      questionIntroDepuisProfil({'goals': kObjectifsEnMots.keys.join('|')}),
       for (var h = 0; h < 24; h++) ...salutationsPourHeure(h),
     ];
     for (final m in textes) {

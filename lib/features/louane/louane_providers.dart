@@ -50,11 +50,48 @@ class LouaneChatState {
 /// ouverture. Textes en dur : majuscule en début de message, pas d'emoji,
 /// pas de tiret long (émoticônes texte uniquement, genre ":)"). Public pour
 /// le test qui vérifie ces règles.
+///
+/// La troisième bulle n'est que le REPLI : quand les réponses d'onboarding
+/// sont là, [questionIntroDepuisProfil] la remplace par une reformulation de
+/// l'objectif choisi.
 const List<String> kLouaneIntro = [
   'Hey',
   "Moi c'est Louane",
   "Alors dis-moi, qu'est-ce qui t'amène ici ? :)",
 ];
+
+/// La question d'ouverture quand l'onboarding a été rempli. Louane vient d'y
+/// lire les réponses (écran de compréhension) : redemander « qu'est-ce qui
+/// t'amène ? » sonnerait comme si elle n'avait rien écouté. Elle reformule
+/// donc ce qu'elle a compris et le fait confirmer — une phrase par objectif
+/// prioritaire, jamais la case cochée telle quelle. Publique pour les tests
+/// (mêmes règles de style que [kLouaneIntro]).
+const Map<String, String> kQuestionIntroParPriorite = {
+  'Apaiser mon stress': "Du coup si j'ai bien compris, t'es surtout là pour "
+      "apaiser ton stress, c'est ça ?",
+  'Mieux dormir': "Du coup si j'ai bien compris, t'es surtout là pour "
+      "retrouver de vraies nuits, c'est ça ?",
+  'Calmer mon anxiété': "Du coup si j'ai bien compris, t'es surtout là pour "
+      "calmer ton anxiété, c'est ça ?",
+  'Me reconcentrer': "Du coup si j'ai bien compris, t'es surtout là pour "
+      "retrouver ta concentration, c'est ça ?",
+  'Prendre soin de moi': "Du coup si j'ai bien compris, t'es surtout là pour "
+      "prendre enfin un peu soin de toi, c'est ça ?",
+};
+
+/// La troisième bulle de la toute première ouverture : reformule l'objectif
+/// prioritaire (`q1`, sinon le premier objectif coché — même repli que
+/// l'accueil d'onboarding), et retombe sur la question générique de
+/// [kLouaneIntro] si rien n'est stocké (vieux compte, onboarding sauté,
+/// objectif inconnu). Publique pour les tests.
+String questionIntroDepuisProfil(Map<String, String> profil) {
+  final priorite = (profil['q1'] ?? '').trim().isNotEmpty
+      ? profil['q1']!.trim()
+      : (profil['goals'] ?? '')
+          .split('|')
+          .firstWhere((g) => g.isNotEmpty, orElse: () => '');
+  return kQuestionIntroParPriorite[priorite] ?? kLouaneIntro.last;
+}
 
 /// Les phrases d'accueil des sessions suivantes, selon l'heure locale
 /// (0-23). Plusieurs variantes par créneau, tirées au sort, pour que celui
@@ -179,10 +216,14 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
     final premiereFois = _storage.louaneIntroVariante == null;
     final bulles = [
       LouaneMessage(auteur: AuteurMessage.louane, texte: _accroche()),
-      if (premiereFois)
-        ...kLouaneIntro.skip(1).map(
-            (t) => LouaneMessage(auteur: AuteurMessage.louane, texte: t))
-      else
+      if (premiereFois) ...[
+        LouaneMessage(auteur: AuteurMessage.louane, texte: kLouaneIntro[1]),
+        // La question d'ouverture reprend l'objectif de l'onboarding : la
+        // personne y a déjà dit ce qui l'amène, Louane montre qu'elle a suivi.
+        LouaneMessage(
+            auteur: AuteurMessage.louane,
+            texte: questionIntroDepuisProfil(_storage.getOnboardingAnswers())),
+      ] else
         // La salutation se découpe à chaque fin de phrase : « Bien dormi ?
         // Sois honnête :) » = deux messages, comme un humain.
         ...bullesDepuisSalutation(_salutationAleatoire()).map(

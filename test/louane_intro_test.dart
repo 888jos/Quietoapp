@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:quieto/core/config/app_constants.dart';
@@ -41,6 +43,51 @@ void main() {
     // L'intro est marquée comme vue pour les prochains lancements.
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getInt(AppConstants.prefLouaneIntroVariante), isNotNull);
+  });
+
+  test('la question d\'ouverture reformule l\'objectif de l\'onboarding',
+      () async {
+    // La personne a dit dans l'onboarding pourquoi elle est là : Louane ne
+    // redemande pas, elle reformule et fait confirmer.
+    SharedPreferences.setMockInitialValues({
+      AppConstants.prefOnboardingAnswers:
+          jsonEncode({'q1': 'Apaiser mon stress'}),
+    });
+    final notifier = await creerNotifier();
+    await notifier.jouerIntro();
+
+    expect(notifier.state.messages, hasLength(3));
+    expect(notifier.state.messages[2].texte, contains('apaiser ton stress'));
+    expect(notifier.state.messages[2].texte, contains("c'est ça ?"));
+  });
+
+  test('sans priorité, le premier objectif coché sert de base', () {
+    expect(questionIntroDepuisProfil({'goals': 'Mieux dormir|Me reconcentrer'}),
+        contains('de vraies nuits'));
+  });
+
+  test('sans réponse d\'onboarding, la question générique reste', () {
+    // Vieux compte, onboarding sauté ou objectif inconnu : le repli est la
+    // question ouverte historique, jamais une phrase à côté de la plaque.
+    expect(questionIntroDepuisProfil({}), kLouaneIntro.last);
+    expect(questionIntroDepuisProfil({'q1': 'Objectif disparu'}),
+        kLouaneIntro.last);
+  });
+
+  test('chaque objectif de l\'onboarding a sa reformulation', () {
+    // Les intitulés doivent suivre ceux du questionnaire (weekly_program.dart) :
+    // un objectif renommé là-bas sans mise à jour ici retomberait en générique.
+    const objectifs = [
+      'Apaiser mon stress',
+      'Mieux dormir',
+      'Calmer mon anxiété',
+      'Me reconcentrer',
+      'Prendre soin de moi',
+    ];
+    for (final o in objectifs) {
+      expect(questionIntroDepuisProfil({'q1': o}), isNot(kLouaneIntro.last),
+          reason: 'pas de reformulation pour : $o');
+    }
   });
 
   test('l\'accroche utilise le prénom de l\'onboarding', () async {
@@ -140,6 +187,7 @@ void main() {
         unicode: true);
     final textes = [
       ...kLouaneIntro,
+      ...kQuestionIntroParPriorite.values,
       for (var h = 0; h < 24; h++) ...salutationsPourHeure(h),
     ];
     for (final m in textes) {

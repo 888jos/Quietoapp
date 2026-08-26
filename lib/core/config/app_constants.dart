@@ -46,8 +46,9 @@ abstract final class AppConstants {
   // Le programme de 7 jours créé par Louane (JSON ParcoursModel). Une seule
   // clé : un programme à la fois, effacée à l'abandon ou pour recommencer.
   static const prefParcours = 'parcours_louane';
-  // Vrai dès qu'un premier programme a été créé : le backend force le jour 1
-  // du tout premier programme à « Ma première méditation » (decouverte_1).
+  // Vrai dès qu'un premier programme a été créé. Le backend force le jour 1
+  // à « Ma première méditation » (decouverte_1) tant que ce flag est faux OU
+  // qu'aucune séance n'a jamais été terminée (voir ParcoursRepository).
   static const prefParcoursDejaCree = 'parcours_deja_cree';
   static const prefParcoursEtoilesCelebrees = 'parcours_etoiles_celebrees';
 

@@ -216,8 +216,9 @@ class StorageService {
   }
 
   /// Un premier programme a-t-il déjà été créé sur ce téléphone ? Jamais
-  /// remis à zéro (même par clearParcours) : sert au backend à forcer le
-  /// jour 1 du TOUT premier programme à « Ma première méditation ».
+  /// remis à zéro (même par clearParcours). L'une des deux conditions du
+  /// forçage backend du jour 1 à « Ma première méditation » — l'autre :
+  /// aucune séance jamais terminée (voir ParcoursRepository.generer).
   bool get parcoursDejaCree =>
       _prefs.getBool(AppConstants.prefParcoursDejaCree) ?? false;
 

@@ -50,9 +50,12 @@ class ParcoursRepository {
       'ecoutes': _storage.ecoutesPourLouane(),
       'prenom': _storage.firstName,
       'abonne': _abonne(),
-      // Tout premier programme → le backend force le jour 1 à
-      // « Ma première méditation » (quasi personne n'a jamais médité).
-      'premierParcours': !_storage.parcoursDejaCree,
+      // Le backend force le jour 1 à « Ma première méditation » tant que la
+      // personne n'a jamais TERMINÉ de séance (pas seulement « jamais créé
+      // de programme » : créer, annuler puis recréer sans avoir médité doit
+      // redonner la même première séance — c'est elle qui fait le bon avis).
+      'premierParcours': !_storage.parcoursDejaCree ||
+          _storage.loadProgress().completedCount == 0,
       'vigie': _vigie.id,
       'session': _vigie.session,
     });

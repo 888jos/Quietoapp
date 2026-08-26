@@ -93,7 +93,6 @@ void main() {
     final textes = [
       ...kEtapesCreationParcours,
       ...kRessentisBilan,
-      ...kEncouragementsParcours,
       kSignatureCartePartage,
     ];
     for (final t in textes) {

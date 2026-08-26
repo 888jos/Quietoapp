@@ -287,8 +287,12 @@ class _OnboardingComprehensionPageState
               builder: (context, contraintes) {
                 // Le bloc part du centre de l'écran et monte se poser en
                 // haut : c'est ce déplacement qui « lève » Louane.
+                // Décalé de 100 au-dessus du centre : cercle SEUL centré,
+                // les phrases dessous tombaient tout en bas de l'écran —
+                // c'est le groupe cercle + phrases qui doit paraître centré
+                // (retour de Paul, 26/08).
                 final hautCentre =
-                    ((contraintes.maxHeight - _hauteurBloc) / 2)
+                    (((contraintes.maxHeight - _hauteurBloc) / 2) - 100)
                         .clamp(0.0, contraintes.maxHeight);
                 final monte = Curves.easeInOutCubic.transform(
                   _etape(0.25, 1.0),

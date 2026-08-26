@@ -144,7 +144,7 @@ class _HomePageState extends ConsumerState<HomePage>
                           durationLabel: '3 séances disponibles',
                           // Même visuel que le haut de la page catégorie :
                           // la carte annonce ce qu'on ouvre.
-                          imageFile: 'categories/decouverte.jpg',
+                          imageFile: 'categories/decouverte.webp',
                           onTap: () {
                             // Vigie : où cliquent-ils depuis l'accueil ?
                             ref.read(vigieProvider).log('categorie_ouverte', {

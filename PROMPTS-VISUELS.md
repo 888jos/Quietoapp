@@ -202,3 +202,66 @@ grand dôme blanc de decouverte_3 en haut de 3. Parades : interdire
 explicitement « any person or object not described in the scene », « any
 large pale dome or arc », et en secours recadrer tronqué en bas
 (`crop=iw*0.90:ih*0.86:(iw-ow)/2:ih*0.02`).
+
+### Pièges n°8 et n°9 (26/08, reprise des 8 images cassées)
+
+**8. Ne jamais écrire dans le prompt qu'un titre sera posé sur l'image.**
+La phrase « the bottom third stays empty: a white title is written over it »
+a fait PEINDRE un titre en toutes lettres dans 4 images sur 5 (« CALM & QUIET »,
+« UNRAVELLING »…). Gemini lit ça comme une consigne de dessin, pas comme un
+contexte d'intégration. Dire seulement : « leave the bottom third calm and
+nearly empty », et ajouter en tête « THE IMAGE CONTAINS ZERO TEXT. No title,
+no caption, no word, no letter, no number. This is a painting, not a poster. »
+
+**9. La vraie parade au piège n°7 : des références HÉTÉROGÈNES.**
+Le bug (mini-méditant en bas, grosse lune, image à deux étages) ne venait pas
+d'un manque de négatifs : il venait de donner 3 références au contenu
+identique (les 3 Découverte = ciel + lune + méditant). Le modèle ne peut pas
+distinguer « le style » de « ce qui est commun aux 3 ».
+👉 Donner 3 références sans AUCUN élément commun. Trio validé :
+`express_3` (bol, ocre) + `express_7` (réveil, aube) + `sleep_2` (œil, encre).
+Aucun personnage, aucune lune, aucun horizon en commun.
+⚠️ Même comme ça, la ref déteint un peu : `sleep_2` a poussé des étoiles sur
+les fonds unis, et sur un tirage l'œil entier est réapparu. Toujours tirer
+**2 variantes et choisir** (~0,26 $ l'image, moins cher qu'un aller-retour).
+
+**Corollaires vérifiés le 26/08 :**
+- Ajouter « no white frame and no border, the paint touches all four edges » a
+  supprimé le liseré : mesuré à 0 % sur 7 images sur 8. Le crop peut donc
+  descendre à **96 %** au lieu de 90 % — on ne rogne plus les sujets.
+- Pour une image presque bonne (un seul parasite à enlever), **éditer** l'image
+  existante au lieu de la regénérer : on envoie le PNG + « Edit it: remove X,
+  keep everything else EXACTLY as it is ». Marché du premier coup sur
+  `express_4`, `actualite_3`, `actualite_5`.
+- Si le sujet touche un bord, l'exiger : « ENTIRELY INSIDE the frame, must not
+  touch any edge ». Sinon il est coupé et la vignette 120 px devient une tache.
+- ⚠️ L'API renvoie du **JPEG** même si on nomme le fichier `.png` — ffmpeg
+  refuse de le lire. Renommer en `.jpg` avant post-traitement.
+
+---
+
+## 🖼️ Les 7 bandeaux de catégorie (26/08)
+
+`assets/images/categories/{decouverte,express,actualite,stress,sleep,breathing,emotion}.webp`
+— 1400×788, générés en 16:9 2K, crop 98 %, cwebp q82 (~15-50 Ko).
+
+**Registre : les catégories sont des PAYSAGES, les séances sont des OBJETS.**
+Deux registres qui ne se marchent pas dessus, et un paysage remplit
+naturellement un bandeau large là où un objet centré laisse des trous.
+👉 Ici, les 3 Découverte redeviennent les BONNES références (même registre).
+
+**Les 3 contraintes du format, vérifiées à l'écran :**
+1. Le bandeau passe SOUS la barre de statut (`statusBar + 180`), donc son
+   quart supérieur est mangé par la Dynamic Island. → `The TOP QUARTER is open
+   sky only; the main subject sits between 30% and 65% of the height.`
+2. **Ne JAMAIS demander un « bas sombre et vide »** pour marier l'image au
+   fond : ça peint une bande noire dans l'illustration. → `The scene FILLS THE
+   ENTIRE FRAME down to the bottom edge, no dark empty strip anywhere.`
+3. Le dégradé de fondu de `category_detail_page.dart` est à `stops: [0.82, 1.0]`.
+   À 0.55 (valeur d'origine) il éteignait la moitié basse de chaque image.
+4. Coins gauches à garder calmes : bouton retour en haut, pastille de
+   catégorie à cheval sur le bord bas.
+
+**Piège :** « reflection as a single straight cream band » a été peint comme un
+poteau vertical sous la lune. Dire `short HORIZONTAL dashes lying flat on the
+water, no vertical shape of any kind`.

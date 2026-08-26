@@ -191,13 +191,14 @@ class _CategoryHeader extends StatelessWidget {
                   else
                     const _CoverFallback(),
                   // Fondu vers le fond de page, pour que l'image se marie
-                  // au thème sombre au lieu de se terminer net.
+                  // au thème sombre au lieu de se terminer net. Court : à
+                  // 0.55 il éteignait la moitié basse de l'illustration.
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        stops: [0.55, 1.0],
+                        stops: [0.82, 1.0],
                         colors: [Colors.transparent, AppColors.background],
                       ),
                     ),

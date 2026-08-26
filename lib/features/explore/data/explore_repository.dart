@@ -13,9 +13,7 @@ class ExploreRepository {
             'Des micro-méditations pour les vrais moments de ta journée.',
         isPremium: true,
         badge: 'Flash',
-        // L'éclair dans les ondes : l'image de séance la plus raccord avec
-        // le symbole de la catégorie.
-        coverImage: 'sessions/express/express_5.webp',
+        coverImage: 'categories/express.webp',
         sessions: [
           const SessionModel(
             id: 'express_1',
@@ -114,7 +112,7 @@ class ExploreRepository {
         isPremium: false,
         // Le personnage qui regarde les étoiles, téléphone posé : l'image
         // générée (2026-07-18) réaffectée d'Actualité à Découverte.
-        coverImage: 'categories/decouverte.jpg',
+        coverImage: 'categories/decouverte.webp',
         sessions: [
           const SessionModel(
             id: 'decouverte_1',
@@ -158,9 +156,7 @@ class ExploreRepository {
             'Apprends à décrocher du flux d\'informations. Retrouve la clarté dans un monde qui s\'emballe.',
         isPremium: true,
         badge: 'New !',
-        // L'écran qui se dissout en feuilles : décrocher des écrans, le
-        // cœur du sujet de la catégorie.
-        coverImage: 'sessions/actualite/actualite_3.webp',
+        coverImage: 'categories/actualite.webp',
         sessions: [
           const SessionModel(
             id: 'actualite_1',
@@ -221,6 +217,7 @@ class ExploreRepository {
         description:
             'Libère la pression accumulée au quotidien. Des séances courtes pour revenir à toi rapidement.',
         isPremium: true,
+        coverImage: 'categories/stress.webp',
         sessions: [
           const SessionModel(
             id: 'stress_1',
@@ -282,10 +279,7 @@ class ExploreRepository {
         description:
             'Prépare ton corps et ton esprit au repos. Endors-toi plus facilement, dors plus profondément.',
         isPremium: true,
-        // La lune de sleep_1 est dans le tiers haut de l'image : cadrage au
-        // maximum vers le haut (-1) pour qu'elle descende le plus bas
-        // possible dans le bandeau (à peu près au centre).
-        coverAlignmentY: -1,
+        coverImage: 'categories/sleep.webp',
         sessions: [
           const SessionModel(
             id: 'sleep_1',
@@ -347,6 +341,7 @@ class ExploreRepository {
         description:
             'Utilise ta respiration comme outil de régulation. Simple, puissant, accessible partout.',
         isPremium: true,
+        coverImage: 'categories/breathing.webp',
         sessions: [
           const SessionModel(
             id: 'breathing_1',
@@ -399,6 +394,7 @@ class ExploreRepository {
         description:
             'Explore et apprivoise tes émotions. Accueille ce que tu ressens avec douceur et bienveillance.',
         isPremium: true,
+        coverImage: 'categories/emotion.webp',
         sessions: [
           const SessionModel(
             id: 'emotion_1',

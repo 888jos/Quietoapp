@@ -35,20 +35,6 @@ const List<String> kRessentisBilan = [
   'Fier(e) de moi',
 ];
 
-/// Le mot d'encouragement de Louane en bas de page, indexé sur le nombre de
-/// jours terminés (0..7). Textes en dur : majuscule initiale, pas d'emoji,
-/// pas de tiret long. Public pour le test de style.
-const List<String> kEncouragementsParcours = [
-  "On commence quand tu veux. Le jour 1 t'attend, j'ai hâte",
-  "Premier jour fait. C'est souvent le plus dur, et tu l'as fait",
-  'Deux jours déjà. Tu es en train de te construire un vrai rituel',
-  'Trois jours sur sept. Je suis fière de toi, vraiment',
-  'Plus de la moitié. Tu tiens le rythme, ça se sent',
-  'Cinq jours. Ton corps commence à connaître le chemin',
-  'Six jours. Encore un et on fait le point ensemble',
-  'Sept sur sept. Viens me raconter, je t\'attends',
-];
-
 /// Les trois temps de l'arrivée depuis la création : la constellation se
 /// dessine au centre, monte se poser en haut, puis le contenu se révèle.
 /// Un tap pendant le dessin saute l'arrivée.
@@ -458,17 +444,10 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                           delay: const Duration(milliseconds: 900),
                           child: _StatsSemaine(parcours: parcours),
                         ),
-                        const SizedBox(height: AppConstants.spacingLg),
-
-                        // ── Le mot de Louane du moment ─────────
-                        SlideReveal(
-                          active: pose,
-                          delay: const Duration(milliseconds: 980),
-                          child: _BulleLouane(
-                            texte: kEncouragementsParcours[
-                                faits.clamp(0, 7)],
-                          ),
-                        ),
+                        // (la bulle d'encouragement de Louane en bas de
+                        // page a été retirée, comme le teaser du bilan :
+                        // demande de Paul, la page se termine sur les
+                        // chiffres de la semaine.)
                         // ── Le bilan, seulement quand il est là ──
                         // (le teaser « Au bout des 7 jours, on fait le
                         // point » a été retiré : il n'apportait rien.)

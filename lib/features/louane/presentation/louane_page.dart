@@ -612,10 +612,9 @@ class _BarreSaisie extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      decoration: const BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: AppColors.accentDim, width: 1)),
-      ),
+      // Pas de trait au-dessus de la barre d'écriture (demande de Paul) :
+      // le fond suffit à la détacher du fil.
+      decoration: const BoxDecoration(color: AppColors.background),
       child: enregistre
           ? _BandeauEnregistrement(
               enPause: enPause,

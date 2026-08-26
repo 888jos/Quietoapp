@@ -511,12 +511,15 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     );
   }
 
-  /// Croix de fermeture (apparaît après 3s, ADR-013). ValueListenableBuilder :
-  /// seul ce bouton se reconstruit au bout de 3s, jamais le contenu du paywall.
+  /// Croix de fermeture (apparaît après 3s, ADR-013), en haut à GAUCHE
+  /// (demande de Paul, 26/08). ValueListenableBuilder : seul ce bouton se
+  /// reconstruit au bout de 3s, jamais le contenu du paywall.
   Widget _boutonFermeture() {
     return Positioned(
-      top: MediaQuery.of(context).padding.top + AppConstants.spacingSm,
-      right: AppConstants.spacingSm,
+      // Collée à la zone sûre, sans marge : Paul la voulait un peu plus
+      // haute (l'IconButton garde son propre padding interne de ~8).
+      top: MediaQuery.of(context).padding.top,
+      left: AppConstants.spacingSm,
       child: ValueListenableBuilder<bool>(
         valueListenable: _showCloseButton,
         builder: (context, show, child) => AnimatedOpacity(

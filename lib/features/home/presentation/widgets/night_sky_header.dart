@@ -56,55 +56,115 @@ class NightSkyHeader extends StatelessWidget {
 /// Poussière d'étoiles : une traînée façon voie lactée qui traverse le bas
 /// de la scène en arc léger. Comme l'aurore, elle vit dans le Stack de la
 /// Home, au niveau du fond de page : elle reste en place quand on défile,
-/// le contenu glisse par-dessus.
-class StardustTrail extends StatelessWidget {
-  const StardustTrail({super.key});
+/// le contenu glisse par-dessus. Le voile laiteux vit dans
+/// shaders/stardust.frag (lueur qui ondule, teintée d'aurore vers le
+/// haut) ; les micro-étoiles scintillent doucement par-dessus.
+class StardustTrail extends StatefulWidget {
+  /// Position verticale de l'arc, en fraction de la hauteur du canvas.
+  /// 0.62 = valeur historique (petites bandes) ; la Home passe 0.8 avec un
+  /// canvas haut pour laisser la lueur s'étirer vers l'aurore.
+  final double arcRatio;
+
+  const StardustTrail({super.key, this.arcRatio = 0.62});
+
+  @override
+  State<StardustTrail> createState() => _StardustTrailState();
+}
+
+class _StardustTrailState extends State<StardustTrail>
+    with SingleTickerProviderStateMixin {
+  static final Future<ui.FragmentProgram> _program =
+      ui.FragmentProgram.fromAsset('shaders/stardust.frag');
+
+  final double _seed = math.Random().nextDouble() * 1000;
+  final ValueNotifier<double> _time = ValueNotifier(0);
+  late final Ticker _ticker;
+  ui.FragmentShader? _shader;
+
+  @override
+  void initState() {
+    super.initState();
+    _program.then((program) {
+      if (!mounted) return;
+      setState(() => _shader = program.fragmentShader());
+    });
+    _ticker = createTicker((elapsed) {
+      _time.value = elapsed.inMicroseconds / 1e6;
+    })..start();
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    _time.dispose();
+    _shader?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const RepaintBoundary(
-      child: CustomPaint(painter: _StardustPainter(), size: Size.infinite),
+    final shader = _shader;
+    return RepaintBoundary(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (shader != null)
+            CustomPaint(
+              painter: _VeilPainter(shader, _time, _seed, widget.arcRatio),
+              size: Size.infinite,
+            ),
+          CustomPaint(
+            painter: _StardustPainter(_time, _seed, widget.arcRatio),
+            size: Size.infinite,
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Micro-étoiles denses + voile laiteux très doux (dégradés radiaux,
-/// aucun flou). Statique → zéro coût.
+/// Le voile laiteux, délégué au shader.
+class _VeilPainter extends CustomPainter {
+  _VeilPainter(this.shader, this.time, this.seed, this.arcRatio)
+      : super(repaint: time);
+
+  final ui.FragmentShader shader;
+  final ValueNotifier<double> time;
+  final double seed;
+  final double arcRatio;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    shader
+      ..setFloat(0, size.width)
+      ..setFloat(1, size.height)
+      ..setFloat(2, seed + time.value)
+      ..setFloat(3, arcRatio);
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
+  }
+
+  @override
+  bool shouldRepaint(_VeilPainter oldDelegate) => false;
+}
+
+/// Micro-étoiles denses près de l'arc, éparses au bord, qui respirent
+/// chacune à son rythme (scintillement lent, jamais synchrone).
 class _StardustPainter extends CustomPainter {
-  const _StardustPainter();
+  _StardustPainter(this.time, this.seed, this.arcRatio)
+      : super(repaint: time);
+
+  final ValueNotifier<double> time;
+  final double seed;
+  final double arcRatio;
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    // Ligne médiane de la traînée : un arc doux, plus haut au centre.
-    double mid(double u) => h * 0.62 - 10 * math.sin(math.pi * u);
+    final t = seed + time.value;
+    // Même arc que le voile (sans sa houle : les étoiles sont fixes).
+    double mid(double u) => h * arcRatio - h * 0.10 * math.sin(math.pi * u);
 
-    // Voile laiteux : quelques nappes très transparentes le long de l'arc.
-    for (var i = 0; i < 4; i++) {
-      final u = (i + 0.5) / 4;
-      final center = Offset(u * w, mid(u));
-      final radius = w * 0.19;
-      final paint = Paint()
-        ..shader = ui.Gradient.radial(
-          center,
-          radius,
-          [
-            Colors.white.withValues(alpha: 0.055),
-            Colors.white.withValues(alpha: 0.025),
-            Colors.white.withValues(alpha: 0.0),
-          ],
-          [0.0, 0.55, 1.0],
-        );
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.scale(1, 22 / radius);
-      canvas.translate(-center.dx, -center.dy);
-      canvas.drawCircle(center, radius, paint);
-      canvas.restore();
-    }
-
-    // Micro-étoiles : denses près de la ligne médiane, éparses au bord.
     final rnd = math.Random(1214);
     final paint = Paint();
     for (var i = 0; i < 90; i++) {
@@ -112,6 +172,10 @@ class _StardustPainter extends CustomPainter {
       // Écart vertical resserré autour de l'arc (moyenne de 2 tirages
       // → distribution en cloche, la traînée a un cœur dense).
       final spread = (rnd.nextDouble() + rnd.nextDouble() - 1) * 24;
+      // Rythme propre à chaque étoile — tiré AVANT le filtre pour garder
+      // la séquence stable quelle que soit la hauteur du canvas.
+      final phase = rnd.nextDouble() * 2 * math.pi;
+      final speed = 0.25 + rnd.nextDouble() * 0.45;
       final y = mid(u) + spread;
       if (y < 2 || y > h - 2) continue;
       final r = 0.4 + rnd.nextDouble() * 0.9;
@@ -121,8 +185,9 @@ class _StardustPainter extends CustomPainter {
         1 => const Color(0xFFEFEAD8),
         _ => Colors.white,
       };
-      paint.color =
-          tint.withValues(alpha: 0.10 + rnd.nextDouble() * 0.30);
+      final base = 0.10 + rnd.nextDouble() * 0.30;
+      final twinkle = 0.72 + 0.28 * math.sin(t * speed + phase);
+      paint.color = tint.withValues(alpha: base * twinkle);
       canvas.drawCircle(Offset(u * w, y), r, paint);
     }
   }

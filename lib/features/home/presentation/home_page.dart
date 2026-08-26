@@ -77,17 +77,19 @@ class _HomePageState extends ConsumerState<HomePage>
             child: AuroraSky(),
           ),
           // Poussière d'étoiles : fixée au fond comme l'aurore (elle ne
-          // défile pas), calée au pixel sur son ancienne place dans le
-          // header (130 → 190 sous la barre d'état). Même fondu d'arrivée
-          // que le header pour que la scène apparaisse d'un seul tenant.
+          // défile pas). L'arc reste au pixel sur son ancienne place
+          // (~166 sous la barre d'état) mais le canvas est haut : la lueur
+          // laiteuse a la place de s'étirer et de fondre dans le bas de
+          // l'aurore. Même fondu d'arrivée que le header pour que la scène
+          // apparaisse d'un seul tenant.
           Positioned(
-            top: MediaQuery.paddingOf(context).top + 130,
+            top: MediaQuery.paddingOf(context).top + 30,
             left: 0,
             right: 0,
-            height: 60,
+            height: 170,
             child: FadeTransition(
               opacity: _fadeController,
-              child: const StardustTrail(),
+              child: const StardustTrail(arcRatio: 0.8),
             ),
           ),
           SafeArea(

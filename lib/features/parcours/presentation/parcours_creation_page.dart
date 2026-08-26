@@ -6,15 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
-import '../../../core/models/parcours_model.dart';
-import '../../../core/models/session_model.dart';
 import '../../../core/services/health_service.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/starry_background.dart';
-import '../../explore/explore_providers.dart';
 import '../../home/presentation/widgets/night_sky_header.dart';
 import '../../louane/louane_providers.dart';
 import '../../louane/presentation/widgets/louane_avatar.dart';
@@ -40,14 +37,7 @@ enum _Phase { attente, echec }
 /// constellation se dessine puis monte se poser en haut : la révélation se
 /// joue là-bas, dans le vrai décor.
 class ParcoursCreationPage extends ConsumerStatefulWidget {
-  const ParcoursCreationPage({super.key, this.demo = false});
-
-  /// PROVISOIRE (dev, bouton du profil) : déroule l'animation complète avec
-  /// un programme fictif construit depuis le catalogue local. Zéro appel
-  /// serveur, zéro coût IA, aucun événement Vigie. Le programme fictif est
-  /// installé comme un vrai (il remplace l'actuel) pour voir aussi la
-  /// révélation et la page du programme. Toujours false en release (routeur).
-  final bool demo;
+  const ParcoursCreationPage({super.key});
 
   @override
   ConsumerState<ParcoursCreationPage> createState() =>
@@ -70,15 +60,14 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
   void initState() {
     super.initState();
     // Garde anti-double génération : un programme existe déjà → on va le
-    // voir. En démo on passe outre (rejouable à volonté) et on ne trace
-    // rien : la Vigie ne doit voir que les vraies créations.
-    if (!widget.demo && ref.read(parcoursProvider) != null) {
+    // voir.
+    if (ref.read(parcoursProvider) != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.pushReplacement(AppRoutes.parcours);
       });
       return;
     }
-    if (!widget.demo) ref.read(vigieProvider).log('parcours_creation_vue');
+    ref.read(vigieProvider).log('parcours_creation_vue');
     _lancer();
   }
 
@@ -134,19 +123,15 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
     setState(() => _phase = _Phase.attente);
     _demarrerProgression();
     try {
-      final Future<ParcoursGenere> generation;
-      if (widget.demo) {
-        generation = _genererDemo();
-      } else {
-        // Cache santé normalement déjà chaud (page Louane) ; borné à 2 s pour
-        // ne jamais retarder la création du programme.
-        await HealthService.instance
-            .resumeSanteMentale()
-            .timeout(const Duration(seconds: 2), onTimeout: () => '');
-        final historique =
-            ref.read(louaneChatProvider.notifier).historiquePourParcours();
-        generation = ref.read(parcoursRepositoryProvider).generer(historique);
-      }
+      // Cache santé normalement déjà chaud (page Louane) ; borné à 2 s pour
+      // ne jamais retarder la création du programme.
+      await HealthService.instance
+          .resumeSanteMentale()
+          .timeout(const Duration(seconds: 2), onTimeout: () => '');
+      final historique =
+          ref.read(louaneChatProvider.notifier).historiquePourParcours();
+      final generation =
+          ref.read(parcoursRepositoryProvider).generer(historique);
       // L'attente est un moment (filmable) : 6 s minimum, même si le serveur
       // répond avant. S'il est plus lent, la dernière étape reste en cours.
       final resultats = await Future.wait<Object?>([
@@ -157,9 +142,7 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
       final genere = resultats.first as ParcoursGenere;
 
       // Persisté AVANT l'animation : quitter maintenant ne perd rien.
-      await ref
-          .read(parcoursProvider.notifier)
-          .enregistrer(genere.parcours, marquerCree: !widget.demo);
+      await ref.read(parcoursProvider.notifier).enregistrer(genere.parcours);
       // La bulle d'ouverture de Louane rejoint le fil de conversation
       // (en remplaçant celle d'un éventuel programme précédent annulé).
       if (genere.messageOuverture.isNotEmpty) {
@@ -191,60 +174,11 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
       context.pushReplacement('${AppRoutes.parcours}?creation=1');
     } catch (e) {
       debugPrint('[Parcours] génération échouée : $e');
-      if (!widget.demo) {
-        ref.read(vigieProvider).log('parcours_generation_echec');
-      }
+      ref.read(vigieProvider).log('parcours_generation_echec');
       if (!mounted) return;
       _ticker?.cancel();
       setState(() => _phase = _Phase.echec);
     }
-  }
-
-  /// PROVISOIRE (dev) : le faux serveur. Attend ~9 s (le temps que l'anneau
-  /// déroule toute sa montée) puis fabrique un programme crédible depuis le
-  /// catalogue local : une séance par catégorie pour la variété, complété
-  /// dans l'ordre du catalogue. Pas de bulle d'ouverture (messageOuverture
-  /// vide) : le fil de conversation de Louane reste propre.
-  Future<ParcoursGenere> _genererDemo() async {
-    await Future.delayed(const Duration(seconds: 9));
-    final categories = ref.read(exploreRepositoryProvider).fetchCategories();
-    final choisies = <SessionModel>[
-      for (final c in categories)
-        if (c.sessions.isNotEmpty) c.sessions.first,
-    ];
-    for (final s in categories.expand((c) => c.sessions)) {
-      if (choisies.length >= 7) break;
-      if (!choisies.contains(s)) choisies.add(s);
-    }
-    const mots = [
-      'On commence tout doux. Juste toi et ta respiration.',
-      "Aujourd'hui, on relâche les épaules. Tu me diras.",
-      'Une petite pause au milieu de ta semaine.',
-      "Tu avances bien. Celle-ci, c'est ma préférée.",
-      'On ralentit encore un peu. Prends ton temps.',
-      'Avant-dernier jour. Tu connais le chemin maintenant.',
-      "Dernier jour. Je suis fière du chemin qu'on a fait.",
-    ];
-    return ParcoursGenere(
-      parcours: ParcoursModel(
-        titre: 'Une semaine pour souffler',
-        sousTitre: 'Sept jours avec Louane, à ton rythme',
-        jours: [
-          for (var i = 0; i < 7 && i < choisies.length; i++)
-            ParcoursJour(
-              jour: i + 1,
-              sessionId: choisies[i].id,
-              titreSeance: choisies[i].title,
-              dureeMin: choisies[i].durationMinutes,
-              premium: choisies[i].isPremium,
-              motDeLouane: mots[i],
-            ),
-        ],
-        creeLe: DateTime.now().toIso8601String(),
-      ),
-      messageOuverture: '',
-      fallback: false,
-    );
   }
 
   @override

@@ -141,20 +141,6 @@ class StorageService {
     }
   }
 
-  // PROVISOIRE : forçage premium pour le dev. Clé séparée de prefIsPremium
-  // pour ne jamais polluer le vrai statut RevenueCat ; seul le
-  // SubscriptionNotifier la lit, et uniquement hors release.
-  bool get premiumForceDev =>
-      _prefs.getBool(AppConstants.prefPremiumForceDev) ?? false;
-
-  Future<void> setPremiumForceDev(bool value) async {
-    try {
-      await _prefs.setBool(AppConstants.prefPremiumForceDev, value);
-    } catch (e, st) {
-      debugPrint('[Storage] setPremiumForceDev failed: $e\n$st');
-    }
-  }
-
   // ── Progress ─────────────────────────────────────────
 
   UserProgressModel loadProgress() {

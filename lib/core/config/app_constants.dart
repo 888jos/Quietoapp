@@ -18,8 +18,6 @@ abstract final class AppConstants {
   static const prefSessionProgress = 'session_progress';
   static const prefUserFirstName = 'user_first_name';
   static const prefIsPremium = 'is_premium';
-  // PROVISOIRE : forçage premium pour le dev, sans effet en build release.
-  static const prefPremiumForceDev = 'premium_force_dev';
   // Mémoire de Louane : ce qu'elle retient de l'utilisateur entre les sessions.
   static const prefLouaneMemoire = 'louane_memoire';
   // Quotas Louane (jamais affichés) : total de messages envoyés depuis le

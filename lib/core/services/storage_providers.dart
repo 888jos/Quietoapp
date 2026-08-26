@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../config/app_constants.dart';
@@ -39,8 +38,7 @@ final firstNameProvider = StateProvider<String>((ref) {
 /// expiration en milieu de session, etc.). Sans ça, l'état ne serait rafraîchi
 /// qu'au prochain démarrage de l'app.
 class SubscriptionNotifier extends StateNotifier<bool> {
-  SubscriptionNotifier(this._storage)
-      : super(_storage.isPremium || (!kReleaseMode && _storage.premiumForceDev)) {
+  SubscriptionNotifier(this._storage) : super(_storage.isPremium) {
     // revenueCatDisponible : sans clé dans le build, tout appel au SDK
     // natif s'écrase (fatalError) au lieu de renvoyer une erreur.
     if (revenueCatDisponible) {
@@ -50,24 +48,12 @@ class SubscriptionNotifier extends StateNotifier<bool> {
 
   final StorageService _storage;
 
-  /// PROVISOIRE : forçage premium pour le dev (toggle dans le profil).
-  /// Doublement verrouillé hors release : la carte ne s'affiche pas ET le
-  /// flag est ignoré ici même si la pref traîne. Le vrai statut RevenueCat
-  /// (prefIsPremium) n'est jamais touché.
-  bool get forceDev => !kReleaseMode && _storage.premiumForceDev;
-
-  Future<void> basculerForceDev() async {
-    await _storage.setPremiumForceDev(!_storage.premiumForceDev);
-    state = _storage.isPremium || forceDev;
-  }
-
   void _handleUpdate(CustomerInfo info) {
     final isPremium = info.entitlements.active
         .containsKey(AppConstants.entitlementPremium);
-    // Persiste pour que le prochain démarrage parte avec le bon état
-    // (jamais le forçage de test, uniquement le vrai statut).
+    // Persiste pour que le prochain démarrage parte avec le bon état.
     _storage.setIsPremium(isPremium);
-    state = isPremium || forceDev;
+    state = isPremium;
   }
 
   @override

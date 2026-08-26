@@ -77,17 +77,14 @@ class ParcoursNotifier extends StateNotifier<ParcoursModel?> {
   }
 
   /// Persiste et installe un programme fraîchement généré.
-  /// [marquerCree] : false pour le mode démo (dev) — un programme fictif ne
-  /// doit pas consommer le statut « tout premier programme ».
-  Future<void> enregistrer(ParcoursModel parcours,
-      {bool marquerCree = true}) async {
+  Future<void> enregistrer(ParcoursModel parcours) async {
     await _storage.saveParcours(parcours);
     // Nouveau programme = compteur de célébrations remis à zéro (aucun
     // allumage fantôme hérité du programme d'avant).
     await _storage.setParcoursEtoilesCelebrees(0);
     // Le prochain programme ne sera plus le « tout premier » (jour 1 forcé
     // à la première méditation par le backend).
-    if (marquerCree) await _storage.setParcoursDejaCree();
+    await _storage.setParcoursDejaCree();
     state = parcours;
   }
 
@@ -121,20 +118,6 @@ class ParcoursNotifier extends StateNotifier<ParcoursModel?> {
     await _storage.saveParcours(maj);
     state = maj;
     _vigie.log('parcours_bilan', {'ressenti': ressenti});
-  }
-
-  /// PROVISOIRE (dev, bouton du profil) : coche le jour courant comme
-  /// terminé en le datant d'HIER — le verrou « un jour par jour » saute et
-  /// le jour suivant est jouable tout de suite, pour dérouler la semaine
-  /// sans attendre. La célébration d'étoile se joue normalement à
-  /// l'ouverture de la page programme. Aucun événement Vigie.
-  Future<void> avancerJourDev() async {
-    final parcours = state;
-    if (parcours == null || parcours.tousJoursTermines) return;
-    final hier = DateTime.now().subtract(const Duration(days: 1));
-    final maj = parcours.marquerJourTermine(parcours.jourCourant, hier);
-    await _storage.saveParcours(maj);
-    state = maj;
   }
 
   /// « Arrêter ce programme » : on efface tout. Louane pourra en re-proposer

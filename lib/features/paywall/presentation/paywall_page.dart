@@ -50,9 +50,9 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   int get _vigieDureeS => DateTime.now().difference(_vigieOuvertA).inSeconds;
 
   static const _urlConfidentialite =
-      'https://www.notion.so/Politique-de-Confidentialit-31de9e37b4a88093b560e0636712146e';
+      'https://cofonde.com/quieto-confidentialite';
   static const _urlConditions =
-      'https://www.notion.so/Terms-31de9e37b4a88085a949e24158d042e9';
+      'https://cofonde.com/quieto-cgu';
 
   // Le paywall natif (PaywallView) est LOURD à monter : s'il s'instancie pendant
   // l'animation de montée, la transition saccade. On attend donc que la montée

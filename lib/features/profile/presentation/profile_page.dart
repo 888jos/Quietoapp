@@ -203,7 +203,7 @@ class ProfilePage extends ConsumerWidget {
                             onTap: () async {
                               try {
                                 await launchUrl(
-                                  Uri.parse('https://www.notion.so/Politique-de-Confidentialit-31de9e37b4a88093b560e0636712146e'),
+                                  Uri.parse('https://cofonde.com/quieto-confidentialite'),
                                   mode: LaunchMode.externalApplication,
                                 );
                               } catch (_) {}
@@ -216,7 +216,7 @@ class ProfilePage extends ConsumerWidget {
                             onTap: () async {
                               try {
                                 await launchUrl(
-                                  Uri.parse('https://www.notion.so/Terms-31de9e37b4a88085a949e24158d042e9'),
+                                  Uri.parse('https://cofonde.com/quieto-cgu'),
                                   mode: LaunchMode.externalApplication,
                                 );
                               } catch (_) {}

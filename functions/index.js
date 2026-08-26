@@ -1571,6 +1571,57 @@ TU RÉPONDS UNIQUEMENT avec cet objet JSON, rien d'autre, aucun texte autour :
 }
 `;
 
+// ------------------------------------------------------------
+//  Tout premier programme de la personne (décision Paul, 26/08/2026) :
+//  quasi personne n'a jamais médité, le jour 1 est TOUJOURS
+//  « Ma première méditation » (decouverte_1, 6 min, gratuite).
+//  Deux étages : la consigne au modèle (pour que le mot du jour 1 soit
+//  écrit pour cette séance) + le verrou déterministe derrière
+//  (forcerPremiereMeditation), qui couvre aussi le programme par défaut.
+//  Le flag `premierParcours` est envoyé par l'app (1.0.20+) ; absent chez
+//  les anciennes versions → comportement inchangé.
+// ------------------------------------------------------------
+const ID_PREMIERE_MEDITATION = "decouverte_1";
+
+function consignePremierParcours(premier) {
+  if (!premier) return "";
+  return "\n\nC'EST SON TOUT PREMIER PROGRAMME, et elle n'a très " +
+    "probablement jamais médité de sa vie. Le jour 1 est OBLIGATOIREMENT " +
+    `la séance "${ID_PREMIERE_MEDITATION}" (« Ma première méditation », ` +
+    "6 min, gratuite) : c'est la porte d'entrée pensée pour une toute " +
+    "première fois. Son mot du jour 1 accueille ce tout premier pas, en le " +
+    "reliant à ce qu'elle t'a confié.";
+}
+
+// Le verrou : jour 1 = decouverte_1, quoi que le modèle ait répondu.
+// S'applique au parcours ENRICHI (validerParcours ou parcoursDefautPour).
+// Si la séance est ailleurs dans la semaine, on échange les deux jours (le
+// mot suit sa séance, comme l'échange « jour 1 gratuit ») ; sinon le jour 1
+// est remplacé, avec un mot pré-écrit qui colle à la séance.
+function forcerPremiereMeditation(parcours) {
+  const jours = parcours.jours;
+  if (!Array.isArray(jours) || !jours.length) return parcours;
+  if (jours[0].sessionId === ID_PREMIERE_MEDITATION) return parcours;
+  const idx = jours.findIndex((j) => j.sessionId === ID_PREMIERE_MEDITATION);
+  if (idx > 0) {
+    const a = jours[0];
+    jours[0] = { ...jours[idx], jour: 1 };
+    jours[idx] = { ...a, jour: idx + 1 };
+  } else {
+    const s = SEANCES_PAR_ID.get(ID_PREMIERE_MEDITATION);
+    jours[0] = {
+      jour: 1,
+      sessionId: s.id,
+      titreSeance: s.titre,
+      dureeMin: s.duree_min,
+      premium: s.premium === true,
+      motDeLouane: "On commence par ta toute première méditation. Six " +
+        "minutes, tout en douceur, juste pour découvrir comment ça se passe.",
+    };
+  }
+  return parcours;
+}
+
 // Filet derrière la consigne : aucun tiret long ne sort d'ici. La consigne
 // seule ne suffit pas — le modèle en repose régulièrement, et ça s'entend
 // tout de suite (« ça fait IA »). Remplacé par une virgule, comme à l'oral.
@@ -1780,6 +1831,9 @@ exports.genererParcours = onCall(
     // Historique d'écoute {id, fois, jours} : mêmes données que le chat.
     const ecoutes = Array.isArray(request.data.ecoutes) ? request.data.ecoutes : [];
     const abonne = request.data.abonne === true;
+    // Tout premier programme de la personne (envoyé par l'app 1.0.20+) :
+    // jour 1 forcé à « Ma première méditation ». Voir en tête de section.
+    const premierParcours = request.data.premierParcours === true;
     const vigie = typeof request.data.vigie === "string" ? request.data.vigie.slice(0, 40) : "";
     const session = typeof request.data.session === "string" ? request.data.session.slice(0, 40) : "";
 
@@ -1824,7 +1878,8 @@ exports.genererParcours = onCall(
         messages: [
           { role: "system", content: PROMPT_PARCOURS +
             consigneMemoire(prenom, memoire) + consigneProfil(profil) +
-            consigneSante(sante, true) + consigneEcoutes(ecoutes, true) },
+            consigneSante(sante, true) + consigneEcoutes(ecoutes, true) +
+            consignePremierParcours(premierParcours) },
           ...messages,
         ],
       });
@@ -1852,6 +1907,9 @@ exports.genererParcours = onCall(
       console.warn("[Parcours] deux échecs de validation : programme par défaut.");
       parcoursGenere = parcoursDefautPour(profil);
     }
+    if (premierParcours) {
+      parcoursGenere = forcerPremiereMeditation(parcoursGenere);
+    }
 
     // Vigie : une ligne par génération (jamais de texte, jamais le prénom).
     try {
@@ -1869,6 +1927,7 @@ exports.genererParcours = onCall(
           // (jamais de texte). Sert à vérifier que les questions sont posées.
           tours: messages.length,
           objectif: String((profil && profil.q1) || "").slice(0, 60),
+          premier: premierParcours,
         },
         tsc: null,
         ts: FieldValue.serverTimestamp(),

@@ -2,7 +2,7 @@ name: quieto
 description: "Quieto — application de méditation en français"
 publish_to: 'none'
 
-version: 1.0.19+28
+version: 1.0.20+29
 
 environment:
   sdk: ^3.11.1

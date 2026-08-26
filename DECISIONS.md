@@ -331,3 +331,53 @@ assets/images/sessions/
 **Décision** : Essai gratuit 7 jours puis **89 €/an** ou **16,90 €/mois**. Le mensuel est volontairement cher pour ancrer le prix ; on ne remet pas le mensuel en avant.
 
 **Pourquoi** : l'annuel est la base du revenu stable (le churn mensuel est rapide) ; objectif 30-40 k$/mois sur le marché français (~3 200 abonnés au mix 80/20 actuel).
+
+---
+
+## ADR-028 — Refonte visuelle : illustrations gouache (remplace l'esprit d'ADR-023)
+
+*Consignée le 26/08/2026 (Scribe) — chantier des 25-26/08, commits `c8e3ba5`, `eb30399`, `37a9771`. Parti pris complet : `DIRECTION-ARTISTIQUE.md` (25/08), méthode : `PROMPTS-VISUELS.md`.*
+
+**Décision** : Toutes les images de l'app passent en **gouache générée** (API Gemini) : les 35 covers de séances (WebP, liées au titre de chaque séance), 7 bandeaux de catégorie 1400×788 (`assets/images/categories/`), cartes de la home illustrées. La doctrine « dessin en code plutôt qu'images » ne vaut plus pour l'illustration statique — elle reste vraie pour l'animation (shaders GPU de la home).
+
+**Pourquoi** : audit DA du 25/08 — les anciennes images (dégradés lisses, halos turquoise) criaient « généré par IA » ; et la home 100 % texte participait à la fuite home → 1ʳᵉ séance (12 %).
+
+---
+
+## ADR-029 — Plus aucun outil de dev dans l'app (remplace ADR-014)
+
+*Consignée le 26/08/2026 (Scribe) — commits `f9ab2e9` (17/08) puis `9e82c22` (26/08, préparation 1.0.20).*
+
+**Décision** : L'app ne contient **plus aucun chemin de dev** : ni forçage premium (`_devUnlockPremium`, puis `devForcerPremium`, puis la carte provisoire « Premium forcé (dev) » / flag `premium_force_dev`), ni boutons profil (animation programme, avancer d'un jour, refaire l'onboarding), ni flèches dev d'onboarding, ni mode `?demo=1` de la création de programme, ni `avancerJourDev()`. Un outil provisoire peut revenir le temps d'un chantier (double verrou `kReleaseMode`), mais il est **retiré avant tout bump de version**.
+
+**Pourquoi** : chaque outil de dev est un risque de fuite en prod et du code mort à maintenir ; le double verrou ne remplace pas l'absence.
+
+---
+
+## ADR-030 — Suppression de la proposition de rappel en fin de première séance
+
+*Consignée le 26/08/2026 (Scribe) — demande de Paul, commit `099b1df` (part avec la 1.0.20).*
+
+**Décision** : Le bottom sheet « À quelle heure veux-tu prendre soin de toi demain ? » n'apparaît plus après une séance. Retirés avec lui : le flag `notification_prompt_shown` et les événements Vigie `rappel_propose` / `rappel_permission`. Le réglage « Heure du rappel » du profil reste. La demande de notification devra vivre **en fin d'onboarding** (chantier n°1 d'`AMELIORATIONS.md`).
+
+**Pourquoi** : mesuré dans la Vigie — 258 propositions pour 4 000 arrivées : les 88 % qui n'écoutent jamais de séance ne voyaient JAMAIS la proposition. Le mauvais moment, pas le mauvais outil.
+
+---
+
+## ADR-031 — URLs légales sur cofonde.com (plus de dépendance Notion)
+
+*Consignée le 26/08/2026 (Scribe) — commit `6985199` (part avec la 1.0.20).*
+
+**Décision** : Les liens confidentialité et CGU du paywall (`paywall_page.dart`) et du profil (`profile_page.dart`) pointent sur `https://cofonde.com/quieto-confidentialite` et `https://cofonde.com/quieto-cgu` (site statique Netlify de la SASU).
+
+**Pourquoi** : dépendre du partage web Notion pour un lien obligatoire dans l'app était un risque de rejet Apple. ⚠️ Ne pas supprimer les pages Notion tant que la 1.0.20 n'est pas en ligne : les versions en prod pointent encore dessus.
+
+---
+
+## ADR-032 — Jour 1 du tout premier programme : toujours « Ma première méditation »
+
+*Consignée le 26/08/2026 (Scribe) — décision Paul, app `258ee18` + backend `39853fd` (déployé le 26/08). Actif à partir de la 1.0.20.*
+
+**Décision** : Tant que la personne n'a **jamais terminé de séance** (`parcoursDejaCree` faux OU `completedCount == 0`), `genererParcours` reçoit `premierParcours: true` et le serveur force « Ma première méditation » en jour 1 (verrou déterministe `forcerPremiereMeditation`, le mot de Louane suit sa séance). Inerte pour les versions ≤ 1.0.19 (flag absent).
+
+**Pourquoi** : quasi personne n'a jamais médité — le programme doit commencer par la porte d'entrée, pas par une séance quelconque.

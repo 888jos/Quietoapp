@@ -4,6 +4,7 @@
 > Rapport complet : `../Quieto IA/rapports-nuit/rapport-nuit-1.md`.
 > ⚠️ **Aucun n'est urgent** — rien de cassé en production. À traiter quand tu veux.
 > 🔎 **Point de contrôle du 12/08/2026** : chaque bug re-vérifié dans le code. Bugs 1 à 7 : **toujours ouverts** (nuances notées en italique dans les fiches). Bug 8 : **résolu**.
+> 🔎 **Point de contrôle du 26/08/2026** (préparation 1.0.20) : bugs 1 à 7 re-vérifiés dans le code — **tous toujours ouverts, état strictement identique au 12/08** (artwork à chemin fixe et écriture non protégée ; retour du lecteur en `go('/category/…')` hors `viaLancement` ; splash à 5 500 ms ; `lastPositions` jamais branché ; `saveProgress` loggé mais avalé). Le grand ménage du 26/08 (`9e82c22`) portait sur les outils de dev, pas sur ces fiches.
 
 ---
 

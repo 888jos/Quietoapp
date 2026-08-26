@@ -53,6 +53,11 @@ en médiane **32 h** après. Écouter 2 séances = **−20 points d'annulation**
   vers la fin de l'onboarding (`onboarding_trust` ou juste avant la home).
   Service existant : `lib/core/services/notification_service.dart`.
 - **Effort** : petit. **Impact : le plus élevé du lot** (débloque le seul canal de retour).
+- ⚠️ **maj 26/08/2026** : la proposition post-séance a été **supprimée** (commit `099b1df`,
+  part avec la 1.0.20) — il n'y a plus rien à « déplacer » depuis `player_page.dart`, et
+  **plus AUCUN écran ne propose la notification** dans le parcours (seul reste le réglage
+  « Heure du rappel » du profil). Le chantier reste entier : tout est à construire en fin
+  d'onboarding, `notification_service.dart` sait déjà planifier.
 
 ### 2. Le programme 7 jours en haut de la home, avant la grille de catégories
 - **Pour l'utilisateur** : il arrive et voit une porte ouverte (« Jour 1 ») au lieu d'une grille

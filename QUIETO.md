@@ -1,8 +1,8 @@
 # Quieto — c'est quoi ?
 
 > Document de présentation. À donner tel quel à une IA (ou une personne) pour comprendre vite ce qu'est Quieto et où le projet va.
-> Mainteneur : Cofonde · Version de l'app : **1.0.15** · Plateformes : **iOS + Android**
-> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu).
+> Mainteneur : Cofonde · Version de l'app : **1.0.20+29** (en préparation — la 1.0.19 est distribuée mais pas encore soumise) · Plateformes : **iOS + Android** (⚠️ retirée de Google Play depuis le 05/08/2026, restauration demandée)
+> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu). (maj 26/08/2026)
 
 ## En une phrase
 **Quieto est une application de méditation guidée en français**, pensée pour rendre la méditation simple et accessible : des séances courtes, ancrées dans les vrais moments de la journée (un appel difficile, les transports, juste avant de dormir…), et **Louane**, une compagnonne IA qui accompagne l'utilisateur au quotidien.
@@ -22,13 +22,15 @@ Une **compagnonne IA** intégrée à l'app — un personnage dessiné en code (v
 - **discute** avec l'utilisateur (chat) et recommande la bonne séance selon son humeur ;
 - **compose le « programme »** : un parcours personnalisé de 7 jours, avec étoiles de progression.
 
-Côté serveur : Cloud Functions `louane` et `genererParcours` (Claude — Voix sur Sonnet, rôles Plume/Mémoire/Veilleur sur Haiku). C'est la meilleure surface de conversion de l'app — Louane reste accessible aux utilisateurs gratuits, c'est voulu.
+Côté serveur : Cloud Functions `louane`, `genererParcours` et `accueilOnboarding` — **tout sur GPT-5.6 Luna (OpenAI) depuis le 14/08/2026** (Voix, Veilleur sécurité, Mémoire ; la Plume a été supprimée). C'est la meilleure surface de conversion de l'app — Louane reste accessible aux utilisateurs gratuits, c'est voulu.
+
+Depuis la 1.0.20, le **jour 1 du tout premier programme est toujours « Ma première méditation »** (quasi personne n'a jamais médité) — flag `premierParcours` envoyé par l'app, verrou `forcerPremiereMeditation` côté serveur.
 
 ## Ce que Quieto fait aujourd'hui
 **Parcours utilisateur :**
 Onboarding personnalisé (questions sur ton état émotionnel + prénom + proposition Apple Santé) → compte Apple / Google ou « Continuer sans compte » → Accueil personnalisé → Louane (chat + programme 7 jours) ou Explorer les catégories → Lecteur audio (contrôles sur écran verrouillé, mini-lecteur qui suit l'utilisateur) → Profil avec statistiques (minutes méditées, séances terminées) et carte de partage.
 
-**Contenu :** 7 catégories, **35 séances** de 1 à 14 min (Express « Une minute pour toi », Découverte, Actualité & Surcharge mentale, Stress & Anxiété, Sommeil, Respiration, Émotions). Le catalogue est défini dans `lib/features/explore/data/explore_repository.dart`.
+**Contenu :** 7 catégories, **35 séances** de 1 à 14 min (Express « Une minute pour toi », Découverte, Actualité & Surcharge mentale, Stress & Anxiété, Sommeil, Respiration, Émotions). Le catalogue est défini dans `lib/features/explore/data/explore_repository.dart`. Depuis le 26/08/2026, **chaque séance a une cover illustrée style gouache** (`assets/images/sessions/`, WebP) et **chaque catégorie son bandeau paysage** (`assets/images/categories/`, 7 fichiers WebP) — voir `DIRECTION-ARTISTIQUE.md` et `PROMPTS-VISUELS.md`.
 
 **Apple Santé / Health Connect :** les minutes de pleine conscience sont enregistrées dans l'app Santé du téléphone.
 
@@ -42,7 +44,7 @@ Onboarding personnalisé (questions sur ton état émotionnel + prénom + propos
 **Technique :** app **Flutter** (un seul code pour iOS + Android). Audios hébergés sur **Firebase Storage**, lus en streaming (connexion requise). Backend : Cloud Functions (`~/dev/quieto-backend`).
 
 ## Ce que Quieto va devenir (vision / prochaines étapes)
-- **Mieux convertir** — chantier en cours : paywall plus transparent (« 0 € aujourd'hui, 89 € le [date], rappel la veille »), croisement comportement × conversion via la Vigie.
+- **Faire écouter la première séance** — chantier n°1 depuis l'analyse Vigie du 25/08/2026 (`AMELIORATIONS.md`) : 88 % des installés n'écoutent jamais une méditation en entier. Trois pistes retenues : notification proposée en fin d'onboarding, programme 7 jours en haut de la home, relances J+1/J+3 pendant l'essai. ⚠️ Le mur de paiement, lui, ne se touche pas (décision Paul, 25/08).
 - **Écoute hors-ligne** — télécharger / mettre en cache les séances pour écouter sans connexion.
 - **Plus de contenu** — de nouvelles séances et catégories ajoutées régulièrement.
 - **Rappels & habitude** — notifications et séries (streaks) pour aider à méditer chaque jour.
@@ -54,6 +56,7 @@ Flutter / Dart · Riverpod (état) · go_router (navigation) · just_audio + aud
 ## Direction artistique (design system)
 
 > À lire avant de concevoir le moindre écran. Objectif : qu'une IA ou un designer produise une page **immédiatement cohérente** avec Quieto. Toutes les valeurs ci-dessous viennent du vrai code (`lib/core/theme/` et `lib/core/config/app_constants.dart`) — réutilise les constantes, n'invente pas de valeurs.
+> ⚠️ **maj 26/08/2026** : la DA a évolué — les illustrations (covers de séances, bandeaux de catégorie, cartes de la home) sont désormais des **gouaches générées** pour tuer le « look IA ». Le parti pris complet est dans **`DIRECTION-ARTISTIQUE.md`** (audit du 25/08) et la méthode de génération dans **`PROMPTS-VISUELS.md`** — les lire avant de produire la moindre image.
 
 ### Ambiance générale
 **Nuit zen.** Fond bleu nuit profond, un seul accent turquoise lumineux, beaucoup d'espace, coins arrondis, animations douces et lentes. On vise le calme et l'apaisement — jamais l'agressif, le clignotant ou le criard. Référence d'esprit : un ciel étoilé paisible.
@@ -101,17 +104,19 @@ Réutiliser ces composants plutôt que de redessiner des boutons/cartes à la ma
 ### Animations
 - Durées : `animFast 200` · `animNormal 350` · `animSlow 600` ms. Rien de brusque.
 - Courbes : `easeOutCubic` (entrées/montées), `easeInOut` (fondus), `easeOutBack` (petit rebond ludique).
-- Transitions de page : **fondu doux** (cf. `lib/core/theme/app_theme.dart`). Privilégier `CustomPaint`/widgets animés aux GIF/grosses images (perf + cohérence).
+- Transitions de page : **fondu doux** (cf. `lib/core/theme/app_theme.dart`). Pour l'animation : `CustomPaint`/widgets animés (voire shaders GPU — l'aurore boréale de la home, `shaders/aurora.frag`, maj 26/08) plutôt que GIF. Pour l'illustration statique : les gouaches (voir `DIRECTION-ARTISTIQUE.md`).
 
 ### Ton & rédaction
 **Français, tutoiement** (« tu »), chaleureux et zen. Phrases courtes, zéro jargon. Emojis avec **parcimonie** dans les titres/CTA (✨ 🌙 🧘 🔔), jamais dans le texte lu à voix haute. Exemple de voix : « Prends un moment pour toi », « Commencer mon essai gratuit ».
 
 ### À éviter
-Fonds clairs · un 2ᵉ accent coloré · coins carrés · ombres dures/noires · texte gris peu lisible · animations rapides ou qui clignotent · grosses illustrations lourdes quand un dessin en code suffit.
+Fonds clairs · un 2ᵉ accent coloré · coins carrés · ombres dures/noires · texte gris peu lisible · animations rapides ou qui clignotent · toute image au rendu « généré par IA » (dégradés lisses, halos, formes vectorielles molles — voir `DIRECTION-ARTISTIQUE.md`, maj 26/08).
 
 ## Pour aller plus loin (docs du projet)
 - `lib/features/explore/data/explore_repository.dart` — le catalogue complet des 35 séances (l'ancien `SEANCES.md` n'existe plus).
 - `SPECS.md` — spécifications produit détaillées.
 - `ARCHITECTURE.md` — structure technique du code.
 - `DECISIONS.md` — choix techniques et pourquoi.
+- `AMELIORATIONS.md` — backlog produit conversion & rétention (chiffres Vigie du 25/08/2026).
+- `DIRECTION-ARTISTIQUE.md` + `PROMPTS-VISUELS.md` — parti pris visuel gouache et méthode de génération des images.
 - `~/dev/JOURNAL-QUIETO.md` — journal de bord (état du projet, chiffres clés, prochaines actions).

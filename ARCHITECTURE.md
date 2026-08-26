@@ -1,6 +1,7 @@
 # Architecture — Quieto
 
 > Maj 12/08/2026 — ajout des features Louane & Parcours, nav 3 onglets (Accueil / Louane / Profil), stack et navigation resynchronisées avec le code (v1.0.15+22).
+> Maj 26/08/2026 (v1.0.20+29) — onboarding resynchronisé (écran « compréhension », respiration avant Apple Santé), shaders GPU de la home (`shaders/aurora.frag`, `stardust.frag`), bandeaux de catégorie (`assets/images/categories/`), plus aucun outil de dev dans l'app (commit `9e82c22` : fini `?demo=1`, `premium_force_dev`, `avancerJourDev()`).
 
 ## Vue d'ensemble
 
@@ -16,8 +17,9 @@ lib/
 │   ├── theme/        # Design system (couleurs, typographie, thème, transitions fondu)
 │   └── ui/           # AppButton, AppCard, AppScaffold, StarryBackground, boutons de connexion…
 └── features/         # Domaines métier
-    ├── onboarding/   # V2 conversion : connexion (Apple/Google), questions, loading, ready,
-    │                 #   santé (iOS), respiration (breath), trust — + data/weekly_program.dart
+    ├── onboarding/   # V2 conversion : connexion (Apple/Google), questions, compréhension
+    │                 #   (Louane résume — loading/ready restent en repli), respiration (breath),
+    │                 #   santé (iOS), trust — + data/weekly_program.dart, data/accueil_louane.dart
     ├── home/         # Accueil : home_page + widgets (night_sky_header, glowing_moon, parcours_card…)
     ├── louane/       # Compagnonne IA : louane_page (chat), louane_avatar (dessiné en code),
     │                 #   carte_seance_louane, rituel sommeil, data/ (repository, messages, heure de Paris)
@@ -89,9 +91,10 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 
 ```
 / (splash) ──► /onboarding-connexion (compte Apple/Google, jamais bloquant)
-           ──► /onboarding (questions) ──► /onboarding-loading ──► /onboarding-ready
-           ──► /onboarding-sante (iOS uniquement) ──► /onboarding-breath ──► /onboarding-trust
+           ──► /onboarding (questions) ──► /onboarding-comprehension (Louane résume ce qu'elle a compris)
+           ──► /onboarding-breath (respiration) ──► /onboarding-sante (iOS uniquement) ──► /onboarding-trust
            ──► /paywall ──► /home
+           (routes /onboarding-loading et /onboarding-ready : anciennes transitions, gardées en repli)
            └─► StatefulShellRoute (HomeShell + bottom nav « Accueil / Louane / Profil »)
                  ├─ branch 0 : /home    → HomePage   (stack isolée)
                  ├─ branch 1 : /louane  → LouanePage (stack isolée)
@@ -106,6 +109,7 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 /category/:categoryId   (hors shell — context.push, retour possible)
 ```
 (maj 12/08/2026 — routes resynchronisées avec `app/router.dart` ; l'onglet Explorer a laissé sa place à Louane)
+(maj 26/08/2026 — ordre réel de l'onboarding : compréhension puis respiration puis Santé ; le mode `?demo=1` de `/parcours/creation` n'existe plus, retiré avec les outils de dev — commit `9e82c22`)
 
 ### Choisir le bon type de navigation
 

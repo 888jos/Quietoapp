@@ -1,6 +1,7 @@
 # Specs produit — Quieto
 
 > Maj 12/08/2026 — resynchronisé avec le code (v1.0.15+22). Ce document datait du MVP ; les sections marquées « historique » décrivent l'app d'avant. Pour l'état produit courant, `QUIETO.md` fait foi.
+> Maj 26/08/2026 — resynchronisé avec la v1.0.20+29 (notes datées dans les sections concernées).
 
 ## Concept
 
@@ -10,8 +11,8 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 
 ### Onboarding (⚠️ historique — V1)
 
-> Depuis la V2 « orientée conversion » (commit `4317a1d`, puis 1.0.13-1.0.15), le flow réel est :
-> connexion Apple/Google (jamais bloquante) → questions → loading → ready → Apple Santé (iOS uniquement) → respiration (breath) → confiance (trust) → paywall → home.
+> Depuis la V2 « orientée conversion » (commit `4317a1d`, puis 1.0.13+), le flow réel est (maj 26/08/2026, vérifié dans le code) :
+> connexion Apple/Google (jamais bloquante) → questions → **compréhension** (Louane résume ce qu'elle a compris, bulles servies par la Cloud Function `accueilOnboarding` — remplace loading/ready depuis la 1.0.17, qui restent en repli) → **respiration (breath)** → Apple Santé (iOS uniquement) → confiance (trust) → paywall → home.
 > Source : `lib/features/onboarding/` et `app/router.dart`. Le descriptif V1 ci-dessous est conservé pour mémoire.
 - 7 slides : 2 introductions + 4 questions émotionnelles à choix unique + saisie du prénom
 - Pas de bouton "Passer" — l'utilisateur doit compléter tout le flow
@@ -22,8 +23,9 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 
 ### Home ✅
 - Header : logo à gauche + greeting RichText à droite (fade in 600ms) — "Salut [prénom]," en `textMuted` + "on fait quoi aujourd'hui ?" en `textPrimary` bold
-- Carte "Priorité du moment" mise en avant (Découverte 🧘, 3 séances, bordure accent) → `/category/decouverte`
-- Liste verticale de toutes les catégories (emoji, nom, description, nb séances) → `/category/:id`
+- Carte "Priorité du moment" mise en avant → `/category/decouverte`
+- Liste verticale de toutes les catégories (nom, description, nb séances) → `/category/:id`
+- *(maj 26/08/2026)* Ciel de nuit animé en **shaders GPU** : aurore boréale (`shaders/aurora.frag`) + voile laiteux et étoiles qui scintillent (`shaders/stardust.frag`), widgets `night_sky_header` / `glowing_moon`. Cartes **illustrées** (vignettes gouache, carte « Priorité du moment » façon Headspace). Carte du programme 7 jours (`parcours_card`) avec badge « Jour X sur 7 » + barre en 7 segments — le badge ne vit QUE sur cette carte, plus sur la page programme (`f715c6b`).
 
 ### Explorer (⚠️ supprimée — maj 12/08/2026)
 L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil**. Le catalogue s'atteint depuis l'accueil (cartes catégories → `/category/:id`). `lib/features/explore/data/explore_repository.dart` reste la source de vérité du catalogue (35 séances, 7 catégories).
@@ -31,6 +33,7 @@ L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil*
 ### Louane & Programme 7 jours (ajout — maj 12/08/2026)
 - **Louane** : compagnonne IA au centre de la nav (`/louane`) — chat avec l'utilisateur, recommandation de séances (cartes séance dans la conversation), rituel sommeil. Personnage dessiné en code (pas une image). Côté serveur : Cloud Function `louane`.
 - **Programme 7 jours** (« parcours ») : créé par Louane via la Cloud Function `genererParcours` — écran de génération (`/parcours/creation`), constellation d'étoiles de progression, carte de partage (stories). Persisté en SharedPreferences (`ParcoursModel`).
+- *(maj 26/08/2026, 1.0.20)* Le **jour 1 du tout premier programme est toujours « Ma première méditation »** : tant qu'aucune séance n'a jamais été terminée (`parcoursDejaCree` faux OU `completedCount == 0`), l'app envoie `premierParcours: true` et le serveur applique le verrou `forcerPremiereMeditation` (app `258ee18`, backend `39853fd`).
 - Louane reste accessible aux utilisateurs **gratuits** (meilleure surface de conversion — voulu).
 
 ### Preparation screen
@@ -57,12 +60,13 @@ L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil*
 - Header : "👤 [prénom]" (fontSize 28, bold) + bouton "Modifier" pour éditer le prénom via bottom sheet
 - Statistiques : minutes totales méditées, nombre de séances complétées
 - CTA vers Paywall
-- Section "Paramètres" : toggle notifications (persisté SharedPreferences) + reset onboarding (→ `/onboarding`)
-- Section "Informations légales" : politique de confidentialité + conditions d'utilisation (ouvre URL via `url_launcher`)
+- Section "Paramètres" : toggle notifications + « Heure du rappel » (bottom sheet, persisté SharedPreferences). *(maj 26/08/2026 : le « reset onboarding » était un outil de dev — retiré avec tous les autres, commit `9e82c22`.)*
+- Section "Informations légales" : politique de confidentialité + conditions d'utilisation (ouvre URL via `url_launcher`) — *(maj 26/08/2026)* les URLs pointent sur **cofonde.com** (`/quieto-confidentialite`, `/quieto-cgu`) depuis la 1.0.20 (`6985199`), plus sur Notion.
 
 ### Paywall (maj 12/08/2026)
 - **Paywall Flutter maison** (`lib/features/paywall/presentation/paywall_screen.dart`, branche `feat/paywall-flutter`) — le `PaywallView` natif RevenueCat n'est plus utilisé ; les offres et prix réels viennent de RevenueCat (`purchases_flutter`).
 - Accessible via `context.go` depuis l'onboarding (pas de retour) ou en montée glissée depuis une séance premium / le profil (`/paywall?from=premium&src=…` — la Vigie note la surface d'origine pour savoir ce qui convertit).
+- *(maj 26/08/2026)* La croix de fermeture est **en haut à gauche**, collée à la zone sûre (`37a9771`).
 
 ## Catégories de contenu
 
@@ -109,21 +113,24 @@ Les séances ne sont **plus embarquées** dans l'app : elles sont hébergées su
 
 Convention de nommage (toujours valable, côté Storage comme côté `audioFile`) : `<dossier>/<index>-<slug>.mp3` en **ASCII pur** (pas d'accents, pas d'espaces) — ex. `stress/4-le-voyageur-qui-sarrete.mp3`. macOS stockerait les accents en NFD alors que Flutter charge en NFC, créant des fichiers introuvables au runtime (voir ADR-024).
 
-## Assets images de couverture
+## Assets images (maj 26/08/2026 — refonte gouache complète)
 
-Les images de couverture des séances sont dans `assets/images/sessions/` :
+**Covers de séances** (`assets/images/sessions/`) — les 35 séances ont chacune une illustration gouache liée à leur titre (chantier des 25-26/08, commits `c8e3ba5`, `eb30399`, `37a9771` ; méthode : `PROMPTS-VISUELS.md`) :
 
 ```
 assets/images/sessions/
 ├── decouverte/   (decouverte_1.png … decouverte_3.png)
-├── actualite/    (actualite_1.png … actualite_5.png)
-├── stress/       (stress_1.png … stress_5.png)
-├── sleep/        (sleep_1.png … sleep_5.png)
-├── breathing/    (breathing_1.png … breathing_4.png)
-└── emotion/      (emotion_1.png … emotion_5.png)
+├── express/      (express_1.webp … express_8.webp)
+├── actualite/    (actualite_1.webp … actualite_5.webp)
+├── stress/       (stress_1.webp … stress_5.webp)
+├── sleep/        (sleep_1.webp … sleep_5.webp)
+├── breathing/    (breathing_1.webp … breathing_4.webp)
+└── emotion/      (emotion_1.webp … emotion_5.webp)
 ```
 
-Convention : `sessions/<categorie>/<session_id>.png`. Le player affiche cette image dans le cover 220×220, avec fallback automatique sur le placeholder note de musique si l'image est absente ou corrompue.
+Convention : `sessions/<categorie>/<session_id>.webp` (les 3 Découverte sont restées en `.png`). Le player affiche cette image dans le cover 220×220, avec fallback automatique sur le placeholder note de musique si l'image est absente ou corrompue.
+
+**Bandeaux de catégorie** (`assets/images/categories/`, ajoutés le 26/08) — 7 paysages gouache 1400×788 (`actualite`, `breathing`, `decouverte`, `emotion`, `express`, `sleep`, `stress`.webp), un `coverImage` dédié par catégorie pour le header de `category_detail_page.dart` (dégradé du bas démarré à 0.82 pour ne pas éteindre l'illustration).
 
 ## UX haptic feedback
 
@@ -140,7 +147,7 @@ Voir ADR-022 pour la stratégie complète. Test obligatoire sur iPhone physique 
 
 - [x] Intégration Firebase (Auth Apple/Google/anonyme, Cloud Functions, Storage, App Check + analytics maison « la Vigie »)
 - [ ] Téléchargement hors-ligne
-- [x] Notifications de rappel de méditation (rappel quotidien doux, heure dérivée de l'onboarding — `lib/core/services/notification_service.dart`)
+- [x] Notifications de rappel de méditation (rappel quotidien doux, réglable dans le profil — `lib/core/services/notification_service.dart`). ⚠️ maj 26/08/2026 : la **proposition** de rappel en fin de 1ʳᵉ séance a été supprimée (`099b1df`) — plus aucun écran ne propose la notification dans le parcours ; le chantier « la demander en fin d'onboarding » est dans `AMELIORATIONS.md`
 - [ ] Statistiques avancées (streak, graphe hebdomadaire)
 - [x] CategoryDetailPage complète
 - [ ] Favoris

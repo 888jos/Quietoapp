@@ -117,9 +117,9 @@ refactor: restructuration de player_providers
 chore: mise à jour des dépendances
 ```
 
-## Dev : bypasser le paywall (maj 12/08/2026)
+## Dev : bypasser le paywall (maj 26/08/2026)
 
-L'ancienne constante `_devUnlockPremium` n'existe plus. En debug, un **interrupteur dans le profil** force le premium (`SubscriptionNotifier.devForcerPremium`, `lib/core/services/storage_providers.dart`) — jamais persisté et neutralisé en release (`kReleaseMode`) : impossible de shipper le bypass par erreur.
+**Il n'existe plus AUCUN moyen de forcer le premium dans l'app.** Historique : l'ancienne constante `_devUnlockPremium` a disparu, l'interrupteur `devForcerPremium` du profil a été retiré le 17/08 (commit `f9ab2e9`), et la carte provisoire « Premium forcé (dev) » + flag `premium_force_dev` remise le temps du chantier visuel a été retirée le 26/08 avec tous les autres outils de dev (commit `9e82c22` : boutons profil animation/avancer d'un jour/refaire l'onboarding, flèches dev d'onboarding, mode `?demo=1` de la création de programme, `avancerJourDev()`). Pour tester l'abonnement : sandbox RevenueCat. Si un nouvel outil de dev provisoire s'impose, le neutraliser en release (`kReleaseMode`) et le retirer avant tout bump de version.
 
 ## Pull Requests
 

@@ -120,3 +120,7 @@ Le turquoise ne disparaît pas d'un coup : il se réduit à un usage rare
 4. Player plein écran.
 5. Étendre aux 33 covers de séances.
 6. Onboarding.
+
+## État au 26/08/2026 (Scribe)
+- ✅ Étapes 1, 2, 3 et 5 **faites et commitées** (`c8e3ba5`, `eb30399`, `37a9771`, part avec la 1.0.20) : les **35 covers** de séances en gouache (WebP), les **7 bandeaux de catégorie** (`assets/images/categories/`, 1400×788), cards illustrées sur la Home. Le générateur retenu : **API Gemini** (pas Midjourney) — méthode et pièges dans `PROMPTS-VISUELS.md`.
+- Reste (éventuel, annoncé au journal) : onboarding + header Home, même méthode. Le point n°1 de l'audit (« 40 images, tout à refaire ») décrit l'état du 25/08 — il est réglé.

@@ -10,8 +10,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../parcours/parcours_providers.dart';
 
-/// La carte « programme en cours » de l'accueil : titre, jour N sur 7, barre
-/// de progression en 7 segments, et la séance du jour (ou « à demain » si
+/// La carte « programme en cours » de l'accueil : titre, barre de
+/// progression en 7 segments, et la séance du jour (ou « à demain » si
 /// elle est déjà faite). Invisible s'il n'y a pas de programme, ou une fois
 /// le bilan envoyé.
 class ParcoursCard extends ConsumerWidget {
@@ -87,13 +87,6 @@ class ParcoursCard extends ConsumerWidget {
                   style: AppTextStyles.titleMedium,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  parcours.tousJoursTermines
-                      ? 'Semaine terminée'
-                      : 'Jour ${parcours.jourCourant} sur 7',
-                  style: AppTextStyles.badge,
                 ),
                 const SizedBox(height: AppConstants.spacingSm),
                 // La progression : 7 petits segments, un par jour.

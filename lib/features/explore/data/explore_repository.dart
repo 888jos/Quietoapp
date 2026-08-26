@@ -15,7 +15,7 @@ class ExploreRepository {
         badge: 'Flash',
         // L'éclair dans les ondes : l'image de séance la plus raccord avec
         // le symbole de la catégorie.
-        coverImage: 'sessions/express/express_5.png',
+        coverImage: 'sessions/express/express_5.webp',
         sessions: [
           const SessionModel(
             id: 'express_1',
@@ -25,7 +25,7 @@ class ExploreRepository {
             durationMinutes: 1,
             audioFile: 'express-avant-un-appel-difficile.mp3',
             categoryId: 'express',
-            imageFile: 'sessions/express/express_1.png',
+            imageFile: 'sessions/express/express_1.webp',
           ),
           const SessionModel(
             id: 'express_2',
@@ -35,7 +35,7 @@ class ExploreRepository {
             durationMinutes: 2,
             audioFile: 'express-transports-bondes.mp3',
             categoryId: 'express',
-            imageFile: 'sessions/express/express_2.png',
+            imageFile: 'sessions/express/express_2.webp',
           ),
           const SessionModel(
             id: 'express_3',
@@ -45,7 +45,7 @@ class ExploreRepository {
             durationMinutes: 2,
             audioFile: 'express-petit-dejeuner.mp3',
             categoryId: 'express',
-            imageFile: 'sessions/express/express_3.png',
+            imageFile: 'sessions/express/express_3.webp',
           ),
           const SessionModel(
             id: 'express_4',
@@ -55,7 +55,7 @@ class ExploreRepository {
             durationMinutes: 3,
             audioFile: 'express-juste-avant-de-dormir.mp3',
             categoryId: 'express',
-            imageFile: 'sessions/express/express_4.png',
+            imageFile: 'sessions/express/express_4.webp',
           ),
           const SessionModel(
             id: 'express_5',
@@ -66,7 +66,7 @@ class ExploreRepository {
             audioFile: 'express-coup-de-stress-au-boulot.mp3',
             categoryId: 'express',
             isPremium: true,
-            imageFile: 'sessions/express/express_5.png',
+            imageFile: 'sessions/express/express_5.webp',
           ),
           const SessionModel(
             id: 'express_6',
@@ -77,7 +77,7 @@ class ExploreRepository {
             audioFile: 'express-apres-une-dispute.mp3',
             categoryId: 'express',
             isPremium: true,
-            imageFile: 'sessions/express/express_6.png',
+            imageFile: 'sessions/express/express_6.webp',
           ),
           const SessionModel(
             id: 'express_7',
@@ -88,7 +88,7 @@ class ExploreRepository {
             audioFile: 'express-reveil-en-panique.mp3',
             categoryId: 'express',
             isPremium: true,
-            imageFile: 'sessions/express/express_7.png',
+            imageFile: 'sessions/express/express_7.webp',
           ),
           const SessionModel(
             id: 'express_8',
@@ -99,7 +99,7 @@ class ExploreRepository {
             audioFile: 'express-avant-une-presentation.mp3',
             categoryId: 'express',
             isPremium: true,
-            imageFile: 'sessions/express/express_8.png',
+            imageFile: 'sessions/express/express_8.webp',
           ),
         ],
       ),
@@ -160,7 +160,7 @@ class ExploreRepository {
         badge: 'New !',
         // L'écran qui se dissout en feuilles : décrocher des écrans, le
         // cœur du sujet de la catégorie.
-        coverImage: 'sessions/actualite/actualite_3.png',
+        coverImage: 'sessions/actualite/actualite_3.webp',
         sessions: [
           const SessionModel(
             id: 'actualite_1',
@@ -169,7 +169,7 @@ class ExploreRepository {
             durationMinutes: 7,
             audioFile: '23-actualite-quand-le-monde-brule.mp3',
             categoryId: 'actualite',
-            imageFile: 'sessions/actualite/actualite_1.png',
+            imageFile: 'sessions/actualite/actualite_1.webp',
           ),
           const SessionModel(
             id: 'actualite_2',
@@ -180,7 +180,7 @@ class ExploreRepository {
             audioFile: '24-actualite-la-guerre-en-bruit-de-fond.mp3',
             categoryId: 'actualite',
             isPremium: true,
-            imageFile: 'sessions/actualite/actualite_2.png',
+            imageFile: 'sessions/actualite/actualite_2.webp',
           ),
           const SessionModel(
             id: 'actualite_3',
@@ -189,7 +189,7 @@ class ExploreRepository {
             durationMinutes: 8,
             audioFile: '25-actualite-debrancher-quand-tout-crie.mp3',
             categoryId: 'actualite',
-            imageFile: 'sessions/actualite/actualite_3.png',
+            imageFile: 'sessions/actualite/actualite_3.webp',
           ),
           const SessionModel(
             id: 'actualite_4',
@@ -199,7 +199,7 @@ class ExploreRepository {
             audioFile: '26-actualite-recul-sur-lactualite.mp3',
             categoryId: 'actualite',
             isPremium: true,
-            imageFile: 'sessions/actualite/actualite_4.png',
+            imageFile: 'sessions/actualite/actualite_4.webp',
           ),
           const SessionModel(
             id: 'actualite_5',
@@ -210,7 +210,7 @@ class ExploreRepository {
             audioFile: '27-actualite-pause-info.mp3',
             categoryId: 'actualite',
             isPremium: true,
-            imageFile: 'sessions/actualite/actualite_5.png',
+            imageFile: 'sessions/actualite/actualite_5.webp',
           ),
         ],
       ),
@@ -230,7 +230,7 @@ class ExploreRepository {
             durationMinutes: 7,
             audioFile: '08-stress-quand-le-stress-prend-le-dessus.mp3',
             categoryId: 'stress',
-            imageFile: 'sessions/stress/stress_1.png',
+            imageFile: 'sessions/stress/stress_1.webp',
           ),
           const SessionModel(
             id: 'stress_2',
@@ -240,7 +240,7 @@ class ExploreRepository {
             audioFile: '09-stress-respiration-4-7-8.mp3',
             categoryId: 'stress',
             isPremium: true,
-            imageFile: 'sessions/stress/stress_2.png',
+            imageFile: 'sessions/stress/stress_2.webp',
           ),
           const SessionModel(
             id: 'stress_3',
@@ -250,7 +250,7 @@ class ExploreRepository {
             durationMinutes: 9,
             audioFile: '10-stress-relache.mp3',
             categoryId: 'stress',
-            imageFile: 'sessions/stress/stress_3.png',
+            imageFile: 'sessions/stress/stress_3.webp',
           ),
           const SessionModel(
             id: 'stress_4',
@@ -260,7 +260,7 @@ class ExploreRepository {
             durationMinutes: 6,
             audioFile: '11-stress-ancrage.mp3',
             categoryId: 'stress',
-            imageFile: 'sessions/stress/stress_4.png',
+            imageFile: 'sessions/stress/stress_4.webp',
           ),
           const SessionModel(
             id: 'stress_5',
@@ -271,7 +271,7 @@ class ExploreRepository {
             audioFile: '12-stress-le-voyageur-qui-sarrete.mp3',
             categoryId: 'stress',
             isPremium: true,
-            imageFile: 'sessions/stress/stress_5.png',
+            imageFile: 'sessions/stress/stress_5.webp',
           ),
         ],
       ),
@@ -356,7 +356,7 @@ class ExploreRepository {
             durationMinutes: 4,
             audioFile: '04-respiration-coherence-cardiaque.mp3',
             categoryId: 'breathing',
-            imageFile: 'sessions/breathing/breathing_1.png',
+            imageFile: 'sessions/breathing/breathing_1.webp',
           ),
           const SessionModel(
             id: 'breathing_2',
@@ -367,7 +367,7 @@ class ExploreRepository {
             audioFile: '05-respiration-respiration-alternee.mp3',
             categoryId: 'breathing',
             isPremium: true,
-            imageFile: 'sessions/breathing/breathing_2.png',
+            imageFile: 'sessions/breathing/breathing_2.webp',
           ),
           const SessionModel(
             id: 'breathing_3',
@@ -377,7 +377,7 @@ class ExploreRepository {
             durationMinutes: 8,
             audioFile: '06-respiration-souffle-apaisant.mp3',
             categoryId: 'breathing',
-            imageFile: 'sessions/breathing/breathing_3.png',
+            imageFile: 'sessions/breathing/breathing_3.webp',
           ),
           const SessionModel(
             id: 'breathing_4',
@@ -388,7 +388,7 @@ class ExploreRepository {
             audioFile: '07-respiration-expansion-thoracique.mp3',
             categoryId: 'breathing',
             isPremium: true,
-            imageFile: 'sessions/breathing/breathing_4.png',
+            imageFile: 'sessions/breathing/breathing_4.webp',
           ),
         ],
       ),
@@ -408,7 +408,7 @@ class ExploreRepository {
             durationMinutes: 8,
             audioFile: '18-emotion-apprendre-a-saimer.mp3',
             categoryId: 'emotion',
-            imageFile: 'sessions/emotion/emotion_1.png',
+            imageFile: 'sessions/emotion/emotion_1.webp',
           ),
           const SessionModel(
             id: 'emotion_2',
@@ -419,7 +419,7 @@ class ExploreRepository {
             audioFile: '19-emotion-joie-et-energie.mp3',
             categoryId: 'emotion',
             isPremium: true,
-            imageFile: 'sessions/emotion/emotion_2.png',
+            imageFile: 'sessions/emotion/emotion_2.webp',
           ),
           const SessionModel(
             id: 'emotion_3',
@@ -430,7 +430,7 @@ class ExploreRepository {
             audioFile: '20-emotion-de-lanxiete-au-sourire.mp3',
             categoryId: 'emotion',
             isPremium: true,
-            imageFile: 'sessions/emotion/emotion_3.png',
+            imageFile: 'sessions/emotion/emotion_3.webp',
           ),
           const SessionModel(
             id: 'emotion_4',
@@ -440,7 +440,7 @@ class ExploreRepository {
             durationMinutes: 7,
             audioFile: '21-emotion-peur-et-courage.mp3',
             categoryId: 'emotion',
-            imageFile: 'sessions/emotion/emotion_4.png',
+            imageFile: 'sessions/emotion/emotion_4.webp',
           ),
           const SessionModel(
             id: 'emotion_5',
@@ -451,7 +451,7 @@ class ExploreRepository {
             audioFile: '22-emotion-lamour.mp3',
             categoryId: 'emotion',
             isPremium: true,
-            imageFile: 'sessions/emotion/emotion_5.png',
+            imageFile: 'sessions/emotion/emotion_5.webp',
           ),
         ],
       ),

@@ -421,28 +421,9 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        SlideReveal(
-                          active: pose,
-                          delay: const Duration(milliseconds: 190),
-                          child: Text(
-                            parcours.tousJoursTermines
-                                ? 'Semaine terminée'
-                                : 'Jour ${parcours.jourCourant} sur 7',
-                            style: AppTextStyles.badge,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: AppConstants.spacingSm),
-                        SlideReveal(
-                          active: pose,
-                          delay: const Duration(milliseconds: 240),
-                          child: Text(
-                            parcours.sousTitre,
-                            style: AppTextStyles.bodyMedium,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                        // (ni sous-titre ni « Jour X sur 7 » ici : le titre
+                        // suffit, le chemin des 7 jours montre où on en est —
+                        // demande de Paul.)
                         const SizedBox(height: AppConstants.spacingLg),
 
                         // ── Le chemin des 7 jours ──────────────

@@ -31,6 +31,18 @@ class CategoryListCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+            // Même relief que la carte « Priorité du moment » : liseré
+            // clair + ombre portée, la carte se décolle du ciel étoilé.
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           padding: const EdgeInsets.all(AppConstants.spacingMd),
           child: Row(

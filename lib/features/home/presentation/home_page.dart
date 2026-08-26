@@ -133,16 +133,18 @@ class _HomePageState extends ConsumerState<HomePage>
                         ),
                         const SizedBox(height: AppConstants.spacingMd),
                         FeaturedSessionCard(
-                          emoji: '🧘',
                           categoryId: 'decouverte',
                           categoryName: 'Découverte de la méditation',
-                          subtitle:
-                              'Commence ton voyage vers la pleine conscience.',
                           durationLabel: '3 séances disponibles',
+                          // Même visuel que le haut de la page catégorie :
+                          // la carte annonce ce qu'on ouvre.
+                          imageFile: 'categories/decouverte.jpg',
                           onTap: () {
                             // Vigie : où cliquent-ils depuis l'accueil ?
-                            ref.read(vigieProvider).log('categorie_ouverte',
-                                {'categorie': 'decouverte', 'source': 'priorite'});
+                            ref.read(vigieProvider).log('categorie_ouverte', {
+                              'categorie': 'decouverte',
+                              'source': 'priorite',
+                            });
                             context.push(
                               ref.read(categoryRouteProvider('decouverte')),
                             );
@@ -182,8 +184,10 @@ class _HomePageState extends ConsumerState<HomePage>
                     itemBuilder: (context, i) => CategoryListCard(
                       category: categories[i],
                       onTap: () {
-                        ref.read(vigieProvider).log('categorie_ouverte',
-                            {'categorie': categories[i].id, 'source': 'liste'});
+                        ref.read(vigieProvider).log('categorie_ouverte', {
+                          'categorie': categories[i].id,
+                          'source': 'liste',
+                        });
                         context.push(
                           ref.read(categoryRouteProvider(categories[i].id)),
                         );

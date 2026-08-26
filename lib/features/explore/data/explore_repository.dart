@@ -295,7 +295,7 @@ class ExploreRepository {
             durationMinutes: 13,
             audioFile: '13-sommeil-detente-du-soir.mp3',
             categoryId: 'sleep',
-            imageFile: 'sessions/sleep/sleep_1.png',
+            imageFile: 'sessions/sleep/sleep_1.webp',
           ),
           const SessionModel(
             id: 'sleep_2',
@@ -305,7 +305,7 @@ class ExploreRepository {
             audioFile: '14-sommeil-visualisation-apaisante.mp3',
             categoryId: 'sleep',
             isPremium: true,
-            imageFile: 'sessions/sleep/sleep_2.png',
+            imageFile: 'sessions/sleep/sleep_2.webp',
           ),
           const SessionModel(
             id: 'sleep_3',
@@ -315,7 +315,7 @@ class ExploreRepository {
             durationMinutes: 7,
             audioFile: '15-sommeil-rituel-pre-sommeil.mp3',
             categoryId: 'sleep',
-            imageFile: 'sessions/sleep/sleep_3.png',
+            imageFile: 'sessions/sleep/sleep_3.webp',
           ),
           const SessionModel(
             id: 'sleep_4',
@@ -325,7 +325,7 @@ class ExploreRepository {
             durationMinutes: 7,
             audioFile: '16-sommeil-entre-deux-mondes.mp3',
             categoryId: 'sleep',
-            imageFile: 'sessions/sleep/sleep_4.png',
+            imageFile: 'sessions/sleep/sleep_4.webp',
           ),
           const SessionModel(
             id: 'sleep_5',
@@ -336,7 +336,7 @@ class ExploreRepository {
             audioFile: '17-sommeil-plongee-dans-le-silence.mp3',
             categoryId: 'sleep',
             isPremium: true,
-            imageFile: 'sessions/sleep/sleep_5.png',
+            imageFile: 'sessions/sleep/sleep_5.webp',
           ),
         ],
       ),

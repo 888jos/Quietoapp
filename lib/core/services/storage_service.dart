@@ -293,18 +293,6 @@ class StorageService {
     }
   }
 
-  /// La proposition de rappel après la première séance ne se fait qu'une fois.
-  bool get notificationPromptShown =>
-      _prefs.getBool(AppConstants.prefNotificationPromptShown) ?? false;
-
-  Future<void> setNotificationPromptShown() async {
-    try {
-      await _prefs.setBool(AppConstants.prefNotificationPromptShown, true);
-    } catch (e, st) {
-      debugPrint('[Storage] setNotificationPromptShown failed: $e\n$st');
-    }
-  }
-
   // ── Musique d'ambiance ────────────────────────────────
 
   /// Position du curseur de volume (0..1). 0 = musique coupée.

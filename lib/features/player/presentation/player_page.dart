@@ -1,6 +1,3 @@
-import 'package:flutter/cupertino.dart'
-    show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
-        CupertinoThemeData;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,14 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
-import '../../../core/services/storage_providers.dart';
 import '../../explore/explore_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
-import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/error_placeholder.dart';
-import '../../profile/profile_providers.dart';
 import '../player_providers.dart';
 
 class PlayerPage extends ConsumerWidget {
@@ -35,42 +29,6 @@ class PlayerPage extends ConsumerWidget {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
-  }
-
-  /// Après la PREMIÈRE séance terminée : propose le rappel quotidien, une
-  /// seule fois, au moment où ça a du sens (l'utilisateur vient de faire sa
-  /// séance, il est détendu — c'est là que la permission est acceptée, pas à
-  /// froid au démarrage). Il choisit lui-même l'heure du rappel ; le sélecteur
-  /// démarre sur l'heure actuelle, qui marche par définition pour lui.
-  Future<void> _maybeOfferReminder(BuildContext context, WidgetRef ref) async {
-    final storage = ref.read(storageServiceProvider);
-    if (storage.notificationsEnabled || storage.notificationPromptShown) {
-      return;
-    }
-    await storage.setNotificationPromptShown();
-
-    if (!context.mounted) return;
-    final time = await showModalBottomSheet<TimeOfDay>(
-      context: context,
-      backgroundColor: AppColors.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppConstants.radiusLg),
-        ),
-      ),
-      builder: (_) => _ReminderOfferSheet(firstName: storage.firstName),
-    );
-    ref.read(vigieProvider).log('rappel_propose', {'accepte': time != null});
-    if (time == null) return;
-
-    final granted =
-        await ref.read(notificationServiceProvider).requestPermission();
-    ref.read(vigieProvider).log('rappel_permission', {'accordee': granted});
-    if (!granted) return;
-    // skipToday : il vient de faire sa séance, le premier rappel part demain.
-    await ref
-        .read(profileProvider.notifier)
-        .enableReminderAt(time, skipToday: true);
   }
 
   @override
@@ -96,15 +54,6 @@ class PlayerPage extends ConsumerWidget {
       });
       return const AppScaffold(body: SizedBox.shrink());
     }
-
-    // Fin de séance (playing → idle) : propose le rappel quotidien si c'est
-    // la première séance terminée et que rien n'a encore été proposé.
-    ref.listen<PlayerState>(playerProvider(sessionId), (prev, next) {
-      if (prev?.status == PlayerStatus.playing &&
-          next.status == PlayerStatus.idle) {
-        _maybeOfferReminder(context, ref);
-      }
-    });
 
     final playerState = ref.watch(playerProvider(sessionId));
     final notifier = ref.read(playerProvider(sessionId).notifier);
@@ -366,91 +315,6 @@ class _CoverPlaceholder extends StatelessWidget {
       height: 220,
       color: AppColors.accentDim,
       child: const Icon(Iconsax.music, size: 80, color: AppColors.accent),
-    );
-  }
-}
-
-// ── Bottom sheet proposition de rappel (fin de 1ʳᵉ séance) ──
-//
-// Renvoie l'heure choisie via Navigator.pop, ou null si « Non merci » /
-// glissé vers le bas. Même style que le sheet « Heure du rappel » du profil.
-
-class _ReminderOfferSheet extends StatefulWidget {
-  final String firstName;
-
-  const _ReminderOfferSheet({required this.firstName});
-
-  @override
-  State<_ReminderOfferSheet> createState() => _ReminderOfferSheetState();
-}
-
-class _ReminderOfferSheetState extends State<_ReminderOfferSheet> {
-  // Défaut : l'heure actuelle. Il vient de faire sa séance maintenant, donc
-  // « demain à la même heure » est le meilleur point de départ.
-  late TimeOfDay _selected;
-
-  @override
-  void initState() {
-    super.initState();
-    _selected = TimeOfDay.now();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppConstants.spacingMd,
-        AppConstants.spacingLg,
-        AppConstants.spacingMd,
-        AppConstants.spacingLg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.firstName.isEmpty
-                ? 'Belle séance 🌿'
-                : 'Belle séance, ${widget.firstName} 🌿',
-            style: AppTextStyles.titleMedium,
-          ),
-          const SizedBox(height: AppConstants.spacingSm),
-          Text(
-            'À quelle heure veux-tu prendre soin de toi demain ?',
-            style: AppTextStyles.bodyMedium,
-          ),
-          const SizedBox(height: AppConstants.spacingMd),
-          SizedBox(
-            height: 180,
-            child: CupertinoTheme(
-              data: const CupertinoThemeData(brightness: Brightness.dark),
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.time,
-                use24hFormat: true,
-                initialDateTime: DateTime(
-                    2024, 1, 1, _selected.hour, _selected.minute),
-                onDateTimeChanged: (dt) =>
-                    _selected = TimeOfDay(hour: dt.hour, minute: dt.minute),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppConstants.spacingMd),
-          AppButton(
-            label: 'Oui, rappelle-moi',
-            onTap: () => Navigator.of(context).pop(_selected),
-          ),
-          const SizedBox(height: AppConstants.spacingSm),
-          Center(
-            child: TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Non merci',
-                style: AppTextStyles.bodyMedium,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

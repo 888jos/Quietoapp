@@ -34,8 +34,6 @@ abstract final class AppConstants {
   static const prefNotificationsEnabled = 'notifications_enabled';
   static const prefReminderHour = 'reminder_hour';
   static const prefReminderMinute = 'reminder_minute';
-  // La proposition de rappel post-première-séance ne se fait qu'une fois.
-  static const prefNotificationPromptShown = 'notification_prompt_shown';
   // Proposition de connexion à Apple Santé déjà faite (onboarding ou player).
   static const prefHealthPromptSeen = 'health_prompt_seen';
   // Niveau de la musique d'ambiance (curseur 0..1, 0 = coupée).

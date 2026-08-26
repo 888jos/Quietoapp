@@ -79,6 +79,10 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
+  # Shaders GPU (aurore boréale de la Home).
+  shaders:
+    - shaders/aurora.frag
+
   assets:
     - assets/images/
     - assets/images/sessions/decouverte/

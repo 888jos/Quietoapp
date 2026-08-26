@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../../../../core/config/app_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'glowing_moon.dart';
@@ -142,107 +143,72 @@ class AuroraSky extends StatefulWidget {
 
 class _AuroraSkyState extends State<AuroraSky>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(seconds: 24),
-  )..repeat();
+  // Le ruban lui-même vit dans shaders/aurora.frag : une nappe de lumière
+  // calculée pixel par pixel sur le GPU (dégradés parfaitement lisses,
+  // formes pilotées par du bruit fractal, jamais périodiques). Le
+  // programme est compilé une seule fois pour toute la vie de l'app.
+  static final Future<ui.FragmentProgram> _program =
+      ui.FragmentProgram.fromAsset('shaders/aurora.frag');
+
+  // Graine tirée au lancement : l'aurore ne reprend jamais deux fois au
+  // même endroit du champ de bruit.
+  final double _seed = math.Random().nextDouble() * 1000;
+  final ValueNotifier<double> _time = ValueNotifier(0);
+  late final Ticker _ticker;
+  ui.FragmentShader? _shader;
+
+  @override
+  void initState() {
+    super.initState();
+    _program.then((program) {
+      if (!mounted) return;
+      setState(() => _shader = program.fragmentShader());
+    });
+    _ticker = createTicker((elapsed) {
+      _time.value = elapsed.inMicroseconds / 1e6;
+    })..start();
+  }
 
   @override
   void dispose() {
-    _c.dispose();
+    _ticker.dispose();
+    _time.dispose();
+    _shader?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final shader = _shader;
+    // Une frame de ciel nu le temps que le programme arrive : invisible,
+    // le fond étoilé est déjà là.
+    if (shader == null) return const SizedBox.expand();
     return RepaintBoundary(
-      child: CustomPaint(painter: _AuroraPainter(_c), size: Size.infinite),
+      child: CustomPaint(
+        painter: _AuroraShaderPainter(shader, _time, _seed),
+        size: Size.infinite,
+      ),
     );
   }
 }
 
-class _AuroraPainter extends CustomPainter {
-  _AuroraPainter(this.anim) : super(repaint: anim);
+class _AuroraShaderPainter extends CustomPainter {
+  _AuroraShaderPainter(this.shader, this.time, this.seed)
+      : super(repaint: time);
 
-  final Animation<double> anim;
-
-  // Palette d'aurore : base vert-turquoise (l'oxygène), sommet violet.
-  static const _green = Color(0xFF4FE8A8);
-  static const _teal = AppColors.accent; // turquoise Quieto
-  static const _violet = Color(0xFF8F7BE8);
+  final ui.FragmentShader shader;
+  final ValueNotifier<double> time;
+  final double seed;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final t = anim.value; // 0..1, continu
-
-    // Ligne médiane du ruban : ondulation lente qui traverse le ciel.
-    // Le canvas part du HAUT de l'écran (derrière la barre d'état) :
-    // l'altitude intègre donc ~50 px de zone d'état.
-    double base(double u) {
-      return 165 +
-          12 * math.sin(2 * math.pi * (0.8 * u + t)) +
-          6 * math.sin(2 * math.pi * (1.9 * u - 2 * t) + 1.3);
-    }
-
-    // Luminosité locale : des nappes brillantes qui GLISSENT le long du
-    // ruban (produit de deux ondes → taches de lumière mouvantes).
-    double brightness(double u) {
-      final a = math.sin(2 * math.pi * (2.2 * u + 2 * t));
-      final b = math.sin(2 * math.pi * (1.1 * u - t) + 2.0);
-      return 0.45 + 0.55 * (0.5 + 0.5 * a * b);
-    }
-
-    // Respiration de la hauteur du ruban.
-    double breath(double u) {
-      return 0.85 + 0.15 * math.sin(2 * math.pi * (1.4 * u + t) + 2.0);
-    }
-
-    // ── Le ruban : uniquement des halos doux qui se chevauchent.
-    // Aucun chemin, aucun contour, aucune découpe → tout fond dans le
-    // ciel, comme une aquarelle. Trois couches : vert lumineux au cœur
-    // bas, turquoise au milieu, violet dissous au sommet. ──
-    const columns = 18;
-    for (var i = 0; i < columns; i++) {
-      final u = i / (columns - 1);
-      final x = u * w;
-      final y = base(u);
-      final b = brightness(u);
-      final k = breath(u);
-
-      // Cœur vert, bas du ruban.
-      _glow(canvas, Offset(x, y - 16 * k), 120, 95 * k, _green, 0.11 * b);
-      // Corps turquoise.
-      _glow(canvas, Offset(x, y - 56 * k), 140, 115 * k, _teal, 0.075 * b);
-      // Sommet violet, presque évaporé.
-      _glow(canvas, Offset(x, y - 102 * k), 150, 120 * k, _violet,
-          0.045 * (0.6 + 0.4 * b));
-    }
-  }
-
-  /// Tache de lumière douce (dégradé radial étiré verticalement).
-  void _glow(Canvas canvas, Offset center, double width, double height,
-      Color color, double alpha) {
-    final radius = width / 2;
-    final paint = Paint()
-      ..shader = ui.Gradient.radial(
-        center,
-        radius,
-        [
-          color.withValues(alpha: alpha),
-          color.withValues(alpha: alpha * 0.5),
-          color.withValues(alpha: 0.0),
-        ],
-        [0.0, 0.5, 1.0],
-      );
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.scale(1, height / width);
-    canvas.translate(-center.dx, -center.dy);
-    canvas.drawCircle(center, radius, paint);
-    canvas.restore();
+    shader
+      ..setFloat(0, size.width)
+      ..setFloat(1, size.height)
+      ..setFloat(2, seed + time.value);
+    canvas.drawRect(Offset.zero & size, Paint()..shader = shader);
   }
 
   @override
-  bool shouldRepaint(_AuroraPainter oldDelegate) => false;
+  bool shouldRepaint(_AuroraShaderPainter oldDelegate) => false;
 }

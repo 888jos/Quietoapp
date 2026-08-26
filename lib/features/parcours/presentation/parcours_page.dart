@@ -314,9 +314,12 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                   // La constellation voyageuse : elle se dessine au centre,
                   // puis monte se poser à sa place en haut de la page, et
                   // s'efface en fondu croisé avec la version « état ».
+                  // La montée démarre pendant que J7 finit de se poser
+                  // (onDone anticipé du reveal), sans temps mort ; 700 ms
+                  // pour qu'elle reste ample (550 faisait sec — Paul).
                   if (_overlaySurScene)
                     AnimatedPositioned.fromRect(
-                      duration: const Duration(milliseconds: 800),
+                      duration: const Duration(milliseconds: 700),
                       curve: Curves.easeInOutCubic,
                       rect: _arrivee == _PhaseArrivee.dessin
                           ? depart
@@ -329,7 +332,7 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                       ),
                     ),
                   // Un tap pendant le dessin saute l'arrivée (pendant la
-                  // montée, 800 ms, on laisse finir).
+                  // montée, 700 ms, on laisse finir).
                   if (_arrivee == _PhaseArrivee.dessin)
                     Positioned.fill(
                       child: GestureDetector(
@@ -466,25 +469,24 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
                                 faits.clamp(0, 7)],
                           ),
                         ),
-                        const SizedBox(height: AppConstants.spacingLg),
-
-                        // ── La destination : le bilan ──────────
-                        SlideReveal(
-                          active: pose,
-                          delay: const Duration(milliseconds: 1060),
-                          child: montreBilan
-                              ? _CarteBilan(
-                                  ressenti: _ressenti,
-                                  controller: _texteBilan,
-                                  envoiEnCours: _bilanEnvoye,
-                                  onRessenti: (r) =>
-                                      setState(() => _ressenti = r),
-                                  onEnvoyer: () => _envoyerBilan(parcours),
-                                )
-                              : parcours.bilanFait
-                                  ? const SizedBox.shrink()
-                                  : const _TeaserBilan(),
-                        ),
+                        // ── Le bilan, seulement quand il est là ──
+                        // (le teaser « Au bout des 7 jours, on fait le
+                        // point » a été retiré : il n'apportait rien.)
+                        if (montreBilan) ...[
+                          const SizedBox(height: AppConstants.spacingLg),
+                          SlideReveal(
+                            active: pose,
+                            delay: const Duration(milliseconds: 1060),
+                            child: _CarteBilan(
+                              ressenti: _ressenti,
+                              controller: _texteBilan,
+                              envoiEnCours: _bilanEnvoye,
+                              onRessenti: (r) =>
+                                  setState(() => _ressenti = r),
+                              onEnvoyer: () => _envoyerBilan(parcours),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: AppConstants.spacingXl),
                       ],
                     ),
@@ -1043,46 +1045,6 @@ class _StatsSemaine extends StatelessWidget {
                 : restants == 1
                     ? 'jour restant'
                     : 'jours restants',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Le teaser du bilan (la destination de la semaine) ────
-
-class _TeaserBilan extends StatelessWidget {
-  const _TeaserBilan();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppConstants.spacingMd),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppConstants.radiusLg),
-        border: Border.all(color: AppColors.accentDim, width: 1),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.auto_awesome, size: 16, color: AppColors.accent),
-          const SizedBox(width: AppConstants.spacingSm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Au bout des 7 jours, on fait le point',
-                    style: AppTextStyles.bodyLarge
-                        .copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text(
-                  'Tu me raconteras comment tu te sens, et on décidera de '
-                  'la suite ensemble.',
-                  style: AppTextStyles.bodyMedium,
-                ),
-              ],
-            ),
           ),
         ],
       ),

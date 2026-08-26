@@ -433,19 +433,23 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
     }
   }
 
-  /// Glisse une bulle de Louane dans le fil SANS appel serveur : la bulle
-  /// d'ouverture du programme (« ton programme t'attend sur l'accueil »).
-  /// Anti-doublon : recréer un programme (supprimer puis re-cliquer) ne doit
-  /// pas empiler la même bulle à chaque fois — si elle est déjà dans le fil,
-  /// on la garde, c'est tout.
-  void ajouterBulleLouane(String texte) {
+  /// Glisse la bulle d'ouverture du programme dans le fil SANS appel serveur
+  /// (« ton programme t'attend sur l'accueil »). Le texte vient du serveur et
+  /// change à chaque génération : comparer les textes ne détecte donc jamais
+  /// le doublon. Anti-empilement : recréer un programme (annuler puis
+  /// re-cliquer) RETIRE la bulle d'ouverture précédente — il n'en reste
+  /// qu'une, celle du programme qui existe vraiment.
+  void ajouterBulleOuvertureParcours(String texte) {
     final t = texte.trim();
     if (t.isEmpty) return;
-    if (state.messages.any((m) => m.estLouane && m.texte == t)) return;
     state = state.copyWith(
       messages: [
-        ...state.messages,
-        LouaneMessage(auteur: AuteurMessage.louane, texte: t),
+        ...state.messages.where((m) => !m.estOuvertureParcours),
+        LouaneMessage(
+          auteur: AuteurMessage.louane,
+          texte: t,
+          estOuvertureParcours: true,
+        ),
       ],
     );
   }

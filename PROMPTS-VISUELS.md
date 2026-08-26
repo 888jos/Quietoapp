@@ -194,3 +194,11 @@ Après 7 itérations sur la catégorie Sommeil, ce qui marche VRAIMENT :
    `explore_repository.dart`.
 6. Prix réel constaté : ~0,13 $/image, ~2 s de génération, itérations
    comprises ≈ 1 $/catégorie.
+
+### Piège n°7 (26/08, série des 27) : les références déteignent
+Gemini recopie des ÉLÉMENTS des images de référence dans la nouvelle image :
+le petit méditant de decouverte_1 est apparu en bas de 7 images sur 27, le
+grand dôme blanc de decouverte_3 en haut de 3. Parades : interdire
+explicitement « any person or object not described in the scene », « any
+large pale dome or arc », et en secours recadrer tronqué en bas
+(`crop=iw*0.90:ih*0.86:(iw-ow)/2:ih*0.02`).

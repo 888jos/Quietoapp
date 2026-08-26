@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart'
     show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
         CupertinoThemeData;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart'
@@ -23,6 +24,7 @@ import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_card.dart';
 import '../../../core/ui/boutons_connexion.dart';
 import '../../../core/ui/app_scaffold.dart';
+import '../../parcours/parcours_providers.dart';
 import '../profile_providers.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -130,6 +132,39 @@ class ProfilePage extends ConsumerWidget {
                             ),
                     ),
 
+                    // PROVISOIRE : outils de dev, invisibles en release.
+                    // Forçage premium (sans effet en release, voir
+                    // SubscriptionNotifier) + rejeu de l'animation de
+                    // création de programme (fictif, zéro appel serveur —
+                    // remplace le programme en cours).
+                    if (!kReleaseMode) ...[
+                      const SizedBox(height: AppConstants.spacingSm),
+                      const _DevPremiumCard(),
+                      const SizedBox(height: AppConstants.spacingSm),
+                      AppCard(
+                        padding: EdgeInsets.zero,
+                        child: Column(
+                          children: [
+                            _TapItem(
+                              emoji: '🎬',
+                              label: 'Animation programme (dev)',
+                              onTap: () => context.push(
+                                  '${AppRoutes.parcoursCreation}?demo=1'),
+                            ),
+                            _ItemDivider(),
+                            // Coche le jour courant daté d'HIER : le jour
+                            // suivant est jouable tout de suite (le verrou
+                            // « un jour par jour » compare des dates).
+                            _TapItem(
+                              emoji: '⏩',
+                              label: 'Avancer le programme d\'un jour (dev)',
+                              onTap: () => _avancerParcoursDev(context, ref),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     const SizedBox(height: AppConstants.spacingXl),
 
                     // ── Compte ───────────────────────────────
@@ -232,6 +267,33 @@ class ProfilePage extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// PROVISOIRE (dev) : avance le programme d'un jour (daté d'hier) et dit
+  /// où on en est. Sans programme, renvoie vers le bouton 🎬.
+  Future<void> _avancerParcoursDev(BuildContext context, WidgetRef ref) async {
+    final parcours = ref.read(parcoursProvider);
+    if (parcours == null) {
+      _showSoftSnack(context, 'Aucun programme en cours. Crée-en un avec 🎬.',
+          emoji: '⏩');
+      return;
+    }
+    if (parcours.tousJoursTermines) {
+      _showSoftSnack(context,
+          'Semaine déjà finie. Le bilan t\'attend sur la page programme.',
+          emoji: '⏩');
+      return;
+    }
+    final jour = parcours.jourCourant;
+    await ref.read(parcoursProvider.notifier).avancerJourDev();
+    if (!context.mounted) return;
+    _showSoftSnack(
+      context,
+      jour < 7
+          ? 'Jour $jour coché (daté d\'hier). Jour ${jour + 1} débloqué.'
+          : 'Jour 7 coché. Semaine terminée, le bilan t\'attend.',
+      emoji: '⏩',
     );
   }
 
@@ -721,6 +783,65 @@ class _ReminderTimeSheetState extends State<_ReminderTimeSheet> {
 }
 
 // ── Widgets privés ────────────────────────────────────
+
+/// PROVISOIRE : interrupteur de forçage premium pour le dev.
+/// N'apparaît jamais en release ; l'état local reflète le flag persisté
+/// (le vrai statut RevenueCat n'est pas modifié).
+class _DevPremiumCard extends ConsumerStatefulWidget {
+  const _DevPremiumCard();
+
+  @override
+  ConsumerState<_DevPremiumCard> createState() => _DevPremiumCardState();
+}
+
+class _DevPremiumCardState extends ConsumerState<_DevPremiumCard> {
+  late bool _force;
+
+  @override
+  void initState() {
+    super.initState();
+    _force = ref.read(subscriptionProvider.notifier).forceDev;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Row(
+        children: [
+          const Text('🛠', style: TextStyle(fontSize: 18)),
+          const SizedBox(width: AppConstants.spacingMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Premium forcé (dev)',
+                    style: AppTextStyles.bodyLarge
+                        .copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(
+                  'Provisoire, invisible en release.',
+                  style: AppTextStyles.caption,
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _force,
+            onChanged: (v) async {
+              HapticFeedback.selectionClick();
+              await ref
+                  .read(subscriptionProvider.notifier)
+                  .basculerForceDev();
+              if (mounted) setState(() => _force = v);
+            },
+            activeThumbColor: AppColors.accent,
+            inactiveTrackColor: AppColors.accentDim,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _StatCard extends StatelessWidget {
   final String value;

@@ -252,10 +252,6 @@ final playerProvider = StateNotifierProvider
       'categorie': session.categoryId,
     });
     ref.read(sessionCompletionTickProvider.notifier).state++;
-    // Programme de Louane : si c'est la séance du jour en cours, le jour est
-    // coché (le notifier vérifie tout — id, jour, une fois par jour). Lancer
-    // la même séance depuis le catalogue compte aussi : même id.
-    ref.read(parcoursProvider.notifier).seanceTerminee(session.id);
     // L'utilisateur vient de méditer : le rappel du jour n'a plus de raison
     // d'être, on le reprogramme à partir de demain (rappel doux, jamais
     // redondant).
@@ -291,6 +287,11 @@ final playerProvider = StateNotifierProvider
     'premium': session.isPremium,
     'duree_min': session.durationMinutes,
   });
+  // Programme de Louane : lancer LA séance du jour suffit à cocher le jour
+  // (le notifier vérifie tout — id, jour en cours, une fois par jour). Pas
+  // besoin de finir l'écoute : le lendemain se débloque quand même. Lancer
+  // la même séance depuis le catalogue compte aussi : même id.
+  ref.read(parcoursProvider.notifier).seanceLancee(session.id);
   // Historique local d'écoutes : nourrit les suggestions de Louane (varier,
   // reproposer ce qui a plu). Ne quitte jamais le téléphone en clair : seul
   // un résumé {id, fois, jours} part avec ses messages.

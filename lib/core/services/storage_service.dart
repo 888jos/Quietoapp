@@ -141,6 +141,20 @@ class StorageService {
     }
   }
 
+  // PROVISOIRE : forçage premium pour le dev. Clé séparée de prefIsPremium
+  // pour ne jamais polluer le vrai statut RevenueCat ; seul le
+  // SubscriptionNotifier la lit, et uniquement hors release.
+  bool get premiumForceDev =>
+      _prefs.getBool(AppConstants.prefPremiumForceDev) ?? false;
+
+  Future<void> setPremiumForceDev(bool value) async {
+    try {
+      await _prefs.setBool(AppConstants.prefPremiumForceDev, value);
+    } catch (e, st) {
+      debugPrint('[Storage] setPremiumForceDev failed: $e\n$st');
+    }
+  }
+
   // ── Progress ─────────────────────────────────────────
 
   UserProgressModel loadProgress() {
@@ -198,6 +212,20 @@ class StorageService {
       await _prefs.remove(AppConstants.prefParcoursEtoilesCelebrees);
     } catch (e, st) {
       debugPrint('[Storage] clearParcours failed: $e\n$st');
+    }
+  }
+
+  /// Un premier programme a-t-il déjà été créé sur ce téléphone ? Jamais
+  /// remis à zéro (même par clearParcours) : sert au backend à forcer le
+  /// jour 1 du TOUT premier programme à « Ma première méditation ».
+  bool get parcoursDejaCree =>
+      _prefs.getBool(AppConstants.prefParcoursDejaCree) ?? false;
+
+  Future<void> setParcoursDejaCree() async {
+    try {
+      await _prefs.setBool(AppConstants.prefParcoursDejaCree, true);
+    } catch (e, st) {
+      debugPrint('[Storage] setParcoursDejaCree failed: $e\n$st');
     }
   }
 

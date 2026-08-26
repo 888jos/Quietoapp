@@ -73,6 +73,52 @@ class _LouaneAvatarState extends State<LouaneAvatar>
   }
 }
 
+/// Version miniature et statique du visage de Louane, pour la barre de
+/// navigation. Pas d'animation : la barre doit rester calme.
+class LouaneMiniAvatar extends StatelessWidget {
+  final double size;
+  final bool actif;
+  final Color couleurInactive;
+
+  const LouaneMiniAvatar({
+    super.key,
+    this.size = 24,
+    this.actif = false,
+    this.couleurInactive = const Color(0x59FFFFFF),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: actif
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFB6F2EC), LouanePalette.accent],
+              )
+            : null,
+        color: actif ? null : couleurInactive,
+        boxShadow: actif
+            ? [
+                BoxShadow(
+                  color: LouanePalette.accent.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                ),
+              ]
+            : null,
+      ),
+      child: CustomPaint(
+        size: Size.square(size),
+        painter: _VisagePainter(),
+      ),
+    );
+  }
+}
+
 class _VisagePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

@@ -21,12 +21,18 @@ class LouaneMessage {
   /// « Crée-moi mon programme » (masqué dès qu'un programme existe).
   final bool avecBoutonParcours;
 
+  /// Bulle d'ouverture du programme (« ton programme t'attend sur
+  /// l'accueil »), glissée dans le fil à la création. Une seule à la fois :
+  /// recréer un programme remplace la précédente au lieu de l'empiler.
+  final bool estOuvertureParcours;
+
   const LouaneMessage({
     required this.auteur,
     required this.texte,
     this.avecBoutonEssai = false,
     this.seanceId,
     this.avecBoutonParcours = false,
+    this.estOuvertureParcours = false,
   });
 
   bool get estLouane => auteur == AuteurMessage.louane;

@@ -67,7 +67,8 @@ class ParcoursModel {
   /// Date-heure ISO de la création.
   final String creeLe;
 
-  /// Jours terminés : "1" → date-heure ISO de la complétion.
+  /// Jours validés : "1" → date-heure ISO de la validation (au LANCEMENT de
+  /// la séance du jour — pas besoin de l'écouter jusqu'au bout).
   final Map<String, String> joursTermines;
 
   /// Date-jour locale ("2026-07-23") de la DERNIÈRE complétion : c'est elle

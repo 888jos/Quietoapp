@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:go_router/go_router.dart';
 import '../features/onboarding/presentation/onboarding_comprehension_page.dart';
 import '../features/onboarding/presentation/onboarding_connexion_page.dart';
@@ -184,11 +185,15 @@ final appRouter = GoRouter(
     ),
 
     // ── Parcours : génération (fondu, le moment « wow ») ──
+    // ?demo=1 (PROVISOIRE, dev uniquement) : rejoue l'animation avec un
+    // programme fictif local, sans appel serveur. Ignoré en release.
     GoRoute(
       path: AppRoutes.parcoursCreation,
       pageBuilder: (context, state) => QuietoTransitions.fadePage(
         key: state.pageKey,
-        child: const ParcoursCreationPage(),
+        child: ParcoursCreationPage(
+          demo: !kReleaseMode && state.uri.queryParameters['demo'] == '1',
+        ),
       ),
     ),
 

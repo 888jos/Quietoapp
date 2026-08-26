@@ -57,14 +57,28 @@ class _ConstellationRevealState extends State<ConstellationReveal>
     vsync: this,
     duration: const Duration(milliseconds: 4200),
   );
+  late final CurvedAnimation _anim =
+      CurvedAnimation(parent: _c, curve: Curves.easeInOut);
+  bool _prevenu = false;
 
   @override
   void initState() {
     super.initState();
     _c.forward();
-    _c.addStatusListener((status) {
-      if (status == AnimationStatus.completed) widget.onDone?.call();
-    });
+    _c.addListener(_verifierFin);
+  }
+
+  /// Le dessin balaie p = 0..7.7 mais tout est posé à p ≈ 6.9 (J7 fini de
+  /// pulser) : attendre la fin du contrôleur ajoutait ~1 s de plantage
+  /// (queue d'ease-in-out sur du vide) avant la montée. On prévient dès
+  /// p = 6.7 — J7 se pose pendant que la montée s'amorce en douceur,
+  /// l'enchaînement est continu.
+  void _verifierFin() {
+    if (_prevenu) return;
+    if (_anim.value * 7.7 >= 6.7) {
+      _prevenu = true;
+      widget.onDone?.call();
+    }
   }
 
   @override
@@ -77,9 +91,7 @@ class _ConstellationRevealState extends State<ConstellationReveal>
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: CustomPaint(
-        painter: _ConstellationPainter(
-          CurvedAnimation(parent: _c, curve: Curves.easeInOut),
-        ),
+        painter: _ConstellationPainter(_anim),
         size: Size.infinite,
       ),
     );

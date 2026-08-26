@@ -50,6 +50,9 @@ class ParcoursRepository {
       'ecoutes': _storage.ecoutesPourLouane(),
       'prenom': _storage.firstName,
       'abonne': _abonne(),
+      // Tout premier programme → le backend force le jour 1 à
+      // « Ma première méditation » (quasi personne n'a jamais médité).
+      'premierParcours': !_storage.parcoursDejaCree,
       'vigie': _vigie.id,
       'session': _vigie.session,
     });

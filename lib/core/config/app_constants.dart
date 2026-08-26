@@ -18,6 +18,8 @@ abstract final class AppConstants {
   static const prefSessionProgress = 'session_progress';
   static const prefUserFirstName = 'user_first_name';
   static const prefIsPremium = 'is_premium';
+  // PROVISOIRE : forçage premium pour le dev, sans effet en build release.
+  static const prefPremiumForceDev = 'premium_force_dev';
   // Mémoire de Louane : ce qu'elle retient de l'utilisateur entre les sessions.
   static const prefLouaneMemoire = 'louane_memoire';
   // Quotas Louane (jamais affichés) : total de messages envoyés depuis le
@@ -44,6 +46,9 @@ abstract final class AppConstants {
   // Le programme de 7 jours créé par Louane (JSON ParcoursModel). Une seule
   // clé : un programme à la fois, effacée à l'abandon ou pour recommencer.
   static const prefParcours = 'parcours_louane';
+  // Vrai dès qu'un premier programme a été créé : le backend force le jour 1
+  // du tout premier programme à « Ma première méditation » (decouverte_1).
+  static const prefParcoursDejaCree = 'parcours_deja_cree';
   static const prefParcoursEtoilesCelebrees = 'parcours_etoiles_celebrees';
 
   // ── Audio ────────────────────────────────────────────

@@ -7,6 +7,7 @@ import '../core/services/storage_providers.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
 import '../features/louane/presentation/louane_palette.dart';
+import '../features/louane/presentation/widgets/louane_avatar.dart';
 import '../features/player/presentation/widgets/mini_player.dart';
 
 class HomeShell extends ConsumerWidget {
@@ -56,28 +57,28 @@ class _QuijetoNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: AppColors.cardSurface,
+        color: AppColors.background,
         border: Border(
-          top: BorderSide(color: AppColors.accentDim, width: 1),
+          // Filet discret, plus haut que les icônes pour laisser respirer.
+          top: BorderSide(color: Color(0x2EFFFFFF), width: 0.5),
         ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.only(top: 16, bottom: 4),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _NavItem(
                 icon: Iconsax.home,
-                iconActive: Iconsax.home_1,
+                iconActive: Iconsax.home_copy,
                 label: 'Accueil',
                 isActive: currentIndex == 0,
                 onTap: () => onTap(0),
               ),
               _NavItem(
-                icon: Icons.chat_bubble_outline_rounded,
-                iconActive: Icons.chat_bubble_rounded,
+                customIcon: LouaneMiniAvatar(actif: currentIndex == 1),
                 label: 'Louane',
                 isActive: currentIndex == 1,
                 activeColor: LouanePalette.accent,
@@ -99,21 +100,26 @@ class _QuijetoNav extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final IconData iconActive;
+  // Inactif volontairement plus doux que textMuted pour laisser respirer la barre.
+  static const _inactive = Color(0x59FFFFFF);
+
+  final IconData? icon;
+  final IconData? iconActive;
+  final Widget? customIcon;
   final String label;
   final bool isActive;
   final Color? activeColor;
   final VoidCallback onTap;
 
   const _NavItem({
-    required this.icon,
-    required this.iconActive,
+    this.icon,
+    this.iconActive,
+    this.customIcon,
     required this.label,
     required this.isActive,
     this.activeColor,
     required this.onTap,
-  });
+  }) : assert(customIcon != null || (icon != null && iconActive != null));
 
   @override
   Widget build(BuildContext context) {
@@ -125,20 +131,23 @@ class _NavItem extends StatelessWidget {
       },
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 72,
+        width: 76,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              isActive ? iconActive : icon,
-              color: isActive ? active : AppColors.textMuted,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
+            customIcon ??
+                Icon(
+                  isActive ? iconActive : icon,
+                  color: isActive ? active : _inactive,
+                  size: 24,
+                ),
+            const SizedBox(height: 5),
             Text(
               label,
               style: AppTextStyles.caption.copyWith(
-                color: isActive ? active : AppColors.textMuted,
+                fontSize: 10.5,
+                letterSpacing: 0.2,
+                color: isActive ? active : _inactive,
               ),
             ),
           ],

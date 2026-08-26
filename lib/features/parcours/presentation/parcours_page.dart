@@ -277,7 +277,7 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
             top: 0,
             left: 0,
             right: 0,
-            height: 240,
+            height: 330,
             child: AuroraSky(),
           ),
           // La carte de partage, hors champ le temps de la capture (le

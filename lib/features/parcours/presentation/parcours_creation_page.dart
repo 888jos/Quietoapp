@@ -258,7 +258,7 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
             top: 0,
             left: 0,
             right: 0,
-            height: 260,
+            height: 330,
             child: AuroraSky(),
           ),
           SafeArea(

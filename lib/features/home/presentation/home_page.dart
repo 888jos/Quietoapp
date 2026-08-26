@@ -69,11 +69,13 @@ class _HomePageState extends ConsumerState<HomePage>
           const Positioned.fill(child: StarryBackground()),
           // L'aurore boréale, hors SafeArea : elle monte jusque derrière
           // la barre d'état et se dissout sans jamais être coupée.
+          // Canvas volontairement plus haut que l'aurore visible : sa
+          // lumière meurt d'elle-même vers ~300, le bord ne coupe rien.
           const Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 260,
+            height: 330,
             child: AuroraSky(),
           ),
           // Poussière d'étoiles : fixée au fond comme l'aurore (elle ne
@@ -86,10 +88,12 @@ class _HomePageState extends ConsumerState<HomePage>
             top: MediaQuery.paddingOf(context).top + 30,
             left: 0,
             right: 0,
-            height: 170,
+            height: 230,
             child: FadeTransition(
               opacity: _fadeController,
-              child: const StardustTrail(arcRatio: 0.8),
+              // 0.59 × 230 = même arc absolu qu'avant (~166 sous la barre
+              // d'état) ; l'air en dessous laisse la lueur mourir en douceur.
+              child: const StardustTrail(arcRatio: 0.59),
             ),
           ),
           SafeArea(

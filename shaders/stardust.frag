@@ -56,15 +56,19 @@ void main() {
   float lift = fbm(vec2(u * 1.9 + t * 0.014, t * 0.016 + 4.2)) - 0.5;
   float yc = h * uArc - h * 0.10 * sin(3.14159265 * u) + lift * h * 0.10;
 
-  // Nappes de brillance qui dérivent le long de l'arc.
+  // Nappes de brillance qui dérivent le long de l'arc — avec de vrais
+  // creux entre elles : la lueur est faite de taches douces, jamais une
+  // barre continue d'un bord à l'autre.
   float bright = fbm(vec2(u * 2.3 - t * 0.019, t * 0.012 + 9.3));
-  bright = 0.45 + 0.9 * smoothstep(0.35, 0.75, bright);
+  bright = 0.15 + 1.15 * smoothstep(0.40, 0.78, bright);
 
   // Profil vertical asymétrique : longue traîne vers le haut (elle va à la
-  // rencontre de l'aurore), bord bas court et doux.
+  // rencontre de l'aurore), bord bas court et doux. Les sigmas sont bornés
+  // par la place disponible : la gaussienne meurt AVANT les bords du
+  // canvas, même sur une petite bande (sinon → rectangle coupé net).
   float dy = p.y - yc;
-  float sUp = h * 0.42;
-  float sDown = h * 0.14;
+  float sUp = min(h * 0.42, yc / 2.2);
+  float sDown = min(h * 0.10, (h - yc) / 2.2);
   float s = dy < 0.0 ? sUp : sDown;
   float fall = exp(-dy * dy / (2.0 * s * s));
 
@@ -74,9 +78,11 @@ void main() {
   vec3 col = mix(kMilk, kTint, smoothstep(0.15, 0.90, rise));
 
   float a = fall * bright * 0.115;
-  // Extinction garantie aux deux bords du canvas.
+  // Extinction douce aux quatre bords du canvas (filet de sécurité —
+  // le profil ci-dessus s'éteint normalement avant).
   a *= smoothstep(h, h * 0.84, p.y);
   a *= smoothstep(0.0, h * 0.10, p.y);
+  a *= smoothstep(0.0, 0.06, u) * smoothstep(1.0, 0.94, u);
   a += (hash(p + vec2(t, -t)) - 0.5) * (1.5 / 255.0);
   a = clamp(a, 0.0, 1.0);
 

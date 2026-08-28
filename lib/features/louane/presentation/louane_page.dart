@@ -430,24 +430,6 @@ class _EnTete extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // La barre de navigation s'efface sur cet onglet (conversation
-          // immersive, décision Paul 28/08) : ce chevron est LA sortie.
-          Semantics(
-            button: true,
-            label: 'Retour à l\'accueil',
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => context.go(AppRoutes.home),
-              child: const Padding(
-                padding: EdgeInsets.only(right: 6),
-                child: Icon(
-                  Icons.chevron_left_rounded,
-                  size: 32,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ),
-          ),
           LouaneAvatar(size: 44, parle: ecrit),
           const SizedBox(width: 12),
           Expanded(
@@ -637,11 +619,12 @@ class _BarreSaisie extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Pilule de verre assortie à la barre de navigation flottante (mêmes
-    // marges, même voile, même liseré) : les deux se lisent comme un seul
-    // bloc posé au-dessus de la conversation, sans trou entre elles.
+    // Pilule de verre assortie à la barre de navigation flottante : mêmes
+    // marges, même voile, pas de liseré, et COLLÉE bord à bord sur la
+    // barre (bottom 0) — même fond, les deux pilules fusionnent en un
+    // seul bloc posé au-dessus de la conversation (choix de Paul, 28/08).
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
@@ -651,9 +634,6 @@ class _BarreSaisie extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.background.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.14),
-              ),
             ),
             child: enregistre
                 ? _BandeauEnregistrement(

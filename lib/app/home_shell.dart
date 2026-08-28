@@ -31,20 +31,32 @@ class HomeShell extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const MiniPlayer(),
-          _QuijetoNav(
-            currentIndex: shell.currentIndex,
-            onTap: (index) {
-              // Vigie : navigation entre onglets (quels espaces vivent ?).
-              if (index != shell.currentIndex && index < _nomsOnglets.length) {
-                ref.read(vigieProvider).log('onglet', {
-                  'nom': _nomsOnglets[index],
-                });
-              }
-              shell.goBranch(
-                index,
-                initialLocation: index == shell.currentIndex,
-              );
-            },
+          // Sur l'onglet Louane la barre s'efface (décision Paul 28/08) :
+          // la conversation est immersive, seul le champ d'écriture vit en
+          // bas. La sortie, c'est le chevron de l'en-tête du chat.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: shell.currentIndex == 1
+                ? const SizedBox.shrink()
+                : _QuijetoNav(
+                    currentIndex: shell.currentIndex,
+                    onTap: (index) {
+                      // Vigie : navigation entre onglets (quels espaces
+                      // vivent ?).
+                      if (index != shell.currentIndex &&
+                          index < _nomsOnglets.length) {
+                        ref.read(vigieProvider).log('onglet', {
+                          'nom': _nomsOnglets[index],
+                        });
+                      }
+                      shell.goBranch(
+                        index,
+                        initialLocation: index == shell.currentIndex,
+                      );
+                    },
+                  ),
           ),
         ],
       ),

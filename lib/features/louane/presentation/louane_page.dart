@@ -430,6 +430,24 @@ class _EnTete extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // La barre de navigation s'efface sur cet onglet (conversation
+          // immersive, décision Paul 28/08) : ce chevron est LA sortie.
+          Semantics(
+            button: true,
+            label: 'Retour à l\'accueil',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => context.go(AppRoutes.home),
+              child: const Padding(
+                padding: EdgeInsets.only(right: 6),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  size: 32,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+          ),
           LouaneAvatar(size: 44, parle: ecrit),
           const SizedBox(width: 12),
           Expanded(

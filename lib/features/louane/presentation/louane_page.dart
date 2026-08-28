@@ -497,7 +497,12 @@ class _BoutonEssaiGratuit extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
-            onTap: () => context.push(AppRoutes.paywallDepuis('louane')),
+            onTap: () {
+              // Même piège que le CTA programme : sans ça le clavier du chat
+              // reste affiché par-dessus le paywall.
+              FocusManager.instance.primaryFocus?.unfocus();
+              context.push(AppRoutes.paywallDepuis('louane'));
+            },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               child: Text(
@@ -546,6 +551,9 @@ class _BoutonCreerParcours extends ConsumerWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(28),
             onTap: () {
+              // Le clavier du chat resterait affiché par-dessus l'écran
+              // poussé (animation de création ou paywall).
+              FocusManager.instance.primaryFocus?.unfocus();
               ref.read(vigieProvider).log('parcours_cta_tape');
               // Le programme 7 jours est Premium : sans abonnement, le CTA
               // mène au paywall (le backend refuse aussi la génération).

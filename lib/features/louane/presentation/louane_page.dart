@@ -660,7 +660,7 @@ class _BarreSaisie extends StatelessWidget {
     // remonte du bord de l'écran (retour de Paul : collée en bas c'était
     // « horrible »).
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 6, 20, avecSeparateur ? 0 : 14),
+      padding: EdgeInsets.fromLTRB(20, 6, 20, avecSeparateur ? 0 : 30),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

@@ -140,12 +140,19 @@ final appRouter = GoRouter(
     // ── Paywall ───────────────────────────────────────
     // Depuis une séance premium : montée façon feuille modale.
     // En fin d'onboarding : fondu, dans la continuité des étapes.
+    // Mur d'ouverture (src=ouverture, poussé par le splash au démarrage à
+    // froid) : montée lente et voilée — la home s'installe puis s'éteint
+    // pendant que le mur monte.
     GoRoute(
       path: AppRoutes.paywall,
       pageBuilder: (context, state) {
-        final slideUp = state.uri.queryParameters['from'] == 'premium';
+        final q = state.uri.queryParameters;
         const page = PaywallPage();
-        return slideUp
+        if (q['src'] == 'ouverture') {
+          return QuietoTransitions.sheetPage(
+              key: state.pageKey, child: page, lente: true);
+        }
+        return q['from'] == 'premium'
             ? QuietoTransitions.sheetPage(key: state.pageKey, child: page)
             : QuietoTransitions.fadePage(key: state.pageKey, child: page);
       },

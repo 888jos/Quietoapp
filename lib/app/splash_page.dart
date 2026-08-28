@@ -96,11 +96,17 @@ class _SplashPageState extends ConsumerState<SplashPage>
     context.go(AppRoutes.home);
     // Mur d'ouverture (décision Paul, 28/08) : à chaque démarrage à FROID,
     // un non-abonné (ni premium ni essai en cours — l'entitlement RevenueCat
-    // couvre les deux) repasse devant le paywall, fermable, avant la home.
-    // Poussé par-dessus la home : la croix la révèle sans re-navigation.
+    // couvre les deux) repasse devant le paywall, fermable.
     // Un simple retour du background ne repasse pas par le splash → rien.
+    // La home s'installe d'abord, puis le mur MONTE DU BAS avec son
+    // animation de feuille habituelle (retour de Paul : collé au splash en
+    // fondu, il tombait comme un cheveu sur la soupe). Le router est capturé
+    // avant le délai : le splash sera démonté quand il se déclenche.
     if (!ref.read(subscriptionProvider)) {
-      context.push('${AppRoutes.paywall}?src=ouverture');
+      final router = GoRouter.of(context);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        router.push(AppRoutes.paywallDepuis('ouverture'));
+      });
     }
   }
 

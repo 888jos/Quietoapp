@@ -99,30 +99,56 @@ abstract final class QuietoTransitions {
   ///
   /// [fadeBack] : au retour, la page s'efface sur place en fondu croisé
   /// (comme le changement d'onglet) au lieu de redescendre.
+  ///
+  /// [lente] : variante du mur d'ouverture (retour de Paul, 28/08) — montée
+  /// deux fois plus lente, courbe douce des deux côtés, la feuille reste
+  /// opaque (pas de fondu qui délave), et un voile noir ternit la page du
+  /// dessous pendant la montée : le mur prend la lumière, la home s'éteint.
+  /// La fermeture, elle, garde la vitesse normale.
   static CustomTransitionPage<void> sheetPage({
     required LocalKey key,
     required Widget child,
     bool fadeBack = false,
+    bool lente = false,
   }) {
     return CustomTransitionPage<void>(
       key: key,
       child: child,
-      transitionDuration: const Duration(milliseconds: 420),
+      transitionDuration: Duration(milliseconds: lente ? 900 : 420),
       reverseTransitionDuration: back,
       transitionsBuilder: (context, animation, secondary, page) {
-        final curved = _curve(animation);
+        final curved = lente
+            ? CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeInOutCubic,
+                reverseCurve: Curves.easeInCubic,
+              )
+            : _curve(animation);
         final cached = _cached(page);
         if (!fadeBack) {
-          return _receding(
-            secondary,
-            SlideTransition(
-              position: Tween(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(curved),
-              child: FadeTransition(opacity: curved, child: cached),
-            ),
+          Widget montee = SlideTransition(
+            position: Tween(
+              begin: const Offset(0, 1),
+              end: Offset.zero,
+            ).animate(curved),
+            child: lente
+                ? cached
+                : FadeTransition(opacity: curved, child: cached),
           );
+          if (lente) {
+            montee = Stack(
+              children: [
+                Positioned.fill(
+                  child: FadeTransition(
+                    opacity: Tween(begin: 0.0, end: 0.6).animate(curved),
+                    child: const ColoredBox(color: Colors.black),
+                  ),
+                ),
+                montee,
+              ],
+            );
+          }
+          return _receding(secondary, montee);
         }
         return _receding(
           secondary,

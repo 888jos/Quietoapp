@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' show sin, pi;
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -618,61 +619,78 @@ class _BarreSaisie extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-      // Pas de trait au-dessus de la barre d'écriture (demande de Paul) :
-      // le fond suffit à la détacher du fil.
-      decoration: const BoxDecoration(color: AppColors.background),
-      child: enregistre
-          ? _BandeauEnregistrement(
-              enPause: enPause,
-              secondes: secondes,
-              dernierMot: dernierMot,
-              onAnnuler: onAnnuler,
-              onPause: onPause,
-              onReprendre: onReprendre,
-              onTerminer: onTerminer,
-            )
-          : Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    minLines: 1,
-                    maxLines: 4,
-                    textCapitalization: TextCapitalization.sentences,
-                    style: AppTextStyles.bodyLarge,
-                    onSubmitted: (_) => onEnvoyer(),
-                    decoration: InputDecoration(
-                      hintText: 'Dis ce que tu as sur le cœur…',
-                      hintStyle: AppTextStyles.bodyMedium,
-                      filled: true,
-                      fillColor: AppColors.cardSurface,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: controller,
-                  builder: (context, value, _) {
-                    final aTexte = value.text.trim().isNotEmpty;
-                    return _BoutonAction(
-                      aTexte: aTexte,
-                      onTap: aTexte ? onEnvoyer : onMic,
-                    );
-                  },
-                ),
-              ],
+    // Pilule de verre assortie à la barre de navigation flottante (mêmes
+    // marges, même voile, même liseré) : les deux se lisent comme un seul
+    // bloc posé au-dessus de la conversation, sans trou entre elles.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.background.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.14),
+              ),
             ),
+            child: enregistre
+                ? _BandeauEnregistrement(
+                    enPause: enPause,
+                    secondes: secondes,
+                    dernierMot: dernierMot,
+                    onAnnuler: onAnnuler,
+                    onPause: onPause,
+                    onReprendre: onReprendre,
+                    onTerminer: onTerminer,
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          minLines: 1,
+                          maxLines: 4,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: AppTextStyles.bodyLarge,
+                          onSubmitted: (_) => onEnvoyer(),
+                          decoration: InputDecoration(
+                            hintText: 'Dis ce que tu as sur le cœur…',
+                            hintStyle: AppTextStyles.bodyMedium,
+                            // La pilule de verre EST le champ : pas de
+                            // second fond par-dessus.
+                            filled: false,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: controller,
+                        builder: (context, value, _) {
+                          final aTexte = value.text.trim().isNotEmpty;
+                          return _BoutonAction(
+                            aTexte: aTexte,
+                            onTap: aTexte ? onEnvoyer : onMic,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ),
     );
   }
 }

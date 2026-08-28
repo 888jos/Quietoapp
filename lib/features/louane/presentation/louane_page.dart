@@ -666,70 +666,85 @@ class _BarreSaisie extends StatelessWidget {
   }
 
   Widget _pilule(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            // Plus clair que le fond de page (retour de Paul : sans ça le
-            // champ ne se démarque pas, on dirait du texte posé sur rien).
-            color: AppColors.cardSurface.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(28),
-          ),
-          child: enregistre
-              ? _BandeauEnregistrement(
-                  enPause: enPause,
-                  secondes: secondes,
-                  dernierMot: dernierMot,
-                  onAnnuler: onAnnuler,
-                  onPause: onPause,
-                  onReprendre: onReprendre,
-                  onTerminer: onTerminer,
-                )
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        minLines: 1,
-                        maxLines: 4,
-                        textCapitalization: TextCapitalization.sentences,
-                        style: AppTextStyles.bodyLarge,
-                        onSubmitted: (_) => onEnvoyer(),
-                        decoration: InputDecoration(
-                          hintText: 'Dis ce que tu as sur le cœur…',
-                          hintStyle: AppTextStyles.bodyMedium,
-                          // La pilule de verre EST le champ : pas de
-                          // second fond par-dessus.
-                          filled: false,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
+    // Même « verre liquide » que la barre de navigation (façon iOS 26) :
+    // couronne en dégradé lumineuse en haut + voile blanc léger sur flou
+    // appuyé — plus clair que le fond de page, le champ se démarque.
+    return Container(
+      padding: const EdgeInsets.all(1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.white.withValues(alpha: 0.25),
+            Colors.white.withValues(alpha: 0.04),
+          ],
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(27),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(27),
+            ),
+            child: enregistre
+                ? _BandeauEnregistrement(
+                    enPause: enPause,
+                    secondes: secondes,
+                    dernierMot: dernierMot,
+                    onAnnuler: onAnnuler,
+                    onPause: onPause,
+                    onReprendre: onReprendre,
+                    onTerminer: onTerminer,
+                  )
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          minLines: 1,
+                          maxLines: 4,
+                          textCapitalization: TextCapitalization.sentences,
+                          style: AppTextStyles.bodyLarge,
+                          onSubmitted: (_) => onEnvoyer(),
+                          decoration: InputDecoration(
+                            hintText: 'Dis ce que tu as sur le cœur…',
+                            hintStyle: AppTextStyles.bodyMedium,
+                            // La pilule de verre EST le champ : pas de
+                            // second fond par-dessus.
+                            filled: false,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: controller,
-                      builder: (context, value, _) {
-                        final aTexte = value.text.trim().isNotEmpty;
-                        return _BoutonAction(
-                          aTexte: aTexte,
-                          onTap: aTexte ? onEnvoyer : onMic,
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 6),
+                      ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: controller,
+                        builder: (context, value, _) {
+                          final aTexte = value.text.trim().isNotEmpty;
+                          return _BoutonAction(
+                            aTexte: aTexte,
+                            onTap: aTexte ? onEnvoyer : onMic,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ),
     );

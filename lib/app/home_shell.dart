@@ -102,76 +102,90 @@ class _QuijetoNav extends StatelessWidget {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(_hauteur / 2),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
-              child: Container(
-                height: _hauteur,
-                decoration: BoxDecoration(
-                  // Semi-transparent : le flou fait le reste. Sans liseré
-                  // (choix de Paul) : la pilule ne vit que par son fond et
-                  // son ombre — et sur Louane elle fusionne avec le champ
-                  // d'écriture posé juste au-dessus, même fond.
-                  color: AppColors.background.withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(_hauteur / 2),
-                ),
-                child: Stack(
-                  children: [
-                    // Le halo de l'onglet actif : une pilule douce qui
-                    // GLISSE d'un onglet à l'autre.
-                    AnimatedAlign(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOutCubic,
-                      alignment: Alignment(-1.0 + currentIndex * 1.0, 0),
-                      child: FractionallySizedBox(
-                        widthFactor: 1 / 3,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(28),
+          // Effet « verre liquide » (demande de Paul, façon iOS 26) : une
+          // fine couronne en dégradé, lumineuse en haut, imite le reflet
+          // d'un verre bombé ; dedans, un voile BLANC très léger — plus
+          // clair que le fond de page — sur un flou appuyé.
+          child: Container(
+            padding: const EdgeInsets.all(1),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(_hauteur / 2),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white.withValues(alpha: 0.25),
+                  Colors.white.withValues(alpha: 0.04),
+                ],
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(_hauteur / 2 - 1),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                child: Container(
+                  height: _hauteur - 2,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(_hauteur / 2 - 1),
+                  ),
+                  child: Stack(
+                    children: [
+                      // Le halo de l'onglet actif : une pilule douce qui
+                      // GLISSE d'un onglet à l'autre.
+                      AnimatedAlign(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        alignment: Alignment(-1.0 + currentIndex * 1.0, 0),
+                        child: FractionallySizedBox(
+                          widthFactor: 1 / 3,
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.10),
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                              child: const SizedBox.expand(),
                             ),
-                            child: const SizedBox.expand(),
                           ),
                         ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _NavItem(
-                            icon: Iconsax.home,
-                            iconActive: Iconsax.home_copy,
-                            label: 'Accueil',
-                            isActive: currentIndex == 0,
-                            onTap: () => onTap(0),
-                          ),
-                        ),
-                        Expanded(
-                          child: _NavItem(
-                            customIcon: LouaneMiniAvatar(
-                              actif: currentIndex == 1,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _NavItem(
+                              icon: Iconsax.home,
+                              iconActive: Iconsax.home_copy,
+                              label: 'Accueil',
+                              isActive: currentIndex == 0,
+                              onTap: () => onTap(0),
                             ),
-                            label: 'Louane',
-                            isActive: currentIndex == 1,
-                            activeColor: LouanePalette.accent,
-                            onTap: () => onTap(1),
                           ),
-                        ),
-                        Expanded(
-                          child: _NavItem(
-                            icon: Iconsax.profile_circle,
-                            iconActive: Iconsax.profile_circle_copy,
-                            label: 'Profil',
-                            isActive: currentIndex == 2,
-                            onTap: () => onTap(2),
+                          Expanded(
+                            child: _NavItem(
+                              customIcon: LouaneMiniAvatar(
+                                actif: currentIndex == 1,
+                              ),
+                              label: 'Louane',
+                              isActive: currentIndex == 1,
+                              activeColor: LouanePalette.accent,
+                              onTap: () => onTap(1),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Expanded(
+                            child: _NavItem(
+                              icon: Iconsax.profile_circle,
+                              iconActive: Iconsax.profile_circle_copy,
+                              label: 'Profil',
+                              isActive: currentIndex == 2,
+                              onTap: () => onTap(2),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

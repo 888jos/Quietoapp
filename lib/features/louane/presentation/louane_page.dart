@@ -421,7 +421,7 @@ class _LouanePageState extends ConsumerState<LouanePage>
             _BarreSaisie(
               controller: _controller,
               focusNode: _focus,
-              avecSeparateur: ref.watch(louaneNavVisibleProvider),
+              navVisible: ref.watch(louaneNavVisibleProvider),
               onEnvoyer: _envoyer,
               enregistre: _vocal != _EtatVocal.inactif,
               enPause: _vocal == _EtatVocal.pause,
@@ -624,7 +624,7 @@ class _BoutonCreerParcours extends ConsumerWidget {
 class _BarreSaisie extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
-  final bool avecSeparateur;
+  final bool navVisible;
   final VoidCallback onEnvoyer;
   final bool enregistre;
   final bool enPause;
@@ -639,7 +639,7 @@ class _BarreSaisie extends StatelessWidget {
   const _BarreSaisie({
     required this.controller,
     required this.focusNode,
-    required this.avecSeparateur,
+    required this.navVisible,
     required this.onEnvoyer,
     required this.enregistre,
     required this.enPause,
@@ -655,24 +655,13 @@ class _BarreSaisie extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Pilule de verre assortie à la barre de navigation flottante : mêmes
-    // marges, pas de liseré. Barre de nav visible → collée bord à bord
-    // dessus (bottom 0), fine ligne à la jonction. Barre cachée → on la
-    // remonte du bord de l'écran (retour de Paul : collée en bas c'était
-    // « horrible »).
+    // marges, pas de liseré, pas de trait de jonction (retour de Paul :
+    // collées avec un trait, c'était moche). Barre de nav visible → petit
+    // espace au-dessus d'elle ; cachée → on remonte le champ du bord de
+    // l'écran.
     return Padding(
-      padding: EdgeInsets.fromLTRB(20, 6, 20, avecSeparateur ? 0 : 30),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _pilule(context),
-          if (avecSeparateur)
-            Container(
-              height: 1,
-              margin: const EdgeInsets.symmetric(horizontal: 18),
-              color: Colors.white.withValues(alpha: 0.10),
-            ),
-        ],
-      ),
+      padding: EdgeInsets.fromLTRB(20, 6, 20, navVisible ? 8 : 30),
+      child: _pilule(context),
     );
   }
 

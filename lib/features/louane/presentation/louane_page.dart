@@ -655,12 +655,12 @@ class _BarreSaisie extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Pilule de verre assortie à la barre de navigation flottante : mêmes
-    // marges, même voile, pas de liseré, et COLLÉE bord à bord sur la
-    // barre (bottom 0) — même fond, les deux pilules fusionnent en un
-    // seul bloc posé au-dessus de la conversation (choix de Paul, 28/08).
-    // Quand la barre de nav est là, une fine ligne marque la jonction.
+    // marges, pas de liseré. Barre de nav visible → collée bord à bord
+    // dessus (bottom 0), fine ligne à la jonction. Barre cachée → on la
+    // remonte du bord de l'écran (retour de Paul : collée en bas c'était
+    // « horrible »).
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
+      padding: EdgeInsets.fromLTRB(20, 6, 20, avecSeparateur ? 0 : 14),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -684,7 +684,9 @@ class _BarreSaisie extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: AppColors.background.withValues(alpha: 0.55),
+            // Plus clair que le fond de page (retour de Paul : sans ça le
+            // champ ne se démarque pas, on dirait du texte posé sur rien).
+            color: AppColors.cardSurface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(28),
           ),
           child: enregistre

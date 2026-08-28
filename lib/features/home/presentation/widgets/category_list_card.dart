@@ -4,9 +4,13 @@ import '../../../../core/config/app_constants.dart';
 import '../../../../core/models/category_model.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/ui/category_glyph.dart';
 import '../../../../core/ui/new_badge.dart';
 
+/// Carte catégorie de l'accueil : l'illustration gouache de la catégorie en
+/// pleine carte (choix de Paul, 28/08 — les gouaches sont la signature
+/// visuelle de l'app, elles doivent se voir dès l'accueil), titre et nombre
+/// de séances posés sur un voile en bas. La description vit sur la page
+/// détail.
 class CategoryListCard extends StatelessWidget {
   final CategoryModel category;
   final VoidCallback onTap;
@@ -27,6 +31,8 @@ class CategoryListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cover = _cover;
+
     return Semantics(
       button: true,
       label: 'Catégorie ${category.name}, ${category.sessions.length} séances',
@@ -36,14 +42,9 @@ class CategoryListCard extends StatelessWidget {
           onTap();
         },
         child: Container(
+          height: 104,
           decoration: BoxDecoration(
-            color: AppColors.cardSurface,
             borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-            // Même relief que la carte « Priorité du moment » : liseré
-            // clair + ombre portée, la carte se décolle du ciel étoilé.
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.18),
-            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.45),
@@ -52,92 +53,84 @@ class CategoryListCard extends StatelessWidget {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(AppConstants.spacingMd),
-          child: Row(
-            children: [
-              // Pastille : l'illustration gouache de la catégorie (celle du
-              // bandeau de sa page détail) en fond, le glyphe par-dessus.
-              // Un voile sombre entre les deux garde le glyphe lisible sur
-              // les paysages clairs.
-              SizedBox(
-                width: 56,
-                height: 56,
-                child: ClipOval(
-                  child: Stack(
-                    fit: StackFit.expand,
+          // Le liseré clair passe en foregroundDecoration : dans decoration,
+          // l'image posée par-dessus le recouvrirait.
+          foregroundDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.18),
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (cover != null)
+                  Image.asset(
+                    'assets/images/$cover',
+                    fit: BoxFit.cover,
+                    alignment: Alignment(0, category.coverAlignmentY),
+                    errorBuilder: (_, _, _) =>
+                        const ColoredBox(color: AppColors.cardSurface),
+                  )
+                else
+                  const ColoredBox(color: AppColors.cardSurface),
+                // Voile pour asseoir le texte : teinte du fond (jamais de
+                // noir transparent) et courbe en S — mêmes leçons que le
+                // fondu de la page détail. Le haut de l'image reste net.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: const [0.35, 0.52, 0.68, 0.84, 1.0],
+                      colors: [
+                        AppColors.background.withValues(alpha: 0.0),
+                        AppColors.background.withValues(alpha: 0.12),
+                        AppColors.background.withValues(alpha: 0.38),
+                        AppColors.background.withValues(alpha: 0.68),
+                        AppColors.background.withValues(alpha: 0.88),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: AppConstants.spacingMd,
+                  right: AppConstants.spacingMd,
+                  bottom: AppConstants.spacingSm + 2,
+                  child: Row(
                     children: [
-                      if (_cover != null)
-                        Image.asset(
-                          'assets/images/$_cover',
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) =>
-                              const ColoredBox(color: AppColors.accentDim),
-                        )
-                      else
-                        const ColoredBox(color: AppColors.accentDim),
-                      ColoredBox(
-                        color: Colors.black.withValues(alpha: 0.28),
-                      ),
-                      Center(
-                        child: CategoryGlyph(
-                          categoryId: category.id,
-                          fallbackEmoji: category.emoji,
-                          size: 32,
+                      Expanded(
+                        child: Text(
+                          category.name,
+                          style: AppTextStyles.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                      ),
+                      const SizedBox(width: AppConstants.spacingSm),
+                      Text(
+                        '${category.sessions.length} séances',
+                        style: AppTextStyles.badge,
+                      ),
+                      const SizedBox(width: AppConstants.spacingXs),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.accent,
+                        size: 20,
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(width: AppConstants.spacingMd),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            category.name,
-                            style: AppTextStyles.titleMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (category.badge != null) ...[
-                          const SizedBox(width: 8),
-                          Transform.translate(
-                            offset: const Offset(70, -28),
-                            child: Transform.scale(
-                              scale: 1.125,
-                              child: NewBadge(label: category.badge!),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      category.description,
-                      style: AppTextStyles.bodyMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppConstants.spacingSm),
-              Text(
-                '${category.sessions.length} séances',
-                style: AppTextStyles.badge,
-              ),
-              const SizedBox(width: AppConstants.spacingXs),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.accent,
-                size: 20,
-              ),
-            ],
+                if (category.badge != null)
+                  Positioned(
+                    top: AppConstants.spacingSm,
+                    right: AppConstants.spacingSm,
+                    child: NewBadge(label: category.badge!),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

@@ -59,6 +59,9 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
   @override
   void initState() {
     super.initState();
+    // Le clavier du chat Louane peut survivre à la navigation (vu sur vrai
+    // iPhone, 28/08) : cet écran n'a aucun champ, on le range d'office.
+    FocusManager.instance.primaryFocus?.unfocus();
     // Garde anti-double génération : un programme existe déjà → on va le
     // voir.
     if (ref.read(parcoursProvider) != null) {
@@ -185,6 +188,9 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      // Pas de champ ici : le temps que le clavier hérité se range, la mise
+      // en page ne doit pas se compresser.
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           const Positioned.fill(child: StarryBackground()),

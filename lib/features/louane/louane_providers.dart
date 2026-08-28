@@ -552,3 +552,9 @@ final louaneChatProvider =
     ref.watch(storageServiceProvider),
   ),
 );
+
+/// Visibilité de la barre de navigation sur l'onglet Louane (choix de Paul,
+/// 28/08) : elle se cache dès qu'on écrit (clavier ouvert) pour laisser
+/// toute la place à la conversation, et ne réapparaît qu'en défilant vers
+/// le haut dans le fil. Les autres onglets l'ignorent.
+final louaneNavVisibleProvider = StateProvider<bool>((ref) => true);

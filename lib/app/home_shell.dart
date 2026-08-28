@@ -8,6 +8,7 @@ import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../core/services/storage_providers.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_text_styles.dart';
+import '../features/louane/louane_providers.dart' show louaneNavVisibleProvider;
 import '../features/louane/presentation/louane_palette.dart';
 import '../features/louane/presentation/widgets/louane_avatar.dart';
 import '../features/player/presentation/widgets/mini_player.dart';
@@ -21,6 +22,11 @@ class HomeShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Sur l'onglet Louane, la barre se cache pendant qu'on écrit et ne
+    // revient qu'en défilant vers le haut dans le fil (choix de Paul).
+    final navVisible =
+        shell.currentIndex != 1 || ref.watch(louaneNavVisibleProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       // Le contenu file DERRIÈRE la barre flottante : c'est lui que le
@@ -31,20 +37,34 @@ class HomeShell extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const MiniPlayer(),
-          _QuijetoNav(
-            currentIndex: shell.currentIndex,
-            onTap: (index) {
-              // Vigie : navigation entre onglets (quels espaces vivent ?).
-              if (index != shell.currentIndex && index < _nomsOnglets.length) {
-                ref.read(vigieProvider).log('onglet', {
-                  'nom': _nomsOnglets[index],
-                });
-              }
-              shell.goBranch(
-                index,
-                initialLocation: index == shell.currentIndex,
-              );
-            },
+          AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.topCenter,
+            child: !navVisible
+                ? const SizedBox.shrink()
+                : _QuijetoNav(
+                    currentIndex: shell.currentIndex,
+                    onTap: (index) {
+                      // Vigie : navigation entre onglets (quels espaces
+                      // vivent ?).
+                      if (index != shell.currentIndex &&
+                          index < _nomsOnglets.length) {
+                        ref.read(vigieProvider).log('onglet', {
+                          'nom': _nomsOnglets[index],
+                        });
+                      }
+                      if (index == 1) {
+                        // On arrive sur Louane : la barre démarre visible.
+                        ref.read(louaneNavVisibleProvider.notifier).state =
+                            true;
+                      }
+                      shell.goBranch(
+                        index,
+                        initialLocation: index == shell.currentIndex,
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -131,8 +151,9 @@ class _QuijetoNav extends StatelessWidget {
                         ),
                         Expanded(
                           child: _NavItem(
-                            customIcon:
-                                LouaneMiniAvatar(actif: currentIndex == 1),
+                            customIcon: LouaneMiniAvatar(
+                              actif: currentIndex == 1,
+                            ),
                             label: 'Louane',
                             isActive: currentIndex == 1,
                             activeColor: LouanePalette.accent,
@@ -204,11 +225,7 @@ class _NavItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               customIcon ??
-                  Icon(
-                    isActive ? iconActive : icon,
-                    color: couleur,
-                    size: 24,
-                  ),
+                  Icon(isActive ? iconActive : icon, color: couleur, size: 24),
               const SizedBox(height: 4),
               Text(
                 label,

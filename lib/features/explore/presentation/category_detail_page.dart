@@ -191,15 +191,28 @@ class _CategoryHeader extends StatelessWidget {
                   else
                     const _CoverFallback(),
                   // Fondu vers le fond de page, pour que l'image se marie
-                  // au thème sombre au lieu de se terminer net. Court : à
-                  // 0.55 il éteignait la moitié basse de l'illustration.
-                  const DecoratedBox(
+                  // au thème sombre au lieu de se terminer net. Deux pièges
+                  // déjà rencontrés ici : un fondu long (0.55) éteint la
+                  // moitié basse de l'illustration, et un fondu linéaire à
+                  // 2 stops depuis Colors.transparent (du NOIR transparent,
+                  // qui salit le mélange) se lit comme une barre nette.
+                  // D'où : la teinte du fond à alpha 0 + une courbe en S —
+                  // quasi invisible avant 0.80, la vraie bascule reste dans
+                  // le dernier sixième.
+                  DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        stops: [0.82, 1.0],
-                        colors: [Colors.transparent, AppColors.background],
+                        stops: const [0.72, 0.80, 0.86, 0.91, 0.96, 1.0],
+                        colors: [
+                          AppColors.background.withValues(alpha: 0.0),
+                          AppColors.background.withValues(alpha: 0.08),
+                          AppColors.background.withValues(alpha: 0.28),
+                          AppColors.background.withValues(alpha: 0.58),
+                          AppColors.background.withValues(alpha: 0.87),
+                          AppColors.background,
+                        ],
                       ),
                     ),
                   ),

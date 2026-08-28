@@ -202,8 +202,14 @@ class _HomePageState extends ConsumerState<HomePage>
                   ),
                 ),
 
-                const SliverPadding(
-                  padding: EdgeInsets.only(bottom: AppConstants.spacingXl),
+                // Marge de fin : la hauteur de la barre de nav flottante
+                // (MediaQuery, via extendBody) pour que la dernière carte
+                // puisse défiler entièrement au-dessus de la pilule.
+                SliverPadding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom +
+                        AppConstants.spacingLg,
+                  ),
                 ),
               ],
             ),

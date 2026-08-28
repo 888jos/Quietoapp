@@ -319,119 +319,149 @@ class _LouanePageState extends ConsumerState<LouanePage>
 
     final nbItems = chat.messages.length + (chat.louaneEcrit ? 1 : 0);
 
+    // Marge basse du fil : la pilule de saisie (~68) + son décollage du bas.
+    // MediaQuery.padding.bottom inclut la barre de nav du shell (extendBody)
+    // quand elle est visible : le fil défile DERRIÈRE elle et derrière la
+    // pilule — seuls les ovales flottent, autour tout passe à travers
+    // (demande de Paul du 28/08).
+    final basFil = MediaQuery.paddingOf(context).bottom + 82;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
             _EnTete(ecrit: chat.louaneEcrit),
             Expanded(
-              // Zone morte façon Snap : un tap n'importe où dans le fil range
-              // le clavier — indispensable quand il y a trop peu de messages
-              // pour que le « défiler pour ranger » ait de quoi défiler.
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-                // Défiler vers le haut (remonter dans le fil) fait
-                // réapparaître la barre de navigation. Seuls les gestes de
-                // la personne comptent : les défilements programmés
-                // (auto-scroll vers le bas) n'émettent pas cette notification.
-                child: NotificationListener<UserScrollNotification>(
-                  onNotification: (n) {
-                    if (n.direction == ScrollDirection.forward &&
-                        !ref.read(louaneNavVisibleProvider)) {
-                      ref.read(louaneNavVisibleProvider.notifier).state = true;
-                    }
-                    return false;
-                  },
-                  child: ListView.builder(
-                    controller: _scroll,
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    // Rebond même liste courte → le glisser range aussi le clavier.
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    itemCount: nbItems,
-                    itemBuilder: (context, i) {
-                      if (i >= chat.messages.length) {
-                        return const TypingBubble();
-                      }
-                      final m = chat.messages[i];
-                      // Ligne système : fine, centrée, discrète (façon
-                      // séparateur de date iMessage) — pas une bulle.
-                      if (m.auteur == AuteurMessage.systeme) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          child: Center(
-                            child: Text(
-                              m.texte,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.35),
-                                letterSpacing: 0.2,
-                              ),
-                            ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    // Zone morte façon Snap : un tap n'importe où dans le
+                    // fil range le clavier — indispensable quand il y a trop
+                    // peu de messages pour que le « défiler pour ranger »
+                    // ait de quoi défiler.
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () =>
+                          FocusManager.instance.primaryFocus?.unfocus(),
+                      // Défiler vers le haut (remonter dans le fil) fait
+                      // réapparaître la barre de navigation ; vers le bas, elle
+                      // se range (demande de Paul du 28/08). Seuls les gestes de
+                      // la personne comptent : les défilements programmés
+                      // (auto-scroll vers le bas) n'émettent pas cette notification.
+                      child: NotificationListener<UserScrollNotification>(
+                        onNotification: (n) {
+                          final visible = ref.read(louaneNavVisibleProvider);
+                          if (n.direction == ScrollDirection.forward &&
+                              !visible) {
+                            ref.read(louaneNavVisibleProvider.notifier).state =
+                                true;
+                          } else if (n.direction == ScrollDirection.reverse &&
+                              visible) {
+                            ref.read(louaneNavVisibleProvider.notifier).state =
+                                false;
+                          }
+                          return false;
+                        },
+                        child: ListView.builder(
+                          controller: _scroll,
+                          keyboardDismissBehavior:
+                              ScrollViewKeyboardDismissBehavior.onDrag,
+                          // Rebond même liste courte → le glisser range aussi le clavier.
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
                           ),
-                        );
-                      }
-                      final bulle = MessageBubble(
-                        key: ValueKey(i),
-                        message: m,
-                        nouveau: i >= _nbVus,
-                      );
-                      // Bulle de fin des messages découverte → bouton essai gratuit
-                      // dessous (masqué si la personne s'est abonnée depuis).
-                      if (m.avecBoutonEssai &&
-                          !ref.watch(subscriptionProvider)) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [bulle, const _BoutonEssaiGratuit()],
-                        );
-                      }
-                      // Louane propose le programme 7 jours → bouton dessous
-                      // (masqué dès qu'un programme existe : anti-doublon).
-                      if (m.avecBoutonParcours &&
-                          ref.watch(parcoursProvider) == null) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [bulle, const _BoutonCreerParcours()],
-                        );
-                      }
-                      // Louane lance une séance → la carte de lancement dessous.
-                      if (m.seanceId != null) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            bulle,
-                            CarteSeanceLouane(
-                              seanceId: m.seanceId!,
-                              nouvelle: i >= _nbVus,
-                            ),
-                          ],
-                        );
-                      }
-                      return bulle;
-                    },
+                          padding: EdgeInsets.fromLTRB(16, 12, 16, basFil),
+                          itemCount: nbItems,
+                          itemBuilder: (context, i) {
+                            if (i >= chat.messages.length) {
+                              return const TypingBubble();
+                            }
+                            final m = chat.messages[i];
+                            // Ligne système : fine, centrée, discrète (façon
+                            // séparateur de date iMessage) — pas une bulle.
+                            if (m.auteur == AuteurMessage.systeme) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    m.texte,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.white.withValues(
+                                        alpha: 0.35,
+                                      ),
+                                      letterSpacing: 0.2,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+                            final bulle = MessageBubble(
+                              key: ValueKey(i),
+                              message: m,
+                              nouveau: i >= _nbVus,
+                            );
+                            // Bulle de fin des messages découverte → bouton essai gratuit
+                            // dessous (masqué si la personne s'est abonnée depuis).
+                            if (m.avecBoutonEssai &&
+                                !ref.watch(subscriptionProvider)) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [bulle, const _BoutonEssaiGratuit()],
+                              );
+                            }
+                            // Louane propose le programme 7 jours → bouton dessous
+                            // (masqué dès qu'un programme existe : anti-doublon).
+                            if (m.avecBoutonParcours &&
+                                ref.watch(parcoursProvider) == null) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [bulle, const _BoutonCreerParcours()],
+                              );
+                            }
+                            // Louane lance une séance → la carte de lancement dessous.
+                            if (m.seanceId != null) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  bulle,
+                                  CarteSeanceLouane(
+                                    seanceId: m.seanceId!,
+                                    nouvelle: i >= _nbVus,
+                                  ),
+                                ],
+                              );
+                            }
+                            return bulle;
+                          },
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: _BarreSaisie(
+                      controller: _controller,
+                      focusNode: _focus,
+                      navVisible: ref.watch(louaneNavVisibleProvider),
+                      onEnvoyer: _envoyer,
+                      enregistre: _vocal != _EtatVocal.inactif,
+                      enPause: _vocal == _EtatVocal.pause,
+                      secondes: _secondes,
+                      dernierMot: _dernierMot,
+                      onMic: _demarrerVocal,
+                      onPause: _pauseVocal,
+                      onReprendre: _reprendreVocal,
+                      onTerminer: _terminerVocal,
+                      onAnnuler: _annulerVocal,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            _BarreSaisie(
-              controller: _controller,
-              focusNode: _focus,
-              navVisible: ref.watch(louaneNavVisibleProvider),
-              onEnvoyer: _envoyer,
-              enregistre: _vocal != _EtatVocal.inactif,
-              enPause: _vocal == _EtatVocal.pause,
-              secondes: _secondes,
-              dernierMot: _dernierMot,
-              onMic: _demarrerVocal,
-              onPause: _pauseVocal,
-              onReprendre: _reprendreVocal,
-              onTerminer: _terminerVocal,
-              onAnnuler: _annulerVocal,
             ),
           ],
         ),
@@ -656,95 +686,99 @@ class _BarreSaisie extends StatelessWidget {
   Widget build(BuildContext context) {
     // Pilule de verre assortie à la barre de navigation flottante : mêmes
     // marges, pas de liseré, pas de trait de jonction (retour de Paul :
-    // collées avec un trait, c'était moche). Barre de nav visible → petit
-    // espace au-dessus d'elle ; cachée → on remonte le champ du bord de
-    // l'écran.
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 6, 20, navVisible ? 8 : 30),
+    // collées avec un trait, c'était moche). Trois cas pour la marge basse
+    // (MediaQuery.padding.bottom suit la barre de nav via extendBody) :
+    // clavier ouvert → 6 au-dessus du clavier (le Scaffold remonte déjà le
+    // corps) ; barre visible → 14 pour qu'elles ne se collent pas ; pilule
+    // seule → 26 pour ne pas la coller au bord de l'iPhone (retours de Paul
+    // du 28/08). View.of : les VRAIS insets de la fenêtre — le Scaffold a
+    // déjà consommé viewInsets dans le MediaQuery du corps.
+    final clavierOuvert = View.of(context).viewInsets.bottom > 0;
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.fromLTRB(
+        20,
+        6,
+        20,
+        MediaQuery.paddingOf(context).bottom +
+            (clavierOuvert
+                ? 6
+                : navVisible
+                    ? 14
+                    : 26),
+      ),
       child: _pilule(context),
     );
   }
 
   Widget _pilule(BuildContext context) {
-    // Même « verre liquide » que la barre de navigation (façon iOS 26) :
-    // couronne en dégradé lumineuse en haut + voile blanc léger sur flou
-    // appuyé — plus clair que le fond de page, le champ se démarque.
-    return Container(
-      padding: const EdgeInsets.all(1),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white.withValues(alpha: 0.25),
-            Colors.white.withValues(alpha: 0.04),
-          ],
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(27),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(27),
-            ),
-            child: enregistre
-                ? _BandeauEnregistrement(
-                    enPause: enPause,
-                    secondes: secondes,
-                    dernierMot: dernierMot,
-                    onAnnuler: onAnnuler,
-                    onPause: onPause,
-                    onReprendre: onReprendre,
-                    onTerminer: onTerminer,
-                  )
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          minLines: 1,
-                          maxLines: 4,
-                          textCapitalization: TextCapitalization.sentences,
-                          style: AppTextStyles.bodyLarge,
-                          onSubmitted: (_) => onEnvoyer(),
-                          decoration: InputDecoration(
-                            hintText: 'Dis ce que tu as sur le cœur…',
-                            hintStyle: AppTextStyles.bodyMedium,
-                            // La pilule de verre EST le champ : pas de
-                            // second fond par-dessus.
-                            filled: false,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide.none,
-                            ),
+    // Voile bleu nuit sur flou appuyé — la teinte exacte vient de Paul
+    // (28/08), un poil plus claire que le fond de page pour que le champ
+    // se démarque. Pas de couronne ni de bordure (retour de Paul : la
+    // bordure claire autour du champ, à enlever).
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF122036).withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: enregistre
+              ? _BandeauEnregistrement(
+                  enPause: enPause,
+                  secondes: secondes,
+                  dernierMot: dernierMot,
+                  onAnnuler: onAnnuler,
+                  onPause: onPause,
+                  onReprendre: onReprendre,
+                  onTerminer: onTerminer,
+                )
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        minLines: 1,
+                        maxLines: 4,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: AppTextStyles.bodyLarge,
+                        onSubmitted: (_) => onEnvoyer(),
+                        decoration: InputDecoration(
+                          hintText: 'Dis ce que tu as sur le cœur…',
+                          hintStyle: AppTextStyles.bodyMedium,
+                          // La pilule de verre EST le champ : pas de
+                          // second fond par-dessus.
+                          filled: false,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: controller,
-                        builder: (context, value, _) {
-                          final aTexte = value.text.trim().isNotEmpty;
-                          return _BoutonAction(
-                            aTexte: aTexte,
-                            onTap: aTexte ? onEnvoyer : onMic,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-          ),
+                    ),
+                    const SizedBox(width: 6),
+                    ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: controller,
+                      builder: (context, value, _) {
+                        final aTexte = value.text.trim().isNotEmpty;
+                        return _BoutonAction(
+                          aTexte: aTexte,
+                          onTap: aTexte ? onEnvoyer : onMic,
+                        );
+                      },
+                    ),
+                  ],
+                ),
         ),
       ),
     );

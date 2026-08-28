@@ -11,7 +11,6 @@ import '../core/theme/app_text_styles.dart';
 import '../features/louane/louane_providers.dart' show louaneNavVisibleProvider;
 import '../features/louane/presentation/louane_palette.dart';
 import '../features/louane/presentation/widgets/louane_avatar.dart';
-import '../features/player/presentation/widgets/mini_player.dart';
 
 class HomeShell extends ConsumerWidget {
   final StatefulNavigationShell shell;
@@ -29,53 +28,49 @@ class HomeShell extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      // Le contenu file DERRIÈRE la barre flottante : c'est lui que le
-      // flou de la pilule capture.
+      // Le contenu file DERRIÈRE la barre flottante : on le voit défiler
+      // dans les marges autour de la pilule.
       extendBody: true,
       body: shell,
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const MiniPlayer(),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            alignment: Alignment.topCenter,
-            child: !navVisible
-                ? const SizedBox.shrink()
-                : _QuijetoNav(
-                    currentIndex: shell.currentIndex,
-                    onTap: (index) {
-                      // Vigie : navigation entre onglets (quels espaces
-                      // vivent ?).
-                      if (index != shell.currentIndex &&
-                          index < _nomsOnglets.length) {
-                        ref.read(vigieProvider).log('onglet', {
-                          'nom': _nomsOnglets[index],
-                        });
-                      }
-                      if (index == 1) {
-                        // On arrive sur Louane : la barre démarre visible.
-                        ref.read(louaneNavVisibleProvider.notifier).state =
-                            true;
-                      }
-                      shell.goBranch(
-                        index,
-                        initialLocation: index == shell.currentIndex,
-                      );
-                    },
-                  ),
-          ),
-        ],
+      // Pas de mini-lecteur au-dessus de la barre (retiré le 28/08, demande
+      // de Paul) : la séance en cours se pilote depuis l'écran verrouillé et
+      // le centre de contrôle, comme Spotify.
+      bottomNavigationBar: AnimatedSize(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: !navVisible
+            ? const SizedBox.shrink()
+            : _QuijetoNav(
+                currentIndex: shell.currentIndex,
+                onTap: (index) {
+                  // Vigie : navigation entre onglets (quels espaces
+                  // vivent ?).
+                  if (index != shell.currentIndex &&
+                      index < _nomsOnglets.length) {
+                    ref.read(vigieProvider).log('onglet', {
+                      'nom': _nomsOnglets[index],
+                    });
+                  }
+                  if (index == 1) {
+                    // On arrive sur Louane : la barre démarre visible.
+                    ref.read(louaneNavVisibleProvider.notifier).state = true;
+                  }
+                  shell.goBranch(
+                    index,
+                    initialLocation: index == shell.currentIndex,
+                  );
+                },
+              ),
       ),
     );
   }
 }
 
 /// Barre de navigation façon pilule flottante (inspirée de Headspace,
-/// demande de Paul du 28/08) : détachée des bords, fond translucide qui
-/// FLOUTE le contenu qui défile derrière, halo qui glisse sous l'onglet
-/// actif. Les icônes restent celles de Quieto.
+/// demande de Paul du 28/08) : détachée des bords, voile bleu nuit
+/// translucide qui FLOUTE le contenu qui défile derrière, halo qui glisse
+/// sous l'onglet actif. Les icônes restent celles de Quieto.
 class _QuijetoNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -102,10 +97,9 @@ class _QuijetoNav extends StatelessWidget {
               ),
             ],
           ),
-          // Effet « verre liquide » (demande de Paul, façon iOS 26) : une
-          // fine couronne en dégradé, lumineuse en haut, imite le reflet
-          // d'un verre bombé ; dedans, un voile BLANC très léger — plus
-          // clair que le fond de page — sur un flou appuyé.
+          // Voile BLEU NUIT (couleur du fond, pas blanc — le blanc rendait
+          // un gris sale) légèrement translucide sur un flou appuyé : la
+          // pilule reste sombre mais le contenu flouté vit derrière.
           child: Container(
             padding: const EdgeInsets.all(1),
             decoration: BoxDecoration(
@@ -126,7 +120,7 @@ class _QuijetoNav extends StatelessWidget {
                 child: Container(
                   height: _hauteur - 2,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.10),
+                    color: AppColors.background.withValues(alpha: 0.75),
                     borderRadius: BorderRadius.circular(_hauteur / 2 - 1),
                   ),
                   child: Stack(

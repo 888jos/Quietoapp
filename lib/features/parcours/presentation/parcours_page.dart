@@ -214,6 +214,18 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
       ),
     );
     if (confirme == true && mounted) {
+      // Une séance DU programme en cours d'écoute s'arrête avec lui (demande
+      // de Paul du 28/08) — une séance du catalogue, elle, continue. On ne
+      // touche au playerProvider que s'il existe déjà : le lire à froid en
+      // créerait un neuf… qui relancerait l'audio (auto-play de _init).
+      final actifId = ref.read(activeSessionIdProvider);
+      final parcours = ref.read(parcoursProvider);
+      final seanceDuParcours = actifId != null &&
+          (parcours?.jours.any((j) => j.sessionId == actifId) ?? false);
+      if (seanceDuParcours && ref.exists(playerProvider(actifId))) {
+        await ref.read(playerProvider(actifId).notifier).stop();
+        ref.read(activeSessionIdProvider.notifier).state = null;
+      }
       await ref.read(parcoursProvider.notifier).abandonner();
       if (mounted) context.pop();
     }

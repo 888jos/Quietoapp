@@ -884,17 +884,34 @@ async function appelVoix(client, historique, message, heure, jour, prenom, memoi
     // Luna "réfléchit" un peu avant d'écrire : ces reasoning_tokens comptent
     // dans le plafond → marge au-dessus des ~1000 tokens de réponse utile.
     max_completion_tokens: 1500,
+    // ⚠️ Cache GPT-5.6 : plus automatique comme avant. En mode implicite, le
+    // seul point de coupe est la fin du dernier message user → la moindre
+    // variation AVANT (heure, mémoire, profil) invalide tout (constaté en
+    // prod le 28/08 : 8 % de hits). D'où le mode EXPLICITE : un point de
+    // coupe posé à la fin du bloc FIXE, qui se relit alors à 0,02 $/M quel
+    // que soit l'utilisateur (vérifié le 28/08 : relecture intégrale entre
+    // deux appels aux parties variables différentes). prompt_cache_key =
+    // routage vers le même shard pour tous les appels de la Voix.
+    prompt_cache_key: "quieto-voix-1",
+    prompt_cache_options: { mode: "explicit", ttl: "30m" },
     messages: [
-      // Le prompt système garde l'ordre FIXE puis VARIABLE : le cache OpenAI
-      // est AUTOMATIQUE sur le préfixe (≥ 1024 tokens, lecture à prix réduit,
-      // rien à configurer, cf. prompt_tokens_details.cached_tokens dans les
-      // logs). ⚠️ Ne rien insérer avant ou dans le bloc fixe qui varie d'un
-      // appel à l'autre, sinon le cache ne prend plus jamais.
+      // Le prompt système garde l'ordre FIXE puis VARIABLE — même contenu au
+      // caractère près qu'avant, simplement coupé en deux messages system :
+      // le bloc fixe (avec le point de coupe du cache), puis le variable.
+      // ⚠️ Ne rien insérer avant ou dans le bloc fixe qui varie d'un appel à
+      // l'autre, sinon le cache ne prend plus jamais.
       {
         role: "system",
-        content: PROMPT_VOIX + CONSIGNE_CATALOGUE + CONSIGNE_PARCOURS_OFFRE +
-          CONSIGNE_SEANCE_LANCEMENT + CONSIGNE_PRESENTATION +
-          consigneHeure(heure) + consigneJour(jour) +
+        content: [{
+          type: "text",
+          text: PROMPT_VOIX + CONSIGNE_CATALOGUE + CONSIGNE_PARCOURS_OFFRE +
+            CONSIGNE_SEANCE_LANCEMENT + CONSIGNE_PRESENTATION,
+          prompt_cache_breakpoint: { mode: "explicit" },
+        }],
+      },
+      {
+        role: "system",
+        content: consigneHeure(heure) + consigneJour(jour) +
           consigneMemoire(prenom, memoire) + consigneProfil(profil) +
           consigneAccueil(accueil) + consigneParcours(parcours) +
           consigneEcoutes(ecoutes) + consigneSante(sante, false, santeDispo) +
@@ -923,7 +940,7 @@ async function appelVoix(client, historique, message, heure, jour, prenom, memoi
 // ------------------------------------------------------------
 const PROMPT_MEMOIRE = `
 Tu tiens à jour une petite FICHE MÉMOIRE sur une personne qui se confie à Louane.
-On te donne la fiche actuelle et le dernier échange (ce qu'elle a dit, ce que
+On te donne la fiche actuelle et les derniers échanges (ce qu'elle a dit, ce que
 Louane a répondu). Tu renvoies la fiche MISE À JOUR.
 
 CE QU'ON GARDE (utile d'une fois sur l'autre) :
@@ -945,20 +962,23 @@ RÈGLES :
 Tu réponds UNIQUEMENT avec la fiche mémoire mise à jour, rien d'autre.
 `;
 
-async function appelMemoire(client, memoireActuelle, message, reponse) {
+async function appelMemoire(client, memoireActuelle, echanges) {
   try {
     const contenu =
       "FICHE ACTUELLE :\n" + (memoireActuelle || "(vide — première fois)") +
-      "\n\nDERNIER ÉCHANGE :\nLa personne : " + message +
-      "\nLouane : " + reponse;
+      "\n\nDERNIERS ÉCHANGES :\n" + echanges;
     const r = await client.chat.completions.create({
       model: "gpt-5.6-luna",
-      max_completion_tokens: 1000, // marge : les reasoning_tokens comptent dedans
+      max_completion_tokens: 1000,
+      // Fusionner une fiche n'a pas besoin de réflexion — sortie identique,
+      // tokens de raisonnement en moins (ils sont facturés plein tarif).
+      reasoning_effort: "none",
       messages: [
         { role: "system", content: PROMPT_MEMOIRE },
         { role: "user", content: contenu },
       ],
     });
+    console.log("[Mémoire] usage:", JSON.stringify(r.usage));
     const fiche = ((r.choices[0] && r.choices[0].message.content) || "").trim();
     return fiche || memoireActuelle;
   } catch (e) {
@@ -977,7 +997,13 @@ async function appelVeilleur(client, historique, message) {
   try {
     const reponse = await client.chat.completions.create({
       model: "gpt-5.6-luna",
-      max_completion_tokens: 500, // marge : les reasoning_tokens comptent dedans
+      max_completion_tokens: 500,
+      // Réflexion coupée : testé le 28/08 sur 12 cas (explicites, signaux
+      // voilés, pièges à faux positifs) — verdicts identiques avec ou sans.
+      // Si on retouche PROMPT_VEILLEUR un jour, refaire ce banc de test.
+      reasoning_effort: "none",
+      prompt_cache_key: "quieto-veilleur-1",
+      prompt_cache_options: { ttl: "30m" },
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: PROMPT_VEILLEUR },
@@ -985,6 +1011,7 @@ async function appelVeilleur(client, historique, message) {
         { role: "user", content: message },
       ],
     });
+    console.log("[Veilleur] usage:", JSON.stringify(reponse.usage));
     const brut = (reponse.choices[0] && reponse.choices[0].message.content) || "";
     const signal = extraireJson(brut);
     const niveau = Number(signal && signal.niveau);
@@ -1310,8 +1337,20 @@ exports.louane = onCall(
   // Luna depuis le 14/08/2026) écrit avec tout le contexte. (Plume retirée :
   // un 2e agent sans contexte cassait le personnage et la cohérence.) La
   // Mémoire met à jour la fiche (avec le texte nettoyé, pour que le marqueur
-  // ne fuie jamais dans la fiche).
-  const nouvelleMemoire = await appelMemoire(client, memoire, message, reponseFinale);
+  // ne fuie jamais dans la fiche) — UN échange sur trois seulement, avec les
+  // 3 derniers échanges en entrée : rien n'est perdu, juste regroupé (et la
+  // fenêtre de la Voix couvre largement le différé). Fiche vide = on la crée
+  // dès le premier message (prénom, situation : trop précieux pour attendre).
+  const nbEchangesAvant = historique.filter((m) => m && m.role === "user").length;
+  const memoireDue = !memoire || nbEchangesAvant % 3 === 2;
+  const nouvelleMemoire = memoireDue ?
+    await appelMemoire(client, memoire,
+      [...historique.slice(-4).map((m) =>
+        (m.role === "user" ? "La personne : " : "Louane : ") +
+        String(m.content).replace(REGEX_SEANCE, " ").trim()),
+      "La personne : " + message,
+      "Louane : " + reponseFinale].join("\n")) :
+    memoire;
   return {
     reponse: reponseFinale,
     // Le découpage en petits messages ([BULLE]) : les nouvelles apps affichent
@@ -1879,13 +1918,22 @@ exports.genererParcours = onCall(
         // Marge au-dessus des ~1000 tokens du JSON : les reasoning_tokens
         // comptent dans le plafond (risque de JSON tronqué → retry).
         max_completion_tokens: 2500,
+        // Préfixe propre (PROMPT_PARCOURS) → clé de cache dédiée, mode
+        // explicite comme la Voix (point de coupe en fin de bloc fixe).
+        prompt_cache_key: "quieto-parcours-1",
+        prompt_cache_options: { mode: "explicit", ttl: "30m" },
         // JSON garanti par l'API (remplace le préremplissage "{" impossible
         // chez Anthropic comme chez OpenAI). extraireJson reste en filet.
         response_format: { type: "json_object" },
-        // Même ordre que la Voix : bloc FIXE d'abord (cache OpenAI automatique
-        // sur le préfixe), bloc VARIABLE (mémoire, profil, prénom) ensuite.
+        // Même ordre que la Voix : bloc FIXE d'abord (avec le point de
+        // coupe), bloc VARIABLE (mémoire, profil, prénom) ensuite.
         messages: [
-          { role: "system", content: PROMPT_PARCOURS +
+          { role: "system", content: [{
+            type: "text",
+            text: PROMPT_PARCOURS,
+            prompt_cache_breakpoint: { mode: "explicit" },
+          }] },
+          { role: "system", content:
             consigneMemoire(prenom, memoire) + consigneProfil(profil) +
             consigneSante(sante, true) + consigneEcoutes(ecoutes, true) +
             consignePremierParcours(premierParcours) },
@@ -2006,12 +2054,27 @@ exports.accueilOnboarding = onCall(
       model: "gpt-5.6-luna",
       // Trois bulles courtes : la marge sert aux reasoning_tokens de Luna.
       max_completion_tokens: 800,
+      // Clé À PART (pas celle de la Voix) : en mode explicite le cache exige
+      // un match exact jusqu'au point de coupe, et le bloc fixe de l'Accueil
+      // (PROMPT_VOIX seul) diffère de celui de la Voix (PROMPT_VOIX +
+      // consignes). Avec 300-500 onboardings/jour, ce cache-là vit très bien
+      // tout seul.
+      prompt_cache_key: "quieto-accueil-1",
+      prompt_cache_options: { mode: "explicit", ttl: "30m" },
       messages: [
         {
-          // Même ordre FIXE → VARIABLE que la Voix : PROMPT_VOIX en tête,
-          // donc le cache OpenAI peut prendre sur le préfixe partagé.
+          // Même ordre FIXE → VARIABLE que la Voix, coupé pareil : le bloc
+          // fixe (point de coupe du cache), puis le variable.
           role: "system",
-          content: PROMPT_VOIX + consigneHeure(heure) + consigneJour(jour) +
+          content: [{
+            type: "text",
+            text: PROMPT_VOIX,
+            prompt_cache_breakpoint: { mode: "explicit" },
+          }],
+        },
+        {
+          role: "system",
+          content: consigneHeure(heure) + consigneJour(jour) +
             consigneMemoire(prenom, "") + consigneProfil(profil) +
             CONSIGNE_ACCUEIL_ONBOARDING,
         },

@@ -21,6 +21,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/app_card.dart';
+import '../../../core/ui/apple_health_icon.dart';
 import '../../../core/ui/boutons_connexion.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../profile_providers.dart';
@@ -1023,20 +1024,7 @@ class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
         children: [
           Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: AppColors.accentDim,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.accent.withValues(alpha: 0.3),
-                    width: 1.2,
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: const Text('❤️', style: TextStyle(fontSize: 20)),
-              ),
+              const AppleHealthIcon(size: 44),
               const SizedBox(width: AppConstants.spacingMd),
               Expanded(
                 child: Column(
@@ -1046,12 +1034,17 @@ class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
                         style: AppTextStyles.bodyLarge
                             .copyWith(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 2),
+                    // Pas de \n en dur : le texte prend toute la largeur
+                    // de la carte et se coupe proprement tout seul.
                     Text(
                       connecte
-                          ? 'Connecté. Tes minutes de calme\nsont ajoutées dans Santé.'
+                          ? 'Connecté — tes minutes de calme sont '
+                              'ajoutées dans Santé.'
                           : refuse
-                              ? 'Accès refusé pour l\'instant.\nÇa se rouvre dans l\'app Santé.'
-                              : 'Tes minutes de calme dans Santé,\net Louane lit tes questionnaires.',
+                              ? 'Accès refusé pour l\'instant. Il se '
+                                  'rouvre depuis l\'app Santé.'
+                              : 'Tes minutes de calme dans Santé, et '
+                                  'Louane lit tes questionnaires.',
                       style: AppTextStyles.caption,
                     ),
                   ],
@@ -1065,6 +1058,16 @@ class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
             ],
           ),
           if (!connecte) ...[
+            if (refuse) ...[
+              const SizedBox(height: AppConstants.spacingMd),
+              // La marche à suivre AVANT le bouton : on lit quoi faire,
+              // puis on agit — et non l'inverse.
+              Text(
+                'Dans Santé : ta photo de profil, puis Apps, puis Quieto, '
+                'et active ce que tu veux partager.',
+                style: AppTextStyles.caption,
+              ),
+            ],
             const SizedBox(height: AppConstants.spacingMd),
             AppButton(
               label: refuse ? 'Ouvrir l\'app Santé' : 'Connecter',
@@ -1072,14 +1075,6 @@ class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
               isLoading: _busy,
               onTap: refuse ? _ouvrirSante : _connecter,
             ),
-            if (refuse) ...[
-              const SizedBox(height: AppConstants.spacingSm),
-              Text(
-                'Dans Santé : ta photo de profil, puis Apps,\n'
-                'puis Quieto, et active ce que tu veux partager.',
-                style: AppTextStyles.caption,
-              ),
-            ],
           ],
         ],
       ),

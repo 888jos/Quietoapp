@@ -17,6 +17,14 @@ class CategoryListCard extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Même repli que la page détail : couverture dédiée de la catégorie,
+  /// sinon l'image de sa première séance.
+  String? get _cover =>
+      category.coverImage ??
+      (category.sessions.isNotEmpty
+          ? category.sessions.first.imageFile
+          : null);
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -47,18 +55,37 @@ class CategoryListCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppConstants.spacingMd),
           child: Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: const BoxDecoration(
-                  color: AppColors.accentDim,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: CategoryGlyph(
-                    categoryId: category.id,
-                    fallbackEmoji: category.emoji,
-                    size: 30,
+              // Pastille : l'illustration gouache de la catégorie (celle du
+              // bandeau de sa page détail) en fond, le glyphe par-dessus.
+              // Un voile sombre entre les deux garde le glyphe lisible sur
+              // les paysages clairs.
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: ClipOval(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_cover != null)
+                        Image.asset(
+                          'assets/images/$_cover',
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) =>
+                              const ColoredBox(color: AppColors.accentDim),
+                        )
+                      else
+                        const ColoredBox(color: AppColors.accentDim),
+                      ColoredBox(
+                        color: Colors.black.withValues(alpha: 0.28),
+                      ),
+                      Center(
+                        child: CategoryGlyph(
+                          categoryId: category.id,
+                          fallbackEmoji: category.emoji,
+                          size: 32,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

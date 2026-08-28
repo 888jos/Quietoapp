@@ -56,6 +56,12 @@ Pour la lecture en arrière-plan, ajouter dans `ios/Runner/Info.plist` :
 
 ---
 
+## Tests sur iPhone physique — jeton App Check debug (maj 28/08/2026)
+
+En debug, App Check utilise le **provider de débogage** (`main.dart` : `AppleDebugProvider` / `AndroidDebugProvider` sous `kDebugMode`). Le jeton de débogage est propre à chaque installation : **réinstaller un build debug en génère un nouveau**, à enregistrer dans la console Firebase (projet `quieto-06` → App Check → Apps → gérer les jetons de débogage) — sinon **tous les appels aux Cloud Functions échouent depuis ce build** (Louane, `trace`/Vigie : erreurs `HttpsCallable` dans les logs). Le jeton s'affiche dans la console Xcode au premier lancement. Le jeton courant du build de test de Paul est noté dans `~/dev/JOURNAL-QUIETO.md` (pas ici : ce repo est poussé).
+
+---
+
 ## Environnements
 
 | Variable | Dev | Prod |

@@ -1,8 +1,8 @@
 # Quieto — c'est quoi ?
 
 > Document de présentation. À donner tel quel à une IA (ou une personne) pour comprendre vite ce qu'est Quieto et où le projet va.
-> Mainteneur : Cofonde · Version de l'app : **1.0.20+29** (en préparation — la 1.0.19 est distribuée mais pas encore soumise) · Plateformes : **iOS + Android** (⚠️ retirée de Google Play depuis le 05/08/2026, restauration demandée)
-> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu). (maj 26/08/2026)
+> Mainteneur : Cofonde · Version de l'app : **1.0.20+29** (prête — reste l'archivage/upload Xcode ; la **1.0.19 est soumise à Apple**, confirmé le 26/08) · Plateformes : **iOS + Android** (⚠️ retirée de Google Play depuis le 05/08/2026, restauration demandée)
+> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu). (maj 28/08/2026)
 
 ## En une phrase
 **Quieto est une application de méditation guidée en français**, pensée pour rendre la méditation simple et accessible : des séances courtes, ancrées dans les vrais moments de la journée (un appel difficile, les transports, juste avant de dormir…), et **Louane**, une compagnonne IA qui accompagne l'utilisateur au quotidien.
@@ -28,7 +28,7 @@ Depuis la 1.0.20, le **jour 1 du tout premier programme est toujours « Ma premi
 
 ## Ce que Quieto fait aujourd'hui
 **Parcours utilisateur :**
-Onboarding personnalisé (questions sur ton état émotionnel + prénom + proposition Apple Santé) → compte Apple / Google ou « Continuer sans compte » → Accueil personnalisé → Louane (chat + programme 7 jours) ou Explorer les catégories → Lecteur audio (contrôles sur écran verrouillé, mini-lecteur qui suit l'utilisateur) → Profil avec statistiques (minutes méditées, séances terminées) et carte de partage.
+Onboarding personnalisé (questions sur ton état émotionnel + prénom + proposition Apple Santé) → compte Apple / Google ou « Continuer sans compte » → Accueil personnalisé → Louane (chat + programme 7 jours) ou Explorer les catégories → Lecteur audio (contrôles sur écran verrouillé et centre de contrôle — le mini-lecteur in-app a été supprimé le 28/08/2026 : pour rouvrir l'écran de séance, on repasse par sa carte) → Profil avec statistiques (minutes méditées, séances terminées) et carte de partage.
 
 **Contenu :** 7 catégories, **35 séances** de 1 à 14 min (Express « Une minute pour toi », Découverte, Actualité & Surcharge mentale, Stress & Anxiété, Sommeil, Respiration, Émotions). Le catalogue est défini dans `lib/features/explore/data/explore_repository.dart`. Depuis le 26/08/2026, **chaque séance a une cover illustrée style gouache** (`assets/images/sessions/`, WebP) et **chaque catégorie son bandeau paysage** (`assets/images/categories/`, 7 fichiers WebP) — voir `DIRECTION-ARTISTIQUE.md` et `PROMPTS-VISUELS.md`.
 
@@ -38,6 +38,7 @@ Onboarding personnalisé (questions sur ton état émotionnel + prénom + propos
 - **Gratuit** : la catégorie Découverte + les Express de base, et Louane (non bridée).
 - **Premium** : tout le reste — **essai gratuit de 7 jours**, puis **89 €/an** ou **16,90 €/mois**. Stratégie assumée : l'annuel d'abord (le mensuel est volontairement cher pour ancrer le prix).
 - Paiements gérés par RevenueCat (App Store + Google Play).
+- *(maj 28/08/2026, 1.0.20)* Le paywall s'affiche **à chaque démarrage à froid** pour les non-abonnés (montée douce sous voile, `5acdfff` + `29f2b65`). L'écran du mur lui-même ne bouge pas (règle « le mur ne se touche pas », décision Paul du 25/08).
 
 **Analytics :** la « Vigie », outil maison — événements envoyés par l'app à la Cloud Function `trace` → Firestore, webhook RevenueCat pour l'issue des essais, dashboard local (`~/dev/Quieto IA/analytics`).
 
@@ -100,6 +101,7 @@ Réutiliser ces composants plutôt que de redessiner des boutons/cartes à la ma
 - **Pastilles** : petits ronds `accentDim` ou `accent` portant une icône (avantages, étapes).
 - **Timeline verticale** : étapes reliées par une fine ligne `accentDim` (voir le paywall) — idéale pour expliquer un déroulé.
 - **Louane** : le compagnon est un **personnage dessiné en code** (visage rond turquoise, yeux qui clignent, sourire), pas une image.
+- **Pilules flottantes** *(maj 28/08/2026)* : la barre de nav et la saisie Louane sont des **pilules translucides bleu nuit sur flou** (nav : `background` à 75 % ; saisie : `#122036` à 85 %), sans bordure — le contenu défile **derrière** elles, seuls les ovales flottent.
 
 ### Animations
 - Durées : `animFast 200` · `animNormal 350` · `animSlow 600` ms. Rien de brusque.

@@ -381,3 +381,33 @@ assets/images/sessions/
 **Décision** : Tant que la personne n'a **jamais terminé de séance** (`parcoursDejaCree` faux OU `completedCount == 0`), `genererParcours` reçoit `premierParcours: true` et le serveur force « Ma première méditation » en jour 1 (verrou déterministe `forcerPremiereMeditation`, le mot de Louane suit sa séance). Inerte pour les versions ≤ 1.0.19 (flag absent).
 
 **Pourquoi** : quasi personne n'a jamais médité — le programme doit commencer par la porte d'entrée, pas par une séance quelconque.
+
+---
+
+## ADR-033 — Paywall à chaque démarrage à froid pour les non-abonnés
+
+*Consignée le 28/08/2026 (Scribe) — décision Paul, app `5acdfff` + animation `29f2b65` (partent avec la 1.0.20).*
+
+**Décision** : Au démarrage à FROID, si l'onboarding est fini et que `subscriptionProvider` est false (l'entitlement RC couvre premium ET essai), le splash envoie sur la home puis pousse `/paywall?src=ouverture` après 500 ms : la home s'installe, le mur monte du bas en 900 ms (variante `lente: true` de `sheetPage`, easeInOutCubic, feuille opaque) sous un voile noir à 0,6. Réservé à `src=ouverture` ; croix habituelle à 3 s ; le retour du background ne repasse pas par le splash → rien. L'écran du mur lui-même est **inchangé** (règle « le mur ne se touche pas », ADR implicite du 25/08).
+
+**Pourquoi** : conseil Superwall/RevenueCat « paywall on every app open » — lift attendu +10-30 % de démarrages d'essai (pas de chiffre isolé publié). App tuée → mur ; aller-retour WhatsApp → rien : exactement le comportement voulu par Paul. La source Vigie `ouverture` mesurera ce que ça rapporte.
+
+---
+
+## ADR-034 — Bas de l'app en pilules flottantes ; mini-lecteur supprimé
+
+*Consignée le 28/08/2026 (Scribe) — journée du 28/08 avec Paul, commits `83f21a3` → `2626056` → `dee58a0` (partent avec la 1.0.20).*
+
+**Décision** : La nav et la saisie Louane sont deux **pilules flottantes** en voile bleu nuit translucide sur flou (nav : `AppColors.background` à 75 % ; saisie : `#122036` à 85 %, teinte exacte fournie par Paul), sans bordure ni couronne. Le contenu défile DERRIÈRE elles partout (Stack + `SafeArea bottom:false` + marges basses `MediaQuery.padding`) — seuls les ovales flottent, plus de « mur » opaque. Sur Louane, la nav se range en défilant vers le bas et revient vers le haut (en plus du clavier). Espacements calés par Paul : 14 px entre les pilules, saisie seule à 26 px du bord, 6 px au-dessus du clavier (`AnimatedPadding` 300 ms ; clavier détecté via `View.of`, le Scaffold consomme les viewInsets). Le **MiniPlayer est supprimé de l'interface** : pilotage par écran verrouillé + centre de contrôle. Compromis assumé : plus de raccourci in-app pour rouvrir l'écran de séance (repasser par la carte). `mini_player.dart` reste dans le code, orphelin.
+
+**Pourquoi** : demande de Paul — un bas d'écran aéré façon Headspace/iOS 26 ; le mini-lecteur cassait l'effet flottant.
+
+---
+
+## ADR-035 — Interrupteur « Premium (mode test) » en kDebugMode (précise ADR-029)
+
+*Consignée le 28/08/2026 (Scribe) — commit `d7e232b`.*
+
+**Décision** : Le profil porte un interrupteur « 🛠 Premium (mode test) » visible UNIQUEMENT en `kDebugMode` (donc jamais en TestFlight ni App Store) ; `debugForcerPremium` fait ensuite ignorer RevenueCat pour la session. Ce n'est pas une entorse à ADR-029 : `kDebugMode` est un verrou de **compilation**, l'outil n'existe pas dans un build boutique — contrairement aux anciens flags runtime à double verrou. ⚠️ Le backend fait confiance au flag `abonne` envoyé par l'app (`index.js:1165`) : en debug forcé, Louane se comporte aussi en Premium.
+
+**Pourquoi** : tester tout le parcours Premium sur iPhone réel sans payer, sans réintroduire le risque de fuite en prod.

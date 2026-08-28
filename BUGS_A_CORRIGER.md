@@ -5,6 +5,7 @@
 > ⚠️ **Aucun n'est urgent** — rien de cassé en production. À traiter quand tu veux.
 > 🔎 **Point de contrôle du 12/08/2026** : chaque bug re-vérifié dans le code. Bugs 1 à 7 : **toujours ouverts** (nuances notées en italique dans les fiches). Bug 8 : **résolu**.
 > 🔎 **Point de contrôle du 26/08/2026** (préparation 1.0.20) : bugs 1 à 7 re-vérifiés dans le code — **tous toujours ouverts, état strictement identique au 12/08** (artwork à chemin fixe et écriture non protégée ; retour du lecteur en `go('/category/…')` hors `viaLancement` ; splash à 5 500 ms ; `lastPositions` jamais branché ; `saveProgress` loggé mais avalé). Le grand ménage du 26/08 (`9e82c22`) portait sur les outils de dev, pas sur ces fiches.
+> 🔎 **Point de contrôle du 28/08/2026** : rien de changé sur les fiches 1 à 7 malgré la grosse journée de commits — le splash garde ses 5 500 ms (`splash_page.dart:85`, le mur d'ouverture `5acdfff` s'y ajoute sans le raccourcir), et le retour du lecteur est toujours en `go('/category/…')` hors `viaLancement`. À noter : les bugs corrigés le 28/08 (clavier du chat qui survivait à la navigation `450e54d`, séance du programme qui continuait après « Arrêter le programme » `d387539`) n'avaient jamais été listés ici — trouvés et réglés dans la même session.
 
 ---
 

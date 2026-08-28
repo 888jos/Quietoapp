@@ -2,6 +2,7 @@
 
 > Maj 12/08/2026 — resynchronisé avec le code (v1.0.15+22). Ce document datait du MVP ; les sections marquées « historique » décrivent l'app d'avant. Pour l'état produit courant, `QUIETO.md` fait foi.
 > Maj 26/08/2026 — resynchronisé avec la v1.0.20+29 (notes datées dans les sections concernées).
+> Maj 28/08/2026 — bas de l'app en pilules flottantes, mini-lecteur supprimé, paywall au démarrage à froid (notes datées dans les sections Player, Louane, Home, Profil et Paywall).
 
 ## Concept
 
@@ -26,12 +27,14 @@ Quieto est une application de méditation guidée **en français**, pensée pour
 - Carte "Priorité du moment" mise en avant → `/category/decouverte`
 - Liste verticale de toutes les catégories (nom, description, nb séances) → `/category/:id`
 - *(maj 26/08/2026)* Ciel de nuit animé en **shaders GPU** : aurore boréale (`shaders/aurora.frag`) + voile laiteux et étoiles qui scintillent (`shaders/stardust.frag`), widgets `night_sky_header` / `glowing_moon`. Cartes **illustrées** (vignettes gouache, carte « Priorité du moment » façon Headspace). Carte du programme 7 jours (`parcours_card`) avec badge « Jour X sur 7 » + barre en 7 segments — le badge ne vit QUE sur cette carte, plus sur la page programme (`f715c6b`).
+- *(maj 28/08/2026)* La bottom nav est une **pilule flottante** translucide (bleu nuit `AppColors.background` à 75 % sur flou, sans bordure, halo qui glisse sous l'onglet actif) ; le contenu de la home, du profil et du fil Louane **défile derrière** elle (`extendBody`, `SafeArea bottom:false`, marges basses via `MediaQuery.padding`) — seul l'ovale flotte (`83f21a3` → `dee58a0`).
 
 ### Explorer (⚠️ supprimée — maj 12/08/2026)
 L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil**. Le catalogue s'atteint depuis l'accueil (cartes catégories → `/category/:id`). `lib/features/explore/data/explore_repository.dart` reste la source de vérité du catalogue (35 séances, 7 catégories).
 
 ### Louane & Programme 7 jours (ajout — maj 12/08/2026)
 - **Louane** : compagnonne IA au centre de la nav (`/louane`) — chat avec l'utilisateur, recommandation de séances (cartes séance dans la conversation), rituel sommeil. Personnage dessiné en code (pas une image). Côté serveur : Cloud Function `louane`.
+- *(maj 28/08/2026)* Chat immersif : la saisie est une **pilule flottante** (`#122036` à 85 % sur flou, sans bordure), à 14 px sous la nav ; **la nav se range en défilant vers le bas** dans le fil (et quand on écrit) et revient en défilant vers le haut ; saisie seule remontée à 26 px du bord, 6 px au-dessus du clavier (`AnimatedPadding` 300 ms — clavier détecté via `View.of`, le Scaffold consomme les viewInsets). Le fil défile derrière les deux pilules (`dee58a0`).
 - **Programme 7 jours** (« parcours ») : créé par Louane via la Cloud Function `genererParcours` — écran de génération (`/parcours/creation`), constellation d'étoiles de progression, carte de partage (stories). Persisté en SharedPreferences (`ParcoursModel`).
 - *(maj 26/08/2026, 1.0.20)* Le **jour 1 du tout premier programme est toujours « Ma première méditation »** : tant qu'aucune séance n'a jamais été terminée (`parcoursDejaCree` faux OU `completedCount == 0`), l'app envoie `premierParcours: true` et le serveur applique le verrou `forcerPremiereMeditation` (app `258ee18`, backend `39853fd`).
 - Louane reste accessible aux utilisateurs **gratuits** (meilleure surface de conversion — voulu).
@@ -50,23 +53,21 @@ L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil*
 - Chaque séance repart toujours du début (pas de sauvegarde de position)
 - Marquage automatique "complété" en fin de séance
 - Image de couverture 220×220 par session (depuis `SessionModel.imageFile`, dans `assets/images/sessions/<categorie>/`) — fallback sur placeholder turquoise + note de musique si absente
-- Mini player persistant affiché au-dessus de la bottom nav pendant la lecture/pause
-  - Tap → ouvre la page player complète (`context.push`)
-  - Bouton play/pause inline
-  - Bouton stop : arrête la lecture et masque le mini player
+- ~~Mini player persistant~~ — **supprimé le 28/08/2026** (`dee58a0`, demande Paul) : la lecture se pilote depuis l'**écran verrouillé / le centre de contrôle**. Compromis assumé : plus de raccourci in-app pour rouvrir l'écran de séance (repasser par la carte de la séance). Le fichier `mini_player.dart` existe encore mais n'est plus référencé.
 - Métadonnées Now Playing (lock screen / notification) : titre, artist `Quieto`, durée réelle, artwork = `Logo 1.jpeg` (chargé via `rootBundle` → fichier temp → `file://` URI)
 
 ### Profil ✅
 - Header : "👤 [prénom]" (fontSize 28, bold) + bouton "Modifier" pour éditer le prénom via bottom sheet
 - Statistiques : minutes totales méditées, nombre de séances complétées
 - CTA vers Paywall
-- Section "Paramètres" : toggle notifications + « Heure du rappel » (bottom sheet, persisté SharedPreferences). *(maj 26/08/2026 : le « reset onboarding » était un outil de dev — retiré avec tous les autres, commit `9e82c22`.)*
+- Section "Paramètres" : toggle notifications + « Heure du rappel » (bottom sheet, persisté SharedPreferences). *(maj 26/08/2026 : le « reset onboarding » était un outil de dev — retiré avec tous les autres, commit `9e82c22`.)* *(maj 28/08/2026 : un interrupteur « 🛠 Premium (mode test) » existe en `kDebugMode` UNIQUEMENT — invisible TestFlight/App Store, `d7e232b`, ADR-035.)*
 - Section "Informations légales" : politique de confidentialité + conditions d'utilisation (ouvre URL via `url_launcher`) — *(maj 26/08/2026)* les URLs pointent sur **cofonde.com** (`/quieto-confidentialite`, `/quieto-cgu`) depuis la 1.0.20 (`6985199`), plus sur Notion.
 
 ### Paywall (maj 12/08/2026)
 - **Paywall Flutter maison** (`lib/features/paywall/presentation/paywall_screen.dart`, branche `feat/paywall-flutter`) — le `PaywallView` natif RevenueCat n'est plus utilisé ; les offres et prix réels viennent de RevenueCat (`purchases_flutter`).
 - Accessible via `context.go` depuis l'onboarding (pas de retour) ou en montée glissée depuis une séance premium / le profil (`/paywall?from=premium&src=…` — la Vigie note la surface d'origine pour savoir ce qui convertit).
 - *(maj 26/08/2026)* La croix de fermeture est **en haut à gauche**, collée à la zone sûre (`37a9771`).
+- *(maj 28/08/2026)* **Affiché à chaque démarrage à FROID pour les non-abonnés** (`5acdfff`, décision Paul) : la home s'installe 0,5 s, puis le mur monte du bas en 900 ms sous un voile noir (`29f2b65` — variante `lente: true` de `sheetPage`, réservée à `src=ouverture` ; croix habituelle à 3 s). Le retour du background ne repasse pas par le splash → rien. L'écran du mur lui-même est inchangé (« le mur ne se touche pas »). Nouvelle source Vigie `ouverture`.
 
 ## Catégories de contenu
 

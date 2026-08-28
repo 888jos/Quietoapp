@@ -2,6 +2,7 @@
 
 > Maj 12/08/2026 — ajout des features Louane & Parcours, nav 3 onglets (Accueil / Louane / Profil), stack et navigation resynchronisées avec le code (v1.0.15+22).
 > Maj 26/08/2026 (v1.0.20+29) — onboarding resynchronisé (écran « compréhension », respiration avant Apple Santé), shaders GPU de la home (`shaders/aurora.frag`, `stardust.frag`), bandeaux de catégorie (`assets/images/categories/`), plus aucun outil de dev dans l'app (commit `9e82c22` : fini `?demo=1`, `premium_force_dev`, `avancerJourDev()`).
+> Maj 28/08/2026 — bas de l'app en **pilules flottantes** translucides (`home_shell.dart` : nav qui se range sur Louane, contenu qui défile derrière — `extendBody` + `SafeArea bottom:false`, commits `83f21a3` → `dee58a0`) ; **mini-lecteur retiré de l'UI** (`mini_player.dart` orphelin, plus référencé) ; **paywall au démarrage à froid** dans `splash_page.dart` (`5acdfff` + transition lente `29f2b65`) ; un seul outil de dev restant, l'interrupteur « Premium (mode test) » du profil, verrouillé `kDebugMode` (`d7e232b` — ADR-035).
 
 ## Vue d'ensemble
 
@@ -28,7 +29,8 @@ lib/
     ├── explore/      # Catalogue : data/explore_repository.dart (LES 35 séances),
     │                 #   category_detail_page — il n'y a PLUS de page « Explorer » dans la nav
     ├── player/       # preparation_page, lancement_page (animation Louane), player_page,
-    │                 #   mini_player, data/audio_handler.dart (QuietoAudioHandler)
+    │                 #   data/audio_handler.dart (QuietoAudioHandler) — mini_player.dart
+    │                 #   est ORPHELIN depuis le 28/08 (retiré de l'UI, plus référencé)
     ├── profile/      # profile_page (stats, réglages, compte)
     └── paywall/      # Paywall Flutter maison : paywall_page + paywall_screen (offres via RevenueCat)
 ```
@@ -102,7 +104,7 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 
 /preparation/:sessionId (hors shell — fade avant la séance → /player)
 /lancement/:sessionId   (hors shell — animation « je te la lance » quand Louane lance une séance)
-/player/:sessionId      (hors shell — depuis preparation, lancement ou mini player)
+/player/:sessionId      (hors shell — depuis preparation ou lancement ; le mini-player n'existe plus — 28/08)
 /parcours/creation      (hors shell — génération du programme 7 jours, le moment « wow »)
 /parcours               (hors shell — l'écran du programme)
 /paywall                (hors shell — `?from=premium&src=…` : la Vigie note la surface d'origine)
@@ -110,6 +112,7 @@ Suivi de la progression utilisateur : sessions complétées, positions sauvegard
 ```
 (maj 12/08/2026 — routes resynchronisées avec `app/router.dart` ; l'onglet Explorer a laissé sa place à Louane)
 (maj 26/08/2026 — ordre réel de l'onboarding : compréhension puis respiration puis Santé ; le mode `?demo=1` de `/parcours/creation` n'existe plus, retiré avec les outils de dev — commit `9e82c22`)
+(maj 28/08/2026 — la bottom nav est une pilule flottante translucide, le contenu des trois onglets défile derrière elle ; au démarrage à FROID, `splash_page.dart::_redirect` envoie les non-abonnés sur la home puis pousse `/paywall?src=ouverture` après 500 ms — le retour du background ne repasse pas par le splash, donc rien)
 
 ### Choisir le bon type de navigation
 

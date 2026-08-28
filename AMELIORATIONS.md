@@ -39,6 +39,11 @@ en médiane **32 h** après. Écouter 2 séances = **−20 points d'annulation**
 > ⚠️ Décision de Paul (25/08/2026) : **on ne touche pas au mur de paiement**, il est validé.
 > Les trois chantiers ci-dessous n'y touchent pas.
 
+> ✍️ **maj 28/08/2026** — première action de conversion prise en marge de ces chantiers : le paywall
+> s'affiche désormais **à chaque démarrage à froid** pour les non-abonnés (app `5acdfff` + montée
+> douce `29f2b65`, part avec la 1.0.20). On touche au « quand », pas au « quoi » : l'écran du mur
+> est inchangé, la règle tient. Nouvelle source Vigie `ouverture` pour mesurer ce que ça rapporte.
+
 ---
 
 ## 🔧 Les trois chantiers (par impact)

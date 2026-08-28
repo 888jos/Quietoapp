@@ -89,7 +89,19 @@ class _SplashPageState extends ConsumerState<SplashPage>
     if (_navigated || !mounted) return;
     _navigated = true;
     final done = ref.read(storageServiceProvider).isOnboardingDone;
-    context.go(done ? AppRoutes.home : AppRoutes.onboardingConnexion);
+    if (!done) {
+      context.go(AppRoutes.onboardingConnexion);
+      return;
+    }
+    context.go(AppRoutes.home);
+    // Mur d'ouverture (décision Paul, 28/08) : à chaque démarrage à FROID,
+    // un non-abonné (ni premium ni essai en cours — l'entitlement RevenueCat
+    // couvre les deux) repasse devant le paywall, fermable, avant la home.
+    // Poussé par-dessus la home : la croix la révèle sans re-navigation.
+    // Un simple retour du background ne repasse pas par le splash → rien.
+    if (!ref.read(subscriptionProvider)) {
+      context.push('${AppRoutes.paywall}?src=ouverture');
+    }
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../config/app_constants.dart';
@@ -48,7 +49,21 @@ class SubscriptionNotifier extends StateNotifier<bool> {
 
   final StorageService _storage;
 
+  /// Vrai quand Paul a forcé l'état depuis l'interrupteur de test du profil
+  /// (builds debug uniquement) : les mises à jour RevenueCat de la session
+  /// sont alors ignorées pour ne pas écraser le forçage.
+  bool _forceDebug = false;
+
+  /// Bascule Premium pour tester l'app abonnée — ne fait RIEN hors debug.
+  void debugForcerPremium(bool actif) {
+    if (!kDebugMode) return;
+    _forceDebug = true;
+    _storage.setIsPremium(actif);
+    state = actif;
+  }
+
   void _handleUpdate(CustomerInfo info) {
+    if (_forceDebug) return;
     final isPremium = info.entitlements.active
         .containsKey(AppConstants.entitlementPremium);
     // Persiste pour que le prochain démarrage parte avec le bon état.

@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart'
     show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
         CupertinoThemeData;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart'
@@ -39,15 +40,20 @@ class ProfilePage extends ConsumerWidget {
     final isPremium = ref.watch(subscriptionProvider);
 
     return AppScaffold(
+      // Pas de SafeArea en bas : le contenu défile jusqu'au bord de l'écran,
+      // DERRIÈRE la barre de nav flottante — seul l'ovale flotte, autour
+      // tout passe à travers (demande de Paul du 28/08). La marge basse du
+      // scroll inclut la hauteur de la barre (MediaQuery, via extendBody).
       body: SafeArea(
+        bottom: false,
         child: CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppConstants.spacingMd,
                 AppConstants.spacingLg,
                 AppConstants.spacingMd,
-                AppConstants.spacingXxl,
+                MediaQuery.paddingOf(context).bottom + AppConstants.spacingLg,
               ),
               sliver: SliverToBoxAdapter(
                 child: Column(
@@ -130,6 +136,32 @@ class ProfilePage extends ConsumerWidget {
                               ],
                             ),
                     ),
+
+                    // Interrupteur de test Premium — builds DEBUG uniquement
+                    // (jamais en TestFlight/App Store) : force l'état abonné
+                    // pour vérifier tout le parcours Premium sans payer.
+                    if (kDebugMode) ...[
+                      const SizedBox(height: AppConstants.spacingSm),
+                      AppCard(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '🛠 Premium (mode test)',
+                                style: AppTextStyles.bodyMedium,
+                              ),
+                            ),
+                            Switch(
+                              value: isPremium,
+                              activeThumbColor: AppColors.accent,
+                              onChanged: (v) => ref
+                                  .read(subscriptionProvider.notifier)
+                                  .debugForcerPremium(v),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     const SizedBox(height: AppConstants.spacingXl),
 

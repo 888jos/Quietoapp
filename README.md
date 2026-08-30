@@ -1,9 +1,9 @@
 # quieto-backend — Cloud Functions de Quieto
 
-> Créé le 12/08/2026, remis à jour le 28/08/2026. Backend Firebase (projet `quieto-06`) de l'app Quieto (`~/dev/QuietoApp`).
+> Créé le 12/08/2026, remis à jour le 30/08/2026. Backend Firebase (projet `quieto-06`) de l'app Quieto (`~/dev/QuietoApp`).
 > Node 24 · `firebase-functions` v7 · SDK `openai` (⚠️ plus aucun appel Anthropic depuis le 14/08/2026). Tout le code vit dans `functions/index.js`.
 
-## Les 5 fonctions déployées
+## Les 5 fonctions déployées (+ 1 écrite, pas encore déployée)
 
 | Fonction | Type | Rôle |
 |---|---|---|
@@ -11,7 +11,8 @@
 | `genererParcours` | `onCall` | Crée le **programme 7 jours** à partir de la conversation (historique + fiche + profil) : une séance du catalogue par jour + un mot de Louane. Le jour 1 est **toujours gratuit** (la conversion se joue sur la suite). Depuis le 26/08 (`39853fd`) : si l'app envoie `premierParcours: true` (1.0.20+, personne qui n'a jamais terminé de séance), le verrou déterministe `forcerPremiereMeditation` place « Ma première méditation » en jour 1. Stateless : l'app persiste le programme reçu. |
 | `accueilOnboarding` | `onCall` | Ajoutée le 15/08/2026 (`e84391a`). Écrit les 2 bulles d'accueil de l'écran de **compréhension** en fin d'onboarding (Louane redit ce qu'elle a compris des réponses au questionnaire). L'app a un repli local si le serveur traîne (> 4 s) ou tombe. |
 | `trace` | `onCall` | **La Vigie** (analytics maison) : l'app envoie ses événements par lots (~20), une ligne par événement dans Firestore `vigie_events`. 100 % anonyme (ID d'installation aléatoire, jamais de prénom ni de texte). Depuis le 17/08 (`34de2ad`) : range aussi la plateforme `os` (ios/android, liste blanche) envoyée par l'app 1.0.18+. |
-| `revenuecat` | `onRequest` | **Webhook RevenueCat** (déployé le 11/08/2026) : l'issue des essais (conversion, expiration, annulation…) arrive même des jours après, app fermée — rangée dans `vigie_events` avec l'ID Vigie (étiquette `vigie` posée par l'app via `setAttributes`). |
+| `revenuecat` | `onRequest` | **Webhook RevenueCat** (déployé le 11/08/2026, redéployé le 30/08) : l'issue des essais (conversion, expiration, annulation…) arrive même des jours après, app fermée — rangée dans `vigie_events` avec l'ID Vigie (étiquette `vigie` posée par l'app via `setAttributes`). Depuis le 30/08 (`3f7e3e7`) : tient aussi une **fiche par personne dans `rappels_essai`** (e-mail + prénom du payload RC `$email`/`$displayName`, doc = app_user_id = UID Firebase) — essai démarré → « attente » (`envoiPrevuMs` = fin − 48 h), annulation → « annule » (pas d'e-mail aux annulés, décision Paul), réactivation → réarmée, conversion/expiration → « termine ». Sans e-mail (connexion facultative) : pas de fiche, personne pas joignable — assumé. |
+| `rappelsEssai` | `onSchedule` | ⚠️ **Écrite le 30/08 (`3f7e3e7`), PAS ENCORE DÉPLOYÉE** (vérifié `functions:list` le 30/08). Première fonction programmée du backend (toutes les heures, Europe/Paris) : tient la promesse du paywall « on te prévient avant la fin de l'essai » (J−2, formule trialDays−2 de `paywall_page.dart`) en envoyant un **e-mail** via **Resend** (API HTTP, fetch natif Node 24, aucune dépendance) — décision Paul 30/08 : pas de push (risque conversion). Expéditeur « Quieto \<quieto@cofonde.com\> », reply-to contact@cofonde.com. Prix en dur **EUR seulement** (89,90 €/16,90 € iOS, 89,99 €/16,99 € Android, vérifiés sur les conversions réelles du webhook ; autre devise = formulation sans montant — leçon des CGU du 20/08). Garde-fous : sandbox ignoré, « trop_tard » si l'essai est fini, « echec » après 12 tentatives, jamais deux envois (`envoyeLe`). Trace Vigie anonyme `essai_rappel_envoye` (session « rappels »). **Préalables au déploiement : voir « État au 30/08 »**. |
 
 Modèles : **tout sur `gpt-5.6-luna` (OpenAI)** depuis le 14/08/2026 — Voix, Veilleur, Mémoire, `genererParcours`, `accueilOnboarding`. Fenêtre d'historique de la Voix : 8 messages (`FENETRE_VOIX`), Veilleur : 6. ⚠️ Depuis le 28/08 (`10f36a1`, déployé), le cache OpenAI n'est **plus automatique** (les règles ont changé, il ne prenait qu'à 8 %) : il est **explicite** — `prompt_cache_key` par fonction (`quieto-voix-1`, `quieto-veilleur-1`, `quieto-parcours-1`), `prompt_cache_breakpoint` en fin de bloc system FIXE (prompt coupé en deux messages system, inchangé au caractère près), TTL 30 min. Aussi : `reasoning_effort: "none"` sur Veilleur (banc de 12 cas sensibles : verdicts identiques) et Mémoire, et la **Mémoire ne tourne plus qu'1 échange sur 3** (`nbEchangesAvant % 3 === 2`, avec les 3 derniers échanges en entrée — rien de perdu), usage loggé partout.
 
@@ -20,8 +21,8 @@ Modèles : **tout sur `gpt-5.6-luna` (OpenAI)** depuis le 14/08/2026 — Voix, V
 - **Le prompt de la Voix vit dans `index.js`** (`PROMPT_VOIX`) — si on le retravaille ailleurs, le recopier ici. Depuis le 26/08 (`44ad80f`, déployé) : bloc « QUI TU ES, ET RIEN D'AUTRE » — Louane ne reprend jamais les mots IA/robot/ChatGPT, même pour blaguer.
 - **Bibliothécaire intégré à la Voix** (pas d'agent séparé — un 2ᵉ agent casse le personnage) : Louane connaît le catalogue via `functions/catalogue_seances.json` — ⚠️ à garder **synchro avec l'app** (`lib/features/explore/data/explore_repository.dart`).
 - **Marqueurs en fin de message** : `[PARCOURS]` (strippé côté serveur → signal `parcoursPropose`, l'app en fait un bouton) ; même mécanique pour lancer une séance depuis la conversation. `[BULLE]` découpe la réponse en 2-4 petites bulles (le serveur renvoie le tableau `bulles` + `reponse` d'un bloc pour les vieilles apps ; filet serveur : une réponse courte à sauts de paragraphe est découpée même sans marqueur).
-- **Firestore = deny-all** (`firestore.rules`) : l'app n'écrit jamais directement, tout passe par les fonctions. Collections : `vigie_events` (événements + webhook RC), `vigie_louane` (une ligne par message Louane, compteurs seulement — `nbBulles`, `avecSante` depuis le 15/08).
-- **Secrets** via `defineSecret` : `OPENAI_KEY`, `RC_WEBHOOK_SECRET`. Jamais dans le code ni dans l'app. (`ANTHROPIC_KEY` ne sert plus — le secret traîne encore dans Secret Manager, inoffensif, révocable.)
+- **Firestore = deny-all** (`firestore.rules`) : l'app n'écrit jamais directement, tout passe par les fonctions. Collections : `vigie_events` (événements + webhook RC), `vigie_louane` (une ligne par message Louane, compteurs seulement — `nbBulles`, `avecSante` depuis le 15/08), et depuis le 30/08 **`rappels_essai`** — ⚠️ celle-ci contient **e-mail + prénom** : elle est SÉPARÉE de la Vigie qui reste 100 % anonyme ; ne jamais faire transiter l'e-mail par `vigie_events`.
+- **Secrets** via `defineSecret` : `OPENAI_KEY`, `RC_WEBHOOK_SECRET`, `RESEND_KEY` (⚠️ au 30/08 : valeur provisoire « A_REMPLACER... », version 1 — créée pour débloquer le déploiement du webhook, le CLI exige tous les secrets du fichier ; la vraie clé viendra avec le compte Resend). Jamais dans le code ni dans l'app. (`ANTHROPIC_KEY` ne sert plus — le secret traîne encore dans Secret Manager, inoffensif, révocable.)
 - La Mémoire ne doit **jamais casser la requête** : en cas d'erreur elle rend la main (fiche inchangée). Même règle pour le Veilleur (échec = pas de signal, jamais d'erreur remontée).
 
 ## Commandes utiles
@@ -31,9 +32,15 @@ firebase deploy --only functions --project quieto-06   # déployer
 firebase functions:log --project quieto-06             # logs de prod
 ```
 
-## État au 28/08/2026
+## État au 30/08/2026
 
-- Dernier commit : `10f36a1` — **coûts API ÷~3** (cache explicite + Veilleur/Mémoire sans réflexion + Mémoire 1/3), **déployé et vérifié en prod le 28/08** : cache relu entre utilisateurs différents (7 166 tk Voix, 3 644 tk Accueil sur de vrais onboardings). À ~1 000 msg Louane/jour : **~92 → ~31 $/mois attendus**. Détail : `rapports-couts/rapport-couts-2026-08-28.md` (hors git). À revérifier dans ~1 semaine : taux de hits sur 24 h, richesse des fiches mémoire.
+- Dernier commit : `3f7e3e7` — **rappels e-mail de fin d'essai** (webhook + `rappels_essai` + `rappelsEssai`, backend seul, zéro modif app, l'écran du mur intouché). **Webhook `revenuecat` DÉPLOYÉ le 30/08** (les fiches s'accumulent dès maintenant) ; **`rappelsEssai` PAS déployée** — elle attend :
+  1. compte **Resend** + domaine cofonde.com vérifié (SPF/DKIM) ;
+  2. la **vraie clé** dans le secret `RESEND_KEY` (valeur provisoire aujourd'hui) ;
+  3. domaine + adresse d'envoi déclarés dans **Apple Developer** (Sign in with Apple → Email Communication) — sinon les adresses « Masquer mon e-mail » @privaterelay.appleid.com rebondissent ;
+  4. une ligne sur l'usage de l'e-mail dans la **politique de confidentialité** (qui dit aujourd'hui « pas de compte ni e-mail »).
+  Puis `firebase deploy --only functions:rappelsEssai --project quieto-06`. À l'occasion : libeller `essai_rappel_envoye` dans le dashboard Vigie. Piste notée pour plus tard : proposer la création de compte APRÈS l'achat réussi (« pour qu'on puisse te prévenir » — friction post-conversion, sans risque pour le mur).
+- Avant lui : `10f36a1` — **coûts API ÷~3** (cache explicite + Veilleur/Mémoire sans réflexion + Mémoire 1/3), **déployé et vérifié en prod le 28/08** : cache relu entre utilisateurs différents (7 166 tk Voix, 3 644 tk Accueil sur de vrais onboardings). À ~1 000 msg Louane/jour : **~92 → ~31 $/mois attendus**. Détail : `rapports-couts/rapport-couts-2026-08-28.md` (hors git). À revérifier dans ~1 semaine : taux de hits sur 24 h, richesse des fiches mémoire.
 - Avant lui : `44ad80f` — identité de Louane verrouillée (jamais de sujet IA/robot), déployé et testé en prod le 26/08 avec `39853fd` (première méditation forcée — inerte pour les apps ≤ 1.0.19, actif à partir de la 1.0.20).
 - Coûts (mesure du 14/08) : Voix ~0,27 ¢/message au tarif Luna officiel (0,20 $/1,20 $ le M). ⚠️ Vérifier qu'un **plafond de dépense** est posé sur le compte OpenAI.
 - Retour arrière vers Anthropic si besoin : redéployer `2ce30bb` (dernier commit 100 % Claude).

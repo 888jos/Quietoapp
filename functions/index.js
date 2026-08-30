@@ -1566,7 +1566,7 @@ const RESEND_KEY = defineSecret("RESEND_KEY");
 // (SPF + DKIM) ET déclaré dans Apple Developer (Sign in with Apple →
 // Email Communication), sinon les adresses « Masquer mon e-mail »
 // (@privaterelay.appleid.com) rebondissent.
-const EXPEDITEUR_RAPPEL = "Paul de Quieto <quieto@cofonde.com>";
+const EXPEDITEUR_RAPPEL = "Quieto <quieto@cofonde.com>";
 const REPONSE_RAPPEL = "contact@cofonde.com";
 
 // Le rappel part 2 jours avant la fin, comme affiché sur le mur.
@@ -1656,28 +1656,28 @@ function contenuRappel(f) {
   }).format(new Date(f.finEssaiMs)).replace(" 1 ", " 1er ");
   const bonjour = f.prenom ? `Bonjour ${f.prenom},` : "Bonjour,";
 
-  const sujet = `Comme promis : ton essai se termine ${dateFin}`;
+  const sujet = "Ton essai gratuit se termine bientôt";
 
   const texte = `${bonjour}
 
-C'est Paul, le créateur de Quieto. Quand tu as commencé ton essai, on t'a promis de te prévenir avant la fin — pas de mauvaise surprise. Alors voilà : ton essai se termine dans deux jours, ${dateFin}. Ensuite, ton abonnement ${abonnement} prendra le relais.
+Comme promis quand tu as démarré ton essai : on te prévient avant la fin, pour qu'il n'y ait aucune mauvaise surprise. Ton essai se termine dans deux jours, ${dateFin}. Ensuite, ton abonnement ${abonnement} prendra le relais.
 
-Mais surtout, j'aimerais savoir : comment ça se passe pour toi ?
+Et surtout, on aimerait savoir : comment ça se passe pour toi ?
 
-Est-ce que Quieto t'apporte quelque chose ? Est-ce qu'un truc t'agace, ou te manque ? Réponds simplement à cet e-mail, même trois mots — c'est moi qui lis, et c'est comme ça que l'app s'améliore, un retour à la fois.
+Est-ce que Quieto t'apporte quelque chose ? Est-ce qu'un truc t'agace, ou te manque ? Réponds simplement à cet e-mail, même trois mots — on lit chaque réponse, et c'est comme ça que l'app s'améliore, un retour à la fois.
 
 Prends soin de toi,
-Paul
+L'équipe Quieto
 
 —
 Tu reçois ce message parce qu'un essai gratuit a été activé sur Quieto avec ce compte.`;
 
   const html = `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;padding:24px 16px;color:#222;line-height:1.6;font-size:16px">
   <p>${echapperHtml(bonjour)}</p>
-  <p>C'est Paul, le créateur de Quieto. Quand tu as commencé ton essai, on t'a promis de te prévenir avant la fin — pas de mauvaise surprise. Alors voilà&nbsp;: ton essai se termine dans deux jours, <strong>${dateFin}</strong>. Ensuite, ton abonnement ${abonnement} prendra le relais.</p>
-  <p><strong>Mais surtout, j'aimerais savoir&nbsp;: comment ça se passe pour toi&nbsp;?</strong></p>
-  <p>Est-ce que Quieto t'apporte quelque chose&nbsp;? Est-ce qu'un truc t'agace, ou te manque&nbsp;? Réponds simplement à cet e-mail, même trois mots — c'est moi qui lis, et c'est comme ça que l'app s'améliore, un retour à la fois.</p>
-  <p>Prends soin de toi,<br>Paul</p>
+  <p>Comme promis quand tu as démarré ton essai&nbsp;: on te prévient avant la fin, pour qu'il n'y ait <strong>aucune mauvaise surprise</strong>. Ton essai se termine dans deux jours, <strong>${dateFin}</strong>. Ensuite, ton abonnement ${abonnement} prendra le relais.</p>
+  <p><strong>Et surtout, on aimerait savoir&nbsp;: comment ça se passe pour toi&nbsp;?</strong></p>
+  <p>Est-ce que Quieto t'apporte quelque chose&nbsp;? Est-ce qu'un truc t'agace, ou te manque&nbsp;? Réponds simplement à cet e-mail, même trois mots — on lit chaque réponse, et c'est comme ça que l'app s'améliore, un retour à la fois.</p>
+  <p>Prends soin de toi,<br>L'équipe Quieto</p>
   <p style="margin-top:32px;font-size:13px;color:#888">Tu reçois ce message parce qu'un essai gratuit a été activé sur Quieto avec ce compte.</p>
 </div>`;
 

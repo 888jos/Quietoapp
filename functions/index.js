@@ -1659,7 +1659,7 @@ function contenuRappel(f) {
   const prenom = String(f.prenom || "").trim().split(/\s+/)[0];
   const bonjour = prenom ? `Bonjour ${prenom},` : "Bonjour,";
 
-  const sujet = "Ton essai gratuit se termine bientôt";
+  const sujet = "Comment se passe ton essai gratuit ?";
 
   const texte = `${bonjour}
 

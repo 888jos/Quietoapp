@@ -1664,19 +1664,18 @@ Comme promis quand tu as démarré ton essai : on te prévient avant la fin, pou
 
 Et surtout, on aimerait savoir : comment ça se passe pour toi ?
 
-Est-ce que Quieto t'apporte quelque chose ? Est-ce qu'un truc t'agace, ou te manque ? Réponds simplement à cet e-mail, même trois mots — on lit chaque réponse, et c'est comme ça que l'app s'améliore, un retour à la fois.
+Est-ce que Quieto t'apporte quelque chose ? Est-ce qu'un truc t'agace, ou te manque ? Réponds simplement à cet e-mail, même trois mots. On lit chaque réponse, et c'est comme ça que l'app s'améliore, un retour à la fois.
 
 Prends soin de toi,
 L'équipe Quieto
 
-—
 Tu reçois ce message parce qu'un essai gratuit a été activé sur Quieto avec ce compte.`;
 
   const html = `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;padding:24px 16px;color:#222;line-height:1.6;font-size:16px">
   <p>${echapperHtml(bonjour)}</p>
   <p>Comme promis quand tu as démarré ton essai&nbsp;: on te prévient avant la fin, pour qu'il n'y ait <strong>aucune mauvaise surprise</strong>. Ton essai se termine dans deux jours, <strong>${dateFin}</strong>. Ensuite, ton abonnement ${abonnement} prendra le relais.</p>
   <p><strong>Et surtout, on aimerait savoir&nbsp;: comment ça se passe pour toi&nbsp;?</strong></p>
-  <p>Est-ce que Quieto t'apporte quelque chose&nbsp;? Est-ce qu'un truc t'agace, ou te manque&nbsp;? Réponds simplement à cet e-mail, même trois mots — on lit chaque réponse, et c'est comme ça que l'app s'améliore, un retour à la fois.</p>
+  <p>Est-ce que Quieto t'apporte quelque chose&nbsp;? Est-ce qu'un truc t'agace, ou te manque&nbsp;? Réponds simplement à cet e-mail, même trois mots. On lit chaque réponse, et c'est comme ça que l'app s'améliore, un retour à la fois.</p>
   <p>Prends soin de toi,<br>L'équipe Quieto</p>
   <p style="margin-top:32px;font-size:13px;color:#888">Tu reçois ce message parce qu'un essai gratuit a été activé sur Quieto avec ce compte.</p>
 </div>`;

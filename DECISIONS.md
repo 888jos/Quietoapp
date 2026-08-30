@@ -411,3 +411,13 @@ assets/images/sessions/
 **Décision** : Le profil porte un interrupteur « 🛠 Premium (mode test) » visible UNIQUEMENT en `kDebugMode` (donc jamais en TestFlight ni App Store) ; `debugForcerPremium` fait ensuite ignorer RevenueCat pour la session. Ce n'est pas une entorse à ADR-029 : `kDebugMode` est un verrou de **compilation**, l'outil n'existe pas dans un build boutique — contrairement aux anciens flags runtime à double verrou. ⚠️ Le backend fait confiance au flag `abonne` envoyé par l'app (`index.js:1165`) : en debug forcé, Louane se comporte aussi en Premium.
 
 **Pourquoi** : tester tout le parcours Premium sur iPhone réel sans payer, sans réintroduire le risque de fuite en prod.
+
+---
+
+## ADR-036 — Jamais de séance flash « Une minute pour toi » dans un programme 7 jours
+
+*Consignée le 30/08/2026 (Scribe) — décision Paul du 30/08, backend `5b5dcee` (déployé le 30/08, `genererParcours`), app `00e313b` (part avec la 1.0.21).*
+
+**Décision** : Les séances de la catégorie **express** (1 à 3 min) ne composent **jamais** un jour de programme 7 jours. Backend : le catalogue montré au modèle est filtré (`SEANCES_PARCOURS`, 27 séances sur 35), règle explicite dans `PROMPT_PARCOURS`, et **verrou dans `validerParcours`** — un id express est traité comme invalide et remplacé, tous les filets piochent dans la liste filtrée ; `IDS_GRATUITS` filtré (jour 1 gratuit = les 3 découverte) ; programme par défaut « sommeil » : jour 1 `express_4` → `decouverte_1` avec mot ajusté. App : le programme d'aperçu de l'onboarding (`weekly_program.dart`) remplace « Juste avant de dormir » (3 min, express) par « Plongée dans le silence » (6 min) dans la branche « moins de 5 minutes » du pool « Mieux dormir ». Elles restent bien sûr dans le catalogue et jouables à l'unité. **ADR-032 confirmée au passage** : « Ma première méditation » reste toujours le jour 1 du tout premier programme.
+
+**Pourquoi** : trop courtes pour porter un jour de programme — un « jour 3 » d'une minute dévalorise le parcours. Effet attendu côté Vigie : chute VOULUE des `express_*` dans les programmes.

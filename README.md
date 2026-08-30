@@ -1,6 +1,6 @@
 # Quieto
 
-Application de méditation guidée en français (iOS + Android, Flutter) : séances courtes ancrées dans le quotidien + **Louane**, compagnonne IA (chat + programme 7 jours). Version actuelle : **1.0.20+29** (branche `feat/vigie-conversion`, prête à archiver — maj 28/08/2026).
+Application de méditation guidée en français (iOS + Android, Flutter) : séances courtes ancrées dans le quotidien + **Louane**, compagnonne IA (chat + programme 7 jours). Version actuelle : **1.0.21+30** (branche `feat/vigie-conversion`, ipa buildé — reste l'upload Transporter + la soumission ; la 1.0.20 est approuvée sur les deux stores — maj 30/08/2026).
 
 > Pour comprendre le produit en 5 minutes : lire **`QUIETO.md`**.
 

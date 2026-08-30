@@ -72,6 +72,7 @@ L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil*
 ## Catégories de contenu
 
 > Maj 12/08/2026 : le catalogue compte **7 catégories / 35 séances** — la catégorie **« Une minute pour toi » (⚡ express, 8 séances)** s'est ajoutée aux 6 ci-dessous. Source de vérité : `lib/features/explore/data/explore_repository.dart`.
+> Maj 30/08/2026 : **les séances express ne vont JAMAIS dans un programme 7 jours** (décision Paul — trop courtes) : exclues côté backend (`SEANCES_PARCOURS`, verrou dans `validerParcours`, déployé) et retirées du programme d'aperçu de l'onboarding (`weekly_program.dart`, commit `00e313b` — « Juste avant de dormir » remplacée par « Plongée dans le silence » dans la branche courte du pool sommeil).
 
 | Catégorie | Emoji | Premium | Séances |
 |---|---|---|---|

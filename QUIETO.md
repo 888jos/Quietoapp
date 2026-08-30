@@ -1,8 +1,8 @@
 # Quieto — c'est quoi ?
 
 > Document de présentation. À donner tel quel à une IA (ou une personne) pour comprendre vite ce qu'est Quieto et où le projet va.
-> Mainteneur : Cofonde · Version de l'app : **1.0.20+29** (prête — reste l'archivage/upload Xcode ; la **1.0.19 est soumise à Apple**, confirmé le 26/08) · Plateformes : **iOS + Android** (⚠️ retirée de Google Play depuis le 05/08/2026, restauration demandée)
-> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu). (maj 28/08/2026)
+> Mainteneur : Cofonde · Version de l'app : **1.0.21+30** (ipa buildé — reste l'upload Transporter + la soumission ; la **1.0.20 est approuvée sur les deux stores**) · Plateformes : **iOS + Android** (⚠️ retirée de Google Play depuis le 05/08/2026, restauration demandée)
+> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu). (maj 30/08/2026)
 
 ## En une phrase
 **Quieto est une application de méditation guidée en français**, pensée pour rendre la méditation simple et accessible : des séances courtes, ancrées dans les vrais moments de la journée (un appel difficile, les transports, juste avant de dormir…), et **Louane**, une compagnonne IA qui accompagne l'utilisateur au quotidien.
@@ -24,7 +24,7 @@ Une **compagnonne IA** intégrée à l'app — un personnage dessiné en code (v
 
 Côté serveur : Cloud Functions `louane`, `genererParcours` et `accueilOnboarding` — **tout sur GPT-5.6 Luna (OpenAI) depuis le 14/08/2026** (Voix, Veilleur sécurité, Mémoire ; la Plume a été supprimée). C'est la meilleure surface de conversion de l'app — Louane reste accessible aux utilisateurs gratuits, c'est voulu.
 
-Depuis la 1.0.20, le **jour 1 du tout premier programme est toujours « Ma première méditation »** (quasi personne n'a jamais médité) — flag `premierParcours` envoyé par l'app, verrou `forcerPremiereMeditation` côté serveur.
+Depuis la 1.0.20, le **jour 1 du tout premier programme est toujours « Ma première méditation »** (quasi personne n'a jamais médité) — flag `premierParcours` envoyé par l'app, verrou `forcerPremiereMeditation` côté serveur. Et depuis le 30/08/2026 (décision Paul, backend `5b5dcee` déployé), **les séances flash « Une minute pour toi » (1-3 min) ne vont JAMAIS dans un programme** : trop courtes pour porter un jour — le catalogue montré au modèle est filtré et un verrou serveur remplace tout id express.
 
 ## Ce que Quieto fait aujourd'hui
 **Parcours utilisateur :**

@@ -1566,7 +1566,7 @@ const RESEND_KEY = defineSecret("RESEND_KEY");
 // (SPF + DKIM) ET déclaré dans Apple Developer (Sign in with Apple →
 // Email Communication), sinon les adresses « Masquer mon e-mail »
 // (@privaterelay.appleid.com) rebondissent.
-const EXPEDITEUR_RAPPEL = "Quieto <quieto@cofonde.com>";
+const EXPEDITEUR_RAPPEL = "Paul de Quieto <quieto@cofonde.com>";
 const REPONSE_RAPPEL = "contact@cofonde.com";
 
 // Le rappel part 2 jours avant la fin, comme affiché sur le mur.
@@ -1655,36 +1655,30 @@ function contenuRappel(f) {
     weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris",
   }).format(new Date(f.finEssaiMs)).replace(" 1 ", " 1er ");
   const bonjour = f.prenom ? `Bonjour ${f.prenom},` : "Bonjour,";
-  const lienGestion = f.magasin === "PLAY_STORE" ?
-    "https://play.google.com/store/account/subscriptions" :
-    "https://apps.apple.com/account/subscriptions";
 
-  const sujet = `Ton essai gratuit se termine ${dateFin}`;
+  const sujet = `Comme promis : ton essai se termine ${dateFin}`;
 
   const texte = `${bonjour}
 
-Comme promis quand tu as démarré ton essai : on te prévient avant la fin, pour qu'il n'y ait aucune mauvaise surprise.
+C'est Paul, le créateur de Quieto. Quand tu as commencé ton essai, on t'a promis de te prévenir avant la fin — pas de mauvaise surprise. Alors voilà : ton essai se termine dans deux jours, ${dateFin}. Ensuite, ton abonnement ${abonnement} prendra le relais.
 
-Ton essai gratuit se termine ${dateFin}. Si tu ne fais rien, ton abonnement ${abonnement} démarrera à ce moment-là.
+Mais surtout, j'aimerais savoir : comment ça se passe pour toi ?
 
-Tu veux continuer avec Quieto ? Il n'y a rien à faire.
-Tu préfères arrêter ? Tu peux annuler jusqu'à la dernière minute, ici :
-${lienGestion}
+Est-ce que Quieto t'apporte quelque chose ? Est-ce qu'un truc t'agace, ou te manque ? Réponds simplement à cet e-mail, même trois mots — c'est moi qui lis, et c'est comme ça que l'app s'améliore, un retour à la fois.
 
 Prends soin de toi,
-L'équipe Quieto
+Paul
 
 —
-Tu reçois cet e-mail parce qu'un essai gratuit a été activé sur Quieto avec ce compte. Une question ? Réponds simplement à ce message.`;
+Tu reçois ce message parce qu'un essai gratuit a été activé sur Quieto avec ce compte.`;
 
   const html = `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;padding:24px 16px;color:#222;line-height:1.6;font-size:16px">
   <p>${echapperHtml(bonjour)}</p>
-  <p>Comme promis quand tu as démarré ton essai&nbsp;: on te prévient avant la fin, pour qu'il n'y ait <strong>aucune mauvaise surprise</strong>.</p>
-  <p>Ton essai gratuit se termine <strong>${dateFin}</strong>. Si tu ne fais rien, ton abonnement ${abonnement} démarrera à ce moment-là.</p>
-  <p>Tu veux continuer avec Quieto&nbsp;? Il n'y a rien à faire.<br>
-  Tu préfères arrêter&nbsp;? Tu peux <a href="${lienGestion}">annuler jusqu'à la dernière minute ici</a>.</p>
-  <p>Prends soin de toi,<br>L'équipe Quieto</p>
-  <p style="margin-top:32px;font-size:13px;color:#888">Tu reçois cet e-mail parce qu'un essai gratuit a été activé sur Quieto avec ce compte. Une question&nbsp;? Réponds simplement à ce message.</p>
+  <p>C'est Paul, le créateur de Quieto. Quand tu as commencé ton essai, on t'a promis de te prévenir avant la fin — pas de mauvaise surprise. Alors voilà&nbsp;: ton essai se termine dans deux jours, <strong>${dateFin}</strong>. Ensuite, ton abonnement ${abonnement} prendra le relais.</p>
+  <p><strong>Mais surtout, j'aimerais savoir&nbsp;: comment ça se passe pour toi&nbsp;?</strong></p>
+  <p>Est-ce que Quieto t'apporte quelque chose&nbsp;? Est-ce qu'un truc t'agace, ou te manque&nbsp;? Réponds simplement à cet e-mail, même trois mots — c'est moi qui lis, et c'est comme ça que l'app s'améliore, un retour à la fois.</p>
+  <p>Prends soin de toi,<br>Paul</p>
+  <p style="margin-top:32px;font-size:13px;color:#888">Tu reçois ce message parce qu'un essai gratuit a été activé sur Quieto avec ce compte.</p>
 </div>`;
 
   return { sujet, texte, html };

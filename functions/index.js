@@ -1654,7 +1654,10 @@ function contenuRappel(f) {
   const dateFin = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris",
   }).format(new Date(f.finEssaiMs)).replace(" 1 ", " 1er ");
-  const bonjour = f.prenom ? `Bonjour ${f.prenom},` : "Bonjour,";
+  // Le $displayName venu de Google est souvent « Prénom Nom » entier :
+  // on ne garde que le premier mot (Apple, lui, ne stocke que le prénom).
+  const prenom = String(f.prenom || "").trim().split(/\s+/)[0];
+  const bonjour = prenom ? `Bonjour ${prenom},` : "Bonjour,";
 
   const sujet = "Ton essai gratuit se termine bientôt";
 

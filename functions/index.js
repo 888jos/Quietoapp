@@ -1790,13 +1790,22 @@ exports.rappelsEssai = onSchedule(
 // gratuit : la personne doit pouvoir commencer sans payer, la conversion se
 // joue sur la suite du programme.
 const SEANCES_PAR_ID = new Map(CATALOGUE.seances.map((s) => [s.id, s]));
-const IDS_GRATUITS = CATALOGUE.seances.filter((s) => !s.premium).map((s) => s.id);
+
+// Les séances flash « Une minute pour toi » (express, 1 à 3 min) ne vont
+// JAMAIS dans un programme : trop courtes pour porter un jour de la semaine
+// (décision Paul, 30/08/2026). Tout le pipeline parcours (catalogue montré
+// au modèle, validation, filets de remplacement, programmes par défaut)
+// travaille sur cette liste filtrée. La Voix, elle, continue de recommander
+// les express à l'unité via CATALOGUE_TEXTE.
+const SEANCES_PARCOURS = CATALOGUE.seances.filter((s) => s.categorie !== "express");
+const IDS_GRATUITS = SEANCES_PARCOURS.filter((s) => !s.premium).map((s) => s.id);
 
 // Catalogue AVEC les ids et le statut premium : c'est ce que voit le modèle
 // pour composer le programme (CATALOGUE_TEXTE, côté Voix, parle en titres).
 const CATALOGUE_PARCOURS_TEXTE = Object.entries(NOMS_CATEGORIES)
+  .filter(([id]) => id !== "express")
   .map(([id, nom]) => {
-    const lignes = CATALOGUE.seances
+    const lignes = SEANCES_PARCOURS
       .filter((s) => s.categorie === id)
       .map((s) => `  • ${s.id} : « ${s.titre} » (${s.duree_min} min, ${s.premium ? "premium" : "gratuite"}) : ${s.but}`);
     return `${nom} :\n${lignes.join("\n")}`;
@@ -1828,6 +1837,9 @@ LES RÈGLES DU PROGRAMME :
 - Exactement 7 jours, numérotés de 1 à 7.
 - Un jour = une séance du catalogue ci-dessous, désignée par son id EXACT.
 - Jamais deux fois la même séance.
+- JAMAIS de séance flash « Une minute pour toi » (les express de 1 à 3 min) :
+  trop courtes pour porter un jour du programme. Elles ne sont d'ailleurs pas
+  dans le catalogue ci-dessous, même si la conversation en mentionne une.
 - Le jour 1 doit être une séance GRATUITE (id marqué "gratuite").
 - Une progression qui a du sens : on commence doux et court, on installe une
   habitude, on approfondit, et le jour 7 clôt la semaine en douceur.
@@ -1957,14 +1969,16 @@ function validerParcours(brut) {
     // Id inconnu : le modèle a peut-être répondu avec le titre de la séance.
     if (!seance) {
       const titreDonne = String(j.sessionId || "").replace(/[«»"]/g, "").trim().toLowerCase();
-      seance = CATALOGUE.seances.find((s) => s.titre.toLowerCase() === titreDonne) || null;
+      seance = SEANCES_PARCOURS.find((s) => s.titre.toLowerCase() === titreDonne) || null;
     }
-    // Toujours rien, ou doublon : première séance libre de la même catégorie
-    // (devinée sur le préfixe de l'id), sinon première séance libre tout court.
-    if (!seance || utilises.has(seance.id)) {
+    // Toujours rien, séance express (interdite en programme), ou doublon :
+    // première séance libre de la même catégorie (devinée sur le préfixe de
+    // l'id), sinon première séance libre tout court. Les filets ne piochent
+    // que dans SEANCES_PARCOURS : aucune express ne peut sortir d'ici.
+    if (!seance || seance.categorie === "express" || utilises.has(seance.id)) {
       const prefixe = String(j.sessionId || "").split("_")[0];
-      seance = CATALOGUE.seances.find((s) => s.categorie === prefixe && !utilises.has(s.id)) ||
-        CATALOGUE.seances.find((s) => !utilises.has(s.id));
+      seance = SEANCES_PARCOURS.find((s) => s.categorie === prefixe && !utilises.has(s.id)) ||
+        SEANCES_PARCOURS.find((s) => !utilises.has(s.id));
     }
     if (!seance) return null;
     const mot = sansTiretLong(j.motDeLouane).slice(0, 400);
@@ -2031,7 +2045,7 @@ const PARCOURS_DEFAUT = {
     sousTitre: "Une semaine douce pour aider ton corps à retrouver le chemin du sommeil.",
     messageOuverture: "Ça y est, ton programme t'attend sur l'accueil. On commence ce soir si tu veux.",
     jours: [
-      ["express_4", "On commence tout doux, trois petites minutes avant de dormir. Juste pour montrer à ton corps qu'un autre rythme est possible."],
+      ["decouverte_1", "On commence tout en douceur, six minutes pour poser les bases. Juste pour montrer à ton corps qu'un autre rythme est possible."],
       ["sleep_1", "Ce soir, on prend un peu plus de temps pour déposer la journée avant d'aller au lit."],
       ["sleep_3", "Un rituel, c'est un signal qu'on envoie au corps. Celui-là lui dit qu'il peut lâcher."],
       ["breathing_3", "Aujourd'hui on travaille le souffle. C'est lui qui calme le mental quand il s'emballe le soir."],

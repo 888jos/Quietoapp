@@ -6,6 +6,7 @@
 // ============================================================
 
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { defineSecret } = require("firebase-functions/params");
 const OpenAI = require("openai");
 
@@ -1501,11 +1502,12 @@ exports.revenuecat = onRequest(
       attrs.vigie.value : "";
     const vigie = (etiquette || String(e.app_user_id || "rc_inconnu")).slice(0, 40);
 
+    const typeVigie = typeVigieDepuisRc(e);
     await db.collection("vigie_events").doc().set({
       vigie,
       session: "revenuecat",
       version: "webhook",
-      type: typeVigieDepuisRc(e),
+      type: typeVigie,
       props: nettoyerProps({
         produit: e.product_id,
         magasin: e.store,
@@ -1520,7 +1522,264 @@ exports.revenuecat = onRequest(
       tsc: Number(e.event_timestamp_ms) || null,
       ts: FieldValue.serverTimestamp(),
     });
+
+    // La promesse du mur (« on te prévient avant la fin de l'essai ») se
+    // tient ici : chaque événement d'essai met à jour la fiche de rappel
+    // e-mail (section RAPPELS ci-dessous). Un pépin ne doit PAS faire
+    // échouer le webhook : RevenueCat rejouerait l'événement et dupliquerait
+    // la ligne Vigie écrite juste au-dessus.
+    try {
+      await majRappelEssai(e, typeVigie, vigie);
+    } catch (err) {
+      console.error("[Rappels] mise à jour de la fiche échouée (ignorée) :", err);
+    }
     res.status(200).json({ ok: true });
+  });
+
+// ============================================================
+//  RAPPELS DE FIN D'ESSAI — tenir la promesse du paywall :
+//  « On te prévient avant la fin de l'essai (aucune mauvaise surprise). »
+//  Le mur affiche « Dans 5 jours » (essai 7 j) / « Demain » (essai 3 j),
+//  soit toujours 2 JOURS AVANT LA FIN (formule trialDays − 2 du paywall,
+//  cf. paywall_page.dart::_buildOffer) — l'e-mail suit la même règle.
+//
+//  Mécanique en deux temps :
+//  1. Le webhook "revenuecat" ci-dessus tient une FICHE par personne dans
+//     `rappels_essai` : créée au démarrage de l'essai, suspendue à
+//     l'annulation (plus de prélèvement à venir → pas d'e-mail, décision
+//     Paul 30/08), réarmée à la réactivation, close à la conversion.
+//  2. La fonction programmée "rappelsEssai" passe toutes les heures et
+//     envoie les rappels arrivés à échéance via Resend.
+//
+//  L'e-mail vient du payload RevenueCat ($email, poussé par l'app à la
+//  connexion via Purchases.setEmail). Connexion FACULTATIVE dans l'app :
+//  sans compte → pas d'e-mail → pas de fiche, la personne n'est pas
+//  joignable (assumé pour l'instant).
+//
+//  ⚠️ Vie privée : cette collection contient l'e-mail et le prénom — elle
+//  est SÉPARÉE de vigie_events, qui reste 100 % anonyme. Ne jamais faire
+//  transiter l'e-mail par la Vigie.
+// ============================================================
+const RESEND_KEY = defineSecret("RESEND_KEY");
+
+// Expéditeur des rappels. Le domaine doit être vérifié dans Resend
+// (SPF + DKIM) ET déclaré dans Apple Developer (Sign in with Apple →
+// Email Communication), sinon les adresses « Masquer mon e-mail »
+// (@privaterelay.appleid.com) rebondissent.
+const EXPEDITEUR_RAPPEL = "Quieto <quieto@cofonde.com>";
+const REPONSE_RAPPEL = "contact@cofonde.com";
+
+// Le rappel part 2 jours avant la fin, comme affiché sur le mur.
+const AVANCE_RAPPEL_MS = 2 * 24 * 60 * 60 * 1000;
+
+// Prix affichés dans l'e-mail, par produit — EN EUROS SEULEMENT (autre
+// devise : formulation sans montant, on n'annonce JAMAIS un prix deviné —
+// leçon des CGU du 20/08). Vérifiés sur les conversions réelles du webhook
+// le 30/08/2026. À tenir en phase avec App Store Connect / Play Console à
+// chaque changement de tarif.
+const PRIX_EUR = {
+  "quieto.premium.yearly": "89,90 € par an",
+  "quieto.premium.monthly": "16,90 € par mois",
+  "quieto_premium:yearly": "89,99 € par an",
+  "quieto_premium:monthly": "16,99 € par mois",
+};
+
+// Fait évoluer la fiche de rappel au fil des événements RevenueCat.
+// Une fiche par personne : le doc est l'app_user_id RevenueCat (= l'UID
+// Firebase pour les connectés, cf. Purchases.logIn dans auth_service.dart).
+async function majRappelEssai(e, typeVigie, vigie) {
+  const idFiche = String(e.app_user_id || "").slice(0, 200);
+  if (!idFiche) return;
+  const fiche = db.collection("rappels_essai").doc(idFiche);
+
+  if (typeVigie === "essai_demarre") {
+    const attrs = e.subscriber_attributes || {};
+    const email = attrs["$email"] && typeof attrs["$email"].value === "string" ?
+      attrs["$email"].value.trim() : "";
+    const prenom = attrs["$displayName"] && typeof attrs["$displayName"].value === "string" ?
+      attrs["$displayName"].value.trim().slice(0, 60) : "";
+    const finMs = Number(e.expiration_at_ms) || 0;
+    if (!email.includes("@") || !finMs) return; // pas joignable → pas de fiche
+    // set() SANS merge : un nouvel essai (rare) remet la fiche à neuf,
+    // y compris envoyeLe — le nouveau rappel repart de zéro.
+    await fiche.set({
+      email: email.slice(0, 200),
+      prenom,
+      vigie,
+      produit: String(e.product_id || "").slice(0, 100),
+      magasin: String(e.store || "").slice(0, 40),
+      env: String(e.environment || "").slice(0, 20),
+      devise: String(e.currency || "").slice(0, 10),
+      finEssaiMs: finMs,
+      envoiPrevuMs: finMs - AVANCE_RAPPEL_MS,
+      statut: "attente",
+      tentatives: 0,
+      maj: FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
+  // Les autres événements ne créent jamais de fiche : ils font évoluer
+  // l'existante (personne sans fiche = essai sans e-mail, rien à faire).
+  const statuts = {
+    essai_annule: "annule", // renouvellement coupé → pas de prélèvement → pas d'e-mail
+    essai_reactive: "attente", // renouvellement réarmé → rappel aussi
+    essai_converti: "termine",
+    essai_expire: "termine",
+  };
+  const statut = statuts[typeVigie];
+  if (!statut) return;
+  try {
+    await fiche.update({ statut, maj: FieldValue.serverTimestamp() });
+  } catch (err) {
+    if (err.code !== 5) throw err; // 5 = NOT_FOUND : fiche absente, normal
+  }
+}
+
+// Petit échappement pour glisser le prénom (venu d'Apple/Google) dans le HTML.
+function echapperHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// Compose sujet + corps (texte et HTML) du rappel. Fonction pure : se
+// vérifie à blanc sans rien envoyer.
+function contenuRappel(f) {
+  const annuel = String(f.produit || "").includes("yearly");
+  const forfait = annuel ? "Premium annuel" : "Premium mensuel";
+  const prix = f.devise === "EUR" ? PRIX_EUR[f.produit] : "";
+  const abonnement =
+    `${forfait} (${prix || "au tarif affiché lors de ta souscription"})`;
+  // « mardi 1 septembre » → « mardi 1er septembre » (Intl ne le fait pas).
+  const dateFin = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris",
+  }).format(new Date(f.finEssaiMs)).replace(" 1 ", " 1er ");
+  const bonjour = f.prenom ? `Bonjour ${f.prenom},` : "Bonjour,";
+  const lienGestion = f.magasin === "PLAY_STORE" ?
+    "https://play.google.com/store/account/subscriptions" :
+    "https://apps.apple.com/account/subscriptions";
+
+  const sujet = `Ton essai gratuit se termine ${dateFin}`;
+
+  const texte = `${bonjour}
+
+Comme promis quand tu as démarré ton essai : on te prévient avant la fin, pour qu'il n'y ait aucune mauvaise surprise.
+
+Ton essai gratuit se termine ${dateFin}. Si tu ne fais rien, ton abonnement ${abonnement} démarrera à ce moment-là.
+
+Tu veux continuer avec Quieto ? Il n'y a rien à faire.
+Tu préfères arrêter ? Tu peux annuler jusqu'à la dernière minute, ici :
+${lienGestion}
+
+Prends soin de toi,
+L'équipe Quieto
+
+—
+Tu reçois cet e-mail parce qu'un essai gratuit a été activé sur Quieto avec ce compte. Une question ? Réponds simplement à ce message.`;
+
+  const html = `<div style="font-family:-apple-system,'Segoe UI',Roboto,sans-serif;max-width:540px;margin:0 auto;padding:24px 16px;color:#222;line-height:1.6;font-size:16px">
+  <p>${echapperHtml(bonjour)}</p>
+  <p>Comme promis quand tu as démarré ton essai&nbsp;: on te prévient avant la fin, pour qu'il n'y ait <strong>aucune mauvaise surprise</strong>.</p>
+  <p>Ton essai gratuit se termine <strong>${dateFin}</strong>. Si tu ne fais rien, ton abonnement ${abonnement} démarrera à ce moment-là.</p>
+  <p>Tu veux continuer avec Quieto&nbsp;? Il n'y a rien à faire.<br>
+  Tu préfères arrêter&nbsp;? Tu peux <a href="${lienGestion}">annuler jusqu'à la dernière minute ici</a>.</p>
+  <p>Prends soin de toi,<br>L'équipe Quieto</p>
+  <p style="margin-top:32px;font-size:13px;color:#888">Tu reçois cet e-mail parce qu'un essai gratuit a été activé sur Quieto avec ce compte. Une question&nbsp;? Réponds simplement à ce message.</p>
+</div>`;
+
+  return { sujet, texte, html };
+}
+
+// Envoie un rappel via Resend (API HTTP, fetch natif de Node 24 — pas de
+// dépendance). Jette en cas d'échec : l'appelant gère le réessai.
+async function envoyerRappel(f) {
+  const { sujet, texte, html } = contenuRappel(f);
+  const reponse = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + RESEND_KEY.value(),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: EXPEDITEUR_RAPPEL,
+      to: [f.email],
+      reply_to: REPONSE_RAPPEL,
+      subject: sujet,
+      text: texte,
+      html,
+    }),
+  });
+  if (!reponse.ok) {
+    const detail = (await reponse.text().catch(() => "")).slice(0, 300);
+    throw new Error(`Resend ${reponse.status} : ${detail}`);
+  }
+}
+
+// La première fonction programmée du backend : toutes les heures, envoie
+// les rappels arrivés à échéance. Volume minuscule (essais de 3-7 jours,
+// quelques dizaines de fiches en attente au plus) → pas d'index composite,
+// l'échéance se filtre en mémoire.
+exports.rappelsEssai = onSchedule(
+  { schedule: "every 1 hours", timeZone: "Europe/Paris", secrets: [RESEND_KEY], maxInstances: 1 },
+  async () => {
+    const maintenant = Date.now();
+    const snap = await db.collection("rappels_essai")
+      .where("statut", "==", "attente").limit(500).get();
+
+    let envoyes = 0;
+    for (const doc of snap.docs) {
+      const f = doc.data();
+      if (f.envoiPrevuMs > maintenant) continue; // pas encore l'heure
+      const maj = { maj: FieldValue.serverTimestamp() };
+
+      // Achats sandbox (essais de quelques minutes) : on ne spamme pas les
+      // testeurs, la fiche est classée pour ne pas repasser dessus.
+      if (f.env !== "PRODUCTION") {
+        await doc.ref.update({ statut: "ignore_sandbox", ...maj });
+        continue;
+      }
+      // Déjà prévenu (essai annulé puis réactivé) : la promesse est tenue,
+      // on n'envoie pas deux fois.
+      if (f.envoyeLe) {
+        await doc.ref.update({ statut: "envoye", ...maj });
+        continue;
+      }
+      // L'essai est déjà fini (fiche d'avant le déploiement, ou panne de
+      // plus de 2 jours) : trop tard pour « prévenir avant », on s'abstient.
+      if (maintenant >= f.finEssaiMs) {
+        await doc.ref.update({ statut: "trop_tard", ...maj });
+        continue;
+      }
+
+      try {
+        await envoyerRappel(f);
+        envoyes++;
+        await doc.ref.update({
+          statut: "envoye",
+          envoyeLe: FieldValue.serverTimestamp(),
+          ...maj,
+        });
+        // Vigie (anonyme, comme toujours : ni e-mail ni prénom).
+        await db.collection("vigie_events").add({
+          vigie: String(f.vigie || "").slice(0, 40),
+          session: "rappels",
+          version: "cron",
+          type: "essai_rappel_envoye",
+          props: nettoyerProps({ produit: f.produit, magasin: f.magasin }),
+          tsc: null,
+          ts: FieldValue.serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("[Rappels] envoi échoué pour", doc.id, ":", err);
+        const tentatives = (Number(f.tentatives) || 0) + 1;
+        // Réessai au passage suivant ; au bout de 12 h on classe en échec
+        // (adresse morte, panne fournisseur) plutôt que d'insister à vie.
+        await doc.ref.update(tentatives >= 12 ?
+          { statut: "echec", tentatives, ...maj } :
+          { tentatives, ...maj });
+      }
+    }
+    console.log(`[Rappels] ${envoyes} envoyé(s) sur ${snap.size} fiche(s) en attente.`);
   });
 
 // ============================================================

@@ -127,10 +127,13 @@ List<ProgramDay> _goalPool(
               'Tu emmènes ton esprit ailleurs : des images douces qui '
               'préparent la nuit.',
         ),
+        // Jamais de séance flash « Une minute pour toi » dans un programme
+        // (trop courtes) : même pressée, la version courte reste une vraie
+        // séance sommeil.
         short
             ? const ProgramDay(
-                title: '« Juste avant de dormir » (3 min)',
-                why: 'Trois minutes au lit, juste avant d\'éteindre.',
+                title: '« Plongée dans le silence » (6 min)',
+                why: 'Six minutes au lit, pour glisser vers la nuit.',
               )
             : const ProgramDay(
                 title: '« Détente du soir » (13 min)',

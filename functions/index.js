@@ -1127,12 +1127,12 @@ function extraireJson(texte) {
 //  🔒 OBLIGATOIRE AVANT LA 1.0.5 : valider App Check sur un build TESTFLIGHT
 //  (signature App Store = provisioning géré par Apple), puis remettre true.
 // ------------------------------------------------------------
-//  LIMITES : 8 messages gratuits (découverte), puis Quieto Premium.
+//  LIMITES : 20 messages gratuits (découverte), puis Quieto Premium.
 //  Les abonnés ont un plafond journalier large (protection anti-abus).
 //  RÈGLE ÉTHIQUE ABSOLUE : le Veilleur tourne TOUJOURS, même au-delà des
 //  limites — on ne coupe jamais quelqu'un en détresse pour lui vendre un abo.
 // ------------------------------------------------------------
-const GRATUIT_MAX = 8; // messages découverte offerts (au total)
+const GRATUIT_MAX = 20; // messages découverte offerts (au total)
 const PLAFOND_JOUR_ABONNE = 40; // messages/jour pour un abonné (large)
 
 // maxInstances + concurrency : robinet anti-abus (2ᵉ étage derrière App

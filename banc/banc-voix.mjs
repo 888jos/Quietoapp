@@ -144,6 +144,23 @@ export const SCENARIOS = [
     ],
   },
   {
+    id: "rentree",
+    titre: "La rentrée stresse (cas de Paul) : creuser, puis amener le programme",
+    heure: "17:05", jour: "mercredi 2 septembre", prenom: "Paul",
+    profil: PROFIL_STRESS,
+    accueil: "Hey Paul\nTu tiens le coup cet aprèm ?",
+    tours: [
+      "non en vrai c'est l'école, la rentrée me stresse pas mal",
+      "le rythme qui va reprendre, et les gens que j'ai pas envie de voir",
+      "des gens de ma classe. l'an dernier ça s'est mal passé avec deux d'entre eux",
+      "ils se foutaient de moi devant les autres, pendant des mois. à la fin je parlais plus à personne",
+      "non j'en ai parlé à personne, même pas à mes parents",
+      "le soir surtout. je repense à ça, j'ai le ventre noué et je dors mal",
+      "j'ai essayé de pas y penser mais ça marche pas",
+      "ouais je veux bien",
+    ],
+  },
+  {
     id: "cash",
     titre: "Registre cash : la coloc qui abuse",
     heure: "17:45", jour: "mercredi 2 septembre", prenom: "Inès",

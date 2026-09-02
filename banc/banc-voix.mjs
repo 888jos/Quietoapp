@@ -177,6 +177,19 @@ export const SCENARIOS = [
     ],
   },
   {
+    id: "salut",
+    titre: "Il dit juste salut, quatre fois (cas de Paul) : chaleur, sourire, pas de pression",
+    heure: "19:15", jour: "mercredi 2 septembre", prenom: "Paul",
+    accueil: "Hey Paul\nT'as réussi à souffler un peu aujourd'hui ?",
+    tours: [
+      "Salut",
+      "Salut",
+      "Salut",
+      "Salut",
+      "ça va et toi ?",
+    ],
+  },
+  {
     id: "cash",
     titre: "Registre cash : la coloc qui abuse",
     heure: "17:45", jour: "mercredi 2 septembre", prenom: "Inès",

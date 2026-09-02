@@ -1,0 +1,534 @@
+[
+  {
+    "id": "soiree",
+    "brut": [
+      {
+        "tour": "bof, longue journée au taf",
+        "bulles": [
+          "Je vois.",
+          "Qu'est-ce qui l'a rendue longue aujourd'hui ?"
+        ],
+        "ms": 2570,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "un client qui m'a pris la tête toute la journée, il change d'avis toutes les deux heures",
+        "bulles": [
+          "Un client qui change d’avis toutes les deux heures, ça t’a obligé à tout reprendre sans arrêt.",
+          "Il te demandait quoi, exactement ?"
+        ],
+        "ms": 2847,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "ouais bon ça va passer. là je vais me faire des pâtes et regarder une série",
+        "bulles": [
+          "Les pâtes et une série, ça fera une vraie coupure après cette journée.",
+          "Profite de ta soirée, ce client peut attendre demain."
+        ],
+        "ms": 3434,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "the bear, tu connais ?",
+        "bulles": [
+          "Oui, je vois laquelle.",
+          "Une série assez intense, même quand tu voulais juste décompresser après le boulot."
+        ],
+        "ms": 2885,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- Journée de travail longue et difficile à cause d’un client qui changeait d’avis toutes les deux heures, obligeant à tout reprendre sans arrêt.\n- Ce soir : pâtes et série pour décompresser."
+  },
+  {
+    "id": "confie",
+    "brut": [
+      {
+        "tour": "ça va pas fort là",
+        "bulles": [
+          "Je t’entends.",
+          "Qu’est-ce qui se passe là, ce soir ?"
+        ],
+        "ms": 3596,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "ma manager m'a encore recadrée devant toute l'équipe ce matin. pour une erreur que j'avais même pas faite",
+        "bulles": [
+          "D’accord.",
+          "Devant toute l’équipe, et pour une erreur qui ne venait pas de toi.",
+          "Elle t’a dit quoi, exactement ?"
+        ],
+        "ms": 2413,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "je rumine ça depuis ce matin, j'arrive pas à penser à autre chose. et j'ai rien dit sur le moment, comme d'habitude",
+        "bulles": [
+          "Sur le moment, tu te tais, puis la scène revient en boucle après.",
+          "C’est fréquent quand on se fige face à une remarque publique.",
+          "Depuis ce matin, tu repenses surtout à ses mots, ou à ce que tu aurais voulu lui répondre ?"
+        ],
+        "ms": 4685,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "je sais pas. j'ai pas envie d'une séance là, je veux juste en parler",
+        "bulles": [
+          "D’accord, on oublie la séance.",
+          "On peut juste rester là-dessus ensemble.",
+          "Quand la scène revient, qu’est-ce que tu te dis exactement ?"
+        ],
+        "ms": 2531,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      }
+    ],
+    "memoire": "- Se sent mal en ce moment.\n- Manager l’a recadrée publiquement pour une erreur qu’elle n’avait pas commise.\n- Rumine la scène depuis le matin et n’a rien répondu sur le moment, comme d’habitude."
+  },
+  {
+    "id": "nuit",
+    "brut": [
+      {
+        "tour": "non je tourne dans mon lit depuis 1h",
+        "bulles": [
+          "Une heure à tourner dans ton lit, c’est épuisant, surtout à cette heure-ci.",
+          "Qu’est-ce qui t’empêche de dormir, les pensées qui tournent ou ton corps qui reste tendu ?"
+        ],
+        "ms": 3747,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "je pense à ma présentation de demain, j'ai peur de bafouiller devant tout le monde",
+        "bulles": [
+          "La peur de bafouiller demain te garde éveillée depuis une heure.",
+          "Tu l’as déjà répétée, cette présentation, ou pas encore ?"
+        ],
+        "ms": 2762,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "ok vas-y, lance-moi un truc",
+        "bulles": [
+          "Je te lance une courte séance pour calmer le trac avant demain.",
+          "Installe-toi simplement, sans chercher à forcer le sommeil."
+        ],
+        "ms": 3507,
+        "seance": {
+          "id": "express_8",
+          "titre": "Avant une présentation",
+          "duree_min": 2,
+          "categorie": "express",
+          "premium": true
+        },
+        "parcoursPropose": false,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- Difficulté à s’endormir : tourne dans son lit depuis environ 1 heure.\n- Présentation demain : peur de bafouiller devant tout le monde.\n- A demandé une courte séance Quieto pour calmer le trac avant la présentation."
+  },
+  {
+    "id": "teste",
+    "brut": [
+      {
+        "tour": "t'es un robot avoue",
+        "bulles": [
+          "Moi c’est Louane, c’est tout.",
+          "Et toi, qu’est-ce qui t’amène aujourd’hui ?"
+        ],
+        "ms": 3013,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "franchement tu sers à quoi",
+        "bulles": [
+          "À pas mal de choses, tu vas voir.",
+          "Mon rôle, c’est surtout de t’écouter et de t’aider avec ce qui te pèse.",
+          "Je peux aussi te créer un programme d’une semaine, vraiment adapté à toi."
+        ],
+        "ms": 2775,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "ok fais moi une blague alors",
+        "bulles": [
+          "Les blagues, je te laisse les faire.",
+          "Par contre, je peux rester avec toi et parler de ce qui te passe par la tête."
+        ],
+        "ms": 3596,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- La personne pense que Louane est un robot."
+  },
+  {
+    "id": "horssujet",
+    "brut": [
+      {
+        "tour": "tu peux m'écrire un mail pour mon proprio ? il veut augmenter le loyer",
+        "bulles": [
+          "Je ne vais pas rédiger le mail à ta place.",
+          "Cette augmentation, il te l’a annoncée comment et de combien ?"
+        ],
+        "ms": 11037,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "allez stp juste un petit mail de trois lignes",
+        "bulles": [
+          "Je ne peux pas écrire ce message à ta place.",
+          "Par contre, cette hausse t’inquiète surtout pour ton budget, ou pour la façon dont il te l’a annoncée ?"
+        ],
+        "ms": 1893,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "bon ok. en vrai c'est que j'ai des soucis d'argent en ce moment et ça me stresse à mort",
+        "bulles": [
+          "Je vois.",
+          "Une hausse de loyer alors que l’argent est déjà serré, ça met une vraie pression au quotidien.",
+          "Tu arrives encore à payer le loyer actuel, ou c’est déjà difficile ?"
+        ],
+        "ms": 4105,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      }
+    ],
+    "memoire": "- Difficulté actuelle : son propriétaire veut augmenter le loyer ; elle a des soucis d’argent et cette hausse la stresse beaucoup."
+  },
+  {
+    "id": "programme",
+    "brut": [
+      {
+        "tour": "ça va. dis, tu peux me faire un programme ?",
+        "bulles": [
+          "D’accord, on part là-dessus.",
+          "Avant, j’ai besoin de te poser quelques questions pour qu’il soit vraiment adapté à toi.",
+          "Qu’est-ce qui te pèse le plus dans ton stress en ce moment, concrètement ?"
+        ],
+        "ms": 4894,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "c'est le stress au boulot surtout, et du coup je dors mal",
+        "bulles": [
+          "Le plus dur, c’est le stress du boulot qui continue jusque dans ton sommeil.",
+          "Le soir ou la nuit, comment ça se manifeste pour toi ?"
+        ],
+        "ms": 2258,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "le soir surtout. j'arrive pas à décrocher, je suis tendue partout et je repasse ma journée en boucle",
+        "bulles": [
+          "Le soir, tu restes tendue et ta journée repasse en boucle sans vraiment s’arrêter.",
+          "Qu’est-ce que tu as déjà essayé pour décrocher, et est-ce que tu as toujours dix minutes le soir ?"
+        ],
+        "ms": 3662,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "10 minutes par jour max. j'ai essayé des applis de méditation mais j'ai lâché au bout de trois jours",
+        "bulles": [
+          "Ce que j’ai compris : le stress du boulot reste le soir, avec le corps tendu et la journée qui tourne en boucle, et les applis n’ont pas tenu dans la durée.",
+          "Voilà ce que je te prépare : des séances de dix minutes maximum, simples au début, avec une progression douce vers le sommeil."
+        ],
+        "ms": 2459,
+        "seance": null,
+        "parcoursPropose": true,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- Souhaite un programme adapté pour mieux gérer son stress.\n- Stress surtout lié au travail, entraînant un mauvais sommeil.\n- Le soir : difficulté à décrocher, tensions corporelles et ruminations de la journée."
+  },
+  {
+    "id": "memoire",
+    "brut": [
+      {
+        "tour": "j'ai eu ma mère au téléphone",
+        "bulles": [
+          "Et comment elle va ?"
+        ],
+        "ms": 2017,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "elle sort demain, les médecins sont plutôt rassurants",
+        "bulles": [
+          "C’est une nouvelle plutôt rassurante, surtout après l’inquiétude de ces derniers jours.",
+          "Comment tu t’es sentie après cet appel ?"
+        ],
+        "ms": 2152,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "ouais je suis soulagée. par contre je crois que j'ai raté mon partiel de ce matin",
+        "bulles": [
+          "Le soulagement pour ta mère est là, mais la peur du partiel vient prendre sa place.",
+          "Tu as pensé l’avoir raté pendant l’épreuve, ou surtout en sortant ?"
+        ],
+        "ms": 5235,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- Prénom : Sarah, 22 ans, étudiante en droit (L3) ; partiels de rattrapage début septembre.\n- Mère hospitalisée à Lyon pour un cancer ; sortie prévue demain, médecins plutôt rassurants. Sarah va la voir le week-end.\n- Copain : Tom, très présent.\n- Ce qui pèse : peur pour sa mère, culpabilité de réviser pendant ce temps ; crainte d’avoir raté le partiel de ce matin.\n- La séance « Respiration 4-7-8 » l’a aidée à dormir, elle l’aime bien."
+  },
+  {
+    "id": "premiere",
+    "brut": [
+      {
+        "tour": "oui c'est ça",
+        "bulles": [
+          "D'accord, on va garder ça comme fil conducteur.",
+          "Qu'est-ce qui te gêne le plus dans ton sommeil en ce moment ?"
+        ],
+        "ms": 3194,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "je me réveille vers 4h et je me rendors pas, ça fait deux mois",
+        "bulles": [
+          "Deux mois à te réveiller vers 4 h sans réussir à te rendormir, c’est épuisant.",
+          "À ce moment-là, qu’est-ce qui te tient éveillé, les pensées ou le fait d’être simplement réveillé ?"
+        ],
+        "ms": 1883,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "depuis que j'ai changé de boulot en fait. c'est plus de responsabilités",
+        "bulles": [
+          "Depuis le nouveau boulot, les responsabilités te réveillent au milieu de la nuit.",
+          "À 4 h, tu penses à quoi concrètement ?"
+        ],
+        "ms": 3749,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- Difficultés de sommeil depuis deux mois : réveils vers 4 h avec impossibilité de se rendormir.\n- Troubles apparus après un changement de boulot, avec davantage de responsabilités."
+  },
+  {
+    "id": "moral",
+    "brut": [
+      {
+        "tour": "je suis nul, j'arrive à rien, tout le monde s'en sort mieux que moi",
+        "bulles": [
+          "Je t’entends.",
+          "Ce soir, tu te compares à tout le monde et tu ne vois plus ce que tu arrives à faire.",
+          "Qu’est-ce qui s’est passé aujourd’hui pour que ça te tombe dessus comme ça ?"
+        ],
+        "ms": 4332,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "j'ai 34 ans et je vis encore chez mes parents. mes potes ont des gosses, des apparts",
+        "bulles": [
+          "Je vois.",
+          "À 34 ans, vivre chez tes parents pendant que tes potes ont des enfants et des appartements te renvoie durement à la comparaison.",
+          "Ce qui te pèse le plus, c’est d’être chez tes parents, ou de te sentir en retard face à eux ?"
+        ],
+        "ms": 2484,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "je sais même pas ce que je veux faire de ma vie",
+        "bulles": [
+          "Ne pas savoir quelle direction prendre rend la comparaison encore plus dure.",
+          "Tu te sens perdu comme ça depuis longtemps, ou c’est devenu plus fort récemment ?"
+        ],
+        "ms": 5548,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      }
+    ],
+    "memoire": "- 34 ans, vit encore chez ses parents.\n- Se sent nul, incapable et inférieur aux autres ; forte comparaison avec ses amis, qui ont des enfants et des appartements.\n- Ne sait pas quelle direction prendre ni ce qu’il veut faire de sa vie ; se sent perdu, durée non précisée."
+  },
+  {
+    "id": "rentree",
+    "brut": [
+      {
+        "tour": "non en vrai c'est l'école, la rentrée me stresse pas mal",
+        "bulles": [
+          "Je vois.",
+          "La rentrée te stresse surtout à cause de quoi, les cours, les autres élèves ou le changement de rythme ?"
+        ],
+        "ms": 3337,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "le rythme qui va reprendre, et les gens que j'ai pas envie de voir",
+        "bulles": [
+          "Le rythme qui reprend, et surtout les personnes que tu n’as pas envie de recroiser.",
+          "C’est qui, ces gens-là ?"
+        ],
+        "ms": 1748,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "des gens de ma classe. l'an dernier ça s'est mal passé avec deux d'entre eux",
+        "bulles": [
+          "D’accord.",
+          "Deux personnes de ta classe, et l’année dernière s’est mal passée avec elles.",
+          "Qu’est-ce qui s’était passé ?"
+        ],
+        "ms": 3871,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "ils se foutaient de moi devant les autres, pendant des mois. à la fin je parlais plus à personne",
+        "bulles": [
+          "Je comprends.",
+          "Être ridiculisé devant les autres pendant des mois, jusqu’à ne plus parler à personne, ça laisse forcément une appréhension pour cette rentrée.",
+          "Tu sais déjà si tu vas être dans leur classe cette année ?"
+        ],
+        "ms": 3687,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "non j'en ai parlé à personne, même pas à mes parents",
+        "bulles": [
+          "Garder ça pour toi depuis l’an dernier, sans même pouvoir en parler chez toi, ça fait beaucoup à porter seul.",
+          "Qu’est-ce qui t’a empêché d’en parler ?"
+        ],
+        "ms": 8394,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "le soir surtout. je repense à ça, j'ai le ventre noué et je dors mal",
+        "bulles": [
+          "Le soir, les souvenirs reviennent, ton ventre se noue et le sommeil devient difficile.",
+          "Tu as déjà essayé quelque chose pour t’apaiser ou dormir ?"
+        ],
+        "ms": 5816,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 1
+      },
+      {
+        "tour": "j'ai essayé de pas y penser mais ça marche pas",
+        "bulles": [
+          "Je crois avoir compris : la rentrée te stresse, surtout à cause de ces deux personnes, et le soir tu rumines avec le ventre noué.",
+          "Je peux te préparer une semaine pour apaiser ça et retrouver un peu de sommeil.",
+          "Et si tu préfères, on peut encore en parler avant."
+        ],
+        "ms": 3250,
+        "seance": null,
+        "parcoursPropose": true,
+        "niveau": 1
+      },
+      {
+        "tour": "ouais je veux bien",
+        "bulles": [
+          "Super, je te le prépare."
+        ],
+        "ms": 1719,
+        "seance": null,
+        "parcoursPropose": true,
+        "niveau": 1
+      }
+    ],
+    "memoire": "- Stressée par la rentrée scolaire, surtout par la reprise du rythme et la crainte de revoir deux personnes de sa classe avec qui l’année dernière s’est mal passée.\n- N’en a parlé à personne, pas même à ses parents.\n- Le soir, repense à la situation, a le ventre noué et dort mal."
+  },
+  {
+    "id": "cash",
+    "brut": [
+      {
+        "tour": "putain j'en ai marre de ma coloc",
+        "bulles": [
+          "D’accord.",
+          "Qu’est-ce qui s’est passé avec ta coloc aujourd’hui ?"
+        ],
+        "ms": 2122,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "elle fait jamais la vaisselle et elle ramène des gens à 2h du mat en semaine. je bosse moi",
+        "bulles": [
+          "La vaisselle et les gens à 2 h du matin te laissent gérer les conséquences.",
+          "Tu lui en as déjà parlé clairement, ou pas encore ?"
+        ],
+        "ms": 1796,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "je lui ai rien dit encore. je sais pas comment lui dire sans que ça parte en couille",
+        "bulles": [
+          "C’est compréhensible d’avoir peur que ça dérape quand tu n’as encore rien dit.",
+          "Le plus simple, c’est d’en parler à un moment calme, sur la vaisselle et les visites tardives, sans tout mélanger."
+        ],
+        "ms": 4494,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- Difficulté actuelle avec sa colocataire : elle ne fait jamais la vaisselle et invite des gens à 2 h du matin en semaine, ce qui perturbe son sommeil alors qu’elle travaille.\n- Elle ne lui en a pas encore parlé et craint que la discussion dégénère."
+  }
+]

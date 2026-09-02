@@ -157,6 +157,7 @@ export const SCENARIOS = [
       "non j'en ai parlé à personne, même pas à mes parents",
       "le soir surtout. je repense à ça, j'ai le ventre noué et je dors mal",
       "j'ai essayé de pas y penser mais ça marche pas",
+      "oui c'est ça",
       "ouais je veux bien",
     ],
   },

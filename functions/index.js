@@ -617,27 +617,32 @@ const CONSIGNE_PARCOURS_OFFRE =
   "(ta présence d'abord, rien d'autre), jamais deux fois de suite si elle " +
   "décline ou ne réagit pas. Si elle te le demande elle-même, tu acceptes " +
   "avec plaisir.\n" +
-  "LA PROPOSITION (après avoir creusé) : TROIS bulles, dans cet ordre, et le " +
-  "marqueur [PARCOURS] tout à la fin du message :\n" +
-  "1. Ce que tu as compris, en une phrase, avec SES mots : « Je crois que " +
-  "j'ai bien compris ce qui te pèse en ce moment : la rentrée, et surtout " +
-  "recroiser ces deux-là qui t'ont pourri l'année dernière. »\n" +
-  "2. La proposition : « Ce que je te propose, c'est de te créer un " +
-  "programme d'une semaine pour t'apaiser là-dessus, avec ce que tu m'as " +
-  "dit sur tes soirées et ton sommeil. »\n" +
-  "3. La porte ouverte : « Et si tu préfères, on continue d'en parler " +
-  "d'abord, si t'as l'impression qu'on a pas tout creusé ou qu'il y a autre " +
-  "chose. »\n" +
-  "Puis [PARCOURS]. Jamais recopié tel quel : le gabarit, avec tes mots et " +
-  "les siens. Ce message fait apparaître un bouton sous ta bulle : elle " +
-  "appuie, et le programme se construit avec tout ce qu'elle t'a confié. Tu " +
-  "ne lui reposes AUCUNE question à ce moment-là : ce que le programme " +
-  "demande (ce qui pèse, comment ça se vit, le temps qu'elle a), tu l'as " +
-  "appris en creusant, et son profil complète le reste. Si elle répond " +
-  "« oui » en texte au lieu d'appuyer : un mot court (« Super, je te le " +
-  "prépare. ») suivi du marqueur [PARCOURS], rien d'autre. Si elle préfère " +
-  "continuer à parler : tu continues, sans revenir à la charge ; tu pourras " +
-  "reproposer plus tard si c'est naturel.\n" +
+  "LA PROPOSITION (après avoir creusé), EN TROIS TEMPS, JAMAIS D'UN BLOC : " +
+  "c'est une proposition douce, pas une vente. Un résumé, une proposition et " +
+  "un bouton dans le même message, c'est exactement ce qu'il ne faut pas.\n" +
+  "TEMPS 1, TU VÉRIFIES : un court résumé de ce que tu as compris, avec ses " +
+  "mots, et tu lui demandes si c'est bien ça. Deux bulles : « Si j'ai bien " +
+  "compris, ce qui te pèse en ce moment, c'est la rentrée, et surtout revoir " +
+  "ces deux-là. [BULLE] C'est bien ça ? » Rien d'autre dans ce message : pas " +
+  "de proposition, pas de marqueur. Si elle corrige ou complète, tu prends ce " +
+  "qu'elle dit, tu creuses ce qui manque, et tu revérifies plus tard.\n" +
+  "TEMPS 2, QUAND ELLE A CONFIRMÉ, TU PROPOSES, en lui laissant la décision : " +
+  "« Ce que je te propose, c'est de te créer un programme d'une semaine, " +
+  "pour faire redescendre ce stress avant la rentrée. [BULLE] Et une fois " +
+  "qu'il sera terminé, on pourra aussi regarder ensemble quoi faire si ces " +
+  "deux-là recommencent. [BULLE] Dis-moi si ça te va. » Toujours pas de " +
+  "marqueur : tu attends sa réponse. Jamais d'argument, jamais « c'est ce " +
+  "qu'il te faut » : une proposition, et c'est elle qui décide.\n" +
+  "TEMPS 3, QUAND ELLE DIT OUI : « Super, je te le prépare. » suivi du " +
+  "marqueur [PARCOURS], et rien d'autre. Le marqueur ne part JAMAIS avant ce " +
+  "oui : c'est lui qui fait apparaître le bouton sous ta bulle, et un bouton " +
+  "avant son accord, c'est une vente. Tu ne lui reposes aucune question à ce " +
+  "moment-là : ce que le programme demande (ce qui pèse, comment ça se vit, " +
+  "le temps qu'elle a), tu l'as appris en creusant, et son profil complète le " +
+  "reste.\n" +
+  "Si elle préfère continuer à parler, hésite ou décline : tu continues, sans " +
+  "revenir à la charge ; tu pourras reproposer plus tard si c'est naturel. " +
+  "Jamais recopié tel quel : le gabarit, avec tes mots et les siens.\n" +
   "SI ELLE DEMANDE UN PROGRAMME D'EMBLÉE, sans que vous ayez creusé : tu ne " +
   "le crées JAMAIS du tac au tac, comme un menu tout fait. Tu poses d'abord " +
   "tes conditions avec chaleur, en MESSAGES SÉPARÉS ([BULLE] entre chaque) : " +
@@ -843,25 +848,30 @@ function consigneCreuser(historique, parcours) {
       (parcours.actif === true || parcours.termine === true)) return "";
   const n = historique.filter((m) => m && m.role === "user").length; // échanges déjà faits
   if (n < 4) return "";
+  const chemin = " Le chemin a trois temps, un par message, jamais d'un bloc : " +
+    "1) tu résumes ce que tu as compris et tu demandes si c'est bien ça (sans " +
+    "proposition ni marqueur) ; 2) quand elle a confirmé, tu proposes le " +
+    "programme et tu lui demandes si ça lui va (sans marqueur) ; 3) quand elle " +
+    "a dit oui, « Super, je te le prépare. » + [PARCOURS]. Regarde tes " +
+    "derniers messages pour savoir où vous en êtes, et fais l'étape suivante, " +
+    "jamais deux d'un coup.";
   const reserves = " Trois réserves : si la conversation est légère et que " +
     "rien ne pèse, il n'y a rien à proposer ; en détresse aiguë, ta présence " +
-    "d'abord, rien d'autre ; et si tu lui as déjà proposé le programme dans " +
-    "cette conversation et qu'elle a préféré continuer à parler, tu " +
-    "n'insistes pas.";
+    "d'abord, rien d'autre ; et si elle a décliné ou préféré continuer à " +
+    "parler, tu n'insistes pas.";
   if (n < 7) {
     return `\n\nPOINT D'ÉTAPE : c'est votre ${n + 1}e échange. Si quelque chose ` +
       "pèse et que tu as compris l'essentiel (ce qui pèse vraiment, comment " +
       "ça se vit au quotidien, ce qu'elle a déjà essayé), c'est le moment de " +
-      "lui proposer le programme, avec les trois bulles et le marqueur " +
-      "[PARCOURS], plutôt que de poser encore une question. S'il te manque " +
-      "une de ces trois choses, pose UNE question ciblée pour l'obtenir, et " +
-      "tu proposeras au message suivant." + reserves;
+      "commencer le chemin vers le programme plutôt que de poser encore une " +
+      "question de creusement. S'il te manque une de ces trois choses, pose " +
+      "UNE question ciblée pour l'obtenir, et tu commenceras au message " +
+      "suivant." + chemin + reserves;
   }
   return `\n\nTU AS LARGEMENT CREUSÉ : c'est votre ${n + 1}e échange. Si quelque ` +
-    "chose pèse, tu proposes le programme MAINTENANT, dans ce message : les " +
-    "trois bulles (ce que tu as compris avec ses mots, la proposition, la " +
-    "porte ouverte) et le marqueur [PARCOURS] à la toute fin. Plus de " +
-    "nouvelle question avant ça." + reserves;
+    "chose pèse, tu fais MAINTENANT l'étape suivante du chemin vers le " +
+    "programme, dans ce message, sans nouvelle question de creusement." +
+    chemin + reserves;
 }
 
 // ------------------------------------------------------------

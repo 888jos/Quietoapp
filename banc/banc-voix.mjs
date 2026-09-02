@@ -190,6 +190,19 @@ export const SCENARIOS = [
     ],
   },
   {
+    id: "nonsens",
+    titre: "Il tape n'importe quoi et répète une bêtise : elle sourit, ne force pas",
+    heure: "19:20", jour: "mercredi 2 septembre", prenom: "Paul",
+    accueil: "Hey Paul\nTu fais quoi de ta soirée ?",
+    tours: [
+      "azerazer",
+      "sdfghjk sdfg",
+      "les poules ont des dents",
+      "les poules ont des dents",
+      "ok ok je testais, ça va et toi",
+    ],
+  },
+  {
     id: "cash",
     titre: "Registre cash : la coloc qui abuse",
     heure: "17:45", jour: "mercredi 2 septembre", prenom: "Inès",

@@ -162,6 +162,21 @@ export const SCENARIOS = [
     ],
   },
   {
+    id: "retour",
+    titre: "Elle revient, Louane sait déjà (moqueries au travail) : confirmer, ne pas affirmer",
+    heure: "21:20", jour: "mercredi 2 septembre", prenom: "Paul",
+    memoire: "- Paul, en poste depuis 3 ans, reprend le travail après deux semaines de congés.\n" +
+      "- Ses collègues se moquent de son physique, en face, devant les autres ; il encaisse sans rien dire.\n" +
+      "- Le soir, il rumine et dort mal.",
+    accueil: "Hey Paul\nAlors, elle a donné quoi cette journée ?",
+    tours: [
+      "je stresse pour demain",
+      "ouais c'est ça",
+      "j'ai personne à qui en parler là-bas",
+      "aide moi à trouver",
+    ],
+  },
+  {
     id: "cash",
     titre: "Registre cash : la coloc qui abuse",
     heure: "17:45", jour: "mercredi 2 septembre", prenom: "Inès",

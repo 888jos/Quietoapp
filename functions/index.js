@@ -1269,12 +1269,125 @@ async function appelBoussole(client, historique, message) {
 }
 
 // ------------------------------------------------------------
+//  SIGNAUX DE QUALITÉ DE LA VOIX (Vigie). Demande de Paul (02/09/2026) :
+//  savoir quand quelqu'un se plaint de Louane et de quoi, et repérer ses tics
+//  (question répétée, question à choix, pavé), SANS JAMAIS stocker le texte.
+//  Tout est calculé ici, réduit à des catégories et des compteurs, puis le
+//  texte est oublié. Trois sources :
+//  1. detecterPlainte : la personne se plaint de Louane → une catégorie.
+//  2. signauxReponse : mesures mécaniques sur la réponse.
+//  3. appelJuge : un agent lit un échange sur trois (même cadence que la
+//     Mémoire, en parallèle : aucune latence ajoutée) et renvoie une note et
+//     des défauts dans une liste fermée.
+//  Le rapport de minuit (Quieto IA/analytics/minuit.js) agrège tout ça.
+// ------------------------------------------------------------
+const PLAINTES = [
+  // Elle dit que Louane se répète / repose la même question.
+  ["repetition", /tu (te )?r[ée]p[èe]tes|(d[ée]j[àa]|encore) (demand|dit|pos[ée]|r[ée]pondu)|je viens de te (le )?dire|je te l'ai d[ée]j[àa] dit|m[êe]me question|tu tournes en rond|encore cette question|en boucle/i],
+  // Elle dit que Louane n'écoute pas / répond à côté.
+  ["ecoute", /tu (m')?[ée]coutes? pas|tu (ne )?comprends? (rien|pas)|t'as (rien|pas) compris|tu (r[ée]ponds|es) [àa] c[ôo]t[ée]|tu lis pas|hors sujet|c'est pas ce que j('ai|e t'ai) (dit|demand)/i],
+  // Trop de questions.
+  ["questions", /(trop|arr[êe]te|assez|marre|stop) (de |des |les |avec (tes|les) )?questions|pose pas de questions|toujours des questions|que des questions|interrogatoire/i],
+  // Trop long.
+  ["long", /trop long|pav[ée]|abr[èe]ge|fais court|trop de texte|r[ée]sume|trop de blabla/i],
+  // Elle conteste que Louane soit une vraie personne (identité).
+  ["identite", /\b(robot|chat ?gpt|gpt|une? ia|un bot|intelligence artificielle|un programme|un algorithme|une machine|un llm|un mod[èe]le)\b/i],
+  // Le ton sonne faux.
+  ["ton", /tu parles (bizarre|mal|comme|chelou|trop bien)|t(u|'es) .{0,25}(bizarre|chelou|robotique|artificiel|faux|fake)|(bizarre|chelou) (ta|cette) (r[ée]ponse|fa[çc]on)/i],
+  // Louane ne sert à rien.
+  ["inutile", /tu sers [àa] rien|t'es (nulle?|inutile)|tu (m')?aides? pas|[çc]a sert [àa] rien de te parler|tu fais rien/i],
+];
+function detecterPlainte(message) {
+  const m = String(message || "");
+  for (const [categorie, re] of PLAINTES) if (re.test(m)) return categorie;
+  return "";
+}
+
+// Mesures mécaniques sur les bulles finales (celles que la personne lit).
+function signauxReponse(bulles) {
+  const texte = bulles.join(" ");
+  const derniere = bulles[bulles.length - 1] || "";
+  return {
+    finitParQuestion: /\?\s*$/.test(derniere),
+    nbQuestions: (texte.match(/\?/g) || []).length,
+    // « plutôt A ou plutôt B ? » (mais pas « ou pas ? »).
+    questionAChoix: bulles.some((b) => /\bou\b[^.?!]*\?/.test(b) && !/ou pas( encore)? \?/.test(b)),
+    motsReponse: texte.split(/\s+/).filter(Boolean).length,
+  };
+}
+
+const PROMPT_JUGE = `
+Tu es un agent de CONTRÔLE QUALITÉ interne. Tu lis un bout de conversation entre
+une personne et Louane (une compagne chaleureuse, censée parler comme une amie
+proche, en messages courts, jamais comme une psy ni comme un robot) et tu juges
+UNIQUEMENT la DERNIÈRE réponse de Louane. Tu ne réponds jamais à la personne.
+
+DÉFAUTS possibles (liste fermée ; zéro, un ou plusieurs) :
+- question_repetee : Louane repose une question déjà posée plus haut, même reformulée.
+- question_a_choix : une question qui propose un menu (« plutôt A ou plutôt B ? »).
+- reformulation : elle répète ce que la personne vient de dire, en plus joli, au lieu de réagir.
+- ton_psy : tournures de thérapeute (« qu'est-ce que ça te fait ? », « ce que ça réveille en toi », « il est légitime de »).
+- ecrit : français d'écrit ou traduit de l'anglais, image poétique que personne ne dit à l'oral.
+- trop_long : plus de trois phrases, ou une phrase qui aurait tenu en moitié moins.
+- prenom : le prénom de la personne dans la réponse.
+- a_cote : elle répond à côté de ce que la personne vient de dire, ou ignore un détail important.
+- invente : elle affirme un ressenti, un souvenir ou un détail que la personne n'a pas donné.
+- conseil_trop_tot : elle conseille ou propose une séance / un programme avant d'avoir compris.
+- hors_role : elle rend un service hors de son terrain (rédige, explique un sujet encyclopédique, parle de technique ou d'IA).
+- froide : pas de réaction, pas de chaleur, une réponse de service client.
+
+NOTE globale de la dernière réponse : 1 (robot, raté) à 5 (on jurerait une amie).
+
+Tu réponds UNIQUEMENT avec cet objet JSON, rien d'autre :
+{ "note": 4, "defauts": [] }
+`;
+const DEFAUTS_JUGE = new Set(["question_repetee", "question_a_choix", "reformulation",
+  "ton_psy", "ecrit", "trop_long", "prenom", "a_cote", "invente", "conseil_trop_tot",
+  "hors_role", "froide"]);
+
+// Ne DOIT JAMAIS casser la requête : erreur → null (pas de champ dans les stats).
+async function appelJuge(client, historique, message, reponseLouane) {
+  try {
+    const fil = [...derniersTours(historique, 4).map((m) =>
+      (m.role === "user" ? "La personne : " : "Louane : ") +
+      String(m.content).replace(REGEX_SEANCE, " ").trim()),
+    "La personne : " + message,
+    "Louane (RÉPONSE À JUGER) : " + reponseLouane].join("\n");
+    const r = await client.chat.completions.create({
+      model: "gpt-5.6-luna",
+      max_completion_tokens: 200,
+      reasoning_effort: "none",
+      prompt_cache_key: "quieto-juge-1",
+      prompt_cache_options: { ttl: "30m" },
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: PROMPT_JUGE },
+        { role: "user", content: fil },
+      ],
+    });
+    console.log("[Juge] usage:", JSON.stringify(r.usage));
+    const verdict = extraireJson((r.choices[0] && r.choices[0].message.content) || "");
+    if (!verdict) return null;
+    const note = Math.min(5, Math.max(1, Number(verdict.note) || 0));
+    const defauts = Array.isArray(verdict.defauts) ?
+      verdict.defauts.map(String).filter((d) => DEFAUTS_JUGE.has(d)).slice(0, 6) : [];
+    return { jugeNote: note, jugeDefauts: defauts };
+  } catch (e) {
+    console.error("[Juge] erreur (ignorée) :", e);
+    return null;
+  }
+}
+
+// ------------------------------------------------------------
 //  Écrit une ligne de stats Louane dans Firestore (collection vigie_louane).
 //  Une ligne = un message envoyé. JAMAIS le texte, JAMAIS le prénom.
 //  Ne DOIT JAMAIS casser la requête.
 // ------------------------------------------------------------
 async function enregistrerStatsLouane(donnees) {
-  if (!VIGIE_ECRITURE) return; // émulateur sans Firestore : rien en prod
+  if (!VIGIE_ECRITURE) { // émulateur sans Firestore : rien en prod, juste le log
+    console.log("[Vigie] (émulateur, non écrit)", JSON.stringify(donnees));
+    return;
+  }
   try {
     await db.collection("vigie_louane").add({
       ts: FieldValue.serverTimestamp(),
@@ -1470,12 +1583,17 @@ exports.louane = onCall(
   // (« ..., ça rajoute une couche. Et… quoi d'autre ? »). Plafond, le reste
   // fondu dans la dernière bulle : rien n'est jamais perdu (les messages de
   // fin de découverte y compris).
+  const nbBullesVoix = bulles.length; // ce que la Voix avait découpé elle-même
   bulles = plafonnerBulles(bulles.flatMap(enPhrases), BULLES_MAX);
   // Aucun tiret long ne sort du chat non plus (le nettoyage vient APRÈS le
   // découpage : il ne doit pas effacer les sauts de ligne qui servent à
   // séparer les bulles).
+  const avantPrenom = bulles.join("\n");
   bulles = bulles.map(sansTiretLong)
     .map((b) => sansPrenomFinal(b, prenom)).filter(Boolean);
+  // Signaux Vigie : les filets ont-ils dû corriger la Voix ? (compteurs, pas de texte)
+  const phrasesCoupees = bulles.length - nbBullesVoix; // > 0 : la Voix collait des phrases
+  const prenomRetire = avantPrenom !== bulles.join("\n");
   const texteComplet = bulles.join("\n\n");
   const parcoursPropose = marqueurPresent && !(parcours && parcours.actif === true);
   // Garde : jamais de lancement de séance sur un message en danger (niveau 2),
@@ -1492,8 +1610,9 @@ exports.louane = onCall(
       "autre si tu veux." :
       "Je suis là, je t'écoute.");
 
-  // Stats Vigie : une ligne par message répondu (compteurs seulement, gratuit).
-  await enregistrerStatsLouane({
+  // Stats Vigie : une ligne par message répondu (compteurs et catégories
+  // seulement, jamais de texte). Écrite plus bas, une fois le Juge passé.
+  const statsReponse = {
     ...statsBase,
     niveau: veilleur.niveau,
     categorie: veilleur.categorie,
@@ -1503,7 +1622,12 @@ exports.louane = onCall(
     seanceLancee: seance ? seance.id : "",
     carReponse: reponseFinale.length,
     nbBulles: bulles.length || 1, // suivi du découpage en petits messages
-  });
+    // Qualité de la Voix (02/09) : ce dont la personne se plaint, et les tics.
+    plainte: detecterPlainte(message),
+    ...signauxReponse(bulles.length ? bulles : [reponseFinale]),
+    phrasesCoupees: Math.max(0, phrasesCoupees),
+    prenomRetire,
+  };
 
   // Niveau 2 = danger. On donne le message de sécurité validé (3114/15) — mais UNE
   // SEULE FOIS : si on l'a déjà donné récemment (déjà présent dans l'historique),
@@ -1516,6 +1640,7 @@ exports.louane = onCall(
     );
     if (!dejaAlerte) {
       console.warn("[Veilleur] ALERTE niveau 2 :", veilleur.categorie, "-", veilleur.raison);
+      await enregistrerStatsLouane(statsReponse);
       return {
         reponse: MESSAGE_SECURITE,
         bulles: [MESSAGE_SECURITE], // le message de sécurité part d'un bloc
@@ -1536,16 +1661,22 @@ exports.louane = onCall(
   // 3 derniers échanges en entrée : rien n'est perdu, juste regroupé (et la
   // fenêtre de la Voix couvre largement le différé). Fiche vide = on la crée
   // dès le premier message (prénom, situation : trop précieux pour attendre).
+  // Le Juge (qualité de la Voix, Vigie) tourne à la même cadence, en
+  //  parallèle de la Mémoire : rien d'ajouté à la latence.
   const nbEchangesAvant = historique.filter((m) => m && m.role === "user").length;
   const memoireDue = !memoire || nbEchangesAvant % 3 === 2;
-  const nouvelleMemoire = memoireDue ?
-    await appelMemoire(client, memoire,
-      [...historique.slice(-4).map((m) =>
-        (m.role === "user" ? "La personne : " : "Louane : ") +
-        String(m.content).replace(REGEX_SEANCE, " ").trim()),
-      "La personne : " + message,
-      "Louane : " + reponseFinale].join("\n")) :
-    memoire;
+  const [nouvelleMemoire, juge] = await Promise.all([
+    memoireDue ?
+      appelMemoire(client, memoire,
+        [...historique.slice(-4).map((m) =>
+          (m.role === "user" ? "La personne : " : "Louane : ") +
+          String(m.content).replace(REGEX_SEANCE, " ").trim()),
+        "La personne : " + message,
+        "Louane : " + reponseFinale].join("\n")) :
+      Promise.resolve(memoire),
+    memoireDue ? appelJuge(client, historique, message, reponseFinale) : Promise.resolve(null),
+  ]);
+  await enregistrerStatsLouane({ ...statsReponse, ...(juge || {}) });
   return {
     reponse: reponseFinale,
     // Le découpage en petits messages ([BULLE]) : les nouvelles apps affichent

@@ -7,8 +7,9 @@
 
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { defineSecret } = require("firebase-functions/params");
+const { defineSecret, defineString } = require("firebase-functions/params");
 const OpenAI = require("openai");
+const crypto = require("crypto");
 
 // ------------------------------------------------------------
 //  VIGIE (analyse produit interne) : Firestore via le SDK admin.
@@ -18,6 +19,7 @@ const OpenAI = require("openai");
 // ------------------------------------------------------------
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 initializeApp();
 const db = getFirestore();
 
@@ -32,6 +34,279 @@ const VIGIE_ECRITURE = !(process.env.FUNCTIONS_EMULATOR === "true" &&
 // Depuis le 14/08/2026 : tout tourne sur OpenAI (GPT-5.6 Luna), clé unique.
 // (ANTHROPIC_KEY retirée — l'ancien secret existe encore dans Secret Manager.)
 const OPENAI_KEY = defineSecret("OPENAI_KEY");
+
+// ============================================================
+//  SÉCURITÉ (audit du 02/09/2026) — identité, bornes, quotas serveur.
+//
+//  ⚠️ DÉPLOIEMENT EN DEUX TEMPS :
+//  1. Aujourd'hui : EXIGER_AUTH = false. Les apps déjà installées (≤ 1.0.23)
+//     n'envoient pas de jeton Firebase quand la personne n'est pas connectée ;
+//     on les laisse passer, bornées par les quotas par IP, et on continue à
+//     leur faire confiance sur `abonne` (comme avant). Dès qu'il y a un jeton
+//     (compte Apple/Google, ou connexion anonyme de la 1.0.24), tout est
+//     vérifié CÔTÉ SERVEUR : abonnement (RevenueCat), compteurs, alerte.
+//  2. Quand la 1.0.24 est majoritaire : passer EXIGER_AUTH à true, puis
+//     EXIGER_APP_CHECK / enforceAppCheck à true (après lecture du signal
+//     `appCheck` dans vigie_louane), puis déployer les règles Storage.
+// ============================================================
+const EXIGER_AUTH = false;
+// `request.app` n'est posé que si l'app a présenté un jeton App Attest /
+// Play Integrity valide. Le taux se lit dans vigie_louane (champ `appCheck`)
+// avant de rendre l'exigence bloquante.
+const EXIGER_APP_CHECK = false;
+
+// Clé PUBLIQUE RevenueCat (functions/.env, jamais dans git) : elle suffit
+// pour LIRE l'abonnement d'une personne (GET /v1/subscribers/{uid}).
+const RC_PUBLIC_KEY = defineString("RC_PUBLIC_KEY", { default: "" });
+
+// Bornes de taille : tout ce que l'app envoie est coupé ou refusé ici.
+const BORNES = {
+  message: 2000, memoire: 4000, prenom: 40, accueil: 300, jour: 60, heure: 5,
+  sante: 600, historiqueEntrees: 20, historiqueContenu: 2000,
+  profilValeur: 120, ecoutes: 20,
+};
+// Quotas par jour. IP = filet contre les scripts (des vrais utilisateurs
+// derrière un même réseau restent très loin de ces chiffres).
+const PLAFOND_IP = { louane: 300, parcours: 8, accueil: 30, trace: 300, sync: 200 };
+const PLAFOND_UID = { parcours: 5, accueil: 5, sync: 60 };
+const PLAFOND_VIGIE_EVENEMENTS = 2000; // événements trace / jour / installation
+const ABONNE_CACHE_MS = 10 * 60 * 1000; // relecture RevenueCat au plus toutes les 10 min
+const ALERTE_MEMOIRE_MS = 24 * 60 * 60 * 1000; // message 3114 : au plus une fois par 24 h
+
+const texte = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
+
+// Historique : rôles user/assistant seulement, contenu texte borné (un rôle
+// "system" glissé par un client ne passe plus), fenêtre glissante.
+function nettoyerHistorique(brut) {
+  if (!Array.isArray(brut)) return [];
+  return brut
+    .filter((m) => m && (m.role === "user" || m.role === "assistant") &&
+      typeof m.content === "string" && m.content.trim())
+    .slice(-BORNES.historiqueEntrees)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, BORNES.historiqueContenu) }));
+}
+
+const CLES_PROFIL = ["goals", "q1", "q_focus", "q2", "q4", "q_minutes"];
+function nettoyerProfil(brut) {
+  if (!brut || typeof brut !== "object") return null;
+  const propre = {};
+  for (const k of CLES_PROFIL) {
+    if (typeof brut[k] === "string" && brut[k].trim()) {
+      propre[k] = brut[k].slice(0, BORNES.profilValeur);
+    }
+  }
+  return Object.keys(propre).length ? propre : null;
+}
+
+function nettoyerParcours(brut) {
+  if (!brut || typeof brut !== "object") return null;
+  return {
+    actif: brut.actif === true,
+    termine: brut.termine === true,
+    titre: texte(brut.titre, 80),
+    jour: Number(brut.jour) || 1,
+    seanceDuJourFaite: brut.seanceDuJourFaite === true,
+  };
+}
+
+function nettoyerEcoutes(brut) {
+  if (!Array.isArray(brut)) return null;
+  return brut.slice(0, BORNES.ecoutes)
+    .filter((e) => e && typeof e === "object")
+    .map((e) => ({ id: texte(e.id, 40), fois: Number(e.fois) || 1, jours: Number(e.jours) }));
+}
+
+// Identité Firebase de l'appel ("" si l'app n'a pas envoyé de jeton).
+function identite(request) {
+  if (EXIGER_APP_CHECK && !request.app) {
+    throw new HttpsError("unauthenticated", "Application non reconnue.");
+  }
+  const uid = request.auth && typeof request.auth.uid === "string" ? request.auth.uid : "";
+  if (EXIGER_AUTH && !uid) {
+    throw new HttpsError("unauthenticated", "Connexion requise.");
+  }
+  return uid;
+}
+
+// IP du client : derrière le front Google, la DERNIÈRE entrée de
+// X-Forwarded-For est celle ajoutée par Google (les précédentes peuvent venir
+// du client). Ne sert que de clé de quota, hachée, jamais stockée en clair.
+function ipDe(request) {
+  const raw = request.rawRequest;
+  const xff = raw && raw.headers ? raw.headers["x-forwarded-for"] : "";
+  const liste = typeof xff === "string" ?
+    xff.split(",").map((x) => x.trim()).filter(Boolean) : [];
+  return liste.length ? liste[liste.length - 1] : ((raw && raw.ip) || "inconnue");
+}
+const cleIp = (ip) => crypto.createHash("sha256").update(String(ip)).digest("hex").slice(0, 32);
+const jourUtc = () => new Date().toISOString().slice(0, 10);
+const jourParis = () => new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris" }).format(new Date());
+
+// Compteur journalier {jour, champ: n} dans `collection/id`. Renvoie false
+// si le plafond est atteint. Un nouveau jour remet tous les champs à zéro.
+// Panne Firestore → on laisse passer (le quota est un filet, pas le produit).
+async function compterParJour(collection, id, champ, plafond, poids = 1) {
+  if (!VIGIE_ECRITURE) return true;
+  const ref = db.collection(collection).doc(String(id).replace(/\//g, "_").slice(0, 200));
+  try {
+    const snap = await ref.get();
+    const d = snap.exists ? snap.data() : {};
+    const jour = jourUtc();
+    const n = d.jour === jour ? (Number(d[champ]) || 0) : 0;
+    if (n + poids > plafond) return false;
+    if (d.jour === jour) {
+      await ref.set({ [champ]: FieldValue.increment(poids) }, { merge: true });
+    } else {
+      await ref.set({ jour, [champ]: poids });
+    }
+    return true;
+  } catch (e) {
+    console.error("[Quota]", collection, champ, "illisible (on laisse passer) :", e.message);
+    return true;
+  }
+}
+
+// Quota par IP (toujours) et par compte (si identifié). Jette si dépassé.
+async function exigerQuotaIp(request, champ, uid) {
+  const ok = await compterParJour("quota_ip", cleIp(ipDe(request)), champ, PLAFOND_IP[champ]);
+  if (!ok) {
+    throw new HttpsError("resource-exhausted", "Trop d'appels depuis ce réseau aujourd'hui.");
+  }
+  if (uid && PLAFOND_UID[champ]) {
+    const okUid = await compterParJour("quota_uid", uid, champ, PLAFOND_UID[champ]);
+    if (!okUid) throw new HttpsError("resource-exhausted", "Limite du jour atteinte.");
+  }
+}
+
+// ── Abonnement vérifié côté serveur (RevenueCat = source de vérité) ──
+// Cache 10 min dans `abonnes/{uid}` ; le webhook efface ce cache à chaque
+// nouvelle (achat, annulation…). Le résultat est aussi posé en custom claim
+// `premium` sur le compte Firebase : c'est ce que lisent les règles Storage.
+async function verifierAbonne(uid, forcer = false) {
+  if (!uid) return false;
+  const ref = db.collection("abonnes").doc(uid);
+  let cache = null;
+  // Émulateur sans Firestore (banc local) : ni cache ni custom claim, on
+  // interroge juste RevenueCat — rien n'est écrit en prod.
+  const persistant = VIGIE_ECRITURE;
+  if (persistant) try {
+    const snap = await ref.get();
+    cache = snap.exists ? snap.data() : null;
+  } catch (e) {
+    console.error("[Abonne] cache illisible :", e.message);
+  }
+  if (!forcer && cache && Date.now() - (Number(cache.verifieMs) || 0) < ABONNE_CACHE_MS) {
+    return cache.premium === true;
+  }
+  const cle = RC_PUBLIC_KEY.value();
+  if (!cle) {
+    console.error("[Abonne] RC_PUBLIC_KEY absente (functions/.env) : abonnement invérifiable.");
+    return cache ? cache.premium === true : false;
+  }
+  let premium;
+  let expiresMs = null;
+  try {
+    const r = await fetch("https://api.revenuecat.com/v1/subscribers/" + encodeURIComponent(uid), {
+      headers: { "Authorization": "Bearer " + cle, "X-Platform": "ios" },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!r.ok) throw new Error("RevenueCat HTTP " + r.status);
+    const j = await r.json();
+    const ent = j && j.subscriber && j.subscriber.entitlements && j.subscriber.entitlements.premium;
+    if (ent && ent.expires_date) expiresMs = Date.parse(ent.expires_date);
+    premium = !!ent && (ent.expires_date === null || (!!expiresMs && expiresMs > Date.now()));
+  } catch (e) {
+    console.error("[Abonne] vérification RevenueCat échouée :", e.message);
+    return cache ? cache.premium === true : false;
+  }
+  if (!persistant) return premium;
+  try {
+    await ref.set({ premium, expiresMs, verifieMs: Date.now() });
+  } catch (e) {
+    console.error("[Abonne] cache inécrivable :", e.message);
+  }
+  if (!cache || cache.premium !== premium) {
+    try {
+      await getAuth().setCustomUserClaims(uid, { premium });
+    } catch (e) {
+      console.error("[Abonne] custom claim non posé :", e.message);
+    }
+  }
+  return premium;
+}
+
+// Sans jeton (vieilles apps, tant que EXIGER_AUTH est false) : on retombe
+// sur ce que dit l'app — l'ancien comportement, borné par les quotas IP.
+async function abonnementVerifie(request, uid, abonneClient) {
+  if (uid) return verifierAbonne(uid);
+  return abonneClient === true;
+}
+
+// Oublie le cache d'abonnement de ces identifiants (webhook RevenueCat).
+async function oublierCacheAbonne(ids) {
+  if (!VIGIE_ECRITURE) return;
+  for (const id of new Set(ids.filter((x) => typeof x === "string" && x))) {
+    try {
+      await db.collection("abonnes").doc(id.replace(/\//g, "_").slice(0, 200)).delete();
+    } catch (e) {
+      console.error("[Abonne] cache non effacé pour", id, ":", e.message);
+    }
+  }
+}
+
+// ── Compteurs de messages Louane, côté serveur : `compteurs/{uid}` ──
+// {total, jour, n} : total = messages depuis toujours (limite découverte),
+// n = messages du jour de Paris (plafond abonné). Null = pas d'identité (ou
+// émulateur sans Firestore) → on retombe sur les compteurs envoyés par l'app.
+async function lireCompteurs(uid) {
+  if (!uid || !VIGIE_ECRITURE) return null;
+  try {
+    const snap = await db.collection("compteurs").doc(uid).get();
+    const d = snap.exists ? snap.data() : {};
+    const jour = jourParis();
+    return { total: Number(d.total) || 0, n: d.jour === jour ? (Number(d.n) || 0) : 0, jour };
+  } catch (e) {
+    console.error("[Compteurs] illisibles :", e.message);
+    return null;
+  }
+}
+async function incrementerCompteurs(uid, compteurs) {
+  if (!uid || !compteurs || !VIGIE_ECRITURE) return;
+  try {
+    await db.collection("compteurs").doc(uid).set({
+      total: FieldValue.increment(1),
+      jour: compteurs.jour,
+      n: compteurs.n + 1,
+      maj: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  } catch (e) {
+    console.error("[Compteurs] incrément échoué :", e.message);
+  }
+}
+
+// ── Mémoire serveur du message de sécurité (3114) : une fois par 24 h ──
+// Avant, « déjà alerté » se lisait dans l'historique envoyé par l'app : un
+// client modifié pouvait donc faire taire le message. La clé est le compte
+// Firebase, sinon l'identifiant d'installation Vigie.
+async function alerteRecente(cle) {
+  if (!cle || !VIGIE_ECRITURE) return false;
+  try {
+    const snap = await db.collection("securite").doc(cle).get();
+    const ms = snap.exists ? Number(snap.data().alerteMs) || 0 : 0;
+    return Date.now() - ms < ALERTE_MEMOIRE_MS;
+  } catch (e) {
+    console.error("[Sécurité] mémoire d'alerte illisible :", e.message);
+    return false;
+  }
+}
+async function marquerAlerte(cle) {
+  if (!cle || !VIGIE_ECRITURE) return;
+  try {
+    await db.collection("securite").doc(cle).set({ alerteMs: Date.now() });
+  } catch (e) {
+    console.error("[Sécurité] mémoire d'alerte inécrivable :", e.message);
+  }
+}
 
 // ------------------------------------------------------------
 //  Le "cerveau" de la Voix. C'EST ICI que vit le prompt (la doc
@@ -93,7 +368,7 @@ TON REGISTRE (le plus important) : deux tons, selon ce qu'elle vient de dire.
   à un bonjour et ne se dit que quand quelque chose pèse vraiment.
 - Si elle répète la même chose (« salut » trois fois, un mot, un test), tu
   en souris AVEC elle, sans jamais lui faire sentir qu'elle doit répondre à
-  quelque chose : « Haha, salut à toi aussi 😊 [BULLE] Tu me testes ? » Pas
+  quelque chose : « Haha, salut à toi aussi [BULLE] Tu me testes ? » Pas
   de « alors ? » sec, pas de « tu voulais me dire quelque chose ? » : elle
   fait ce qu'elle veut de la conversation.
 - Tu tutoies, tu parles simplement, avec des mots de tous les jours, sans
@@ -107,8 +382,8 @@ TON REGISTRE (le plus important) : deux tons, selon ce qu'elle vient de dire.
   cruel », « c'est pas normal », « ils sont horribles ») : tu restes du côté
   de ce qu'elle vit, elle. Tu peux poser une limite calmement et une seule
   fois quand c'est nécessaire (« personne n'a à entendre ça au travail »).
-- Pas d'emoji quand quelque chose pèse. Quand c'est léger, un 😊 ou un 🤍 de
-  temps en temps, jamais deux dans une bulle.
+- JAMAIS D'EMOJI. Aucun, jamais, ni quand c'est léger ni quand ça pèse : la
+  chaleur passe par les mots.
 
 COMMENT TU RÉAGIS À CE QU'ELLE DIT (quand quelque chose pèse) : toujours
 dans cet esprit, en une ou deux bulles avant ta question.
@@ -208,9 +483,9 @@ registre qui compte. Remarque le calme, les réponses sans question, et les
 Elle : "salut"
 Toi : "Salut ! [BULLE] Alors, t'as pu souffler un peu aujourd'hui ?"
 Elle : "salut"
-Toi : "Haha, salut encore 😊 [BULLE] Tu me testes ?"
+Toi : "Haha, salut encore [BULLE] Tu me testes ?"
 Elle : "salut"
-Toi : "On peut faire ça toute la soirée si tu veux, ça me va 😊"
+Toi : "On peut faire ça toute la soirée si tu veux, ça me va"
 
 Elle : "bof, longue journée au taf"
 Toi : "Je vois [BULLE] Qu'est-ce qui l'a rendue longue ?"
@@ -546,7 +821,7 @@ function consigneAccueil(accueil) {
     "peux reprendre ta question d'ouverture avec légèreté (« Salut ! Alors, " +
     "t'as pu souffler un peu ? ») : jamais un « alors ? » sec, jamais la " +
     "forcer à répondre. Si elle redit « salut » encore, tu en souris avec " +
-    "elle (« Haha, salut encore 😊 Tu me testes ? »).";
+    "elle (« Haha, salut encore. Tu me testes ? »).";
 }
 
 // ------------------------------------------------------------
@@ -1510,40 +1785,46 @@ const PLAFOND_JOUR_ABONNE = 100; // messages/jour pour un abonné (large)
 exports.louane = onCall(
   { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
   async (request) => {
-  const message = request.data.message;
-  const historique = request.data.historique || [];
-  const heure = request.data.heure; // heure locale du téléphone, ex. "23:47"
-  const jour = request.data.jour; // jour local en toutes lettres, ex. "vendredi 18 juillet"
-  const accueil = request.data.accueil; // bulles d'accueil en dur affichées par l'app
-  const prenom = request.data.prenom || ""; // prénom (onboarding), peut être vide
-  const memoire = request.data.memoire || ""; // ce que Louane sait déjà de la personne
-  const profil = request.data.profil || null; // réponses d'onboarding (objectifs, sommeil…)
-  // Programme 7 jours en cours, envoyé par l'app : {actif, titre, jour,
-  // seanceDuJourFaite, termine}. Absent (vieilles apps) = aucun programme.
-  const parcours = (request.data.parcours && typeof request.data.parcours === "object") ?
-    request.data.parcours : null;
-  // Historique d'écoute des séances, envoyé par l'app : [{id, fois, jours}].
-  // Absent (vieilles apps) = pas de consigne d'écoutes.
-  const ecoutes = Array.isArray(request.data.ecoutes) ? request.data.ecoutes : null;
-  // Résumé des évaluations bien-être d'Apple Santé (niveau grossier, texte
-  // prêt). Absent (vieilles apps / Android / refus) = pas de consigne.
-  // ⚠️ Donnée sensible : ne JAMAIS l'écrire dans les logs ni dans Firestore.
-  const sante = typeof request.data.sante === "string" ?
-    request.data.sante.slice(0, 600) : "";
-  // Appareil compatible Apple Santé (iPhone) → Louane sait ce qui est
-  // possible ici, même sans évaluation à lire. Absent (vieilles apps) = non.
-  const santeDispo = request.data.santeDispo === true;
-  const abonne = request.data.abonne === true; // true si Quieto Premium actif
-  const compteurTotal = Number(request.data.compteurTotal) || 0; // messages gratuits déjà envoyés
-  const compteurJour = Number(request.data.compteurJour) || 0; // messages envoyés aujourd'hui
-  // Vigie : ID d'installation anonyme (généré par l'app) + ID de session.
-  // Peut être absent (vieille version de l'app) → stats sans identifiant.
-  const vigie = typeof request.data.vigie === "string" ? request.data.vigie.slice(0, 40) : "";
-  const session = typeof request.data.session === "string" ? request.data.session.slice(0, 40) : "";
-
-  if (!message) {
+  // ── Identité, quotas, bornes (audit sécurité du 02/09/2026) ──
+  const uid = identite(request);
+  await exigerQuotaIp(request, "louane", uid);
+  const message = texte(request.data.message, BORNES.message + 1);
+  if (!message.trim()) {
     throw new HttpsError("invalid-argument", "Le message est vide.");
   }
+  if (message.length > BORNES.message) {
+    throw new HttpsError("invalid-argument",
+      `Message trop long (${BORNES.message} caractères max).`);
+  }
+  const historique = nettoyerHistorique(request.data.historique);
+  const heure = texte(request.data.heure, BORNES.heure); // heure locale du téléphone, ex. "23:47"
+  const jour = texte(request.data.jour, BORNES.jour); // jour local en toutes lettres
+  const accueil = texte(request.data.accueil, BORNES.accueil); // bulles d'accueil en dur
+  const prenom = texte(request.data.prenom, BORNES.prenom); // prénom (onboarding)
+  const memoire = texte(request.data.memoire, BORNES.memoire); // fiche mémoire de Louane
+  const profil = nettoyerProfil(request.data.profil); // réponses d'onboarding
+  // Programme 7 jours en cours : {actif, titre, jour, seanceDuJourFaite, termine}.
+  const parcours = nettoyerParcours(request.data.parcours);
+  // Historique d'écoute des séances : [{id, fois, jours}].
+  const ecoutes = nettoyerEcoutes(request.data.ecoutes);
+  // Résumé des évaluations bien-être d'Apple Santé (niveau grossier).
+  // ⚠️ Donnée sensible : ne JAMAIS l'écrire dans les logs ni dans Firestore.
+  const sante = texte(request.data.sante, BORNES.sante);
+  const santeDispo = request.data.santeDispo === true;
+  // Vigie : ID d'installation anonyme (généré par l'app) + ID de session.
+  const vigie = texte(request.data.vigie, 40);
+  const session = texte(request.data.session, 40);
+
+  // Abonnement et compteurs : dès qu'il y a une identité Firebase, c'est le
+  // SERVEUR qui sait (RevenueCat + `compteurs/{uid}`). Ce que l'app envoie
+  // (`abonne`, `compteurTotal`, `compteurJour`) ne sert plus qu'aux vieilles
+  // apps sans jeton, tant que EXIGER_AUTH est false.
+  const abonne = await abonnementVerifie(request, uid, request.data.abonne);
+  const compteurs = await lireCompteurs(uid);
+  const compteurTotal = compteurs ? compteurs.total : (Number(request.data.compteurTotal) || 0);
+  const compteurJour = compteurs ? compteurs.n : (Number(request.data.compteurJour) || 0);
+  // Clé de la mémoire d'alerte (message 3114) : le compte, sinon l'installation.
+  const cleSecurite = uid || vigie;
 
   // Un seul client OpenAI pour tout : Voix, Veilleur, Mémoire (GPT-5.6 Luna).
   const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
@@ -1565,6 +1846,10 @@ exports.louane = onCall(
     // contenu ne sort JAMAIS d'ici.) Sert à croiser « conversations
     // nourries par Santé » × conversion.
     avecSante: sante.length > 0,
+    // Signaux de sécurité (02/09) : jeton Firebase présent ? App Check
+    // valide ? → décident du passage de EXIGER_AUTH / enforceAppCheck.
+    auth: !!uid,
+    appCheck: !!request.app,
   };
 
   // Limite atteinte (gratuit épuisé ou plafond du jour) : on ne fait PAS tourner
@@ -1586,10 +1871,9 @@ exports.louane = onCall(
       carReponse: 0,
     });
     if (veilleurSeul.niveau === 2) {
-      const dejaAlerte = historique.some(
-        (m) => m && typeof m.content === "string" && m.content.includes("3114"),
-      );
+      const dejaAlerte = await alerteRecente(cleSecurite);
       if (!dejaAlerte) {
+        await marquerAlerte(cleSecurite);
         console.warn("[Veilleur] ALERTE niveau 2 (hors quota) :", veilleurSeul.categorie);
         return {
           reponse: MESSAGE_SECURITE,
@@ -1618,6 +1902,8 @@ exports.louane = onCall(
       consigneQuota(abonne, compteurTotal)),
     appelVeilleur(client, historique, message),
   ]);
+  // Message répondu → compté côté serveur (les vieilles apps comptent en local).
+  await incrementerCompteurs(uid, compteurs);
 
   // Marqueur [PARCOURS] : la Voix le pose en fin de message quand elle propose
   // le programme. On le retire TOUJOURS du texte (où qu'il traîne), et on ne
@@ -1659,7 +1945,7 @@ exports.louane = onCall(
   // découpage : il ne doit pas effacer les sauts de ligne qui servent à
   // séparer les bulles).
   const avantPrenom = bulles.join("\n");
-  bulles = bulles.map(sansTiretLong)
+  bulles = bulles.map(sansTiretLong).map(sansEmoji)
     .map((b) => sansPrenomFinal(b, prenom)).map(sansPointFinal).filter(Boolean);
   // Signaux Vigie : les filets ont-ils dû corriger la Voix ? (compteurs, pas de texte)
   const phrasesCoupees = bulles.length - nbBullesVoix; // > 0 : la Voix collait des phrases
@@ -1705,11 +1991,10 @@ exports.louane = onCall(
   // qui n'a rien d'humain). Dans ce cas, Louane continue de l'accompagner avec
   // douceur via la Voix (qui a déjà tourné, et qui sait rester présente).
   if (veilleur.niveau === 2) {
-    const dejaAlerte = historique.some(
-      (m) => m && typeof m.content === "string" && m.content.includes("3114"),
-    );
+    const dejaAlerte = await alerteRecente(cleSecurite);
     if (!dejaAlerte) {
-      console.warn("[Veilleur] ALERTE niveau 2 :", veilleur.categorie, "-", veilleur.raison);
+      await marquerAlerte(cleSecurite);
+      console.warn("[Veilleur] ALERTE niveau 2 :", veilleur.categorie);
       await enregistrerStatsLouane(statsReponse);
       return {
         reponse: MESSAGE_SECURITE,
@@ -1801,36 +2086,52 @@ function nettoyerProps(props) {
   return propres;
 }
 
+const REGEX_VIGIE_ID = /^v_[0-9a-f]{16}$/; // format généré par vigie_service.dart
+const REGEX_SESSION_ID = /^s_[0-9a-f]{16}$/;
+const REGEX_TYPE_EVENEMENT = /^[a-z0-9_]{1,40}$/;
+const REGEX_VERSION = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+
 exports.trace = onCall(
   { enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
   async (request) => {
-    const vigie = typeof request.data.vigie === "string" ?
-      request.data.vigie.slice(0, 40) : "";
-    const session = typeof request.data.session === "string" ?
-      request.data.session.slice(0, 40) : "";
+    // Audit du 02/09/2026 : identifiants au format exact de l'app (les
+    // sessions réservées au serveur — "revenuecat", "rappels", "cron" — ne
+    // peuvent donc plus être forgées), types en snake_case, quotas par IP et
+    // par installation, événements plafonnés. Refus = { ok: false }, jamais
+    // d'erreur : l'app ne doit pas rejouer un lot refusé.
+    const uid = identite(request);
+    const vigie = texte(request.data.vigie, 40);
+    const session = texte(request.data.session, 40);
+    if (!REGEX_VIGIE_ID.test(vigie) || !REGEX_SESSION_ID.test(session)) {
+      return { ok: false };
+    }
     const evenements = Array.isArray(request.data.evenements) ?
       request.data.evenements.slice(0, TRACE_MAX_EVENEMENTS) : [];
-    const version = typeof request.data.version === "string" ?
-      request.data.version.slice(0, 20) : "";
-    // Plateforme, envoyée par l'app à partir de la 1.0.18. Liste blanche :
-    // tout autre contenu (macos des tests, chaîne forgée…) devient "".
-    const os = ["ios", "android"].includes(request.data.os) ?
-      request.data.os : "";
+    const version = REGEX_VERSION.test(request.data.version) ? request.data.version : "";
+    const os = ["ios", "android"].includes(request.data.os) ? request.data.os : "";
+    if (evenements.length === 0) return { ok: false };
 
-    if (!vigie || evenements.length === 0) {
+    if (!(await compterParJour("quota_ip", cleIp(ipDe(request)), "trace", PLAFOND_IP.trace))) {
+      return { ok: false };
+    }
+    if (!(await compterParJour("quota_vigie", vigie, "evenements",
+      PLAFOND_VIGIE_EVENEMENTS, evenements.length))) {
       return { ok: false };
     }
 
     const lot = db.batch();
     const recus = FieldValue.serverTimestamp();
+    let n = 0;
     for (const e of evenements) {
-      if (!e || typeof e !== "object" || typeof e.type !== "string") continue;
+      if (!e || typeof e !== "object" || typeof e.type !== "string" ||
+        !REGEX_TYPE_EVENEMENT.test(e.type)) continue;
+      n++;
       lot.set(db.collection("vigie_events").doc(), {
         vigie,
         session,
         version,
         ...(os ? { os } : {}),
-        type: e.type.slice(0, 40),
+        type: e.type,
         props: nettoyerProps(e.props),
         // tsc = horloge du téléphone (ordre réel des événements dans la
         // session) ; ts = heure de réception serveur (fiable, comparable).
@@ -1838,8 +2139,8 @@ exports.trace = onCall(
         ts: recus,
       });
     }
-    await lot.commit();
-    return { ok: true };
+    if (n) await lot.commit();
+    return { ok: n > 0 };
   });
 
 // ============================================================
@@ -1854,6 +2155,13 @@ exports.trace = onCall(
 //  l'en-tête Authorization, sinon 401.
 // ============================================================
 const RC_WEBHOOK_SECRET = defineSecret("RC_WEBHOOK_SECRET");
+
+// Comparaison en temps constant (pas de fuite par le temps de réponse).
+function secretEgal(recu, attendu) {
+  const a = Buffer.from(String(recu || ""));
+  const b = Buffer.from(String(attendu || ""));
+  return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 // Type RevenueCat (+ contexte) → type Vigie, en français comme le reste.
 function typeVigieDepuisRc(e) {
@@ -1879,7 +2187,7 @@ exports.revenuecat = onRequest(
       res.status(405).send("POST uniquement");
       return;
     }
-    if (req.get("Authorization") !== RC_WEBHOOK_SECRET.value()) {
+    if (!secretEgal(req.get("Authorization"), RC_WEBHOOK_SECRET.value())) {
       res.status(401).send("non autorisé");
       return;
     }
@@ -1887,6 +2195,23 @@ exports.revenuecat = onRequest(
     if (!e || typeof e !== "object" || typeof e.type !== "string") {
       res.status(400).send("payload inattendu");
       return;
+    }
+    // Rejeu (RevenueCat renvoie un événement tant qu'il n'a pas eu 200) : un
+    // événement déjà traité ne doit ni dupliquer la ligne Vigie ni rejouer
+    // la fiche de rappel. `rc_events/{id}` : create() échoue s'il existe.
+    const idEvenement = String(e.id || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 100);
+    if (idEvenement) {
+      try {
+        await db.collection("rc_events").doc(idEvenement).create({
+          type: e.type, ts: FieldValue.serverTimestamp(),
+        });
+      } catch (err) {
+        if (err.code === 6) { // ALREADY_EXISTS
+          res.status(200).json({ ok: true, deja: true });
+          return;
+        }
+        throw err;
+      }
     }
 
     // L'étiquette posée par l'app (setAttributes). À défaut (versions d'app
@@ -1928,6 +2253,10 @@ exports.revenuecat = onRequest(
     } catch (err) {
       console.error("[Rappels] mise à jour de la fiche échouée (ignorée) :", err);
     }
+    // L'abonnement a bougé : on oublie le cache serveur de ces identifiants
+    // (le prochain appel de l'app relit RevenueCat et repose le custom claim).
+    await oublierCacheAbonne([e.app_user_id, e.original_app_user_id,
+      ...(Array.isArray(e.aliases) ? e.aliases : [])]);
     res.status(200).json({ ok: true });
   });
 
@@ -1988,11 +2317,11 @@ async function majRappelEssai(e, typeVigie, vigie) {
   const fiche = db.collection("rappels_essai").doc(idFiche);
 
   if (typeVigie === "essai_demarre") {
-    const attrs = e.subscriber_attributes || {};
-    const email = attrs["$email"] && typeof attrs["$email"].value === "string" ?
-      attrs["$email"].value.trim() : "";
-    const prenom = attrs["$displayName"] && typeof attrs["$displayName"].value === "string" ?
-      attrs["$displayName"].value.trim().slice(0, 60) : "";
+    // Audit du 02/09/2026 : l'e-mail vient du compte Firebase (Apple/Google
+    // l'ont vérifié), plus de l'attribut RevenueCat `$email` que n'importe
+    // qui peut poser avec la clé publique. Pas de compte Firebase avec
+    // e-mail (RevenueCat anonyme, connexion anonyme) → pas joignable.
+    const { email, prenom } = await coordonneesDepuisAuth(idFiche, e.subscriber_attributes || {});
     const finMs = Number(e.expiration_at_ms) || 0;
     if (!email.includes("@") || !finMs) return; // pas joignable → pas de fiche
     // set() SANS merge : un nouvel essai (rare) remet la fiche à neuf,
@@ -2031,6 +2360,32 @@ async function majRappelEssai(e, typeVigie, vigie) {
   }
 }
 
+// Prénom sûr pour un e-mail : un seul mot, lettres (accents compris),
+// apostrophe ou tiret, 30 caractères max. Tout le reste → pas de prénom.
+function prenomSur(s) {
+  const m = /^\s*([\p{L}][\p{L}'’-]{0,29})/u.exec(String(s || ""));
+  return m ? m[1] : "";
+}
+
+// E-mail et prénom depuis le compte Firebase (l'app_user_id RevenueCat est
+// l'uid Firebase, cf. Purchases.logIn). Le $displayName RevenueCat ne sert
+// que de repli pour le prénom, jamais pour l'e-mail.
+async function coordonneesDepuisAuth(uid, attrs) {
+  let email = "";
+  let prenom = "";
+  try {
+    const u = await getAuth().getUser(uid);
+    email = String(u.email || "").trim();
+    prenom = String(u.displayName || "");
+  } catch (_) {
+    // pas un compte Firebase (id RevenueCat anonyme) : rien à envoyer
+  }
+  if (!prenom && attrs["$displayName"] && typeof attrs["$displayName"].value === "string") {
+    prenom = attrs["$displayName"].value;
+  }
+  return { email, prenom: prenomSur(prenom) };
+}
+
 // Petit échappement pour glisser le prénom (venu d'Apple/Google) dans le HTML.
 function echapperHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -2051,7 +2406,7 @@ function contenuRappel(f) {
   }).format(new Date(f.finEssaiMs)).replace(" 1 ", " 1er ");
   // Le $displayName venu de Google est souvent « Prénom Nom » entier :
   // on ne garde que le premier mot (Apple, lui, ne stocke que le prénom).
-  const prenom = String(f.prenom || "").trim().split(/\s+/)[0];
+  const prenom = prenomSur(f.prenom);
   const bonjour = prenom ? `Bonjour ${prenom},` : "Bonjour,";
 
   const sujet = "Comment se passe ton essai gratuit ?";
@@ -2369,6 +2724,17 @@ function plafonnerBulles(bulles, max) {
   return [...bulles.slice(0, max - 1), bulles.slice(max - 1).join(" ")];
 }
 
+// Jamais d'emoji dans une bulle de Louane (demande de Paul, 02/09) : la
+// consigne l'interdit, ce filet le garantit (pictogrammes, sélecteurs de
+// variante et liaisons, espaces doubles nettoyés).
+// (RegExp construite depuis une chaîne : le parseur d'ESLint du projet ne
+// connaît pas \p{…}, Node 22 si.)
+const REGEX_EMOJI = new RegExp("\\p{Extended_Pictographic}|\\uFE0F|\\u200D", "gu");
+function sansEmoji(texte) {
+  return String(texte || "").replace(REGEX_EMOJI, "")
+    .replace(/[ \t]{2,}/g, " ").trim();
+}
+
 // Jamais de point à la fin d'une bulle (demande de Paul, 02/09) : « Bonsoir. »
 // est sec, « Bonsoir » est chaleureux. On retire UN point final (pas un « ? »,
 // pas un « ! », pas un point à l'intérieur de guillemets fermés).
@@ -2576,39 +2942,32 @@ function parcoursDefautPour(profil) {
 exports.genererParcours = onCall(
   { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 2 },
   async (request) => {
-    const historiqueBrut = Array.isArray(request.data.historique) ? request.data.historique : [];
-    const memoire = typeof request.data.memoire === "string" ? request.data.memoire : "";
-    const profil = (request.data.profil && typeof request.data.profil === "object") ?
-      request.data.profil : null;
-    const prenom = typeof request.data.prenom === "string" ?
-      request.data.prenom.trim().slice(0, 40) : "";
-    // Résumé des évaluations bien-être d'Apple Santé (niveau grossier).
-    // ⚠️ Donnée sensible : ne JAMAIS l'écrire dans les logs ni dans Firestore.
-    const sante = typeof request.data.sante === "string" ?
-      request.data.sante.slice(0, 600) : "";
-    // Historique d'écoute {id, fois, jours} : mêmes données que le chat.
-    const ecoutes = Array.isArray(request.data.ecoutes) ? request.data.ecoutes : [];
-    const abonne = request.data.abonne === true;
+    // Audit du 02/09/2026 : identité, quotas, bornes, abonnement vérifié.
+    const uid = identite(request);
+    await exigerQuotaIp(request, "parcours", uid);
+    const memoire = texte(request.data.memoire, BORNES.memoire);
+    const profil = nettoyerProfil(request.data.profil);
+    const prenom = texte(request.data.prenom, BORNES.prenom).trim();
+    // ⚠️ Donnée sensible (Apple Santé) : jamais dans les logs ni Firestore.
+    const sante = texte(request.data.sante, BORNES.sante);
+    const ecoutes = nettoyerEcoutes(request.data.ecoutes) || [];
     // Tout premier programme de la personne (envoyé par l'app 1.0.20+) :
     // jour 1 forcé à « Ma première méditation ». Voir en tête de section.
     const premierParcours = request.data.premierParcours === true;
-    const vigie = typeof request.data.vigie === "string" ? request.data.vigie.slice(0, 40) : "";
-    const session = typeof request.data.session === "string" ? request.data.session.slice(0, 40) : "";
+    const vigie = texte(request.data.vigie, 40);
+    const session = texte(request.data.session, 40);
 
-    // Le programme 7 jours est réservé aux abonnées Premium. L'app verrouille
-    // déjà le CTA derrière le paywall ; cette garde protège le coût API si un
-    // vieux client (ou un appel direct) tente quand même.
+    // Le programme 7 jours est réservé aux abonnées Premium : vérifié auprès
+    // de RevenueCat dès qu'il y a un compte (voir abonnementVerifie).
+    const abonne = await abonnementVerifie(request, uid, request.data.abonne);
     if (!abonne) {
       throw new HttpsError("permission-denied", "Le programme est réservé à Quieto Premium.");
     }
 
-    // Historique nettoyé : rôles valides, contenu texte, fenêtre glissante.
-    // On fusionne les rôles consécutifs identiques et on démarre sur un
-    // message user (exigences de l'API).
-    let historique = historiqueBrut
-      .filter((m) => m && (m.role === "user" || m.role === "assistant") &&
-        typeof m.content === "string" && m.content.trim())
-      .slice(-FENETRE_VOIX);
+    // Historique nettoyé (rôles valides, texte borné, fenêtre glissante) ; on
+    // fusionne les rôles consécutifs identiques et on démarre sur un message
+    // user (exigences de l'API).
+    let historique = nettoyerHistorique(request.data.historique);
     while (historique.length && historique[0].role !== "user") historique = historique.slice(1);
     const messages = [];
     for (const m of [...historique, { role: "user", content: "Crée maintenant mon programme de 7 jours." }]) {
@@ -2749,13 +3108,15 @@ const CONSIGNE_ACCUEIL_ONBOARDING =
 exports.accueilOnboarding = onCall(
   { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
   async (request) => {
-    const prenom = typeof request.data.prenom === "string" ? request.data.prenom.slice(0, 40) : "";
-    const heure = request.data.heure;
-    const jour = request.data.jour;
-    const profil = (request.data.profil && typeof request.data.profil === "object") ?
-      request.data.profil : null;
-    const vigie = typeof request.data.vigie === "string" ? request.data.vigie.slice(0, 40) : "";
-    const session = typeof request.data.session === "string" ? request.data.session.slice(0, 40) : "";
+    // Audit du 02/09/2026 : identité, quotas, bornes.
+    const uid = identite(request);
+    await exigerQuotaIp(request, "accueil", uid);
+    const prenom = texte(request.data.prenom, BORNES.prenom);
+    const heure = texte(request.data.heure, BORNES.heure);
+    const jour = texte(request.data.jour, BORNES.jour);
+    const profil = nettoyerProfil(request.data.profil);
+    const vigie = texte(request.data.vigie, 40);
+    const session = texte(request.data.session, 40);
 
     const debut = Date.now();
     const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
@@ -2828,4 +3189,71 @@ exports.accueilOnboarding = onCall(
     }
 
     return { bulles };
+  });
+
+// ============================================================
+//  Cloud Function "synchroniserAbonnement" (02/09/2026) — l'app l'appelle
+//  au lancement et après chaque changement RevenueCat (achat, restauration) :
+//  le serveur relit RevenueCat et pose le custom claim `premium` sur le
+//  compte Firebase (lu par les règles Storage). L'app rafraîchit ensuite
+//  son jeton (getIdToken(true)).
+// ============================================================
+exports.synchroniserAbonnement = onCall(
+  { enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
+  async (request) => {
+    const uid = request.auth && request.auth.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Connexion requise.");
+    await exigerQuotaIp(request, "sync", uid);
+    const premium = await verifierAbonne(uid, true);
+    return { premium };
+  });
+
+// ============================================================
+//  Cloud Function "supprimerDonnees" (02/09/2026) — appelée par l'app juste
+//  AVANT la suppression du compte Firebase : efface tout ce que le serveur
+//  garde sous cet identifiant (fiche de rappel e-mail + prénom, cache
+//  d'abonnement, compteurs, mémoire d'alerte), retire le custom claim, et
+//  demande à RevenueCat d'effacer la personne (RGPD art. 17). Cette dernière
+//  étape exige la clé SECRÈTE RevenueCat :
+//  ⚠️ À FAIRE PAR PAUL : créer le secret `RC_API_KEY` (clé « sk_… »,
+//  RevenueCat → Project settings → API keys → Secret API keys) dans Secret
+//  Manager, puis ajouter `secrets: ["RC_API_KEY"]` aux options ci-dessous et
+//  redéployer. Sans lui, l'effacement RevenueCat est sauté (et signalé dans
+//  la réponse : `revenuecat: false`).
+// ============================================================
+exports.supprimerDonnees = onCall(
+  { enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
+  async (request) => {
+    const uid = request.auth && request.auth.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Connexion requise.");
+    for (const collection of ["rappels_essai", "abonnes", "compteurs", "quota_uid", "securite"]) {
+      try {
+        await db.collection(collection).doc(uid).delete();
+      } catch (e) {
+        console.error("[Suppression]", collection, "non effacé :", e.message);
+      }
+    }
+    try {
+      await getAuth().setCustomUserClaims(uid, null);
+    } catch (_) {
+      // compte peut-être déjà parti : sans importance
+    }
+    let revenuecat = false;
+    const cle = process.env.RC_API_KEY || "";
+    if (cle.startsWith("sk_")) {
+      try {
+        const r = await fetch("https://api.revenuecat.com/v1/subscribers/" + encodeURIComponent(uid), {
+          method: "DELETE",
+          headers: { "Authorization": "Bearer " + cle },
+          signal: AbortSignal.timeout(8000),
+        });
+        revenuecat = r.ok || r.status === 404;
+        if (!revenuecat) console.error("[Suppression] RevenueCat HTTP", r.status);
+      } catch (e) {
+        console.error("[Suppression] RevenueCat injoignable :", e.message);
+      }
+    } else {
+      console.warn("[Suppression] RC_API_KEY absente : effacement RevenueCat sauté pour", uid);
+    }
+    return { ok: true, revenuecat };
   });

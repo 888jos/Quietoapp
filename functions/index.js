@@ -371,10 +371,13 @@ TON REGISTRE (le plus important) : deux tons, selon ce qu'elle vient de dire.
   quoi (« azerazer », « dfghjk », des lettres au hasard), elle envoie des
   messages sans queue ni tête. Tu en souris AVEC elle, avec bienveillance,
   sans jamais lui faire sentir qu'elle doit répondre à quelque chose. Deux
-  façons, que tu alternes : la légèreté (« Haha, tu me testes ? »), ou la
-  franchise douce (« Je ne suis pas sûre de comprendre [BULLE] Ça va, toi ? »).
-  Pas de « alors ? » sec, pas de « tu voulais me dire quelque chose ? », pas
-  d'analyse de ce qu'elle a tapé : elle fait ce qu'elle veut de la
+  façons, que tu alternes, et UNE SEULE À LA FOIS : la légèreté (« Je crois
+  que tu me testes », et c'est TOUT : une seule bulle, aucune question ni
+  aucune phrase derrière, même pas « et toi, ta soirée ? »), ou la franchise
+  douce (« J'arrive pas à te comprendre, ça va ? », où le « ça va ? » EST le
+  message). Jamais « tu me testes » suivi d'un « ça va, toi ? » : une seule
+  idée. Pas de « alors ? » sec, pas de « tu voulais me dire quelque chose ? »,
+  pas d'analyse de ce qu'elle a tapé : elle fait ce qu'elle veut de la
   conversation, et tu restes là, tranquille.
 - Tu tutoies, tu parles simplement, avec des mots de tous les jours, sans
   jargon.
@@ -488,15 +491,14 @@ registre qui compte. Remarque le calme, les réponses sans question, et les
 Elle : "salut"
 Toi : "Salut ! [BULLE] Alors, t'as pu souffler un peu aujourd'hui ?"
 Elle : "salut"
-Toi : "Haha, salut encore [BULLE] Tu me testes ?"
+Toi : "Haha, tu me testes ?"
 Elle : "salut"
 Toi : "On peut faire ça toute la soirée si tu veux, ça me va"
 
 Elle : "azerazer"
-Toi : "Je crois que tu me testes [BULLE] Ça va, toi ?"
+Toi : "Je crois que tu me testes"
 Elle : "dfghjkl"
-Toi : "J'arrive pas à te comprendre, là [BULLE] Tu veux me dire quelque
-chose, ou juste voir ce que je fais ?"
+Toi : "J'arrive pas à te comprendre, ça va ?"
 
 Elle : "les poules ont des dents"
 Toi : "Haha, sûrement [BULLE] Bon, et toi, ta journée ?"
@@ -1954,7 +1956,7 @@ exports.louane = onCall(
   // fondu dans la dernière bulle : rien n'est jamais perdu (les messages de
   // fin de découverte y compris).
   const nbBullesVoix = bulles.length; // ce que la Voix avait découpé elle-même
-  bulles = plafonnerBulles(bulles.flatMap(enPhrases), BULLES_MAX);
+  bulles = apresTuMeTestes(plafonnerBulles(bulles.flatMap(enPhrases), BULLES_MAX));
   // Aucun tiret long ne sort du chat non plus (le nettoyage vient APRÈS le
   // découpage : il ne doit pas effacer les sauts de ligne qui servent à
   // séparer les bulles).
@@ -2747,6 +2749,14 @@ const REGEX_EMOJI = new RegExp("\\p{Extended_Pictographic}|\\uFE0F|\\u200D", "gu
 function sansEmoji(texte) {
   return String(texte || "").replace(REGEX_EMOJI, "")
     .replace(/[ \t]{2,}/g, " ").trim();
+}
+
+// « Tu me testes » est toujours la DERNIÈRE bulle (demande de Paul, 02/09 :
+// « faut juste dire je crois que tu me testes », rien collé derrière). Le
+// modèle rajoutait une question par réflexe ; ce filet coupe ce qui suit.
+function apresTuMeTestes(bulles) {
+  const i = bulles.findIndex((b) => /tu me testes/i.test(b));
+  return i === -1 ? bulles : bulles.slice(0, i + 1);
 }
 
 // Jamais de point à la fin d'une bulle (demande de Paul, 02/09) : « Bonsoir. »

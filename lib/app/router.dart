@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import '../features/onboarding/presentation/onboarding_comprehension_page.dart';
 import '../features/onboarding/presentation/onboarding_connexion_page.dart';
@@ -64,7 +65,13 @@ abstract final class AppRoutes {
   static String categoryPath(String categoryId) => '/category/$categoryId';
 }
 
+/// Clé du Navigator racine : permet d'afficher un dialogue par-dessus
+/// n'importe quel écran sans contexte local (ex. la carte d'avis du
+/// ReviewService, déclenchée depuis la fin d'une séance audio).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final appRouter = GoRouter(
+  navigatorKey: rootNavigatorKey,
   initialLocation: AppRoutes.splash,
   debugLogDiagnostics: false,
   routes: [

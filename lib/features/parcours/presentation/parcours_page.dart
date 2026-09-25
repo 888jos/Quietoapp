@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/models/parcours_model.dart';
+import '../../../core/services/review_service.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -104,6 +105,16 @@ class _ParcoursPageState extends ConsumerState<ParcoursPage> {
       setState(() => _jourACelebrer = faits);
     } else {
       _jourACelebrer = faits;
+    }
+    // Avis store : une étoile qui s'allume à partir du jour 3, c'est LE
+    // moment de fierté. On laisse la célébration (allumage + vibration) se
+    // jouer avant de solliciter le popup natif ; le service (garde-fous +
+    // quota OS) décide seul de la suite.
+    if (faits >= 3) {
+      final review = ref.read(reviewServiceProvider);
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted) review.solliciterAvis('etoile_parcours');
+      });
     }
   }
 

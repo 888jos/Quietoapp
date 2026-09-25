@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/apple_health_icon.dart';
+import '../../../core/ui/colonne_tablette.dart';
 import '../../../core/ui/starry_background.dart';
 import 'widgets/slide_reveal.dart';
 
@@ -152,10 +153,11 @@ class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
                         SlideReveal(
                           active: true,
                           delay: const Duration(milliseconds: 350),
-                          child: const Text(
-                            'Tout reste sur ton iPhone. '
+                          child: Text(
+                            'Tout reste sur ton '
+                            '${Tablette.estTablette(context) ? 'iPad' : 'iPhone'}. '
                             'Tu peux couper ça quand tu veux.',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: AppColors.textMuted,
                               fontSize: 12,
                               height: 1.5,

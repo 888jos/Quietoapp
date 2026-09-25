@@ -44,6 +44,7 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   // par surface. Aucun événement « achat » ici n'est deviné : chacun suit un
   // vrai retour RevenueCat.
   String _vigieSource = 'onboarding';
+  bool _sourceResolue = false;
   late final DateTime _vigieOuvertA;
   bool _vigieAchete = false;
 
@@ -86,8 +87,6 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
     _vigieOuvertA = DateTime.now();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final q = GoRouterState.of(context).uri.queryParameters;
-      _vigieSource = q['src'] ?? (q['from'] == 'premium' ? 'premium' : 'onboarding');
       ref.read(vigieProvider).log('paywall_affiche', {'source': _vigieSource});
     });
   }
@@ -95,6 +94,14 @@ class _PaywallPageState extends ConsumerState<PaywallPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Surface d'origine, lue une fois AVANT le premier build (interdit dans
+    // initState : GoRouterState.of dépend d'un InheritedWidget).
+    if (!_sourceResolue) {
+      _sourceResolue = true;
+      final q = GoRouterState.of(context).uri.queryParameters;
+      _vigieSource =
+          q['src'] ?? (q['from'] == 'premium' ? 'premium' : 'onboarding');
+    }
     // Suit l'animation d'arrivée de la route : on ne monte le paywall natif
     // qu'une fois la transition terminée (status == completed).
     final anim = ModalRoute.of(context)?.animation;

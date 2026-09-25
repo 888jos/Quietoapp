@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:audio_service/audio_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
@@ -82,6 +83,19 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
 
   // ── Init ──────────────────────────────────────────
 
+  /// Jeton d'identité Firebase (rafraîchi par le SDK s'il expire), ou null
+  /// si personne n'est connecté / le réseau ne répond pas.
+  Future<String?> _jetonFirebase() async {
+    try {
+      return await FirebaseAuth.instance.currentUser
+          ?.getIdToken()
+          .timeout(const Duration(seconds: 5));
+    } catch (e) {
+      debugPrint('[Audio] jeton Firebase indisponible : $e');
+      return null;
+    }
+  }
+
   Future<void> initSession(SessionModel session) async {
     // Sauvegarde le temps écouté de la séance précédente avant d'en changer.
     await _flushListening();
@@ -109,8 +123,16 @@ class QuietoAudioHandler extends BaseAudioHandler with SeekHandler {
     final filename = session.audioFile.split('/').last;
     final url = '${AppConstants.audioBaseUrl}'
         '${Uri.encodeComponent(filename)}?alt=media';
+    // Jeton Firebase dans l'en-tête (audit du 02/09/2026) : les règles
+    // Storage n'ouvrent les MP3 qu'aux comptes connectés (anonymes compris)
+    // et les séances premium au claim `premium` posé par le serveur. Sans
+    // jeton (démarrage hors ligne…), on tente quand même.
+    final jeton = await _jetonFirebase();
     try {
-      await newPlayer.setUrl(url);
+      await newPlayer.setUrl(
+        url,
+        headers: jeton == null ? null : {'Authorization': 'Firebase $jeton'},
+      );
     } catch (e) {
       // setUrl failed (e.g. network error, 404). Clean up and rethrow so
       // PlayerNotifier._init()'s catch sets the error state.

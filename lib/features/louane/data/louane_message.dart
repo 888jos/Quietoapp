@@ -1,3 +1,5 @@
+import '../../../core/services/health_service.dart' show AnalyseSante;
+
 /// Un message dans la conversation avec Louane. [systeme] = fine ligne
 /// d'information centrée dans le fil (ex. « Essai Premium activé »), jamais
 /// envoyée au serveur : ce n'est pas Louane qui parle.
@@ -26,6 +28,23 @@ class LouaneMessage {
   /// recréer un programme remplace la précédente au lieu de l'empiler.
   final bool estOuvertureParcours;
 
+  /// Carte « Louane analyse ton questionnaire Santé » (marqueur [ANALYSE]
+  /// posé par le serveur) : pas une bulle, [texte] vide, jamais envoyée au
+  /// serveur telle quelle. Porte le test et ses réponses (ce que la carte
+  /// fait défiler) et sa durée. [analyseDebut] = l'instant où la carte est
+  /// apparue : son animation se déduit de l'heure, jamais rejouée.
+  final AnalyseSante? analyse;
+  final DateTime? analyseDebut;
+
+  /// Première bulle qui suit la carte d'analyse : réinjectée dans
+  /// l'historique API avec le marqueur [ANALYSE] devant, pour que Louane
+  /// sache qu'elle a déjà fait ce moment-là (et ne le refasse pas).
+  final bool porteAnalyse;
+
+  /// Quand le message est entré dans le fil (posée par le chat, jamais par
+  /// l'appelant) : l'en-tête du menu contextuel l'affiche (22/09/2026).
+  final DateTime? date;
+
   const LouaneMessage({
     required this.auteur,
     required this.texte,
@@ -33,7 +52,26 @@ class LouaneMessage {
     this.seanceId,
     this.avecBoutonParcours = false,
     this.estOuvertureParcours = false,
+    this.analyse,
+    this.analyseDebut,
+    this.porteAnalyse = false,
+    this.date,
   });
 
+  LouaneMessage avecDate(DateTime d) => LouaneMessage(
+        auteur: auteur,
+        texte: texte,
+        avecBoutonEssai: avecBoutonEssai,
+        seanceId: seanceId,
+        avecBoutonParcours: avecBoutonParcours,
+        estOuvertureParcours: estOuvertureParcours,
+        analyse: analyse,
+        analyseDebut: analyseDebut,
+        porteAnalyse: porteAnalyse,
+        date: d,
+      );
+
   bool get estLouane => auteur == AuteurMessage.louane;
+
+  bool get estCarteAnalyse => analyse != null;
 }

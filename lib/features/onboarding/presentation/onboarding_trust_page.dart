@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
+import '../../../core/services/review_service.dart';
 import '../../../core/services/storage_providers.dart';
+import '../../paywall/paywall_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
@@ -65,6 +68,13 @@ class _OnboardingTrustPageState extends ConsumerState<OnboardingTrustPage>
   final _scroll = ScrollController();
   late final Ticker _ticker;
   Duration _last = Duration.zero;
+  bool _parti = false; // anti double-tap sur Continuer
+
+  /// Temps de pose entre la demande du popup et le départ du fondu : StoreKit
+  /// met ~1 s à afficher le popup, le fondu dure 400 ms → les deux se posent
+  /// ensemble sur le mur. À ajuster si Paul trouve le popup en avance ou en
+  /// retard.
+  static const _poseAvantMur = Duration(milliseconds: 450);
 
   @override
   void initState() {
@@ -84,6 +94,28 @@ class _OnboardingTrustPageState extends ConsumerState<OnboardingTrustPage>
     _ticker.dispose();
     _scroll.dispose();
     super.dispose();
+  }
+
+  /// Continuer → le mur d'abonnement, avec le popup natif de notation
+  /// (5 étoiles) qui se pose EN MÊME TEMPS que lui (Paul, 11/09/2026 : « c'est
+  /// censé apparaître en même temps que la page »). Demandé ici, au tap,
+  /// avant même de quitter la page : StoreKit a ~1 s de latence, donc un
+  /// court temps de pose puis le fondu, et les deux arrivent ensemble.
+  /// Voir ReviewService.solliciterNotationOnboarding pour le pourquoi et les
+  /// garde-fous. Filet : pas de popup si le mur n'a rien à vendre (il
+  /// afficherait un spinner ou « indisponible »), sauf en debug.
+  Future<void> _continuer() async {
+    if (_parti) return;
+    _parti = true;
+    final offre = ref.read(offeringProvider).valueOrNull;
+    final achetable = offre?.availablePackages.isNotEmpty ?? false;
+    if (achetable || kDebugMode) {
+      final demande =
+          await ref.read(reviewServiceProvider).solliciterNotationOnboarding();
+      if (demande) await Future<void>.delayed(_poseAvantMur);
+    }
+    if (!mounted) return;
+    context.go(AppRoutes.paywall);
   }
 
   @override
@@ -163,7 +195,7 @@ class _OnboardingTrustPageState extends ConsumerState<OnboardingTrustPage>
                   const SizedBox(height: AppConstants.spacingMd),
                   AppButton(
                     label: 'Continuer',
-                    onTap: () => context.go(AppRoutes.paywall),
+                    onTap: _continuer,
                   ),
                   const SizedBox(height: AppConstants.spacingLg),
                 ],

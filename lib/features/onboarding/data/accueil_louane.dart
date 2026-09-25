@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import '../../../core/services/identite_firebase.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/vigie_service.dart';
@@ -43,6 +44,7 @@ class AccueilLouaneRepository {
     try {
       final callable =
           FirebaseFunctions.instance.httpsCallable('accueilOnboarding');
+      await assurerIdentiteFirebase();
       final result = await callable.call(<String, dynamic>{
         'prenom': prenom,
         'profil': profil,

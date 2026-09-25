@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:math';
 
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
@@ -11,6 +12,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../config/revenue_cat_config.dart';
+import 'abonnement_serveur.dart';
 import 'storage_providers.dart';
 import 'vigie_service.dart';
 
@@ -22,10 +24,15 @@ import 'vigie_service.dart';
 ///
 /// Fournisseurs : Apple (iOS uniquement) et Google (iOS + Android).
 
-/// Utilisateur connecté (null si personne). Réactif : l'UI se met à jour
-/// toute seule à la connexion / déconnexion.
+/// Utilisateur connecté avec un VRAI compte (Apple/Google) ; null si
+/// personne — le compte anonyme créé au lancement (audit du 02/09/2026) ne
+/// compte pas comme « connecté » pour l'interface. Réactif : `userChanges`
+/// émet aussi quand le compte anonyme est rattaché à Apple/Google (même
+/// uid, donc `authStateChanges` ne bougerait pas).
 final utilisateurProvider = StreamProvider<User?>(
-  (ref) => FirebaseAuth.instance.authStateChanges(),
+  (ref) => FirebaseAuth.instance
+      .userChanges()
+      .map((u) => (u == null || u.isAnonymous) ? null : u),
 );
 
 final authServiceProvider =
@@ -54,13 +61,13 @@ class AuthService {
       if (compte == null) return AuthResultat.annule;
 
       final jetons = await compte.authentication;
-      final resultat = await _auth.signInWithCredential(
+      final user = await _connecterAvec(
         GoogleAuthProvider.credential(
           idToken: jetons.idToken,
           accessToken: jetons.accessToken,
         ),
       );
-      await _lierRevenueCat(resultat.user);
+      await _lierRevenueCat(user);
       return AuthResultat.ok;
     } catch (_) {
       return AuthResultat.erreur;
@@ -82,7 +89,7 @@ class AuthService {
         nonce: sha256.convert(utf8.encode(brut)).toString(),
       );
 
-      final resultat = await _auth.signInWithCredential(
+      final user = await _connecterAvec(
         OAuthProvider('apple.com').credential(
           idToken: credentialApple.identityToken,
           rawNonce: brut,
@@ -96,7 +103,6 @@ class AuthService {
 
       // Apple ne transmet le prénom qu'à la toute première connexion :
       // on le range tout de suite, sinon il est perdu pour toujours.
-      final user = resultat.user;
       final prenom = credentialApple.givenName;
       if (user != null &&
           (user.displayName == null || user.displayName!.isEmpty) &&
@@ -114,6 +120,52 @@ class AuthService {
     } catch (e) {
       debugPrint('[Auth] connexion Apple échouée: $e');
       return AuthResultat.erreur;
+    }
+  }
+
+  /// Connexion avec une identité Apple/Google. Si la personne utilisait
+  /// jusque-là le compte ANONYME créé au lancement, on y RATTACHE le
+  /// fournisseur : même uid, donc mêmes compteurs, même abonnement côté
+  /// serveur, rien à transférer. Si ce compte Apple/Google existe déjà
+  /// (autre téléphone, réinstallation), on bascule dessus.
+  Future<User?> _connecterAvec(AuthCredential credential) async {
+    final actuel = _auth.currentUser;
+    if (actuel != null && actuel.isAnonymous) {
+      try {
+        final lie = await actuel.linkWithCredential(credential);
+        return lie.user;
+      } on FirebaseAuthException catch (e) {
+        if (e.code != 'credential-already-in-use' &&
+            e.code != 'email-already-in-use' &&
+            e.code != 'provider-already-linked') {
+          rethrow;
+        }
+        // Le compte existe déjà : on le rejoint avec l'identité renvoyée
+        // par Firebase (celle d'Apple ne se rejoue pas telle quelle).
+        final resultat =
+            await _auth.signInWithCredential(e.credential ?? credential);
+        return resultat.user;
+      }
+    }
+    final resultat = await _auth.signInWithCredential(credential);
+    return resultat.user;
+  }
+
+  /// Après une déconnexion ou une suppression : un nouveau compte anonyme
+  /// tout de suite, et RevenueCat aligné dessus (le serveur exige une
+  /// identité pour Louane, le programme et les MP3).
+  Future<void> _reconnexionAnonyme() async {
+    try {
+      final r = await _auth
+          .signInAnonymously()
+          .timeout(const Duration(seconds: 6));
+      final uid = r.user?.uid;
+      if (uid != null && revenueCatDisponible) {
+        await Purchases.logIn(uid);
+        await Purchases.setAttributes({'vigie': _vigie.id});
+      }
+    } catch (e) {
+      debugPrint('[Auth] reconnexion anonyme échouée : $e');
     }
   }
 
@@ -138,6 +190,8 @@ class AuthService {
       if (nom != null && nom.isNotEmpty) {
         await Purchases.setDisplayName(nom);
       }
+      // Le serveur relit l'abonnement sous ce compte et pose le claim.
+      await synchroniserAbonnementServeur();
     } catch (_) {
       // L'abonnement continue de marcher en anonyme : ne jamais bloquer
       // la connexion pour ça.
@@ -166,6 +220,7 @@ class AuthService {
     } catch (_) {}
     await _delierRevenueCat();
     await _auth.signOut();
+    await _reconnexionAnonyme();
   }
 
   /// Supprime le compte (exigence App Store dès qu'on propose la création
@@ -173,14 +228,26 @@ class AuthService {
   /// l'UI invite alors à se reconnecter puis à réessayer.
   Future<bool> supprimerCompte() async {
     final user = _auth.currentUser;
-    if (user == null) return true;
+    if (user == null || user.isAnonymous) return true;
     try {
+      // Le serveur efface D'ABORD ce qu'il garde sous cet identifiant
+      // (fiche de rappel e-mail + prénom, abonnement en cache, compteurs,
+      // profil RevenueCat) — RGPD art. 17. S'il ne répond pas, on ne
+      // supprime pas un compte à moitié : la personne réessaiera.
+      await FirebaseFunctions.instance
+          .httpsCallable('supprimerDonnees')
+          .call()
+          .timeout(const Duration(seconds: 12));
       await user.delete();
       await _delierRevenueCat();
+      await _reconnexionAnonyme();
       return true;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') return false;
       rethrow;
+    } catch (e) {
+      debugPrint('[Auth] suppression des données serveur échouée : $e');
+      return false;
     }
   }
 

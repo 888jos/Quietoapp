@@ -74,6 +74,7 @@ UI (ConsumerWidget)
 5. **Try-catch obligatoire** — toute opération async est enveloppée dans un try-catch.
 6. **Assets en ASCII pur** — les noms de fichiers dans `assets/audio/` et `assets/images/sessions/` ne contiennent ni accents ni espaces (problème NFD/NFC sur macOS, voir ADR-024).
 7. **Haptic ciblé** — les vibrations ne sont posées que sur les actions à valeur (validation, navigation principale, contrôles audio), pas sur les retours arrière ou éléments décoratifs (voir ADR-022).
+8. **iPad = la mise en page téléphone, zoomée** (11/09/2026) — l'app reste en portrait ; sur iPad, `EchelleTablette` (posé une fois dans le `builder` de `MaterialApp.router`, `core/ui/colonne_tablette.dart`) fait croire à l'app qu'elle est sur un écran de 600 pt de large puis la peint zoomée (×1,7 sur le 13", ×1,4 sur le 11", ×1,25 sur le mini) : textes, boutons, marges et fonds grossissent ensemble, rien ne s'étire. Aucune page n'a rien à faire ; `Tablette.estTablette(context)` sert aux rares réglages non géométriques (hauteur de couverture, « ton iPad »). Pour tout agrandir encore : baisser `Tablette.largeurLogique`.
 
 ## Modèles de données
 

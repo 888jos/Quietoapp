@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:iconsax_flutter/iconsax_flutter.dart';
 import '../core/services/storage_providers.dart';
 import '../core/theme/app_colors.dart';
+import '../core/ui/verre_apple.dart';
 import '../core/theme/app_text_styles.dart';
-import '../features/louane/louane_providers.dart' show louaneNavVisibleProvider;
+import '../features/louane/louane_providers.dart'
+    show louaneNavRevelationProvider;
 import '../features/louane/presentation/louane_palette.dart';
 import '../features/louane/presentation/widgets/louane_avatar.dart';
 
@@ -21,10 +21,13 @@ class HomeShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Sur l'onglet Louane, la barre se cache pendant qu'on écrit et ne
-    // revient qu'en défilant vers le haut dans le fil (choix de Paul).
-    final navVisible =
-        shell.currentIndex != 1 || ref.watch(louaneNavVisibleProvider);
+    // Sur l'onglet Louane, la barre suit le geste : elle rentre quand on
+    // descend dans le fil et ressort PROGRESSIVEMENT quand on remonte
+    // (retour de Paul du 12/09 : « à peine on scroll vers le haut, elle
+    // réapparaît entière, c'est chiant »). Ailleurs, toujours entière.
+    final revelation = shell.currentIndex != 1
+        ? 1.0
+        : ref.watch(louaneNavRevelationProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -35,33 +38,35 @@ class HomeShell extends ConsumerWidget {
       // Pas de mini-lecteur au-dessus de la barre (retiré le 28/08, demande
       // de Paul) : la séance en cours se pilote depuis l'écran verrouillé et
       // le centre de contrôle, comme Spotify.
-      bottomNavigationBar: AnimatedSize(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOutCubic,
-        alignment: Alignment.topCenter,
-        child: !navVisible
-            ? const SizedBox.shrink()
-            : _QuijetoNav(
-                currentIndex: shell.currentIndex,
-                onTap: (index) {
-                  // Vigie : navigation entre onglets (quels espaces
-                  // vivent ?).
-                  if (index != shell.currentIndex &&
-                      index < _nomsOnglets.length) {
-                    ref.read(vigieProvider).log('onglet', {
-                      'nom': _nomsOnglets[index],
-                    });
-                  }
-                  if (index == 1) {
-                    // On arrive sur Louane : la barre démarre visible.
-                    ref.read(louaneNavVisibleProvider.notifier).state = true;
-                  }
-                  shell.goBranch(
-                    index,
-                    initialLocation: index == shell.currentIndex,
-                  );
-                },
-              ),
+      // La pilule sort du bord bas de l'écran à hauteur de la révélation :
+      // le haut de la pilule affleure, puis elle monte avec le doigt.
+      bottomNavigationBar: ClipRect(
+        child: Align(
+          alignment: Alignment.topCenter,
+          heightFactor: revelation.clamp(0.0, 1.0),
+          // Toujours construite, même rentrée (hauteur 0) : le verre natif
+          // sous la pilule (VerreApple) n'est pas recréé à chaque sortie.
+          child: _QuijetoNav(
+            currentIndex: shell.currentIndex,
+            onTap: (index) {
+              // Vigie : navigation entre onglets (quels espaces
+              // vivent ?).
+              if (index != shell.currentIndex && index < _nomsOnglets.length) {
+                ref.read(vigieProvider).log('onglet', {
+                  'nom': _nomsOnglets[index],
+                });
+              }
+              if (index == 1) {
+                // On arrive sur Louane : la barre démarre visible.
+                ref.read(louaneNavRevelationProvider.notifier).state = 1.0;
+              }
+              shell.goBranch(
+                index,
+                initialLocation: index == shell.currentIndex,
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -91,96 +96,76 @@ class _QuijetoNav extends StatelessWidget {
             borderRadius: BorderRadius.circular(_hauteur / 2),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
+                color: Colors.black.withValues(alpha: 0.28),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          // Voile BLEU NUIT (couleur du fond, pas blanc — le blanc rendait
-          // un gris sale) légèrement translucide sur un flou appuyé : la
-          // pilule reste sombre mais le contenu flouté vit derrière.
-          child: Container(
-            padding: const EdgeInsets.all(1),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(_hauteur / 2),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withValues(alpha: 0.25),
-                  Colors.white.withValues(alpha: 0.04),
-                ],
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(_hauteur / 2 - 1),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                child: Container(
-                  height: _hauteur - 2,
-                  decoration: BoxDecoration(
-                    color: AppColors.background.withValues(alpha: 0.75),
-                    borderRadius: BorderRadius.circular(_hauteur / 2 - 1),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Le halo de l'onglet actif : une pilule douce qui
-                      // GLISSE d'un onglet à l'autre.
-                      AnimatedAlign(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        alignment: Alignment(-1.0 + currentIndex * 1.0, 0),
-                        child: FractionallySizedBox(
-                          widthFactor: 1 / 3,
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.10),
-                                borderRadius: BorderRadius.circular(28),
-                              ),
-                              child: const SizedBox.expand(),
-                            ),
+          // Le VERRE d'Apple (iOS 26) sous la pilule, comme la barre de saisie
+          // du chat (Paul, 22/09/2026 : « l'effet glace est parfait, pareil
+          // pour la barre de navigation ») : plus de voile bleu nuit ni de
+          // liseré dessinés ici, c'est le verre qui fait le fond et le reflet.
+          child: VerreApple(
+            rayon: _hauteur / 2,
+            child: SizedBox(
+              height: _hauteur,
+              child: Stack(
+                children: [
+                  // Le halo de l'onglet actif : une pilule douce qui
+                  // GLISSE d'un onglet à l'autre.
+                  AnimatedAlign(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment(-1.0 + currentIndex * 1.0, 0),
+                    child: FractionallySizedBox(
+                      widthFactor: 1 / 3,
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(28),
                           ),
+                          child: const SizedBox.expand(),
                         ),
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _NavItem(
-                              icon: Iconsax.home,
-                              iconActive: Iconsax.home_copy,
-                              label: 'Accueil',
-                              isActive: currentIndex == 0,
-                              onTap: () => onTap(0),
-                            ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _NavItem(
+                          icon: Iconsax.home,
+                          iconActive: Iconsax.home_copy,
+                          label: 'Accueil',
+                          isActive: currentIndex == 0,
+                          onTap: () => onTap(0),
+                        ),
+                      ),
+                      Expanded(
+                        child: _NavItem(
+                          customIcon: LouaneMiniAvatar(
+                            actif: currentIndex == 1,
                           ),
-                          Expanded(
-                            child: _NavItem(
-                              customIcon: LouaneMiniAvatar(
-                                actif: currentIndex == 1,
-                              ),
-                              label: 'Louane',
-                              isActive: currentIndex == 1,
-                              activeColor: LouanePalette.accent,
-                              onTap: () => onTap(1),
-                            ),
-                          ),
-                          Expanded(
-                            child: _NavItem(
-                              icon: Iconsax.profile_circle,
-                              iconActive: Iconsax.profile_circle_copy,
-                              label: 'Profil',
-                              isActive: currentIndex == 2,
-                              onTap: () => onTap(2),
-                            ),
-                          ),
-                        ],
+                          label: 'Louane',
+                          isActive: currentIndex == 1,
+                          activeColor: LouanePalette.accent,
+                          onTap: () => onTap(1),
+                        ),
+                      ),
+                      Expanded(
+                        child: _NavItem(
+                          icon: Iconsax.profile_circle,
+                          iconActive: Iconsax.profile_circle_copy,
+                          label: 'Profil',
+                          isActive: currentIndex == 2,
+                          onTap: () => onTap(2),
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
           ),

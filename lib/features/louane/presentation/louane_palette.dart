@@ -9,4 +9,8 @@ abstract final class LouanePalette {
 
   /// Turquoise très léger — pour les lueurs / fonds subtils.
   static const accentSoft = Color(0x225CE0D8);
+
+  /// Fond du fil de conversation : uni, un cran plus sombre que le fond de
+  /// l'app, pour que les bulles ressortent (Paul, 12/09 — pas de dégradé).
+  static const fondChat = Color(0xFF07101F);
 }

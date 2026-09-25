@@ -20,6 +20,8 @@ import '../../paywall/paywall_providers.dart';
 import '../data/accueil_louane.dart';
 import 'widgets/cercle_comprehension.dart';
 import 'widgets/slide_reveal.dart';
+import '../../../core/ui/colonne_tablette.dart';
+import '../../../core/ui/pouls_haptique.dart';
 
 /// Fin du questionnaire, en UN SEUL écran et une seule animation continue :
 ///
@@ -63,9 +65,8 @@ class _OnboardingComprehensionPageState
   final Set<int> _phrasesVibrees = {};
 
   /// Palier de 2 % déjà « cliqué » (le cliquetis du compteur).
-  int _dernierPalier = 0;
-  final _depuisTick = Stopwatch()..start();
-  static const _minEntreTicks = 55; // ms — en dessous, le Taptic sature
+  /// Le pouls du compteur : de plus en plus rapproché et fort jusqu'à 100 %.
+  final _pouls = PoulsHaptique();
 
   final _scroll = ScrollController();
   final List<String> _posees = [];
@@ -163,17 +164,9 @@ class _OnboardingComprehensionPageState
 
   /// Pendant la montée : le cliquetis du compteur et l'arrivée des phrases.
   void _pendantLeCompte() {
-    // Un tick tous les 2 %, façon molette : la courbe easeInOut fait qu'il
-    // s'emballe au milieu puis se pose à l'arrivée. Le garde-fou de temps
-    // évite de noyer le Taptic Engine au plus vite de la montée (il
-    // ignorerait les impulsions, et le rythme paraîtrait haché).
-    final palier = (_progression.value * 50).floor();
-    if (palier > _dernierPalier &&
-        _depuisTick.elapsedMilliseconds >= _minEntreTicks) {
-      _dernierPalier = palier;
-      _depuisTick.reset();
-      HapticFeedback.selectionClick();
-    }
+    // Le pouls : des impulsions de plus en plus rapprochées et de plus en
+    // plus fortes à mesure que le compteur monte (Paul, 12/09).
+    _pouls.avancer(_progression.value);
     // Une phrase se pose : impact plus franc que le cliquetis.
     for (var i = 0; i < _phrases.length; i++) {
       if (_progression.value >= _phrases[i].threshold &&
@@ -187,8 +180,8 @@ class _OnboardingComprehensionPageState
   /// 100 % : le compteur devient Louane, puis elle parle.
   Future<void> _naissance() async {
     if (_annule || !mounted) return;
-    // L'impulsion qui « pose » le compteur — et fait naître le visage.
-    HapticFeedback.mediumImpact();
+    // Le coup franc qui « pose » le compteur — et fait naître le visage.
+    PoulsHaptique.arrivee();
     await _mue.forward();
     if (_annule || !mounted) return;
     // Les ondes sont éteintes depuis la mue : on arrête aussi leur boucle,
@@ -416,6 +409,9 @@ class _OnboardingComprehensionPageState
                     // ne rejoue pas quand la suivante arrive.
                     key: ValueKey('comprehension_$i'),
                     nouveau: true,
+                    // iPad : bulles plus larges et texte plus gros (Paul,
+                    // 11/09) — le débrief doit se lire de loin.
+                    ample: true,
                     message: LouaneMessage(
                       auteur: AuteurMessage.louane,
                       texte: _posees[i],
@@ -488,8 +484,9 @@ class _OnboardingComprehensionPageState
                 Expanded(
                   child: Text(
                     _phrases[i].label,
-                    style: const TextStyle(
-                      fontSize: 15,
+                    style: TextStyle(
+                      // iPad : un cran plus gros, comme le débrief.
+                      fontSize: Tablette.estTablette(context) ? 17 : 15,
                       fontWeight: FontWeight.w400,
                       color: AppColors.textPrimary,
                     ),

@@ -2,8 +2,12 @@ import Flutter
 import HealthKit
 
 /// Canal natif `quieto/sante_mentale` : lit les signaux bien-être de l'app
-/// Santé (iOS 18+) et renvoie des NIVEAUX grossiers, jamais le détail brut :
-/// - évaluations anxiété (GAD-7) et humeur (PHQ-9) → faible/modere/eleve ;
+/// Santé (iOS 18+). Les questionnaires en détail, le reste en niveau grossier :
+/// - évaluations anxiété (GAD-7) et humeur (PHQ-9) → niveau faible/modere/eleve,
+///   ET (décision Paul 11/09/2026) le score, les réponses question par question
+///   (0-3 ; 4 = « préfère ne pas répondre », 9e question du PHQ-9 seulement)
+///   et l'horodatage — deux échantillons à la même heure = le questionnaire
+///   complet de bien-être mental (Santé enchaîne les deux en un passage) ;
 /// - état d'esprit consigné (7 derniers jours) → agreable/neutre/desagreable ;
 /// - sommeil de la dernière nuit → court/correct/bon (+ heures arrondies) ;
 /// - lumière du jour → minutes/jour en moyenne sur 7 jours.
@@ -127,12 +131,18 @@ enum SanteMentaleChannel {
         guard let a = e as? HKGAD7Assessment else { return nil }
         return ["type": "anxiete",
                 "niveau": niveau(gad7: a.risk),
+                "score": a.score,
+                "reponses": a.answers.map { $0.rawValue },
+                "horodatage": a.startDate.timeIntervalSince1970,
                 "jours": anciennete(a.startDate)]
       }
       lire(phq9) { e in
         guard let a = e as? HKPHQ9Assessment else { return nil }
         return ["type": "depression",
                 "niveau": niveau(phq9: a.risk),
+                "score": a.score,
+                "reponses": a.answers.map { $0.rawValue },
+                "horodatage": a.startDate.timeIntervalSince1970,
                 "jours": anciennete(a.startDate)]
       }
 

@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/services/health_service.dart';
 import '../../core/services/storage_providers.dart';
 import '../../core/services/storage_service.dart';
 import '../../core/services/vigie_service.dart';
@@ -384,14 +385,47 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
         state = state.copyWith(louaneEcrit: false);
         return;
       }
+      // Louane « analyse » le questionnaire Santé (marqueur [ANALYSE] du
+      // serveur, levé seulement si un questionnaire est lisible ici) : la
+      // carte animée d'abord, seule dans le fil, sans indicateur de frappe ;
+      // ses bulles n'arrivent qu'après, tapées comme d'habitude.
+      final analyse =
+          reponse.analyseSante ? HealthService.instance.analyseSante : null;
       // Réponse en plusieurs petites bulles tapées à la suite (comme
       // l'accueil) : le serveur envoie le découpage, l'app anime la frappe.
       // Les pièces jointes (séance, boutons) vont sur la DERNIÈRE bulle.
       final bulles =
           reponse.bulles.isNotEmpty ? reponse.bulles : [reponse.texte];
+      // La carte « Louane analyse » se glisse après la bulle d'accord (« Ok,
+      // on part là-dessus »), avant ce qu'elle a compris : la position vient
+      // du serveur (l'endroit du marqueur), bornée pour qu'il reste toujours
+      // au moins une bulle après la carte.
+      final carteApres =
+          analyse == null ? -1 : reponse.analyseApres.clamp(0, bulles.length - 1);
       for (var i = 0; i < bulles.length; i++) {
         final derniere = i == bulles.length - 1;
-        if (i > 0) {
+        var apresCarte = false;
+        if (i == carteApres) {
+          _vigie.log('sante_analyse_affichee', {'test': analyse!.test.name});
+          state = state.copyWith(
+            messages: [
+              ...state.messages,
+              LouaneMessage(
+                auteur: AuteurMessage.louane,
+                texte: '',
+                analyse: analyse,
+                analyseDebut: DateTime.now(),
+              ),
+            ],
+            louaneEcrit: false,
+          );
+          await Future.delayed(analyse.duree);
+          if (!mounted) return;
+          apresCarte = true;
+        }
+        // Après la carte d'analyse, même la première bulle se fait attendre :
+        // Louane finit de lire, puis écrit.
+        if (i > 0 || apresCarte) {
           state = state.copyWith(louaneEcrit: true);
           // Frappe crédible : durée liée à la longueur de la bulle qui vient.
           await Future.delayed(Duration(
@@ -409,6 +443,7 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
               // Dernier message découverte : l'au revoir de Louane porte
               // directement le bouton « essai gratuit ».
               avecBoutonEssai: derniere && reponse.finDecouverte,
+              porteAnalyse: i == carteApres,
             ),
           ],
           louaneEcrit: !derniere,
@@ -431,6 +466,79 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
         louaneEcrit: false,
       );
     }
+  }
+
+  /// Chaque message reçoit sa date en entrant dans le fil, quel que soit
+  /// l'endroit du code qui l'y met (l'en-tête du menu contextuel l'affiche).
+  @override
+  set state(LouaneChatState valeur) {
+    final maintenant = DateTime.now();
+    var change = false;
+    final messages = <LouaneMessage>[
+      for (final m in valeur.messages)
+        if (m.date == null) ...[
+          () {
+            change = true;
+            return m.avecDate(maintenant);
+          }(),
+        ] else
+          m,
+    ];
+    super.state = change ? valeur.copyWith(messages: messages) : valeur;
+  }
+
+  /// Renvoie un message de la personne, tel quel ou modifié (appui long sur
+  /// sa bulle → « Modifier » / « Renvoyer », demande de Paul du 22/09/2026).
+  /// Comme dans une conversation avec Claude : le fil est ramené juste AVANT
+  /// ce message — la réponse de Louane et tout ce qui suit disparaissent —
+  /// puis le texte part comme un nouveau message, et Louane répond à nouveau.
+  /// Compte comme un message (c'est une vraie réponse de plus côté serveur).
+  Future<void> renvoyer(int index, String texte) async {
+    if (state.louaneEcrit) return;
+    final messages = state.messages;
+    if (index < 0 || index >= messages.length) return;
+    final ancien = messages[index];
+    if (ancien.auteur != AuteurMessage.user) return;
+    _vigie.log('louane_message_renvoye', {
+      'modifie': texte.trim() != ancien.texte,
+      'retires': messages.length - index,
+    });
+    state = state.copyWith(messages: messages.sublist(0, index));
+    await envoyer(texte);
+  }
+
+  /// Retire un message de la personne et la réponse de Louane qui le suit
+  /// (jusqu'à son message suivant). Rien n'est renvoyé au serveur. Renvoie
+  /// ce qui a été retiré, pour l'« Annuler » de la page ([restaurer]).
+  List<LouaneMessage> supprimer(int index) {
+    if (state.louaneEcrit) return const [];
+    final messages = state.messages;
+    if (index < 0 ||
+        index >= messages.length ||
+        messages[index].auteur != AuteurMessage.user) {
+      return const [];
+    }
+    var fin = index + 1;
+    while (fin < messages.length &&
+        messages[fin].auteur != AuteurMessage.user) {
+      fin++;
+    }
+    final retires = messages.sublist(index, fin);
+    _vigie.log('louane_message_supprime', {'retires': retires.length});
+    state = state.copyWith(
+      messages: [...messages.sublist(0, index), ...messages.sublist(fin)],
+    );
+    return retires;
+  }
+
+  /// Annule une suppression : remet les messages retirés à leur place.
+  void restaurer(int index, List<LouaneMessage> retires) {
+    if (retires.isEmpty) return;
+    final messages = state.messages;
+    final i = index.clamp(0, messages.length);
+    state = state.copyWith(
+      messages: [...messages.sublist(0, i), ...retires, ...messages.sublist(i)],
+    );
   }
 
   /// Glisse la bulle d'ouverture du programme dans le fil SANS appel serveur
@@ -476,10 +584,10 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
   /// la matière première de la génération du programme.
   List<Map<String, String>> historiquePourParcours() {
     final mapped = state.messages
-        .where((m) => m.auteur != AuteurMessage.systeme)
+        .where((m) => m.auteur != AuteurMessage.systeme && !m.estCarteAnalyse)
         .map((m) => {
               'role': m.estLouane ? 'assistant' : 'user',
-              'content': m.texte,
+              'content': _contenuApi(m),
             })
         .toList();
     // L'API exige que la conversation commence par un message "user".
@@ -515,6 +623,17 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
     return textes.join('\n');
   }
 
+  /// Le texte d'un message tel que Louane l'avait écrit, marqueurs compris :
+  /// le serveur les strippe de ses réponses, et sans eux Louane ne sait plus
+  /// ce qu'elle a fait ([SEANCE:id] : quelle séance elle vient de lancer ;
+  /// [ANALYSE] : qu'elle a déjà lu le questionnaire, la carte a été vue).
+  static String _contenuApi(LouaneMessage m) {
+    var texte = m.texte;
+    if (m.porteAnalyse) texte = '[ANALYSE] $texte';
+    if (m.seanceId != null) texte = '$texte [SEANCE:${m.seanceId}]';
+    return texte;
+  }
+
   /// Transforme la conversation au format attendu par l'API (rôles
   /// user/assistant). On retire le dernier message (envoyé séparément) et tout
   /// message "assistant" en tête (ex: le mot d'accueil), car l'API exige que
@@ -528,12 +647,10 @@ class LouaneChatNotifier extends StateNotifier<LouaneChatState> {
   List<Map<String, String>> _historiquePourApi(List<LouaneMessage> tous) {
     final precedents = tous.sublist(0, tous.length - 1);
     final mapped = precedents
-        .where((m) => m.auteur != AuteurMessage.systeme)
+        .where((m) => m.auteur != AuteurMessage.systeme && !m.estCarteAnalyse)
         .map((m) => {
               'role': m.estLouane ? 'assistant' : 'user',
-              'content': m.seanceId != null
-                  ? '${m.texte} [SEANCE:${m.seanceId}]'
-                  : m.texte,
+              'content': _contenuApi(m),
             })
         .toList();
     while (mapped.isNotEmpty && mapped.first['role'] == 'assistant') {
@@ -553,8 +670,16 @@ final louaneChatProvider =
   ),
 );
 
-/// Visibilité de la barre de navigation sur l'onglet Louane (choix de Paul,
-/// 28/08) : elle se cache dès qu'on écrit (clavier ouvert) pour laisser
-/// toute la place à la conversation, et ne réapparaît qu'en défilant vers
-/// le haut dans le fil. Les autres onglets l'ignorent.
-final louaneNavVisibleProvider = StateProvider<bool>((ref) => true);
+/// Révélation de la barre de navigation sur l'onglet Louane, de 0 (rentrée
+/// sous l'écran) à 1 (sortie). Choix de Paul (28/08) : elle se cache quand on
+/// descend dans le fil et ne revient qu'en remontant. Retour du 12/09 : elle
+/// SUIT LE GESTE au lieu de surgir entière au premier pixel — elle sort
+/// proportionnellement au défilement vers le haut, et quand on lâche, elle
+/// finit de sortir si elle est déjà bien révélée, sinon elle rentre. Les
+/// autres onglets l'ignorent (toujours entière).
+final louaneNavRevelationProvider = StateProvider<double>((ref) => 1.0);
+
+/// L'avatar de Louane a quitté l'en-tête du chat pour venir « réfléchir »
+/// au-dessus du popup d'analyse Santé (demande de Paul, 12/09) : l'en-tête
+/// le cache le temps du vol aller-retour.
+final louaneAvatarEnVolProvider = StateProvider<bool>((ref) => false);

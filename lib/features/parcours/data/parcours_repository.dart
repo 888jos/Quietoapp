@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/parcours_model.dart';
 import '../../../core/services/health_service.dart';
+import '../../../core/services/identite_firebase.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/vigie_service.dart';
 
@@ -33,6 +34,7 @@ class ParcoursRepository {
       List<Map<String, String>> historique) async {
     // La génération est un « moment » (écran d'attente animé) : on laisse au
     // serveur le temps d'un retry interne avant de déclarer l'échec.
+    await assurerIdentiteFirebase();
     final callable = FirebaseFunctions.instance.httpsCallable(
       'genererParcours',
       options: HttpsCallableOptions(timeout: const Duration(seconds: 60)),

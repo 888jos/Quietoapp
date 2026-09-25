@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../../../core/ui/category_glyph.dart';
+import '../../../core/ui/colonne_tablette.dart';
 import '../explore_providers.dart';
 import 'widgets/session_card.dart';
 
@@ -156,13 +157,19 @@ class _CategoryHeader extends StatelessWidget {
   /// Hauteur de l'image, barre de statut comprise.
   static const _coverBody = 180.0;
 
+  /// Sur iPad (interface mise à l'échelle, voir EchelleTablette), la
+  /// largeur logique est plus grande : un peu plus haute pour garder les
+  /// proportions de l'image.
+  static const _coverBodyTablette = 220.0;
+
   /// Côté du motif de catégorie ; il déborde de moitié sous l'image.
   static const _badgeSize = 64.0;
 
   @override
   Widget build(BuildContext context) {
     final statusBar = MediaQuery.paddingOf(context).top;
-    final coverHeight = statusBar + _coverBody;
+    final coverHeight = statusBar +
+        (Tablette.estTablette(context) ? _coverBodyTablette : _coverBody);
 
     // Couverture dédiée si fournie, sinon l'image de la première séance.
     final cover = category.coverImage ??

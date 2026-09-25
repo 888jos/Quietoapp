@@ -14,5 +14,8 @@ import UIKit
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     SanteMentaleChannel.register(
       messenger: engineBridge.applicationRegistrar.messenger())
+    engineBridge.applicationRegistrar.register(
+      VerreFactory(messenger: engineBridge.applicationRegistrar.messenger()),
+      withId: VerreFactory.identifiant)
   }
 }

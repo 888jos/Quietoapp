@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/ambient_music.dart';
 import '../core/services/storage_providers.dart';
 import '../core/theme/app_theme.dart';
+import '../core/ui/colonne_tablette.dart';
 import '../features/paywall/paywall_providers.dart';
 import '../features/player/player_providers.dart';
 import 'router.dart';
@@ -131,6 +132,9 @@ class _QuietoAppState extends ConsumerState<QuietoApp>
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       routerConfig: appRouter,
+      // iPad : la mise en page téléphone, zoomée pour remplir la tablette
+      // (voir EchelleTablette). Sans effet sur iPhone.
+      builder: (context, child) => EchelleTablette(child: child!),
     );
   }
 }

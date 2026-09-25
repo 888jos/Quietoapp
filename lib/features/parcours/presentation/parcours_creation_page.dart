@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/services/health_service.dart';
+import '../../../core/services/review_service.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
@@ -72,6 +73,17 @@ class _ParcoursCreationPageState extends ConsumerState<ParcoursCreationPage> {
     }
     ref.read(vigieProvider).log('parcours_creation_vue');
     _lancer();
+    // Avis store : l'attente de la composition est un temps mort où tout va
+    // bien — la personne vient de s'abonner et Louane compose sous ses yeux.
+    // Réservé aux abonnés (qui a payé ne dira pas « trop cher »), 2 s après
+    // le début pour ne pas percuter l'arrivée sur l'écran. Le service
+    // (garde-fous + quota OS) décide seul de la suite.
+    if (ref.read(subscriptionProvider)) {
+      final review = ref.read(reviewServiceProvider);
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) review.solliciterAvis('creation_programme');
+      });
+    }
   }
 
   @override

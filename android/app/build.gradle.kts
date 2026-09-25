@@ -11,11 +11,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Charge les infos de la clé de signature depuis android/key.properties
-// (fichier ignoré par git, contient le chemin du .jks et les mots de passe).
+// Charge les infos de la clé de signature (chemin du .jks + mots de passe).
+// D'abord HORS du dépôt : ~/.config/quieto/key.properties (audit du
+// 02/09/2026 — les mots de passe ne vivent plus dans l'arborescence du
+// projet) ; à défaut, l'ancien emplacement android/key.properties (ignoré
+// par git).
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("key.properties")
-if (keystorePropertiesFile.exists()) {
+val keystorePropertiesFile = listOf(
+    File(System.getProperty("user.home"), ".config/quieto/key.properties"),
+    rootProject.file("key.properties"),
+).firstOrNull { it.exists() }
+if (keystorePropertiesFile != null) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 

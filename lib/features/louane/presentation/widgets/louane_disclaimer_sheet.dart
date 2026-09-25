@@ -11,6 +11,10 @@ import 'louane_avatar.dart';
 Future<void> montrerLouaneDisclaimer(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
+    // Navigateur RACINE obligatoire : poussée dans le navigateur de
+    // l'onglet, la feuille passait SOUS la pilule de nav de HomeShell —
+    // « J'ai compris » recouvert, impossible à toucher (bug 1.0.22).
+    useRootNavigator: true,
     isScrollControlled: true,
     isDismissible: false,
     enableDrag: false,
@@ -43,73 +47,78 @@ class _FeuilleDisclaimer extends StatelessWidget {
         ),
       ),
       padding: EdgeInsets.fromLTRB(28, 32, 28, 20 + basSafe),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const LouaneAvatar(size: 72),
-          const SizedBox(height: 20),
-          Text(
-            "Avant qu'on se parle",
-            style: AppTextStyles.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "Je suis Louane. Je suis là pour t'écouter, sans jugement, autant "
-            "que tu veux. Mais je dois être honnête avec toi : je ne suis pas "
-            "une professionnelle de santé, et je ne remplace ni un médecin, "
-            "ni un psychologue.",
-            style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(
-              color: LouanePalette.accentSoft,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Text(
-              "Si un jour ça ne va vraiment pas : le 3114 (prévention "
-              "suicide) t'écoute 24h/24, gratuitement. Et pour une urgence "
-              "vitale, c'est le 15.",
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textPrimary,
-                height: 1.5,
-              ),
+      // Défilable : sur un petit écran Android (ou en grande police), le
+      // bouton « J'ai compris » doit rester atteignable — la feuille n'est
+      // ni balayable ni refermable autrement (07/09/2026).
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const LouaneAvatar(size: 72),
+            const SizedBox(height: 20),
+            Text(
+              "Avant qu'on se parle",
+              style: AppTextStyles.titleMedium,
               textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            "Pour tout le reste, je suis là 🤍",
-            style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: FilledButton.styleFrom(
-                backgroundColor: LouanePalette.accent,
-                foregroundColor: AppColors.background,
-                padding: const EdgeInsets.symmetric(vertical: 15),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
-                ),
+            const SizedBox(height: 12),
+            Text(
+              "Je suis Louane. Je suis là pour t'écouter, sans jugement, autant "
+              "que tu veux. Mais je dois être honnête avec toi : je ne suis pas "
+              "une professionnelle de santé, et je ne remplace ni un médecin, "
+              "ni un psychologue.",
+              style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              decoration: BoxDecoration(
+                color: LouanePalette.accentSoft,
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                "J'ai compris",
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.background,
-                  fontWeight: FontWeight.w600,
+                "Si un jour ça ne va vraiment pas : le 3114 (prévention "
+                "suicide) t'écoute 24h/24, gratuitement. Et pour une urgence "
+                "vitale, c'est le 15.",
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              "Pour tout le reste, je suis là 🤍",
+              style: AppTextStyles.bodyMedium.copyWith(height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: FilledButton.styleFrom(
+                  backgroundColor: LouanePalette.accent,
+                  foregroundColor: AppColors.background,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(26),
+                  ),
+                ),
+                child: Text(
+                  "J'ai compris",
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.background,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/models/parcours_model.dart';
 import '../../../core/services/health_service.dart';
+import '../../../core/services/identite_firebase.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/vigie_service.dart';
 import 'heure_paris.dart';
@@ -40,6 +41,17 @@ class LouaneReponse {
   /// [PARCOURS] strippé côté serveur) → l'app affiche le bouton dessous.
   final bool parcoursPropose;
 
+  /// Louane vient de lire le questionnaire Santé de la personne (marqueur
+  /// [ANALYSE] strippé côté serveur, levé seulement si un questionnaire était
+  /// dans la charge utile) : le fil affiche la carte d'analyse avant ses
+  /// bulles, si un test est lisible ici.
+  final bool analyseSante;
+
+  /// Après combien de bulles la carte d'analyse se glisse (0 = avant tout) :
+  /// Louane dit d'abord « Ok, on part là-dessus », puis la carte, puis le
+  /// reste (déroulé voulu par Paul, 12/09).
+  final int analyseApres;
+
   /// Dernier message découverte : Louane vient de faire son au revoir →
   /// le bouton « essai gratuit » s'affiche directement sous cette bulle.
   final bool finDecouverte;
@@ -51,6 +63,8 @@ class LouaneReponse {
     this.plafond = false,
     this.seanceId,
     this.parcoursPropose = false,
+    this.analyseSante = false,
+    this.analyseApres = 0,
     this.finDecouverte = false,
   });
 }
@@ -85,11 +99,12 @@ class LouaneRepository {
     // française, louaneCompteurJour repart de zéro tout seul.
     final jour = cleJourParis();
 
+    await assurerIdentiteFirebase();
     final callable = FirebaseFunctions.instance.httpsCallable('louane');
     // Vigie : temps de réponse VÉCU par la personne (départ du message →
     // réponse affichable). Si Louane devient lente, c'est ici qu'on le voit.
     final chrono = Stopwatch()..start();
-    final result = await callable.call(<String, dynamic>{
+    final charge = <String, dynamic>{
       'message': message,
       'historique': historique,
       'heure': heure,
@@ -104,8 +119,10 @@ class LouaneRepository {
       // Réponses d'onboarding (objectifs, expérience, moment, durée) →
       // Louane adapte son accompagnement et ses suggestions de séances.
       'profil': _storage.getOnboardingAnswers(),
-      // Résumé des évaluations bien-être d'Apple Santé (niveau grossier,
-      // jamais le score). Cache mémoire → lecture synchrone, jamais bloquant.
+      // Résumé Apple Santé : les questionnaires de bien-être en détail
+      // (lequel des trois tests, quand, réponses une par une — décision
+      // Paul 11/09), les autres signaux en niveau grossier. Cache mémoire →
+      // lecture synchrone, jamais bloquant.
       'sante': HealthService.instance.resumeSanteCache,
       // Appareil compatible Apple Santé (iPhone) → Louane sait ce qui est
       // possible ici (minutes dans Santé, questionnaires) et n'en parle
@@ -126,9 +143,9 @@ class LouaneRepository {
       // (sujets, émotion — jamais le texte) au parcours dans l'app.
       'vigie': _vigie.id,
       'session': _vigie.session,
-    });
+    };
+    final data = (await callable.call(charge)).data as Map;
     chrono.stop();
-    final data = result.data as Map;
     _vigie.log('louane_reponse', {
       'ms': chrono.elapsedMilliseconds,
       'paywall': data['paywall'] == true,
@@ -168,6 +185,10 @@ class LouaneRepository {
       plafond: plafond,
       seanceId: (seanceId != null && seanceId.isNotEmpty) ? seanceId : null,
       parcoursPropose: data['parcoursPropose'] == true,
+      analyseSante: data['analyseSante'] == true,
+      analyseApres: (data['analyseApres'] is num)
+          ? (data['analyseApres'] as num).toInt()
+          : 0,
       finDecouverte: data['finDecouverte'] == true,
     );
   }

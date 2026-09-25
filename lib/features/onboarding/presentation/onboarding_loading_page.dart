@@ -7,6 +7,7 @@ import '../../../core/config/app_constants.dart';
 import '../../../core/services/storage_providers.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/starry_background.dart';
+import '../../../core/ui/pouls_haptique.dart';
 import 'widgets/cercle_comprehension.dart';
 
 class _PhraseData {
@@ -36,13 +37,8 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
 
   late final List<_PhraseData> _phrases;
 
-  /// Palier de 2 % déjà « cliqué » (cf. la micro-vibration du compteur).
-  int _dernierPalier = 0;
-
-  /// Temps écoulé depuis le dernier cliquetis : en dessous de [_minEntreTicks],
-  /// le moteur haptique sature et se met à avaler les impulsions.
-  final _depuisTick = Stopwatch()..start();
-  static const _minEntreTicks = 55; // ms
+  /// Le pouls du compteur : de plus en plus rapproché et fort jusqu'à 100 %.
+  final _pouls = PoulsHaptique();
 
   @override
   void initState() {
@@ -94,27 +90,18 @@ class _OnboardingLoadingPageState extends ConsumerState<OnboardingLoadingPage>
     _progressController.addStatusListener((status) {
       if (status == AnimationStatus.completed && !_navigated) {
         _navigated = true;
-        // Arrivée à 100 % : une impulsion plus franche que les cliquetis,
-        // celle qui « pose » le compteur.
-        HapticFeedback.mediumImpact();
+        // Arrivée à 100 % : le coup franc qui « pose » le compteur.
+        PoulsHaptique.arrivee();
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) context.go(AppRoutes.onboardingReady);
         });
       }
     });
     _progressAnim.addListener(() {
-      // ── Le cliquetis du compteur ──────────────────────────────────
-      // Un tick tous les 2 %, façon molette : la courbe easeInOut fait
-      // qu'il s'emballe au milieu puis se pose à l'arrivée. Le garde-fou
-      // de temps évite de noyer le Taptic Engine au plus vite de la montée
-      // (il ignorerait les impulsions, et le rythme paraîtrait haché).
-      final palier = (_progressAnim.value * 50).floor();
-      if (palier > _dernierPalier &&
-          _depuisTick.elapsedMilliseconds >= _minEntreTicks) {
-        _dernierPalier = palier;
-        _depuisTick.reset();
-        HapticFeedback.selectionClick();
-      }
+      // ── Le pouls du compteur ─────────────────────────────────────
+      // Des impulsions de plus en plus rapprochées et de plus en plus
+      // fortes à mesure que la barre monte (Paul, 12/09).
+      _pouls.avancer(_progressAnim.value);
       // ── L'arrivée d'une phrase ────────────────────────────────────
       // Impact plus marqué que le cliquetis : on sent que quelque chose
       // vient de se poser, pas que le chiffre avance.

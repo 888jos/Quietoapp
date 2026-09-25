@@ -10,7 +10,7 @@ Application de méditation guidée en français (iOS + Android, Flutter) : séan
 flutter run --dart-define-from-file=.env.json
 ```
 
-⚠️ Le fichier `.env.json` (clés RevenueCat, non versionné) est **obligatoire** — sans lui, `String.fromEnvironment('REVENUE_CAT_KEY')` est vide et les achats ne fonctionnent pas. Même flag pour les builds (`flutter build ipa/appbundle`).
+⚠️ Le fichier `.env.json` (clés RevenueCat, non versionné) est **obligatoire** — sans lui, `String.fromEnvironment('REVENUE_CAT_KEY')` est vide et les achats ne fonctionnent pas. Pour les builds release, passer par `tool/build-release.sh ipa|appbundle` : même flag, plus `--obfuscate --split-debug-info` (audit sécurité du 02/09/2026).
 
 ## Les docs du repo
 

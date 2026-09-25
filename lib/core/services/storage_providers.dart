@@ -1,8 +1,11 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import '../config/app_constants.dart';
 import '../config/revenue_cat_config.dart';
+import 'abonnement_serveur.dart';
 import 'notification_service.dart';
 import 'storage_service.dart';
 import 'vigie_service.dart';
@@ -69,6 +72,9 @@ class SubscriptionNotifier extends StateNotifier<bool> {
     // Persiste pour que le prochain démarrage parte avec le bon état.
     _storage.setIsPremium(isPremium);
     state = isPremium;
+    // Le serveur relit RevenueCat et pose le claim `premium` (accès aux
+    // MP3 premium dès l'achat, retrait dès l'expiration).
+    unawaited(synchroniserAbonnementServeur());
   }
 
   @override

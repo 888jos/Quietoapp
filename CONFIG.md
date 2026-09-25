@@ -56,6 +56,19 @@ Pour la lecture en arrière-plan, ajouter dans `ios/Runner/Info.plist` :
 
 ---
 
+## Tests sur iPhone physique — repartir « nouvel utilisateur » (maj 22/09/2026)
+
+Sur un vrai iPhone, le trousseau survit à la désinstallation : le compte anonyme Firebase et le coffre chiffré (prénom, mémoire Louane, profil d'onboarding) reviennent à la réinstallation. Pour tester comme une personne qui découvre l'app, builder en debug avec :
+
+```bash
+flutter build ios --debug --dart-define-from-file=.env.json --dart-define=NOUVEL_UTILISATEUR=true
+flutter run -d <udid> --use-application-binary=build/ios/iphoneos/Runner.app
+```
+
+`main.dart` efface alors trousseau + préférences **une seule fois par installation** (marqueur `nouvel_utilisateur_fait`), avant la connexion anonyme. Sans effet hors debug ou sans le define. Sur simulateur, inutile : un simulateur neuf est vierge.
+
+---
+
 ## Tests sur iPhone physique — jeton App Check debug (maj 28/08/2026)
 
 En debug, App Check utilise le **provider de débogage** (`main.dart` : `AppleDebugProvider` / `AndroidDebugProvider` sous `kDebugMode`). Le jeton de débogage est propre à chaque installation : **réinstaller un build debug en génère un nouveau**, à enregistrer dans la console Firebase (projet `quieto-06` → App Check → Apps → gérer les jetons de débogage) — sinon **tous les appels aux Cloud Functions échouent depuis ce build** (Louane, `trace`/Vigie : erreurs `HttpsCallable` dans les logs). Le jeton s'affiche dans la console Xcode au premier lancement. Le jeton courant du build de test de Paul est noté dans `~/dev/JOURNAL-QUIETO.md` (pas ici : ce repo est poussé).
@@ -77,8 +90,9 @@ En debug, App Check utilise le **provider de débogage** (`main.dart` : `AppleDe
 - [ ] Tester le flow d'achat en sandbox RevenueCat
 - [ ] `flutter analyze` → 0 issue
 - [ ] `flutter test` → tous verts
-- [ ] Build release iOS : `flutter build ipa --dart-define-from-file=.env.json`
-- [ ] Build release Android : `flutter build appbundle --dart-define-from-file=.env.json`
+- [ ] Build release iOS : `tool/build-release.sh ipa` (= `flutter build ipa --dart-define-from-file=.env.json --obfuscate --split-debug-info=symbols/<version>`)
+- [ ] Build release Android : `tool/build-release.sh appbundle`
+- [ ] Archiver le dossier `symbols/<version>/` avec la release (lecture des crashs ; jamais dans git)
 - [ ] Mettre à jour `QUIETO.md` + la fiche mémoire fonctionnalités (règle de release)
 
 (Les anciens points « clés placeholders », « audio dans assets/ », « configurer les Bundle ID », « background audio iOS » sont réglés depuis longtemps — voir sections ci-dessus.)

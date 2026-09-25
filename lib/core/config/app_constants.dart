@@ -3,7 +3,7 @@ abstract final class AppConstants {
   static const appName = 'Quieto';
   // ⚠️ À METTRE À JOUR EN MÊME TEMPS QUE pubspec.yaml (version: x.y.z+n).
   // Sert à la Vigie : comparer le funnel d'une version à l'autre.
-  static const appVersion = '1.0.22';
+  static const appVersion = '1.0.25';
 
   // ── Support ──────────────────────────────────────────
   // Adresse affichée dans « Nous contacter » (profil).
@@ -28,6 +28,8 @@ abstract final class AppConstants {
   static const prefLouaneJour = 'louane_jour';
   // L'écran « je ne suis pas un soignant » (3114/15) ne se montre qu'une fois.
   static const prefLouaneDisclaimerVu = 'louane_disclaimer_vu';
+
+  static const prefLouanePremiereRencontre = 'louane_premiere_rencontre';
   // Variante du message d'accueil de Louane (tirée au sort, animée une seule
   // fois à la première ouverture, réaffichée telle quelle ensuite).
   static const prefLouaneIntroVariante = 'louane_intro_variante';
@@ -49,6 +51,13 @@ abstract final class AppConstants {
   // qu'aucune séance n'a jamais été terminée (voir ParcoursRepository).
   static const prefParcoursDejaCree = 'parcours_deja_cree';
   static const prefParcoursEtoilesCelebrees = 'parcours_etoiles_celebrees';
+  // Demande d'avis store (popup natif 5 étoiles) : date de la dernière
+  // sollicitation + nombre total de sollicitations, pour ne jamais harceler.
+  static const prefAvisDerniereDemande = 'avis_derniere_demande';
+  static const prefAvisNbDemandes = 'avis_nb_demandes';
+  // Vrai dès que la personne a laissé un retour dans la boîte aux lettres
+  // (« Pas vraiment » + raisons ou mot écrit) : on ne la resollicite jamais.
+  static const prefAvisRetourDonne = 'avis_retour_donne';
 
   // ── Audio ────────────────────────────────────────────
   // Les MP3 sont hébergés sur Firebase Storage (bucket quieto-06) à plat

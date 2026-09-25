@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart'
-    show CupertinoDatePicker, CupertinoDatePickerMode, CupertinoTheme,
+    show
+        CupertinoDatePicker,
+        CupertinoDatePickerMode,
+        CupertinoTheme,
         CupertinoThemeData;
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart'
@@ -14,6 +16,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../app/router.dart';
 import '../../../core/config/app_constants.dart';
 import '../../../core/config/revenue_cat_config.dart';
+import '../../../core/services/acces_entreprise.dart';
 import '../../../core/services/ambient_music.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/health_service.dart';
@@ -26,6 +29,7 @@ import '../../../core/ui/apple_health_icon.dart';
 import '../../../core/ui/boutons_connexion.dart';
 import '../../../core/ui/app_scaffold.dart';
 import '../profile_providers.dart';
+import 'widgets/acces_entreprise_sheet.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -67,11 +71,15 @@ class ProfilePage extends ConsumerWidget {
                     const SizedBox(height: AppConstants.spacingXs),
                     GestureDetector(
                       onTap: () => _showEditNameSheet(
-                          context, profile.firstName, notifier),
+                        context,
+                        profile.firstName,
+                        notifier,
+                      ),
                       child: Text(
                         'Modifier',
-                        style: AppTextStyles.bodyMedium
-                            .copyWith(color: AppColors.accent),
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.accent,
+                        ),
                       ),
                     ),
 
@@ -103,24 +111,40 @@ class ProfilePage extends ConsumerWidget {
                     // Non abonné : incitation à découvrir les offres.
                     AppCard(
                       child: isPremium
-                          ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('✨ Tu es Premium',
-                                    style: AppTextStyles.titleMedium),
-                                const SizedBox(height: AppConstants.spacingSm),
-                                Text(
-                                  'Merci ! Tu as accès à Louane et à toutes '
-                                  'les séances, sans limite.',
-                                  style: AppTextStyles.bodyMedium,
-                                ),
-                              ],
+                          // Premium offert par l'employeur (accès B2B) :
+                          // on dit qui l'offre plutôt que « merci ».
+                          ? ValueListenableBuilder<String?>(
+                              valueListenable: AccesEntreprise.nom,
+                              builder: (context, entreprise, _) => Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    entreprise == null
+                                        ? '✨ Tu es Premium'
+                                        : '✨ Premium offert par $entreprise',
+                                    style: AppTextStyles.titleMedium,
+                                  ),
+                                  const SizedBox(
+                                    height: AppConstants.spacingSm,
+                                  ),
+                                  Text(
+                                    entreprise == null
+                                        ? 'Merci ! Tu as accès à Louane et à '
+                                              'toutes les séances, sans limite.'
+                                        : 'Tu as accès à Louane et à toutes '
+                                              'les séances, sans limite.',
+                                    style: AppTextStyles.bodyMedium,
+                                  ),
+                                ],
+                              ),
                             )
                           : Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('✨ Passer à Premium',
-                                    style: AppTextStyles.titleMedium),
+                                Text(
+                                  '✨ Passer à Premium',
+                                  style: AppTextStyles.titleMedium,
+                                ),
                                 const SizedBox(height: AppConstants.spacingSm),
                                 Text(
                                   'Accédez à Louane et à toutes les séances, '
@@ -130,38 +154,13 @@ class ProfilePage extends ConsumerWidget {
                                 const SizedBox(height: AppConstants.spacingMd),
                                 AppButton(
                                   label: 'Voir les offres',
-                                  onTap: () => context
-                                      .push(AppRoutes.paywallDepuis('profil')),
+                                  onTap: () => context.push(
+                                    AppRoutes.paywallDepuis('profil'),
+                                  ),
                                 ),
                               ],
                             ),
                     ),
-
-                    // Interrupteur de test Premium — builds DEBUG uniquement
-                    // (jamais en TestFlight/App Store) : force l'état abonné
-                    // pour vérifier tout le parcours Premium sans payer.
-                    if (kDebugMode) ...[
-                      const SizedBox(height: AppConstants.spacingSm),
-                      AppCard(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '🛠 Premium (mode test)',
-                                style: AppTextStyles.bodyMedium,
-                              ),
-                            ),
-                            Switch(
-                              value: isPremium,
-                              activeThumbColor: AppColors.accent,
-                              onChanged: (v) => ref
-                                  .read(subscriptionProvider.notifier)
-                                  .debugForcerPremium(v),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
 
                     const SizedBox(height: AppConstants.spacingXl),
 
@@ -172,7 +171,21 @@ class ProfilePage extends ConsumerWidget {
                     Text('Mon compte', style: AppTextStyles.titleMedium),
                     const SizedBox(height: AppConstants.spacingSm),
                     _buildCompteCard(
-                        context, ref, ref.watch(utilisateurProvider).value),
+                      context,
+                      ref,
+                      ref.watch(utilisateurProvider).value,
+                    ),
+                    const SizedBox(height: AppConstants.spacingSm),
+                    // Accès B2B : l'entreprise paie sur le web, le salarié
+                    // tape ici le code reçu de sa RH (23/09/2026).
+                    AppCard(
+                      padding: EdgeInsets.zero,
+                      child: _TapItem(
+                        emoji: '🏢',
+                        label: 'Accès offert par mon entreprise',
+                        onTap: () => ouvrirAccesEntreprise(context),
+                      ),
+                    ),
 
                     const SizedBox(height: AppConstants.spacingXl),
 
@@ -181,7 +194,8 @@ class ProfilePage extends ConsumerWidget {
                     const SizedBox(height: AppConstants.spacingSm),
                     _ReminderCard(
                       enabled: profile.notificationsEnabled,
-                      time: profile.reminderTime ??
+                      time:
+                          profile.reminderTime ??
                           const TimeOfDay(hour: 19, minute: 0),
                       onToggle: (v) async {
                         final ok = await notifier.toggleNotifications(v);
@@ -217,8 +231,10 @@ class ProfilePage extends ConsumerWidget {
                     const SizedBox(height: AppConstants.spacingXl),
 
                     // ── Aide et informations ─────────────────
-                    Text('Aide et informations',
-                        style: AppTextStyles.titleMedium),
+                    Text(
+                      'Aide et informations',
+                      style: AppTextStyles.titleMedium,
+                    ),
                     const SizedBox(height: AppConstants.spacingSm),
                     AppCard(
                       padding: EdgeInsets.zero,
@@ -236,7 +252,9 @@ class ProfilePage extends ConsumerWidget {
                             onTap: () async {
                               try {
                                 await launchUrl(
-                                  Uri.parse('https://cofonde.com/quieto-confidentialite'),
+                                  Uri.parse(
+                                    'https://cofonde.com/quieto-confidentialite',
+                                  ),
                                   mode: LaunchMode.externalApplication,
                                 );
                               } catch (_) {}
@@ -322,8 +340,9 @@ class ProfilePage extends ConsumerWidget {
               onTap: () => _confirmerSuppression(context, ref),
               child: Text(
                 'Supprimer mon compte',
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: AppColors.error),
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.error,
+                ),
               ),
             ),
           ),
@@ -338,8 +357,9 @@ class ProfilePage extends ConsumerWidget {
     required bool apple,
   }) async {
     final auth = ref.read(authServiceProvider);
-    final resultat =
-        apple ? await auth.connexionApple() : await auth.connexionGoogle();
+    final resultat = apple
+        ? await auth.connexionApple()
+        : await auth.connexionGoogle();
     if (!context.mounted) return;
     switch (resultat) {
       case AuthResultat.ok:
@@ -377,8 +397,9 @@ class ProfilePage extends ConsumerWidget {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(
               'Annuler',
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textMuted),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textMuted,
+              ),
             ),
           ),
           TextButton(
@@ -390,8 +411,7 @@ class ProfilePage extends ConsumerWidget {
             },
             child: Text(
               'Se déconnecter',
-              style:
-                  AppTextStyles.bodyMedium.copyWith(color: AppColors.accent),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.accent),
             ),
           ),
         ],
@@ -418,29 +438,28 @@ class ProfilePage extends ConsumerWidget {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(
               'Annuler',
-              style: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.textMuted),
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textMuted,
+              ),
             ),
           ),
           TextButton(
             onPressed: () async {
               Navigator.of(dialogContext).pop();
-              final ok =
-                  await ref.read(authServiceProvider).supprimerCompte();
+              final ok = await ref.read(authServiceProvider).supprimerCompte();
               if (!context.mounted) return;
               _showSoftSnack(
                 context,
                 ok
                     ? 'Compte supprimé.'
                     : 'Par sécurité, reconnecte-toi puis réessaie '
-                        'la suppression.',
+                          'la suppression.',
                 emoji: ok ? '🗑️' : '🔐',
               );
             },
             child: Text(
               'Supprimer',
-              style:
-                  AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
             ),
           ),
         ],
@@ -459,12 +478,14 @@ class ProfilePage extends ConsumerWidget {
         idSupport = await Purchases.appUserID;
       } catch (_) {}
     }
-    final corps = '\n\n----------\nQuieto ${AppConstants.appVersion}'
+    final corps =
+        '\n\n----------\nQuieto ${AppConstants.appVersion}'
         '${idSupport != null ? '\nIdentifiant : $idSupport' : ''}';
     final uri = Uri(
       scheme: 'mailto',
       path: AppConstants.supportEmail,
-      query: 'subject=${Uri.encodeComponent('Quieto : question')}'
+      query:
+          'subject=${Uri.encodeComponent('Quieto : question')}'
           '&body=${Uri.encodeComponent(corps)}',
     );
     var ouvert = false;
@@ -527,9 +548,7 @@ class ProfilePage extends ConsumerWidget {
             children: [
               Text(emoji, style: const TextStyle(fontSize: 18)),
               const SizedBox(width: AppConstants.spacingMd),
-              Expanded(
-                child: Text(message, style: AppTextStyles.bodyMedium),
-              ),
+              Expanded(child: Text(message, style: AppTextStyles.bodyMedium)),
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(width: AppConstants.spacingSm),
                 GestureDetector(
@@ -597,10 +616,7 @@ class _EditNameSheet extends StatefulWidget {
   final String currentName;
   final Future<void> Function(String) onSave;
 
-  const _EditNameSheet({
-    required this.currentName,
-    required this.onSave,
-  });
+  const _EditNameSheet({required this.currentName, required this.onSave});
 
   @override
   State<_EditNameSheet> createState() => _EditNameSheetState();
@@ -663,8 +679,10 @@ class _EditNameSheetState extends State<_EditNameSheet> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                borderSide:
-                    const BorderSide(color: AppColors.accent, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.accent,
+                  width: 1.5,
+                ),
               ),
               filled: true,
               fillColor: AppColors.background,
@@ -732,9 +750,14 @@ class _ReminderTimeSheetState extends State<_ReminderTimeSheet> {
                 mode: CupertinoDatePickerMode.time,
                 use24hFormat: true,
                 initialDateTime: DateTime(
-                    2024, 1, 1, widget.current.hour, widget.current.minute),
-                onDateTimeChanged: (dt) => _selected =
-                    TimeOfDay(hour: dt.hour, minute: dt.minute),
+                  2024,
+                  1,
+                  1,
+                  widget.current.hour,
+                  widget.current.minute,
+                ),
+                onDateTimeChanged: (dt) =>
+                    _selected = TimeOfDay(hour: dt.hour, minute: dt.minute),
               ),
             ),
           ),
@@ -766,9 +789,10 @@ class _StatCard extends StatelessWidget {
     return AppCard(
       child: Column(
         children: [
-          Text(value,
-              style:
-                  AppTextStyles.displayLarge.copyWith(color: AppColors.accent)),
+          Text(
+            value,
+            style: AppTextStyles.displayLarge.copyWith(color: AppColors.accent),
+          ),
           Text(label, style: AppTextStyles.bodyMedium),
         ],
       ),
@@ -825,9 +849,12 @@ class _ReminderCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Rappel quotidien',
-                        style: AppTextStyles.bodyLarge
-                            .copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Rappel quotidien',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       'Une petite invitation à prendre\nun moment pour toi.',
@@ -856,8 +883,9 @@ class _ReminderCard extends StatelessWidget {
               duration: const Duration(milliseconds: AppConstants.animNormal),
               child: enabled
                   ? Padding(
-                      padding:
-                          const EdgeInsets.only(top: AppConstants.spacingMd),
+                      padding: const EdgeInsets.only(
+                        top: AppConstants.spacingMd,
+                      ),
                       child: _ReminderTimeTile(
                         time: _formattedTime,
                         onTap: onEditTime,
@@ -909,12 +937,16 @@ class _ReminderTimeTile extends StatelessWidget {
               ),
               Text(
                 time,
-                style: AppTextStyles.titleMedium
-                    .copyWith(color: AppColors.accent),
+                style: AppTextStyles.titleMedium.copyWith(
+                  color: AppColors.accent,
+                ),
               ),
               const SizedBox(width: AppConstants.spacingXs),
-              const Icon(Icons.chevron_right,
-                  color: AppColors.textMuted, size: 20),
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textMuted,
+                size: 20,
+              ),
             ],
           ),
         ),
@@ -953,8 +985,11 @@ class _TapItem extends StatelessWidget {
             Text(emoji, style: const TextStyle(fontSize: 18)),
             const SizedBox(width: AppConstants.spacingMd),
             Expanded(child: Text(label, style: AppTextStyles.bodyLarge)),
-            const Icon(Icons.chevron_right,
-                color: AppColors.textMuted, size: 20),
+            const Icon(
+              Icons.chevron_right,
+              color: AppColors.textMuted,
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -1062,21 +1097,24 @@ class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Apple Santé',
-                        style: AppTextStyles.bodyLarge
-                            .copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Apple Santé',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     // Pas de \n en dur : le texte prend toute la largeur
                     // de la carte et se coupe proprement tout seul.
                     Text(
                       connecte
                           ? 'Connecté — tes minutes de calme sont '
-                              'ajoutées dans Santé.'
+                                'ajoutées dans Santé.'
                           : refuse
-                              ? 'Accès refusé pour l\'instant. Il se '
-                                  'rouvre depuis l\'app Santé.'
-                              : 'Tes minutes de calme dans Santé, et '
-                                  'Louane lit tes questionnaires.',
+                          ? 'Accès refusé pour l\'instant. Il se '
+                                'rouvre depuis l\'app Santé.'
+                          : 'Tes minutes de calme dans Santé, et '
+                                'Louane lit tes questionnaires.',
                       style: AppTextStyles.caption,
                     ),
                   ],
@@ -1084,8 +1122,11 @@ class _AppleHealthCardState extends ConsumerState<_AppleHealthCard>
               ),
               if (connecte) ...[
                 const SizedBox(width: AppConstants.spacingSm),
-                const Icon(Icons.check_circle,
-                    color: AppColors.accent, size: 22),
+                const Icon(
+                  Icons.check_circle,
+                  color: AppColors.accent,
+                  size: 22,
+                ),
               ],
             ],
           ),
@@ -1155,9 +1196,12 @@ class _AmbientMusicCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Musique d\'ambiance',
-                        style: AppTextStyles.bodyLarge
-                            .copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      'Musique d\'ambiance',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       'La nappe sonore douce qui\naccompagne l\'application.',
@@ -1192,13 +1236,16 @@ class _AmbientMusicCard extends ConsumerWidget {
                       data: SliderTheme.of(context).copyWith(
                         trackHeight: 2,
                         activeTrackColor: AppColors.accent,
-                        inactiveTrackColor:
-                            AppColors.textPrimary.withValues(alpha: 0.15),
+                        inactiveTrackColor: AppColors.textPrimary.withValues(
+                          alpha: 0.15,
+                        ),
                         thumbColor: AppColors.accent,
-                        thumbShape:
-                            const RoundSliderThumbShape(enabledThumbRadius: 7),
-                        overlayShape:
-                            const RoundSliderOverlayShape(overlayRadius: 14),
+                        thumbShape: const RoundSliderThumbShape(
+                          enabledThumbRadius: 7,
+                        ),
+                        overlayShape: const RoundSliderOverlayShape(
+                          overlayRadius: 14,
+                        ),
                       ),
                       child: Slider(
                         value: level,

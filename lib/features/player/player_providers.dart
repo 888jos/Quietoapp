@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../../core/models/session_model.dart';
 import '../../core/services/ambient_music.dart';
+import '../../core/services/review_service.dart';
 import '../../core/services/storage_providers.dart';
 import '../home/home_providers.dart';
 import '../parcours/parcours_providers.dart';
@@ -264,6 +265,17 @@ final playerProvider = StateNotifierProvider
             minute: minute,
             skipToday: true,
           );
+    }
+    // Avis store : la fin d'une séance est LE moment de calme et de
+    // satisfaction — dès la première complétée (beaucoup ne reviennent
+    // jamais pour une deuxième : autant capter le pic d'émotion). Petit
+    // délai pour laisser la fin de séance se poser. Le service (garde-fous
+    // + quota OS) décide seul de la suite. Service capturé avant le délai :
+    // le notifier est autoDispose, `ref` pourrait être mort 2 s plus tard.
+    if (storage.loadProgress().completedCount >= 1) {
+      final review = ref.read(reviewServiceProvider);
+      Future.delayed(const Duration(seconds: 2),
+          () => review.solliciterAvis('seance_terminee'));
     }
   };
   // Rafraîchit les stats (minutes méditées) au fil de l'écoute, sans

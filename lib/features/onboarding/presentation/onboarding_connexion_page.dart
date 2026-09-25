@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/ui/app_button.dart';
 import '../../../core/ui/boutons_connexion.dart';
+import '../../../core/ui/colonne_tablette.dart';
 import '../../../core/ui/starry_background.dart';
 import 'widgets/slide_reveal.dart';
 
@@ -133,9 +134,15 @@ class _OnboardingConnexionPageState
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Spacer(flex: 3),
-                  const SlideReveal(
+                  SlideReveal(
                     active: true,
-                    child: Center(child: _SceneCalme()),
+                    // iPad : la scène (lune, nuages, étoiles) prend plus
+                    // de place autour de Louane (demande de Paul, 11/09).
+                    child: Center(
+                      child: _SceneCalme(
+                        ampleur: Tablette.estTablette(context) ? 1.5 : 1.0,
+                      ),
+                    ),
                   ),
                   const Spacer(flex: 2),
                   SlideReveal(
@@ -277,7 +284,11 @@ class _OnboardingConnexionPageState
 // ─────────────────────────────────────────────────────────
 
 class _SceneCalme extends StatefulWidget {
-  const _SceneCalme();
+  /// 1 sur téléphone. Sur iPad, la scène s'élargit d'autant, Louane grossit
+  /// un peu et ce qui l'entoure (lune, nuages, étoiles) grossit davantage.
+  final double ampleur;
+
+  const _SceneCalme({this.ampleur = 1.0});
 
   @override
   State<_SceneCalme> createState() => _SceneCalmeState();
@@ -312,9 +323,14 @@ class _SceneCalmeState extends State<_SceneCalme>
 
   @override
   Widget build(BuildContext context) {
+    // k : le cadre et les positions ; kl : Louane (grossit peu) ;
+    // ka : la lune, les nuages, les étoiles (grossissent plus).
+    final k = widget.ampleur;
+    final kl = 1 + (k - 1) * 0.35;
+    final ka = 1 + (k - 1) * 1.2;
     return SizedBox(
-      width: 320,
-      height: 260,
+      width: 320 * k,
+      height: 260 * k,
       child: AnimatedBuilder(
         animation: Listenable.merge([_souffle, _derive]),
         builder: (context, _) {
@@ -333,64 +349,64 @@ class _SceneCalmeState extends State<_SceneCalme>
             children: [
               // Louane et ses ondes, au centre de la scène.
               CustomPaint(
-                size: const Size(190, 190),
+                size: Size(190 * kl, 190 * kl),
                 painter: _OrbePainter(souffle: s),
               ),
               // La lune, dans le coin haut droit, qui flotte doucement.
               Positioned(
-                top: 0 + flotte(0.0, 7),
-                right: 2,
+                top: 0 + flotte(0.0, 7 * k),
+                right: 2 * k,
                 child: Transform.rotate(
                   angle: -0.35 + flotte(0.25, 0.03),
-                  child: const CustomPaint(
-                    size: Size(64, 64),
-                    painter: _LunePainter(),
+                  child: CustomPaint(
+                    size: Size(64 * ka, 64 * ka),
+                    painter: const _LunePainter(),
                   ),
                 ),
               ),
               // Le grand nuage, en bas à gauche, qui dérive lentement.
               Positioned(
-                left: 0 + flotte(0.5, 10),
-                bottom: 10,
-                child: const CustomPaint(
-                  size: Size(98, 38),
-                  painter: _NuagePainter(),
+                left: 0 + flotte(0.5, 10 * k),
+                bottom: 10 * k,
+                child: CustomPaint(
+                  size: Size(98 * ka, 38 * ka),
+                  painter: const _NuagePainter(),
                 ),
               ),
               // Un second nuage plus discret, en haut à gauche, qui dérive
               // en sens inverse pour donner de la profondeur.
               Positioned(
-                left: 16 + flotte(0.15, -8),
-                top: 26,
+                left: 16 * k + flotte(0.15, -8 * k),
+                top: 26 * k,
                 child: Opacity(
                   opacity: 0.55,
-                  child: const CustomPaint(
-                    size: Size(66, 26),
-                    painter: _NuagePainter(),
+                  child: CustomPaint(
+                    size: Size(66 * ka, 26 * ka),
+                    painter: const _NuagePainter(),
                   ),
                 ),
               ),
               // Les étoiles, poussées vers les bords, qui scintillent
               // chacune à leur rythme.
               Positioned(
-                left: 14,
-                top: 74,
-                child: _Etoile(taille: 18, opacite: scintille(0.0)),
+                left: 14 * k,
+                top: 74 * k,
+                child: _Etoile(taille: 18 * ka, opacite: scintille(0.0)),
               ),
               Positioned(
-                right: 18,
-                bottom: 62,
-                child: _Etoile(taille: 15, opacite: scintille(0.4)),
+                right: 18 * k,
+                bottom: 62 * k,
+                child: _Etoile(taille: 15 * ka, opacite: scintille(0.4)),
               ),
               Positioned(
-                right: 66,
-                top: 20,
-                child: _Etoile(taille: 10, opacite: scintille(0.55)),
+                right: 66 * k,
+                top: 20 * k,
+                child: _Etoile(taille: 10 * ka, opacite: scintille(0.55)),
               ),
               Positioned(
-                left: 78,
-                bottom: 26,
-                child: _Etoile(taille: 11, opacite: scintille(0.7)),
+                left: 78 * k,
+                bottom: 26 * k,
+                child: _Etoile(taille: 11 * ka, opacite: scintille(0.7)),
               ),
             ],
           );

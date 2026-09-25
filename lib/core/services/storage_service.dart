@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_constants.dart';
 import '../models/parcours_model.dart';
@@ -8,7 +9,92 @@ import '../models/user_progress_model.dart';
 class StorageService {
   final SharedPreferences _prefs;
 
-  StorageService(this._prefs);
+  /// Coffre chiffré (Keychain iOS / Keystore Android) pour ce qui est intime :
+  /// la fiche mémoire de Louane, les réponses d'onboarding, le prénom. Les
+  /// lectures restent synchrones grâce à un cache mémoire rempli une fois au
+  /// lancement par [chargerCoffre] (audit sécurité du 02/09/2026). Si le
+  /// coffre est indisponible, on retombe sur SharedPreferences : rien n'est
+  /// jamais perdu.
+  final FlutterSecureStorage _coffre;
+
+  StorageService(this._prefs, {FlutterSecureStorage? coffre})
+      : _coffre = coffre ??
+            const FlutterSecureStorage(
+              aOptions: AndroidOptions(
+                encryptedSharedPreferences: true,
+                // Sauvegarde restaurée sur un autre appareil = clé absente :
+                // on repart de zéro plutôt que de planter.
+                resetOnError: true,
+              ),
+              iOptions: IOSOptions(
+                accessibility: KeychainAccessibility.first_unlock_this_device,
+              ),
+            );
+
+  static const _coffrePrenom = 'coffre_prenom';
+  static const _coffreMemoire = 'coffre_louane_memoire';
+  static const _coffreProfil = 'coffre_onboarding_answers';
+
+  String _prenom = '';
+  String _memoire = '';
+  Map<String, String> _profil = const {};
+  bool _coffreCharge = false;
+
+  /// À appeler UNE fois au lancement (main.dart), avant runApp. Migre au
+  /// passage les valeurs encore en clair dans SharedPreferences (apps
+  /// ≤ 1.0.23) vers le coffre, puis les efface des préférences.
+  Future<void> chargerCoffre() async {
+    if (_coffreCharge) return;
+    _prenom =
+        await _lireCoffre(_coffrePrenom, AppConstants.prefUserFirstName) ?? '';
+    _memoire =
+        await _lireCoffre(_coffreMemoire, AppConstants.prefLouaneMemoire) ?? '';
+    _profil = _decoderProfil(
+        await _lireCoffre(_coffreProfil, AppConstants.prefOnboardingAnswers));
+    _coffreCharge = true;
+  }
+
+  Future<String?> _lireCoffre(String cle, String cleLegacy) async {
+    String? valeur;
+    try {
+      valeur = await _coffre.read(key: cle);
+    } catch (e) {
+      debugPrint('[Storage] coffre illisible ($cle) : $e');
+      return _prefs.getString(cleLegacy);
+    }
+    if (valeur != null) return valeur;
+    // Migration depuis les préférences en clair (une seule fois).
+    final ancien = _prefs.getString(cleLegacy);
+    if (ancien != null && await _ecrireCoffre(cle, ancien)) {
+      await _prefs.remove(cleLegacy);
+    }
+    return ancien;
+  }
+
+  /// true si le coffre a pris la valeur ; false → l'appelant garde un repli.
+  Future<bool> _ecrireCoffre(String cle, String? valeur) async {
+    try {
+      if (valeur == null) {
+        await _coffre.delete(key: cle);
+      } else {
+        await _coffre.write(key: cle, value: valeur);
+      }
+      return true;
+    } catch (e) {
+      debugPrint('[Storage] coffre inécrivable ($cle) : $e');
+      return false;
+    }
+  }
+
+  Map<String, String> _decoderProfil(String? raw) {
+    try {
+      if (raw == null) return {};
+      return Map<String, String>.from(jsonDecode(raw) as Map);
+    } catch (e, st) {
+      debugPrint('[Storage] profil illisible: $e\n$st');
+      return {};
+    }
+  }
 
   // ── Onboarding ───────────────────────────────────────
 
@@ -20,24 +106,20 @@ class StorageService {
   }
 
   Future<void> saveOnboardingAnswers(Map<String, String> answers) async {
+    _profil = Map<String, String>.from(answers);
     try {
-      await _prefs.setString(
-          AppConstants.prefOnboardingAnswers, jsonEncode(answers));
+      final json = jsonEncode(_profil);
+      if (!_coffreCharge || !await _ecrireCoffre(_coffreProfil, json)) {
+        await _prefs.setString(AppConstants.prefOnboardingAnswers, json);
+      }
     } catch (e, st) {
       debugPrint('[Storage] saveOnboardingAnswers failed: $e\n$st');
     }
   }
 
-  Map<String, String> getOnboardingAnswers() {
-    try {
-      final raw = _prefs.getString(AppConstants.prefOnboardingAnswers);
-      if (raw == null) return {};
-      return Map<String, String>.from(jsonDecode(raw) as Map);
-    } catch (e, st) {
-      debugPrint('[Storage] getOnboardingAnswers failed: $e\n$st');
-      return {};
-    }
-  }
+  Map<String, String> getOnboardingAnswers() => _coffreCharge
+      ? Map<String, String>.from(_profil)
+      : _decoderProfil(_prefs.getString(AppConstants.prefOnboardingAnswers));
 
   // ── Apple Santé ──────────────────────────────────────
 
@@ -53,22 +135,30 @@ class StorageService {
 
   // ── User profile ─────────────────────────────────────
 
-  String get firstName =>
-      _prefs.getString(AppConstants.prefUserFirstName) ?? '';
+  String get firstName => _coffreCharge
+      ? _prenom
+      : (_prefs.getString(AppConstants.prefUserFirstName) ?? '');
 
   Future<void> setFirstName(String name) async {
-    await _prefs.setString(AppConstants.prefUserFirstName, name);
+    _prenom = name;
+    if (!_coffreCharge || !await _ecrireCoffre(_coffrePrenom, name)) {
+      await _prefs.setString(AppConstants.prefUserFirstName, name);
+    }
   }
 
   // ── Mémoire de Louane (locale) ───────────────────────
 
   /// Ce que Louane retient de l'utilisateur entre les sessions. Vide au début.
-  String get louaneMemoire =>
-      _prefs.getString(AppConstants.prefLouaneMemoire) ?? '';
+  String get louaneMemoire => _coffreCharge
+      ? _memoire
+      : (_prefs.getString(AppConstants.prefLouaneMemoire) ?? '');
 
   Future<void> setLouaneMemoire(String fiche) async {
+    _memoire = fiche;
     try {
-      await _prefs.setString(AppConstants.prefLouaneMemoire, fiche);
+      if (!_coffreCharge || !await _ecrireCoffre(_coffreMemoire, fiche)) {
+        await _prefs.setString(AppConstants.prefLouaneMemoire, fiche);
+      }
     } catch (e, st) {
       debugPrint('[Storage] setLouaneMemoire failed: $e\n$st');
     }
@@ -112,6 +202,32 @@ class StorageService {
       await _prefs.setInt(AppConstants.prefLouaneIntroVariante, index);
     } catch (e, st) {
       debugPrint('[Storage] setLouaneIntroVariante failed: $e\n$st');
+    }
+  }
+
+  // ── Première rencontre avec Louane ───────────────────
+
+  /// Date (à minuit) de la toute première ouverture de la page Louane :
+  /// nourrit le « avec toi depuis X jours » du bandeau. Null tant que la
+  /// page n'a jamais été ouverte. Pour les comptes d'avant cette clé, le
+  /// compteur démarre à leur prochaine visite — mieux que rien.
+  DateTime? get louanePremiereRencontre {
+    final brut = _prefs.getString(AppConstants.prefLouanePremiereRencontre);
+    return brut == null ? null : DateTime.tryParse(brut);
+  }
+
+  /// Pose la date du jour, UNE seule fois (les visites suivantes ne
+  /// touchent à rien).
+  Future<void> marqueLouanePremiereRencontre() async {
+    if (louanePremiereRencontre != null) return;
+    final now = DateTime.now();
+    final jour = '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
+    try {
+      await _prefs.setString(AppConstants.prefLouanePremiereRencontre, jour);
+    } catch (e, st) {
+      debugPrint('[Storage] marqueLouanePremiereRencontre failed: $e\n$st');
     }
   }
 
@@ -226,6 +342,42 @@ class StorageService {
     await _prefs.setInt(AppConstants.prefParcoursEtoilesCelebrees, n);
   }
 
+  // ── Avis store (popup natif de notation) ─────────────
+
+  /// Date de la dernière sollicitation d'avis (null = jamais demandé).
+  DateTime? get avisDerniereDemande {
+    final raw = _prefs.getString(AppConstants.prefAvisDerniereDemande);
+    return raw != null ? DateTime.tryParse(raw) : null;
+  }
+
+  /// Nombre total de sollicitations d'avis depuis toujours.
+  int get avisNbDemandes =>
+      _prefs.getInt(AppConstants.prefAvisNbDemandes) ?? 0;
+
+  Future<void> enregistreDemandeAvis() async {
+    try {
+      await _prefs.setString(AppConstants.prefAvisDerniereDemande,
+          DateTime.now().toIso8601String());
+      await _prefs.setInt(
+          AppConstants.prefAvisNbDemandes, avisNbDemandes + 1);
+    } catch (e, st) {
+      debugPrint('[Storage] enregistreDemandeAvis failed: $e\n$st');
+    }
+  }
+
+  /// Vrai dès que la personne a déposé un retour dans la boîte aux lettres
+  /// (« Pas vraiment » + raisons ou mot écrit) : plus jamais resollicitée.
+  bool get avisRetourDonne =>
+      _prefs.getBool(AppConstants.prefAvisRetourDonne) ?? false;
+
+  Future<void> enregistreRetourAvis() async {
+    try {
+      await _prefs.setBool(AppConstants.prefAvisRetourDonne, true);
+    } catch (e, st) {
+      debugPrint('[Storage] enregistreRetourAvis failed: $e\n$st');
+    }
+  }
+
   // ── Historique d'écoutes (pour Louane) ────────────────
 
   /// Compteurs d'écoute par séance : {id: {fois, ts}} (ts = dernière écoute,
@@ -326,9 +478,11 @@ class StorageService {
   // ── Reset ─────────────────────────────────────────────
 
   Future<void> resetOnboarding() async {
+    _profil = const {};
     try {
       await _prefs.setBool(AppConstants.prefOnboardingDone, false);
       await _prefs.remove(AppConstants.prefOnboardingAnswers);
+      await _ecrireCoffre(_coffreProfil, null);
     } catch (e, st) {
       debugPrint('[Storage] resetOnboarding failed: $e\n$st');
     }
@@ -336,5 +490,13 @@ class StorageService {
 
   Future<void> clearAll() async {
     await _prefs.clear();
+    _prenom = '';
+    _memoire = '';
+    _profil = const {};
+    try {
+      await _coffre.deleteAll();
+    } catch (e) {
+      debugPrint('[Storage] coffre non vidé : $e');
+    }
   }
 }

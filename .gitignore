@@ -53,6 +53,8 @@ app.*.symbols
 
 # Obfuscation related
 app.*.map.json
+# Symboles des builds obfusqués (tool/build-release.sh) — à archiver, jamais commiter
+symbols/
 
 # Android Studio will place build artifacts here
 /android/app/debug
@@ -61,3 +63,7 @@ app.*.map.json
 
 # Captures d'écran QA (lourdes, régénérées à chaque session de test)
 rapports-qa/captures/
+
+# Outils locaux (scripts Node, PID du flutter run)
+node_modules/
+flutter.pid

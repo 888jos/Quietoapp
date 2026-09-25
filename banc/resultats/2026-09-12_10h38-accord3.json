@@ -1,0 +1,12 @@
+[
+  {
+    "id": "sante",
+    "brut": [
+      {
+        "tour": "salut, tu peux me faire un programme à partir de mon test dans apple santé ?",
+        "erreur": "HTTP 404 : {}"
+      }
+    ],
+    "memoire": ""
+  }
+]

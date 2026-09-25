@@ -203,6 +203,30 @@ export const SCENARIOS = [
     ],
   },
   {
+    id: "sante",
+    titre: "Programme à partir de son test Santé (questionnaire anxiété seul, réponses lues)",
+    heure: "19:40", jour: "vendredi 11 septembre", prenom: "Manon",
+    accueil: "Hey Manon\nTa soirée commence comment ?",
+    profil: PROFIL_STRESS,
+    // Exactement ce que l'app envoie (health_service.dart, formaterResumeSante).
+    sante: "QUESTIONNAIRE SANTÉ : elle a fait le questionnaire ANXIÉTÉ seul " +
+      "(pas celui sur le moral) il y a 2 jours. Anxiété (GAD-7) : niveau " +
+      "modéré, score 11/21. Réponses sur les 2 dernières semaines (0 jamais · " +
+      "1 plusieurs jours · 2 plus de la moitié des jours · 3 presque tous les " +
+      "jours) : nervosité, anxiété ou tension : 2 ; inquiétudes impossibles à " +
+      "arrêter : 2 ; s'inquiéter de tout et de rien : 1 ; mal à se détendre : " +
+      "3 ; agitation, mal à rester en place : 0 ; irritabilité, facilement " +
+      "contrarié·e : 1 ; peur qu'il arrive quelque chose de grave : 2. " +
+      "Sommeil de la dernière nuit (Apple Santé) : ~5.5h, nuit plutôt courte.",
+    tours: [
+      "salut, tu peux me faire un programme à partir de mon test dans apple santé ?",
+      "oui c'est ça, surtout le soir quand je me couche, ça tourne",
+      "j'ai 10 minutes le soir, pas plus",
+      "j'ai essayé des vidéos youtube de respiration mais je décroche vite",
+      "oui vas-y",
+    ],
+  },
+  {
     id: "cash",
     titre: "Registre cash : la coloc qui abuse",
     heure: "17:45", jour: "mercredi 2 septembre", prenom: "Inès",
@@ -252,7 +276,7 @@ async function jouerScenario(sc) {
         profil: sc.profil || null,
         parcours: null,
         ecoutes: null,
-        sante: "",
+        sante: sc.sante || "",
         santeDispo: true,
         abonne: true,
         compteurTotal: compteur,
@@ -271,6 +295,7 @@ async function jouerScenario(sc) {
     const extras = [];
     if (res.seance) extras.push(`▶︎ séance lancée : « ${res.seance.titre} »`);
     if (res.parcoursPropose) extras.push("📅 bouton programme");
+    if (res.analyseSante) extras.push(`🩺 carte « Louane analyse » après ${res.analyseApres || 0} bulle(s)`);
     if (res.securite) extras.push("🛡 message de sécurité");
     if (res.niveau) extras.push(`veilleur niveau ${res.niveau}`);
     lignes.push(`<sub>${bulles.length} bulle(s), ${bulles.join(" ").length} car, ${(ms / 1000).toFixed(1)} s${extras.length ? " · " + extras.join(" · ") : ""}</sub>`, "");
@@ -278,9 +303,12 @@ async function jouerScenario(sc) {
     historique.push({ role: "user", content: tour });
     // Comme l'app : chaque bulle devient un message assistant ; un lancement
     // de séance garde son marqueur en fin de dernière bulle.
+    // La carte d'analyse Santé : le marqueur [ANALYSE] revient devant la
+    // première bulle, pour que Louane sache qu'elle l'a déjà fait.
     bulles.forEach((b, i) => {
+      const debut = (res.analyseSante && i === Math.min(res.analyseApres || 0, bulles.length - 1)) ? "[ANALYSE] " : "";
       const fin = (i === bulles.length - 1 && res.seance) ? ` [SEANCE:${res.seance.id}]` : "";
-      historique.push({ role: "assistant", content: b + fin });
+      historique.push({ role: "assistant", content: debut + b + fin });
     });
     if (res.memoire) memoire = res.memoire;
     compteur += 1;

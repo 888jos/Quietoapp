@@ -25,10 +25,11 @@ L'utilisateur est **débutant** et veut UNE chose : payer moins. Réponds en **f
 Les prix changent. Commence toujours par vérifier **les deux grilles** :
 ```
 WebFetch https://platform.claude.com/docs/en/pricing.md
-WebFetch https://developers.openai.com/api/docs/models/gpt-5.6-luna
+WebFetch https://developers.openai.com/api/docs/models/gpt-6-luna
 ```
 Repères au 14/08/2026 (à revérifier à chaque rapport) :
-- **gpt-5.6-luna (Voix)** : 0,20 $ entrée / 0,02 $ cache lu (−90 %) / 1,20 $ sortie par M de tokens ; **écriture de cache facturée 1,25× l'entrée** (0,25 $/M). Le cache OpenAI est automatique sur le préfixe (≥ 1024 tokens). ⚠️ Paul avait en tête 0,10 $/0,60 $ — c'est le **double** en réalité ; si tu vois ces chiffres quelque part, corrige-les.
+- **gpt-6-luna (tous les appels depuis le 26/09/2026)** : 0,10 $ entrée / 0,01 $ cache lu / 0,125 $ écriture de cache / 0,50 $ sortie par M de tokens. Le modèle est dans la constante `MODELE` d'`index.js`.
+- **gpt-5.6-luna (du 14/08 au 26/09/2026, pour chiffrer ces lignes-là)** : 0,20 $ entrée / 0,02 $ cache lu (−90 %) / 1,20 $ sortie par M de tokens ; **écriture de cache facturée 1,25× l'entrée** (0,25 $/M). Le cache OpenAI est automatique sur le préfixe (≥ 1024 tokens). ⚠️ Paul avait en tête 0,10 $/0,60 $ — c'est le **double** en réalité ; si tu vois ces chiffres quelque part, corrige-les.
 - La grille Anthropic ne sert plus qu'à chiffrer les **lignes antérieures au 14/08/2026** : Sonnet 5 au tarif de lancement 2 $/10 $ (cache lu 0,20 $, écriture 2,50 $), Haiku 4.5 à 1 $/5 $. (Le passage à 3 $/15 $ du 31/08 ne concerne plus Quieto — plus aucun appel Anthropic.)
 
 ### 2. Mesurer la consommation réelle

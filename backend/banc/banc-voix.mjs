@@ -4,8 +4,10 @@
 // prompt (ou deux réglages du modèle) sur EXACTEMENT les mêmes scénarios.
 //
 // Prérequis : l'émulateur tourne, SANS émulateur Firestore (le garde-fou
-// VIGIE_ECRITURE d'index.js empêche alors toute écriture dans la Vigie) :
-//   firebase emulators:start --only functions --project quieto-06
+// VIGIE_ECRITURE d'index.js empêche alors toute écriture dans la Vigie),
+// AVEC l'émulateur Auth (depuis le 12/09, EXIGER_AUTH = true : le banc se
+// crée une identité anonyme sur l'émulateur, jamais en prod) :
+//   firebase emulators:start --only functions,auth --project quieto-06
 //
 // Usage :
 //   node banc/banc-voix.mjs <etiquette> [id-scenario ...]
@@ -23,7 +25,26 @@ import { fileURLToPath } from "node:url";
 
 const URL_LOUANE = process.env.LOUANE_URL ||
   "http://127.0.0.1:5001/quieto-06/us-central1/louane";
+const URL_AUTH = process.env.AUTH_EMULATOR_URL || "http://127.0.0.1:9099";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Jeton d'une identité anonyme créée sur l'émulateur Auth (une par lancement).
+let jeton = null;
+async function jetonBanc() {
+  if (jeton) return jeton;
+  const r = await fetch(
+    `${URL_AUTH}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=banc`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ returnSecureToken: true }),
+    }).catch(() => null);
+  const json = r && await r.json().catch(() => ({}));
+  if (!json || !json.idToken) {
+    throw new Error("Émulateur Auth injoignable : lancer --only functions,auth");
+  }
+  jeton = json.idToken;
+  return jeton;
+}
 
 const PROFIL_STRESS = {
   goals: "Apaiser mon stress|Mieux dormir",
@@ -242,7 +263,10 @@ export const SCENARIOS = [
 async function appelLouane(data) {
   const r = await fetch(URL_LOUANE, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + await jetonBanc(),
+    },
     body: JSON.stringify({ data }),
   });
   const json = await r.json().catch(() => ({}));

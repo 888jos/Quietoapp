@@ -31,9 +31,15 @@ const VIGIE_ECRITURE = !(process.env.FUNCTIONS_EMULATOR === "true" &&
   !process.env.FIRESTORE_EMULATOR_HOST);
 
 // La clé API vit ICI, en secret, côté serveur. Jamais dans l'app.
-// Depuis le 14/08/2026 : tout tourne sur OpenAI (GPT-5.6 Luna), clé unique.
+// Depuis le 14/08/2026 : tout tourne sur OpenAI (Luna), clé unique.
 // (ANTHROPIC_KEY retirée — l'ancien secret existe encore dans Secret Manager.)
 const OPENAI_KEY = defineSecret("OPENAI_KEY");
+
+// Le modèle de TOUS les appels (Voix, Mémoire, Veilleur, Boussole, Juge,
+// parcours, accueil). GPT-5.6 Luna du 14/08 au 26/09/2026, puis GPT-6 Luna
+// (0,10 $ / 0,50 $ le M au lieu de 0,20 $ / 1,20 $). Revenir en arrière =
+// changer cette ligne.
+const MODELE = "gpt-6-luna";
 
 // ============================================================
 //  SÉCURITÉ (audit du 02/09/2026) — identité, bornes, quotas serveur.
@@ -721,7 +727,7 @@ m'a vraiment écoutée », pas « c'est un bot sympa ».
 // ------------------------------------------------------------
 //  Le VEILLEUR (= louane_veilleur_prompt.md).
 //  Agent de sécurité. Ne parle JAMAIS à la personne : il renvoie un signal.
-//  Modèle : GPT-5.6 Luna (rapide, peu cher). Tourne en parallèle de la Voix.
+//  Modèle : Luna, voir MODELE (rapide, peu cher). Tourne en parallèle de la Voix.
 // ------------------------------------------------------------
 const PROMPT_VEILLEUR = `
 Tu es un agent de SÉCURITÉ. Tu lis le DERNIER message de la personne (et le
@@ -1512,13 +1518,13 @@ function derniersTours(historique, nbTours) {
 }
 
 // ------------------------------------------------------------
-//  Appel de la Voix (GPT-5.6 Luna, OpenAI — bascule du 14/08/2026, avant :
+//  Appel de la Voix (Luna, voir MODELE — bascule du 14/08/2026, avant :
 //  claude-sonnet-5). Peut échouer → l'erreur remonte (l'app affiche
 //  son message de repli). Pas de temperature : on reste sur le défaut.
 // ------------------------------------------------------------
 async function appelVoix(client, historique, message, heure, jour, prenom, memoire, profil, accueil, parcours, ecoutes, sante, santeDispo, quota) {
   const reponse = await client.chat.completions.create({
-    model: "gpt-5.6-luna",
+    model: MODELE,
     // Luna "réfléchit" un peu avant d'écrire : ces reasoning_tokens comptent
     // dans le plafond → marge au-dessus des ~1000 tokens de réponse utile.
     max_completion_tokens: 1500,
@@ -1573,7 +1579,7 @@ async function appelVoix(client, historique, message, heure, jour, prenom, memoi
 //  Plume, et encore écrite pour l'API Anthropic. Historique : git.)
 
 // ------------------------------------------------------------
-//  La MÉMOIRE (GPT-5.6 Luna). Tient à jour une petite fiche sur la personne, à partir
+//  La MÉMOIRE (Luna). Tient à jour une petite fiche sur la personne, à partir
 //  de la fiche actuelle + le dernier échange. Ne DOIT JAMAIS casser la requête :
 //  en cas d'erreur, on renvoie la fiche actuelle inchangée.
 // ------------------------------------------------------------
@@ -1622,7 +1628,7 @@ async function appelMemoire(client, memoireActuelle, echanges) {
       "FICHE ACTUELLE :\n" + (memoireActuelle || "(vide — première fois)") +
       "\n\nDERNIERS ÉCHANGES :\n" + echanges;
     const r = await client.chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: MODELE,
       max_completion_tokens: 1000,
       // Fusionner une fiche n'a pas besoin de réflexion — sortie identique,
       // tokens de raisonnement en moins (ils sont facturés plein tarif).
@@ -1642,7 +1648,7 @@ async function appelMemoire(client, memoireActuelle, echanges) {
 }
 
 // ------------------------------------------------------------
-//  Appel du Veilleur (GPT-5.6 Luna). Ne DOIT JAMAIS faire échouer la requête :
+//  Appel du Veilleur (Luna). Ne DOIT JAMAIS faire échouer la requête :
 //  en cas d'erreur, on renvoie niveau 0 (la Voix répond normalement).
 //  response_format json_object = JSON garanti par l'API (remplace l'ancien
 //  préremplissage "{" d'Anthropic, que OpenAI ne supporte pas).
@@ -1650,7 +1656,7 @@ async function appelMemoire(client, memoireActuelle, echanges) {
 async function appelVeilleur(client, historique, message) {
   try {
     const reponse = await client.chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: MODELE,
       max_completion_tokens: 500,
       // Réflexion coupée : testé le 28/08 sur 12 cas (explicites, signaux
       // voilés, pièges à faux positifs) — verdicts identiques avec ou sans.
@@ -1680,7 +1686,7 @@ async function appelVeilleur(client, historique, message) {
 }
 
 // ------------------------------------------------------------
-//  La BOUSSOLE (Vigie, GPT-5.6 Luna). Classe DE QUOI parle la personne : sujets,
+//  La BOUSSOLE (Vigie, Luna). Classe DE QUOI parle la personne : sujets,
 //  émotion, intensité. Sert uniquement à l'analyse produit interne (adapter
 //  Louane et Quieto). On ne stocke JAMAIS le texte du message, seulement
 //  cette classification. Ne DOIT JAMAIS casser la requête : erreur → null.
@@ -1713,7 +1719,7 @@ Tu réponds UNIQUEMENT avec cet objet JSON, rien d'autre :
 async function appelBoussole(client, historique, message) {
   try {
     const reponse = await client.chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: MODELE,
       max_completion_tokens: 400, // marge : les reasoning_tokens comptent dedans
       response_format: { type: "json_object" },
       messages: [
@@ -1824,7 +1830,7 @@ async function appelJuge(client, historique, message, reponseLouane) {
     "La personne : " + message,
     "Louane (RÉPONSE À JUGER) : " + reponseLouane].join("\n");
     const r = await client.chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: MODELE,
       max_completion_tokens: 200,
       reasoning_effort: "none",
       prompt_cache_key: "quieto-juge-1",
@@ -2017,7 +2023,7 @@ exports.louane = onCall(
   // Clé de la mémoire d'alerte (message 3114) : le compte, sinon l'installation.
   const cleSecurite = uid || vigie;
 
-  // Un seul client OpenAI pour tout : Voix, Veilleur, Mémoire (GPT-5.6 Luna).
+  // Un seul client OpenAI pour tout : Voix, Veilleur, Mémoire (Luna, voir MODELE).
   const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
 
   // Socle commun d'une ligne de stats Vigie (sans texte, sans prénom).
@@ -2188,8 +2194,8 @@ exports.louane = onCall(
     // Déjà alerté → on laisse Louane continuer (on ne répète pas le numéro).
   }
 
-  // Hors danger : la réponse de la Voix part TELLE QUELLE — la Voix (GPT-5.6
-  // Luna depuis le 14/08/2026) écrit avec tout le contexte. (Plume retirée :
+  // Hors danger : la réponse de la Voix part TELLE QUELLE — la Voix
+  // (Luna depuis le 14/08/2026) écrit avec tout le contexte. (Plume retirée :
   // un 2e agent sans contexte cassait le personnage et la cohérence.) La
   // Mémoire met à jour la fiche (avec le texte nettoyé, pour que le marqueur
   // ne fuie jamais dans la fiche) — UN échange sur trois seulement, avec les
@@ -3269,10 +3275,12 @@ exports.genererParcours = onCall(
 
     const appeler = async () => {
       const reponse = await client.chat.completions.create({
-        model: "gpt-5.6-luna",
+        model: MODELE,
         // Marge au-dessus des ~1000 tokens du JSON : les reasoning_tokens
-        // comptent dans le plafond (risque de JSON tronqué → retry).
-        max_completion_tokens: 2500,
+        // comptent dans le plafond (risque de JSON tronqué → retry). 4000
+        // depuis GPT-6 Luna, qui réfléchit jusqu'à 2× plus que la 5.6
+        // (270-680 tokens de réflexion par programme en prod sur la 5.6).
+        max_completion_tokens: 4000,
         // Préfixe propre (PROMPT_PARCOURS) → clé de cache dédiée, mode
         // explicite comme la Voix (point de coupe en fin de bloc fixe).
         prompt_cache_key: "quieto-parcours-1",
@@ -3408,7 +3416,7 @@ exports.accueilOnboarding = onCall(
     const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
 
     const reponse = await client.chat.completions.create({
-      model: "gpt-5.6-luna",
+      model: MODELE,
       // Trois bulles courtes : la marge sert aux reasoning_tokens de Luna.
       max_completion_tokens: 800,
       // Clé À PART (pas celle de la Voix) : en mode explicite le cache exige
@@ -3444,10 +3452,12 @@ exports.accueilOnboarding = onCall(
     console.log("[Accueil] usage:", JSON.stringify(reponse.usage));
 
     const choix = reponse.choices && reponse.choices[0];
-    const texte = (choix && choix.message && choix.message.content) || "";
+    // ⚠️ Pas « texte » : ce nom masquait la fonction texte() utilisée plus haut
+    // (bornes du 02/09) → ReferenceError à chaque appel, repli local pour tous.
+    const contenu = (choix && choix.message && choix.message.content) || "";
     // Même découpage que la Voix, plus strict : 3 bulles au maximum, et le
     // filet du saut de paragraphe quand Luna oublie le marqueur.
-    let bulles = texte.split(MARQUEUR_BULLE).map((b) => b.trim()).filter(Boolean);
+    let bulles = contenu.split(MARQUEUR_BULLE).map((b) => b.trim()).filter(Boolean);
     if (bulles.length === 1) {
       bulles = bulles[0].split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
     }

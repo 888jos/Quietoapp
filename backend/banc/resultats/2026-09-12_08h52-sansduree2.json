@@ -1,0 +1,62 @@
+[
+  {
+    "id": "sante",
+    "brut": [
+      {
+        "tour": "salut, tu peux me faire un programme à partir de mon test dans apple santé ?",
+        "bulles": [
+          "Ce que je comprends : ces derniers temps, tu as surtout du mal à te détendre, avec des inquiétudes qui reviennent souvent",
+          "Pour que ce programme soit vraiment le tien, qu’est-ce qui nourrit le plus cette tension en ce moment ?"
+        ],
+        "ms": 4654,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "oui c'est ça, surtout le soir quand je me couche, ça tourne",
+        "bulles": [
+          "Le soir, au moment de te coucher, les inquiétudes repartent et tournent dans ta tête",
+          "Qu’est-ce qui revient le plus à ce moment-là ?"
+        ],
+        "ms": 4194,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "j'ai 10 minutes le soir, pas plus",
+        "bulles": [
+          "Tu as donc un petit moment le soir, mais pas plus de dix minutes pour souffler",
+          "Qu’est-ce que tu as déjà essayé pour calmer ce qui tourne, et qu’est-ce qui t’a aidée ou non ?"
+        ],
+        "ms": 3763,
+        "seance": null,
+        "parcoursPropose": false,
+        "niveau": 0
+      },
+      {
+        "tour": "j'ai essayé des vidéos youtube de respiration mais je décroche vite",
+        "bulles": [
+          "Ce que j’ai compris : le soir, les inquiétudes tournent, et les vidéos de respiration te font décrocher rapidement",
+          "Voilà ce que je te prépare : des séances guidées, simples et courtes, pour apaiser la tête avant de dormir"
+        ],
+        "ms": 2021,
+        "seance": null,
+        "parcoursPropose": true,
+        "niveau": 0
+      },
+      {
+        "tour": "oui vas-y",
+        "bulles": [
+          "Super, je te le prépare"
+        ],
+        "ms": 1913,
+        "seance": null,
+        "parcoursPropose": true,
+        "niveau": 0
+      }
+    ],
+    "memoire": "- A du mal à se détendre ces derniers temps, avec des inquiétudes qui reviennent souvent, surtout le soir au moment de se coucher.\n- Les inquiétudes tournent dans sa tête le soir.\n- Dispose de dix minutes maximum le soir pour souffler."
+  }
+]

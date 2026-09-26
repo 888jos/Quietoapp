@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android ≤ 11 : la progression et les réglages se sauvegardent (changement
+     de téléphone), mais JAMAIS le coffre chiffré (fiche mémoire de Louane,
+     réponses d'onboarding, prénom) — sa clé ne quitte pas l'appareil, une
+     copie restaurée ailleurs serait illisible. Audit du 02/09/2026. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml"/>
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml"/>
+</full-backup-content>

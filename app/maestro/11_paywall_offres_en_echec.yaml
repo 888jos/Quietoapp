@@ -1,0 +1,25 @@
+appId: com.quietoapp.app
+# Chemin du crash du 12/08/2026 : offres RevenueCat en échec (app lancée avec
+# une clé invalide) → le paywall doit montrer l'écran « indisponible » avec
+# réessai, PAS l'écran rouge. Lancer l'app AVANT avec la clé sabotée.
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Profil"
+    timeout: 15000
+- tapOn: "Profil"
+- tapOn: "Profil"
+- scrollUntilVisible:
+    element:
+      text: ".*Passer à Premium.*"
+    direction: UP
+    timeout: 10000
+# « Voir les offres » absent de l'arbre d'accessibilité → tap par coordonnées.
+- tapOn:
+    point: "50%,49%"
+# Écran d'erreur gracieux attendu (deux messages possibles selon le cas).
+- extendedWaitUntil:
+    visible: ".*abonnements? (ne sont pas |in)?disponibles?.*"
+    timeout: 30000
+- takeScreenshot: paywall-offres-en-echec

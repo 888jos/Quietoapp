@@ -1,0 +1,8 @@
+# Test n°1 : l'app se lance-t-elle ?
+# Usage : maestro test maestro/01_lancement.yaml
+appId: com.quietoapp.app
+---
+- launchApp
+- waitForAnimationToEnd:
+    timeout: 15000
+- takeScreenshot: rapports-qa/captures/maestro-01-lancement

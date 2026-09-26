@@ -1,0 +1,26 @@
+appId: com.quietoapp.app
+# Vérifie que le paywall s'ouvre depuis Profil sans écran rouge.
+# stopApp: false — ne pas tuer la session flutter run (règle du repo).
+---
+- launchApp:
+    stopApp: false
+- extendedWaitUntil:
+    visible: "Profil"
+    timeout: 15000
+# Warm-up : le premier tap après launchApp peut être avalé.
+- tapOn: "Profil"
+- tapOn: "Profil"
+# La carte Premium est tout en haut de la page (l'onglet peut rouvrir scrollé).
+- scrollUntilVisible:
+    element:
+      text: ".*Passer à Premium.*"
+    direction: UP
+    timeout: 10000
+# « Voir les offres » n'existe PAS dans l'arbre d'accessibilité (bouton custom
+# sans sémantique) : tap par coordonnées, page scrollée tout en haut juste avant.
+- tapOn:
+    point: "50%,49%"
+- extendedWaitUntil:
+    visible: "Commencer mon essai gratuit"
+    timeout: 20000
+- takeScreenshot: paywall-profil

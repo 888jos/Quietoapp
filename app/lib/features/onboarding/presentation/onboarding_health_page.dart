@@ -1,0 +1,350 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/router.dart';
+import '../../../core/config/app_constants.dart';
+import '../../../core/services/health_service.dart';
+import '../../../core/services/storage_providers.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/ui/app_button.dart';
+import '../../../core/ui/apple_health_icon.dart';
+import '../../../core/ui/colonne_tablette.dart';
+import '../../../core/ui/starry_background.dart';
+import 'widgets/slide_reveal.dart';
+
+/// Connexion à Apple Santé (iOS uniquement, juste après « Voici ton
+/// programme ») : on propose d'ajouter automatiquement les minutes d'écoute
+/// dans Santé > Pleine conscience. Un seul bouton, qui mène toujours à la
+/// feuille d'autorisation système : Apple interdit tout bouton « Plus tard »
+/// sur un écran qui précède une demande de permission (guideline 5.1.1(iv),
+/// refus du 2026-08-05). C'est dans la feuille système que l'utilisateur
+/// accepte ou refuse.
+class OnboardingHealthPage extends ConsumerStatefulWidget {
+  const OnboardingHealthPage({super.key});
+
+  @override
+  ConsumerState<OnboardingHealthPage> createState() =>
+      _OnboardingHealthPageState();
+}
+
+class _OnboardingHealthPageState extends ConsumerState<OnboardingHealthPage> {
+  bool _connecting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.read(vigieProvider).log('onboarding_etape', {'etape': 'sante'});
+  }
+
+  Future<void> _connect() async {
+    if (_connecting) return;
+    setState(() => _connecting = true);
+    // Capturé avant les await : après, la page peut être démontée et `ref`
+    // ne doit plus être lu.
+    final vigie = ref.read(vigieProvider);
+    vigie.log('onboarding_sante', {'choix': 'connecter'});
+    // Affiche la feuille d'autorisation iOS et attend la réponse. Quoi que
+    // choisisse l'utilisateur, on continue le flux sans bloquer.
+    await HealthService.instance.requestAuthorization();
+    // Ce que la personne a RÉELLEMENT accordé. `onboarding_sante` ne mesure
+    // que le tap sur le bouton et n'a qu'une seule valeur possible (Apple
+    // interdit un « Plus tard »), donc il ne dit rien du choix fait DANS la
+    // feuille iOS. 'autorise' | 'refuse' | 'jamais' | '' hors iPhone — lu
+    // via l'écriture, HealthKit cachant volontairement les refus de lecture.
+    vigie.log('onboarding_sante_resultat', {
+      'etat': await HealthService.instance.etatConnexion(),
+    });
+    await ref.read(storageServiceProvider).setHealthPromptSeen();
+    if (!mounted) return;
+    context.go(AppRoutes.onboardingTrust);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: StarryBackground()),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.spacingLg,
+              ),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Column(
+                      // En haut de page (pas centré verticalement) : le schéma
+                      // accueille tout de suite, l'espace libre reste en bas.
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Le vide de la page est réparti : 2 parts au-dessus
+                        // du schéma, 3 parts sous l'encadré. Le bloc descend
+                        // un peu et le trou du bas se réduit d'autant.
+                        const Spacer(flex: 2),
+                        const SlideReveal(
+                          active: true,
+                          child: Center(child: _ConnectionVisual()),
+                        ),
+                        const SizedBox(height: AppConstants.spacingXl),
+                        SlideReveal(
+                          active: true,
+                          delay: const Duration(milliseconds: 130),
+                          child: Text(
+                            'Suis ton évolution',
+                            style: AppTextStyles.displayLarge,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                          ),
+                        ),
+                        const SizedBox(height: AppConstants.spacingLg),
+                        SlideReveal(
+                          active: true,
+                          delay: const Duration(milliseconds: 240),
+                          child: Container(
+                            padding: const EdgeInsets.all(
+                              AppConstants.spacingMd,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                AppConstants.radiusLg,
+                              ),
+                              border: Border.all(
+                                color: AppColors.accent.withValues(alpha: 0.35),
+                              ),
+                            ),
+                            // LE message à retenir, seul dans l'encadré :
+                            // gros, au centre, « Tout activer » en accent —
+                            // la personne doit le voir avant la feuille Apple.
+                            child: Text.rich(
+                              TextSpan(
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.45,
+                                ),
+                                children: [
+                                  const TextSpan(text: 'Appuie sur '),
+                                  TextSpan(
+                                    text: '« Tout activer »',
+                                    style: TextStyle(
+                                      color: AppColors.accent,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const TextSpan(
+                                    text:
+                                        ' pour qu\'on puisse te '
+                                        'suivre de la meilleure '
+                                        'manière possible.',
+                                  ),
+                                ],
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppConstants.spacingLg),
+                        SlideReveal(
+                          active: true,
+                          delay: const Duration(milliseconds: 350),
+                          child: Text(
+                            'Tout reste sur ton '
+                            '${Tablette.estTablette(context) ? 'iPad' : 'iPhone'}. '
+                            'Tu peux couper ça quand tu veux.',
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                              height: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        // L'espace restant de la page se place ici, entre le
+                        // bloc de contenu et les boutons.
+                        const Spacer(flex: 3),
+                      ],
+                    ),
+                  ),
+                  SlideReveal(
+                    active: true,
+                    delay: const Duration(milliseconds: 470),
+                    child: AppButton(
+                      label: 'Continuer',
+                      isLoading: _connecting,
+                      onTap: _connect,
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingMd),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Le schéma de connexion : Quieto en haut à gauche, Apple Santé en bas à
+/// droite, reliés par une flèche ondulée en pointillés qui se dessine
+/// doucement et vient pointer l'icône Santé.
+class _ConnectionVisual extends StatefulWidget {
+  const _ConnectionVisual();
+
+  @override
+  State<_ConnectionVisual> createState() => _ConnectionVisualState();
+}
+
+class _ConnectionVisualState extends State<_ConnectionVisual>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _trace;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _trace = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOutCubic);
+    // La flèche se dessine une fois la page posée.
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Apple Santé plus gros que Quieto (c'est lui la destination, le point
+    // important) et un peu rentré vers le centre.
+    return SizedBox(
+      width: 260,
+      height: 180,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _trace,
+              builder: (context, _) =>
+                  CustomPaint(painter: _ArrowPainter(_trace.value)),
+            ),
+          ),
+          const Positioned(left: 0, top: 0, child: _QuietoIcon(size: 64)),
+          const Positioned(
+            right: 24,
+            bottom: 0,
+            child: AppleHealthIcon(size: 96),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// La flèche ondulée, dessinée en pointillés au fil de [progress] (0 → 1),
+/// avec la tête de flèche qui avance au bout du trait.
+class _ArrowPainter extends CustomPainter {
+  final double progress;
+
+  const _ArrowPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0.01) return;
+    final paint = Paint()
+      ..color = AppColors.accent
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    // Part de sous Quieto, fait une vague, et vient pointer l'icône Santé
+    // (le trait s'arrête juste avant son bord, la pointe orientée vers elle).
+    final path = Path()
+      ..moveTo(size.width * 0.138, size.height * 0.43)
+      ..cubicTo(
+        size.width * 0.10,
+        size.height * 0.82,
+        size.width * 0.36,
+        size.height * 0.32,
+        size.width * 0.508,
+        size.height * 0.56,
+      );
+
+    final metric = path.computeMetrics().first;
+    final drawn = metric.length * progress;
+
+    // Trait en pointillés, dévoilé progressivement.
+    const dash = 7.0;
+    const gap = 6.0;
+    var d = 0.0;
+    while (d < drawn) {
+      final end = math.min(d + dash, drawn);
+      canvas.drawPath(metric.extractPath(d, end), paint);
+      d += dash + gap;
+    }
+
+    // Tête de flèche au bout du trait, orientée selon la tangente.
+    final tip = metric.getTangentForOffset(drawn);
+    if (tip == null) return;
+    final dir = tip.vector.direction;
+    const headLen = 9.0;
+    const spread = 2.7; // ouverture des deux branches (~155 degrés)
+    final p = tip.position;
+    canvas.drawLine(
+      p,
+      p + Offset(math.cos(dir + spread), math.sin(dir + spread)) * headLen,
+      paint,
+    );
+    canvas.drawLine(
+      p,
+      p + Offset(math.cos(dir - spread), math.sin(dir - spread)) * headLen,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ArrowPainter oldDelegate) =>
+      oldDelegate.progress != progress;
+}
+
+/// L'icône de l'app, telle qu'elle apparaît sur l'écran d'accueil.
+class _QuietoIcon extends StatelessWidget {
+  final double size;
+
+  const _QuietoIcon({required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(size * 0.225),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: size * 0.18,
+            offset: Offset(0, size * 0.045),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.225),
+        child: Image.asset('assets/images/Logo 1.jpeg', fit: BoxFit.cover),
+      ),
+    );
+  }
+}

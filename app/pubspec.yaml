@@ -1,0 +1,118 @@
+name: quieto
+description: "Quieto — application de méditation en français"
+publish_to: 'none'
+
+version: 1.0.27+38
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Navigation
+  go_router: ^14.0.0
+
+  # Subscriptions
+  purchases_flutter: ^9.14.0
+  purchases_ui_flutter: ^9.0.0
+
+  # Local storage
+  shared_preferences: ^2.2.0
+
+  # Audio
+  just_audio: ^0.9.36
+  audio_service: ^0.18.0
+
+  # Icons
+  iconsax_flutter: ^1.0.0
+
+  # URL Launcher
+  url_launcher: ^6.3.0
+
+  # Popup natif de notation (SKStoreReviewController iOS / In-App Review Android)
+  in_app_review: ^2.0.10
+
+  cupertino_icons: ^1.0.8
+  flutter_local_notifications: ^22.0.0
+  timezone: ^0.11.0
+  flutter_timezone: ^5.1.0
+  cloud_functions: ^6.3.3
+  speech_to_text: ^7.4.0
+  flutter_tts: ^4.2.5
+  firebase_app_check: ^0.4.5
+  firebase_core: ^4.11.0
+  material_symbols_icons: ^4.2951.0
+  app_settings: ^7.0.0
+  health: ^13.3.1
+  firebase_auth: ^6.5.6
+  google_sign_in: ^6.3.0
+  sign_in_with_apple: ^8.1.0
+  crypto: ^3.0.7
+  # Carte de partage du programme (stories) : capture PNG + feuille système.
+  share_plus: ^11.0.0
+  path_provider: ^2.1.4
+  # Stockage chiffré (Keychain iOS / Keystore Android) pour la fiche mémoire
+  # de Louane, les réponses d'onboarding et le prénom (audit du 02/09/2026).
+  flutter_secure_storage: ^9.2.4
+
+# Force path_provider sur une version SANS le package natif `objective_c`.
+# La 2.6.0 (via objective_c / native-assets) ne s'embarque pas correctement sur
+# les builds Xcode/release → crash dyld au lancement (« DOBJC_initializeApi »)
+# = écran blanc. La 2.4.1 utilise l'implémentation Objective-C classique, stable.
+dependency_overrides:
+  path_provider_foundation: 2.4.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.1
+
+flutter_launcher_icons:
+  ios: true
+  android: true
+  image_path_ios: "assets/images/Logo 1.jpeg"
+  image_path_android: "assets/images/logo_rond.png"
+  adaptive_icon_background: "#4FCEC5"
+  adaptive_icon_foreground: "assets/images/logo_rond.png"
+  remove_alpha_ios: true
+
+flutter:
+  uses-material-design: true
+
+  # Shaders GPU (aurore boréale et voile laiteux de la Home).
+  shaders:
+    - shaders/aurora.frag
+    - shaders/stardust.frag
+
+  assets:
+    - assets/images/
+    - assets/images/sessions/decouverte/
+    - assets/images/sessions/actualite/
+    - assets/images/sessions/stress/
+    - assets/images/sessions/sleep/
+    - assets/images/sessions/breathing/
+    - assets/images/sessions/emotion/
+    - assets/images/sessions/express/
+    # Couvertures des pages catégorie (style Notion).
+    - assets/images/categories/
+    # Musique d'ambiance jouée en boucle pendant l'onboarding.
+    - assets/audio/
+    # Audios de séances hébergés sur Firebase Storage (cf.
+    # AppConstants.audioBaseUrl) — plus embarqués pour réduire la taille.
+
+  fonts:
+    # Police du paywall (design Sereine). Fichier variable (toutes graisses).
+    - family: HankenGrotesk
+      fonts:
+        - asset: assets/fonts/HankenGrotesk.ttf
+    # Serif élégante de la salutation Home. Fichier variable.
+    - family: CormorantGaramond
+      fonts:
+        - asset: assets/fonts/CormorantGaramond.ttf
+

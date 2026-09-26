@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Règles Firebase Storage — bucket quieto-06 (audit sécurité du 02/09/2026).
+//
+// ⚠️ À DÉPLOYER SEULEMENT quand la 1.0.24 est majoritaire (les apps ≤ 1.0.23
+// téléchargent les MP3 sans jeton et seraient coupées) :
+//   firebase deploy --only storage
+//
+// Depuis la 1.0.24, l'app envoie son jeton Firebase (compte anonyme créé au
+// lancement, ou compte Apple/Google) dans l'en-tête Authorization, et le
+// serveur pose le custom claim `premium` après vérification RevenueCat
+// (Cloud Function synchroniserAbonnement). Les 7 séances gratuites portent
+// la métadonnée gratuit=true sur leurs fichiers.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{fichier} {
+      // Lire un fichier : compte Firebase obligatoire ; gratuit pour tous,
+      // premium réservé au claim.
+      allow get: if request.auth != null &&
+        (resource.metadata.get('gratuit', '') == 'true' ||
+         request.auth.token.get('premium', false) == true);
+
+      // Lister / énumérer le contenu du bucket : INTERDIT.
+      allow list: if false;
+
+      // Écriture depuis un client : interdite (upload via console/CLI/admin).
+      allow write: if false;
+    }
+  }
+}

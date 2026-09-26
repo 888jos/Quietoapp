@@ -1,0 +1,69 @@
+# Secrets (never commit)
+.env.json
+# Firebase — config client (clés) gardée en local, jamais sur GitHub
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
+# Google Cloud service account credentials (RevenueCat Android, etc.)
+*service-account*.json
+revenuecat-*.json
+quieto-google-*.json
+
+# Dossier de dépôt temporaire pour les images de session avant tri
+quieto-images-a-trier/
+
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+ios/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+# Symboles des builds obfusqués (tool/build-release.sh) — à archiver, jamais commiter
+symbols/
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Captures d'écran QA (lourdes, régénérées à chaque session de test)
+rapports-qa/captures/
+
+# Outils locaux (scripts Node, PID du flutter run)
+node_modules/
+flutter.pid

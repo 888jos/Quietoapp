@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bienvenue — Quieto Entreprise</title>
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#0A1628" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/img/favicon-192.png" />
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css?v=17" />
+  <!-- Les apparitions au défilement ne cachent rien si le script manque. -->
+  <script>document.documentElement.classList.add("js");setTimeout(function(){if(!window.__mouvement)document.documentElement.classList.add("sans-mouvement")},3000);</script>
+  <script src="assets/js/ciel.js?v=17" defer></script>
+  <script src="assets/js/mouvement.js?v=17" defer></script>
+</head>
+<body>
+
+  <!-- Le ciel de l'accueil de l'app : aurore + poussière d'étoiles (assets/js/ciel.js) -->
+  <div class="ciel" aria-hidden="true"></div>
+
+  <header class="entete">
+    <div class="conteneur">
+      <a class="logo" href="index.html" aria-label="Quieto Entreprise, accueil">
+        <span class="logo__lotus" aria-hidden="true"></span>
+        <span class="logo__nom">Quieto</span>
+        <span class="logo__pro">Entreprise</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Page de retour après le paiement Stripe. Stripe ajoute ?session_id=cs_… :
+       site.js demande alors le code de la commande (fonction commandeEntreprise)
+       et l'affiche tout de suite, avec le message à transférer. Sans ça (ou le
+       temps que le code arrive), la page renvoie à l'e-mail. -->
+  <main>
+    <section class="merci">
+      <div class="conteneur merci__grille">
+        <div class="merci__texte">
+          <p class="surtitre" data-apparition style="--delai: 0.1s">Paiement reçu</p>
+          <h1 data-apparition style="--delai: 0.2s">Bienvenue dans Quieto<br /><em>Vos équipes vont adorer</em></h1>
+
+          <div class="merci__code" data-commande hidden>
+            <p class="merci__code-titre">Votre code entreprise<span data-commande-places></span></p>
+            <div class="merci__code-ligne">
+              <span class="merci__code-valeur" data-commande-code></span>
+              <button class="bouton bouton--petit" type="button" data-copier="code">Copier</button>
+            </div>
+            <p class="merci__code-note">Il vient aussi de partir par e-mail à <b data-commande-email></b>, avec le message à transférer. Pensez à regarder dans les indésirables.</p>
+            <a class="bouton bouton--contour merci__facture" href="#" target="_blank" rel="noopener" data-commande-facture hidden>
+              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+              Télécharger la facture
+            </a>
+          </div>
+          <p class="intro" data-sans-commande data-apparition style="--delai: 0.32s">
+            Votre code entreprise arrive par e-mail dans la minute, avec un
+            message tout prêt à transférer à votre équipe. Pensez à regarder
+            dans les indésirables.
+          </p>
+
+          <ol class="merci__etapes" data-apparition-groupe>
+            <li>
+              <span class="merci__num">1</span>
+              <div><h3>Transférez le message</h3><p>À toute l'équipe, par e-mail, Slack ou Teams. Il contient le code et les liens pour télécharger Quieto.</p></div>
+            </li>
+            <li>
+              <span class="merci__num">2</span>
+              <div><h3>Chacun télécharge Quieto</h3><p>Sur l'<a href="https://apps.apple.com/fr/app/quieto/id6764535642">App Store</a> ou sur <a href="https://play.google.com/store/apps/details?id=com.quieto.quieto">Google Play</a>.</p></div>
+            </li>
+            <li>
+              <span class="merci__num">3</span>
+              <div><h3>Chacun active son accès</h3><p>Dans l'app&nbsp;: <strong>Profil → Accès offert par mon entreprise</strong>, connexion Apple ou Google, puis le code. C'est tout.</p></div>
+            </li>
+          </ol>
+
+          <div class="merci__message" data-commande-bloc hidden>
+            <div class="merci__message-tete">
+              <h3>Le message à transférer</h3>
+              <button class="bouton bouton--contour bouton--petit" type="button" data-copier="message">Copier le message</button>
+            </div>
+            <p class="merci__message-texte" data-commande-message></p>
+          </div>
+
+          <p class="merci__aide" data-apparition>
+            <span data-commande-portail hidden>Factures, moyen de paiement, résiliation&nbsp;: <a href="#">votre espace client</a>.<br /></span>
+            Pas d'e-mail au bout de 10 minutes&nbsp;? Écrivez-nous à <a href="mailto:quieto@cofonde.com">quieto@cofonde.com</a>.
+          </p>
+        </div>
+        <div class="cadre-profond merci__visuel" data-apparition style="--delai: 0.3s">
+          <img src="assets/img/decouverte.webp" alt="Une silhouette assise en méditation au bord de la mer, sous la lune." data-profondeur="0.06" />
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/site.js?v=17"></script>
+</body>
+</html>

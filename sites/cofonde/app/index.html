@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quieto : Anxiété &amp; Sommeil</title>
+  <meta name="description" content="Séances guidées, programme sur mesure et Louane pour en parler, quand tu veux. Sur iPhone et Android." />
+  <meta name="theme-color" content="#0A1628" />
+
+  <!-- Lien à partager (Instagram, WhatsApp, iMessage…) : cette page porte l'aperçu
+       og-quieto.jpg, puis renvoie aussitôt vers l'App Store (ou Google Play sur Android).
+       Pas de redirection serveur ni de meta refresh : le robot d'aperçu les suivrait
+       et afficherait l'aperçu d'Apple (icône sur fond blanc). -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://cofonde.com/app" />
+  <meta property="og:site_name" content="Quieto" />
+  <meta property="og:title" content="Quieto : Anxiété &amp; Sommeil" />
+  <meta property="og:description" content="Séances guidées, programme sur mesure et Louane pour en parler, quand tu veux. Sur iPhone et Android." />
+  <meta property="og:image" content="https://cofonde.com/assets/img/og-quieto.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="2400" />
+  <meta property="og:image:height" content="1260" />
+  <meta property="og:image:alt" content="Quieto : une nuit étoilée peinte, la lune et une silhouette qui médite au bord de l’eau." />
+  <meta property="og:locale" content="fr_FR" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Quieto : Anxiété &amp; Sommeil" />
+  <meta name="twitter:description" content="Séances guidées, programme sur mesure et Louane pour en parler, quand tu veux." />
+  <meta name="twitter:image" content="https://cofonde.com/assets/img/og-quieto.jpg" />
+  <meta name="apple-itunes-app" content="app-id=6764535642" />
+
+  <link rel="icon" type="image/jpeg" href="/assets/img/quieto-logo.jpeg" />
+  <link rel="apple-touch-icon" href="/assets/img/quieto-logo.jpeg" />
+
+  <script>
+    // Android → Google Play, tout le reste (iPhone, iPad, ordinateur) → App Store
+    location.replace(/android/i.test(navigator.userAgent)
+      ? "https://play.google.com/store/apps/details?id=com.quieto.quieto"
+      : "https://apps.apple.com/fr/app/quieto-anxi%C3%A9t%C3%A9-sommeil/id6764535642");
+  </script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      display: grid; place-items: center; padding: 24px;
+      background: radial-gradient(600px 400px at 50% 30%, rgba(92, 224, 216, 0.18), transparent 70%), #0A1628;
+      color: #F4F1E8; text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+    }
+    img { width: 88px; height: 88px; border-radius: 22px; }
+    h1 { margin-top: 20px; font-size: 28px; font-weight: 600; }
+    p { margin-top: 8px; color: rgba(244, 241, 232, 0.7); }
+    a.btn {
+      display: inline-block; margin: 28px 6px 0; padding: 14px 26px; border-radius: 999px;
+      background: linear-gradient(135deg, #86ECE4, #5CE0D8); color: #0A1628;
+      font-weight: 600; text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <img src="/assets/img/quieto-logo.jpeg" alt="" />
+    <h1>Quieto</h1>
+    <p>Ouverture du store…</p>
+    <a class="btn" href="https://apps.apple.com/fr/app/quieto-anxi%C3%A9t%C3%A9-sommeil/id6764535642">App Store</a>
+    <a class="btn" href="https://play.google.com/store/apps/details?id=com.quieto.quieto">Google Play</a>
+  </main>
+</body>
+</html>

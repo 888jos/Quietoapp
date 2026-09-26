@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarifs — Quieto Entreprise</title>
+  <meta name="description" content="Calculez le tarif de Quieto pour votre équipe, à partir de 10 personnes. Prix dégressif par salarié, paiement en ligne par prélèvement SEPA ou carte, prêt en quelques minutes." />
+  <meta name="theme-color" content="#0A1628" />
+  <meta property="og:title" content="Tarifs — Quieto Entreprise" />
+  <meta property="og:image" content="assets/img/emotion.webp" />
+  <meta property="og:locale" content="fr_FR" />
+
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/img/favicon-192.png" />
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css?v=17" />
+  <!-- Les apparitions au défilement ne cachent rien si le script manque. -->
+  <script>document.documentElement.classList.add("js");setTimeout(function(){if(!window.__mouvement)document.documentElement.classList.add("sans-mouvement")},3000);</script>
+  <script src="assets/js/ciel.js?v=17" defer></script>
+  <script src="assets/js/mouvement.js?v=17" defer></script>
+</head>
+<body>
+
+  <!-- Le ciel de l'accueil de l'app : aurore + poussière d'étoiles (assets/js/ciel.js) -->
+  <div class="ciel" aria-hidden="true"></div>
+
+  <header class="entete">
+    <div class="conteneur">
+      <a class="logo" href="index.html" aria-label="Quieto Entreprise, accueil">
+        <span class="logo__lotus" aria-hidden="true"></span>
+        <span class="logo__nom">Quieto</span>
+        <span class="logo__pro">Entreprise</span>
+      </a>
+      <nav class="nav" aria-label="Navigation principale">
+        <a href="index.html#journee">L'offre</a>
+        <a href="index.html#pourquoi-quieto">Pourquoi Quieto</a>
+        <a href="index.html#pour-qui">Pour qui</a>
+        <a href="tarifs.html" aria-current="page">Tarifs</a>
+        <a class="bouton bouton--petit" href="index.html#demo">Demander une démo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===========  Calculateur (structure de la page « small business » de Headspace)  =========== -->
+    <section class="calcul">
+      <div class="calcul__fond" aria-hidden="true">
+        <img src="assets/img/emotion.webp" alt="" data-profondeur="0.05" />
+      </div>
+      <div class="conteneur calcul__grille">
+        <div class="calcul__texte">
+          <p class="surtitre" data-apparition style="--delai: 0.1s">Pour les équipes de 10 à tous ceux qui en auront besoin</p>
+          <h1 data-apparition style="--delai: 0.2s">Offrez à votre équipe<br /><em>un peu plus de calme</em></h1>
+          <p data-apparition style="--delai: 0.32s">
+            Des séances guidées contre le stress, pour mieux dormir et tenir
+            la distance, et Louane, à qui parler quand ça déborde. Simple à
+            acheter, simple à partager.
+          </p>
+        </div>
+
+        <div class="calculateur" id="calculateur" data-apparition style="--delai: 0.4s">
+          <h2>Prêt en quelques minutes</h2>
+          <p class="calculateur__consigne">Indiquez la taille de votre équipe, à partir de 10 personnes.</p>
+
+          <div class="bascule bascule--claire" role="group" aria-label="Rythme de paiement">
+            <button type="button" data-rythme="annuel" aria-pressed="true">Annuel<small>2 mois offerts</small></button>
+            <button type="button" data-rythme="mensuel" aria-pressed="false">Mensuel</button>
+          </div>
+
+          <label class="calculateur__nombre">
+            <span class="visuellement-cache">Nombre de salariés</span>
+            <input id="places" type="number" inputmode="numeric" min="10" max="999" step="1" value="25" />
+          </label>
+          <input id="places-curseur" class="calculateur__curseur" type="range" min="10" max="999" step="1" value="25" aria-label="Nombre de salariés" />
+          <div class="calculateur__reperes" aria-hidden="true"><span>10</span><span>500</span><span>999</span></div>
+          <a class="calculateur__plus" href="index.html#demo">Plus de 1 000 personnes&nbsp;?</a>
+
+          <div class="calculateur__ligne">
+            <div>
+              <strong data-libelle-unitaire>Prix annuel par salarié</strong>
+              <span>Dégressif selon la taille de l'équipe</span>
+            </div>
+            <div class="calculateur__prix">
+              <s data-reference>69,99&nbsp;€</s>
+              <b data-unitaire>54,30&nbsp;€</b>
+            </div>
+          </div>
+
+          <div class="calculateur__ligne">
+            <div>
+              <strong data-libelle-total>Total pour un an</strong>
+              <span>Prélèvement SEPA ou carte · prix HT</span>
+            </div>
+            <div class="calculateur__prix">
+              <b class="calculateur__total" data-total>1&nbsp;357,50&nbsp;€</b>
+              <span class="calculateur__economie" data-economie>Vous économisez 392,25&nbsp;€</span>
+            </div>
+          </div>
+
+          <div class="calculateur__actions">
+            <a href="index.html#demo" data-lien-demo>Demander une démo</a>
+            <button class="bouton bouton--sombre" type="button" id="commencer">Commencer</button>
+          </div>
+          <p class="calculateur__etat" role="status" aria-live="polite"></p>
+          <p class="calculateur__note">Paiement sécurisé. Au mois, sans engagement&nbsp;; à l'année, deux mois offerts. En continuant, vous acceptez nos <a href="cgv.html">conditions générales de vente</a>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  Ce qui est inclus  =========== -->
+    <section class="inclus">
+      <div class="conteneur">
+        <div class="entete-section" data-apparition>
+          <h2>Tout Quieto Premium,<br /><em>pour chaque personne</em></h2>
+        </div>
+        <div class="pour-qui__grille" data-apparition-groupe>
+          <article class="pour-qui__carte">
+            <h3>35 séances guidées</h3>
+            <p>Stress, sommeil, respiration, émotions, actualité&nbsp;: de 1 à 14 minutes, pour le moment où ça compte.</p>
+          </article>
+          <article class="pour-qui__carte">
+            <h3>Louane, à toute heure</h3>
+            <p>Une présence bienveillante à qui écrire ce qui pèse, de jour comme de nuit, sans rendez-vous.</p>
+          </article>
+          <article class="pour-qui__carte">
+            <h3>Un programme de 7 jours</h3>
+            <p>Composé à partir de ce que chacun vit, pour installer une habitude simple, jour après jour.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  Comment ça marche  =========== -->
+    <section class="etapes-section">
+      <div class="conteneur">
+        <div class="entete-section" data-apparition>
+          <p class="surtitre">Après le paiement</p>
+          <h2>Trois étapes,<br /><em>zéro paperasse</em></h2>
+        </div>
+        <div class="etapes" data-apparition-groupe>
+          <div class="etape">
+            <div class="etape__num">1</div>
+            <h3>Vous payez en ligne</h3>
+            <p>Pour le nombre exact de personnes de votre équipe. Les factures arrivent automatiquement.</p>
+          </div>
+          <div class="etape">
+            <div class="etape__num">2</div>
+            <h3>Vous recevez votre code</h3>
+            <p>Dans la minute, par e-mail, avec un message tout prêt à transférer à votre équipe.</p>
+          </div>
+          <div class="etape">
+            <div class="etape__num">3</div>
+            <h3>Chacun l'active</h3>
+            <p>Dans l'application&nbsp;: <strong>Profil → Accès offert par mon entreprise</strong>, le code, et Premium est débloqué.</p>
+          </div>
+        </div>
+
+        <div class="faq" data-apparition>
+          <h3>Questions fréquentes</h3>
+          <details>
+            <summary>Notre équipe grandit&nbsp;?</summary>
+            <p>Écrivez-nous&nbsp;: nous ajoutons des places à votre abonnement, et le même code continue de fonctionner.</p>
+          </details>
+          <details>
+            <summary>Un salarié quitte l'entreprise&nbsp;?</summary>
+            <p>Écrivez-nous&nbsp;: nous libérons sa place pour quelqu'un d'autre. Il garde son compte et peut continuer avec la version gratuite ou son propre abonnement.</p>
+          </details>
+          <details>
+            <summary>Pourquoi le prix baisse-t-il avec la taille de l'équipe&nbsp;?</summary>
+            <p>Plus votre équipe est grande, moins chaque place coûte&nbsp;: de 56,04&nbsp;€ par salarié et par an pour 10 personnes à 44,88&nbsp;€ à partir de 800.</p>
+          </details>
+          <details>
+            <summary>Le CSE peut-il payer&nbsp;?</summary>
+            <p>Oui, exactement de la même façon, ou par virement&nbsp;: <a href="index.html#demo">écrivez-nous</a>.</p>
+          </details>
+          <details>
+            <summary>Qu'est-ce que l'entreprise voit&nbsp;?</summary>
+            <p>Rien d'individuel. Ni les noms des personnes qui activent leur accès, ni leur utilisation, ni leurs échanges avec Louane.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="pied">
+    <div class="conteneur pied__grille">
+      <div class="pied__marque">
+        <a class="logo" href="index.html" aria-label="Quieto Entreprise">
+          <span class="logo__lotus" aria-hidden="true"></span>
+          <span class="logo__nom">Quieto</span>
+        </a>
+        <p>Le soutien mental de toute votre équipe. Une application éditée par Cofonde.</p>
+      </div>
+      <nav aria-label="L'offre">
+        <h4>L'offre</h4>
+        <a href="index.html#journee">Une journée avec Quieto</a>
+        <a href="index.html#pourquoi-quieto">Pourquoi Quieto</a>
+        <a href="tarifs.html">Tarifs</a>
+      </nav>
+      <nav aria-label="Pour qui">
+        <h4>Pour qui</h4>
+        <a href="index.html#pour-qui">Employeurs</a>
+        <a href="index.html#pour-qui">CSE</a>
+        <a href="index.html#pour-qui">Mutuelles et partenaires</a>
+      </nav>
+      <nav aria-label="Informations">
+        <h4>Informations</h4>
+        <a href="mentions-legales.html">Mentions légales</a>
+        <a href="cgv.html">Conditions de vente</a>
+        <a href="https://cofonde.com/quieto-confidentialite">Confidentialité de l'app</a>
+        <a href="https://cofonde.com/quieto-cgu">Conditions d'utilisation</a>
+      </nav>
+      <nav aria-label="Contact">
+        <h4>Contact</h4>
+        <a href="index.html#demo">Demander une démo</a>
+        <a href="mailto:quieto@cofonde.com">quieto@cofonde.com</a>
+      </nav>
+    </div>
+    <div class="conteneur pied__bas">
+      <p>
+        Quieto est une application de bien-être et ne remplace pas un suivi
+        médical ou psychologique&nbsp;; Louane n'est pas un professionnel de
+        santé. En cas d'urgence, appelez le 15. Si vous avez des pensées
+        suicidaires, le 3114 est joignable gratuitement 24h/24.
+      </p>
+      <span>© <span data-annee>2026</span> Quieto · Cofonde</span>
+    </div>
+  </footer>
+
+  <script src="assets/js/site.js?v=17"></script>
+</body>
+</html>

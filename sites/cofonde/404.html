@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page introuvable — Cofonde</title>
+  <meta name="description" content="La page demandée n'existe pas sur le site de Cofonde." />
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#07070c" />
+
+  <!-- Chemins absolus : cette page peut être servie depuis n'importe quelle URL -->
+  <link rel="icon" type="image/png" href="/assets/img/cofonde-mark.png" />
+  <link rel="apple-touch-icon" href="/assets/img/cofonde-mark.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/assets/css/styles.css" />
+</head>
+<body>
+
+  <div class="bg-decor" aria-hidden="true">
+    <div class="bg-grid"></div>
+    <div class="glow glow--1"></div>
+  </div>
+
+  <!-- ===========  HEADER  =========== -->
+  <header class="site-header scrolled">
+    <div class="container nav">
+      <a href="/" class="nav__brand" aria-label="Cofonde — accueil">
+        <span>Cofonde</span>
+      </a>
+      <nav class="nav__links" aria-label="Navigation principale">
+        <a href="/#studio">Le studio</a>
+        <a href="/#quieto">Quieto</a>
+        <a href="/#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===========  CONTENU 404  =========== -->
+  <main class="notfound">
+    <div class="notfound__code">404</div>
+    <h1 class="notfound__title">Cette page n'existe pas</h1>
+    <p class="notfound__text">
+      La page que vous cherchez a peut-être été déplacée, ou l'adresse
+      saisie comporte une erreur. Pas d'inquiétude — revenons en terrain
+      connu.
+    </p>
+    <a href="/" class="btn btn--primary">
+      Retour à l'accueil
+      <span class="arrow" aria-hidden="true">→</span>
+    </a>
+  </main>
+
+  <!-- ===========  FOOTER  =========== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer__top">
+        <div class="footer__brand">
+          <div>
+            <b>Cofonde</b>
+            <p>Studio d'applications mobiles.</p>
+          </div>
+        </div>
+        <nav class="footer__links" aria-label="Liens de pied de page">
+          <a href="/#studio">Le studio</a>
+          <a href="/#quieto">Quieto</a>
+          <a href="/#contact">Contact</a>
+          <a href='/mentions-legales'>Mentions légales</a>
+        </nav>
+      </div>
+      <div class="footer__bottom">
+        <span>© <span data-year>2026</span> Cofonde. Tous droits réservés.</span>
+        <span>Conçu avec soin.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/assets/js/main.js"></script>
+</body>
+</html>

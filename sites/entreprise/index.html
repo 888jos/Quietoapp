@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quieto Entreprise — Le soutien mental de toute votre équipe</title>
+  <meta name="description" content="Offrez Quieto Premium à vos salariés : séances guidées de 1 à 14 minutes, Louane disponible à toute heure, programme de 7 jours. Activation en une minute. Une façon simple de prendre soin de toute votre équipe." />
+  <meta name="theme-color" content="#0A1628" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Quieto Entreprise — Le soutien mental de toute votre équipe" />
+  <meta property="og:description" content="Offrez Quieto Premium à votre équipe : une façon simple de prendre soin de chacun. Forfait mensuel ou annuel, activation en une minute." />
+  <meta property="og:image" content="assets/img/express.webp" />
+  <meta property="og:locale" content="fr_FR" />
+
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/img/favicon-192.png" />
+  <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css?v=17" />
+  <!-- Les apparitions au défilement ne cachent rien si le script manque. -->
+  <script>document.documentElement.classList.add("js");setTimeout(function(){if(!window.__mouvement)document.documentElement.classList.add("sans-mouvement")},3000);</script>
+  <script src="assets/js/ciel.js?v=17" defer></script>
+  <script src="assets/js/mouvement.js?v=17" defer></script>
+  <script src="assets/js/souffle.js?v=17" defer></script>
+</head>
+<body>
+
+  <!-- Le ciel de l'accueil de l'app : aurore + poussière d'étoiles (assets/js/ciel.js) -->
+  <div class="ciel" aria-hidden="true"></div>
+
+  <!-- Barre d'annonce (comme Headspace) -->
+  <a class="annonce" href="tarifs.html">
+    Santé mentale, grande cause nationale&nbsp;: offrez Quieto à votre équipe dès aujourd'hui <span class="fleche" aria-hidden="true">→</span>
+  </a>
+
+  <header class="entete">
+    <div class="conteneur">
+      <a class="logo" href="#" aria-label="Quieto Entreprise, retour en haut">
+        <span class="logo__lotus" aria-hidden="true"></span>
+        <span class="logo__nom">Quieto</span>
+        <span class="logo__pro">Entreprise</span>
+      </a>
+      <nav class="nav" aria-label="Navigation principale">
+        <a href="#journee">L'offre</a>
+        <a href="#pourquoi-quieto">Pourquoi Quieto</a>
+        <a href="#pour-qui">Pour qui</a>
+        <a href="tarifs.html">Tarifs</a>
+        <a class="bouton bouton--petit" href="#demo">Demander une démo</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ===========  1. HERO : le ciel de l'app, la lune, le titre au centre, puis la scène  =========== -->
+    <section class="hero">
+      <div class="conteneur hero__haut">
+        <!-- La lune de l'accueil de l'app (glowing_moon.dart) : croissant ivoire,
+             lueur proche et halo qui respirent lentement. -->
+        <div class="lune" aria-hidden="true">
+          <span class="lune__halo"></span>
+          <svg viewBox="0 0 100 100" focusable="false">
+            <defs>
+              <mask id="lune-croissant" maskUnits="userSpaceOnUse" x="-20" y="-20" width="140" height="140">
+                <rect x="-20" y="-20" width="140" height="140" fill="#fff" />
+                <circle class="lune__morsure" cx="61" cy="41" r="26" fill="#000" />
+              </mask>
+              <filter id="lune-flou" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="7" />
+              </filter>
+            </defs>
+            <g class="lune__lueur" filter="url(#lune-flou)">
+              <circle cx="47" cy="50" r="30" fill="#EFEAD8" mask="url(#lune-croissant)" />
+            </g>
+            <circle cx="47" cy="50" r="30" fill="#EFEAD8" mask="url(#lune-croissant)" />
+          </svg>
+        </div>
+
+        <div class="hero__texte">
+          <p class="surtitre" data-apparition style="--delai: 0.1s">Quieto pour les entreprises</p>
+          <h1 data-apparition style="--delai: 0.22s">Le soutien mental<br /><em>de toute votre équipe</em></h1>
+          <p class="hero__intro" data-apparition style="--delai: 0.38s">
+            Un coup de stress avant une réunion, une nuit qui tourne en
+            boucle&nbsp;: Quieto aide chacun à souffler. Une façon simple de
+            prendre soin de toute votre équipe.
+          </p>
+          <div class="hero__actions" data-apparition style="--delai: 0.5s">
+            <a class="bouton" href="#demo">Demander une démo</a>
+            <a class="bouton bouton--contour" href="tarifs.html">Voir les tarifs</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="conteneur">
+        <div class="scene" data-apparition style="--delai: 0.65s">
+          <div class="scene__cadre">
+            <img src="assets/img/express.webp" alt="Peinture d'un immeuble violet la nuit, une seule fenêtre allumée, sous un ciel étoilé." data-profondeur="0.08" />
+          </div>
+          <!-- Vignettes façon écran de l'app : elles flottent doucement -->
+          <div class="vignette vignette--seance" aria-hidden="true">
+            <img src="assets/img/breathing.webp" alt="" />
+            <div>
+              <span class="vignette__type">Séance · 2 min</span>
+              <span class="vignette__titre">Avant une présentation</span>
+            </div>
+          </div>
+          <div class="vignette vignette--programme" aria-hidden="true">
+            <span class="vignette__type">Programme de 7 jours</span>
+            <span class="vignette__titre">Jour 3</span>
+            <span class="vignette__points"><i class="fait"></i><i class="fait"></i><i class="fait"></i><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div class="vignette vignette--louane" aria-hidden="true">
+            <span class="vignette__type">Louane</span>
+            <span class="vignette__bulle">Je suis là. Qu'est-ce qui pèse le plus, en ce moment&nbsp;?</span>
+          </div>
+          <div class="vignette vignette--offert" aria-hidden="true">
+            <span class="vignette__titre">Premium offert par ton entreprise</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  2. BANDEAU DE CONFIANCE (sans faux logos)  =========== -->
+    <div class="confiance">
+      <div class="conteneur confiance__liste" data-apparition-groupe="0.08">
+        <span>Application française</span>
+        <span>iPhone et Android</span>
+        <span>Zéro gestion pour les RH</span>
+        <span>Sans engagement</span>
+      </div>
+    </div>
+
+    <!-- ===========  3. AU BUREAU, PUIS À LA MAISON (remplace les chiffres clés le 24/09 :
+         le stress du travail, puis celui de l'actualité en rentrant)  =========== -->
+    <section class="dehors">
+      <div class="conteneur dehors__grille">
+        <div class="dehors__texte">
+          <p class="surtitre" data-apparition>Au bureau, puis à la maison</p>
+          <h2 data-apparition style="--delai: 0.08s">Le stress ne s'arrête pas<br /><em>en quittant le bureau</em></h2>
+          <div class="dehors__moments" data-apparition-groupe="0.1">
+            <div class="dehors__moment">
+              <span class="dehors__quand">Au travail</span>
+              <p>Les réunions qui s'enchaînent, le mail de trop, la pression qui ne redescend pas. Quieto aide chacun à souffler entre deux urgences.</p>
+            </div>
+            <div class="dehors__moment">
+              <span class="dehors__quand">Et en rentrant</span>
+              <p>Les alertes, les guerres, les crises&nbsp;: une actualité qui angoisse et empêche de dormir. Quieto a des séances pour décrocher du flux, comme «&nbsp;Quand le monde brûle&nbsp;» ou «&nbsp;Débrancher quand tout crie&nbsp;».</p>
+            </div>
+          </div>
+          <p class="dehors__conclusion" data-apparition>On accompagne vos salariés dans leur vie pro comme dans leur vie perso. Plus apaisés le soir, ils arrivent plus disponibles le matin.</p>
+        </div>
+        <div class="dehors__visuel" data-apparition style="--delai: 0.15s">
+          <div class="cadre-profond">
+            <img src="assets/img/actualite.webp" alt="Une mer calme sous un ciel étoilé." loading="lazy" data-profondeur="0.07" />
+          </div>
+          <!-- La vraie catégorie de l'app (explore_repository.dart : « Actualité & Surcharge mentale »),
+               comme on la voit dans Quieto, qui flotte sur la gouache. -->
+          <div class="vignette widget-categorie" aria-hidden="true">
+            <span class="widget-categorie__tete"><span class="vignette__type">Catégorie</span><span class="widget-categorie__badge">Nouveau</span></span>
+            <span class="widget-categorie__nom">Actualité &amp; Surcharge mentale</span>
+            <span class="widget-categorie__desc">Apprends à décrocher du flux d'informations. Retrouve la clarté dans un monde qui s'emballe.</span>
+            <ul>
+              <li><img src="assets/img/seance-actualite-1.webp" alt="" loading="lazy" /><span>Quand le monde brûle</span><small>7 min</small></li>
+              <li><img src="assets/img/seance-actualite-2.webp" alt="" loading="lazy" /><span>La guerre en bruit de fond</span><small>8 min</small></li>
+              <li><img src="assets/img/seance-actualite-3.webp" alt="" loading="lazy" /><span>Débrancher quand tout crie</span><small>8 min</small></li>
+            </ul>
+          </div>
+          <div class="vignette vignette--lecture" aria-hidden="true">
+            <span class="vignette__type">En écoute</span>
+            <span class="vignette__titre">Quand le monde brûle</span>
+            <span class="vignette__barre"><i></i></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  4. UNE JOURNÉE AVEC QUIETO (le parcours « Maya » de Headspace)  =========== -->
+    <section id="journee" class="journee" data-moment="1">
+      <!-- Le ciel suit l'heure de l'onglet : aube, plein jour, crépuscule, nuit, aurore -->
+      <div class="journee__ciel" aria-hidden="true">
+        <span data-moment="1"></span><span data-moment="2"></span><span data-moment="3"></span><span data-moment="4"></span><span data-moment="5"></span>
+      </div>
+      <div class="conteneur">
+        <div class="entete-section" data-apparition>
+          <h2>Un soutien pour chaque moment<br /><em>de la journée</em></h2>
+          <p class="intro">Voici comment Quieto accompagne Camille, chargée de projet, d'un bout à l'autre d'une journée chargée.</p>
+        </div>
+
+        <div data-apparition>
+        <div class="journee__onglets" role="tablist" aria-label="Moments de la journée">
+          <span class="journee__pastille" aria-hidden="true"></span>
+          <button role="tab" aria-selected="true" aria-controls="etape-1" id="onglet-1">8 h 40</button>
+          <button role="tab" aria-selected="false" aria-controls="etape-2" id="onglet-2" tabindex="-1">14 h</button>
+          <button role="tab" aria-selected="false" aria-controls="etape-3" id="onglet-3" tabindex="-1">19 h</button>
+          <button role="tab" aria-selected="false" aria-controls="etape-4" id="onglet-4" tabindex="-1">23 h</button>
+          <button role="tab" aria-selected="false" aria-controls="etape-5" id="onglet-5" tabindex="-1">La semaine</button>
+        </div>
+        </div>
+
+        <div class="journee__panneaux" data-apparition>
+          <article class="journee__panneau" role="tabpanel" id="etape-1" aria-labelledby="onglet-1">
+            <img src="assets/img/breathing.webp" alt="Cercles bleus et violets autour d'une petite lune." loading="lazy" />
+            <div>
+              <p class="journee__heure">8 h 40 · Avant le comité</p>
+              <h3>Deux minutes pour poser sa voix</h3>
+              <p>Camille présente devant la direction à 9 h. Dans le couloir, elle lance la séance «&nbsp;Avant une présentation&nbsp;»&nbsp;: deux minutes pour ralentir le souffle et arriver posée.</p>
+            </div>
+          </article>
+          <article class="journee__panneau" role="tabpanel" id="etape-2" aria-labelledby="onglet-2" hidden>
+            <img src="assets/img/stress.webp" alt="Une colline violette sous un ciel étoilé et une étoile filante." loading="lazy" />
+            <div>
+              <p class="journee__heure">14 h · Le mail de trop</p>
+              <h3>Faire redescendre la pression</h3>
+              <p>Un dossier urgent tombe, le cœur s'accélère. Deux minutes avec «&nbsp;Coup de stress au boulot&nbsp;», et elle reprend la main au lieu de réagir à chaud.</p>
+            </div>
+          </article>
+          <article class="journee__panneau" role="tabpanel" id="etape-3" aria-labelledby="onglet-3" hidden>
+            <img src="assets/img/emotion.webp" alt="Deux collines, violette et orangée, sous un ciel étoilé." loading="lazy" />
+            <div>
+              <p class="journee__heure">19 h · Ce qui tourne en boucle</p>
+              <h3>Poser les mots avec Louane</h3>
+              <p>Rentrée chez elle, Camille écrit à Louane ce qui la travaille. Louane l'écoute, l'aide à démêler, et lui propose une respiration. Pas de rendez-vous, pas de jugement, à l'heure qui lui convient.</p>
+            </div>
+          </article>
+          <article class="journee__panneau" role="tabpanel" id="etape-4" aria-labelledby="onglet-4" hidden>
+            <img src="assets/img/sleep.webp" alt="Pleine lune se reflétant sur une mer bleue." loading="lazy" />
+            <div>
+              <p class="journee__heure">23 h · Le sommeil qui ne vient pas</p>
+              <h3>Couper avant de dormir</h3>
+              <p>Au lit, la journée repasse en boucle. Le «&nbsp;Rituel pré-sommeil&nbsp;» l'aide à relâcher le corps et à laisser la journée derrière elle.</p>
+            </div>
+          </article>
+          <article class="journee__panneau" role="tabpanel" id="etape-5" aria-labelledby="onglet-5" hidden>
+            <img src="assets/img/decouverte.webp" alt="Une silhouette assise en méditation au bord de la mer, sous la lune." loading="lazy" />
+            <div>
+              <p class="journee__heure">La semaine · Installer l'habitude</p>
+              <h3>Un programme de 7 jours, rien que pour elle</h3>
+              <p>À partir de ce qu'elle vit, Quieto lui compose un programme de 7 jours&nbsp;: quelques minutes par jour pour que le calme devienne un réflexe, pas un sauvetage.</p>
+            </div>
+          </article>
+        </div>
+
+        <p class="journee__conclusion" data-apparition>
+          Camille a toujours autant de travail. Mais elle a maintenant de quoi
+          souffler à chaque moment de la journée, et elle arrive au bureau en
+          meilleure forme.
+        </p>
+      </div>
+    </section>
+
+    <!-- ===========  4 bis. ESSAYER : 30 secondes de respiration guidée  =========== -->
+    <section id="respirer" class="respirer">
+      <div class="conteneur">
+        <div class="entete-section" data-apparition>
+          <p class="surtitre">Essayez maintenant</p>
+          <h2>Trente secondes<br /><em>pour souffler</em></h2>
+          <p class="intro">Suivez le cercle&nbsp;: inspirez quand il grandit, expirez quand il redescend. C'est ce que Quieto offre à chacun, au moment où ça compte.</p>
+        </div>
+        <div class="souffle" data-apparition>
+          <!-- La gouache « respiration » de l'app, qui respire (assets/js/souffle.js) -->
+          <canvas class="souffle__toile" aria-hidden="true"></canvas>
+          <p class="souffle__consigne" role="status" aria-live="polite">Prêt&nbsp;?</p>
+          <div class="souffle__cycles" aria-hidden="true"><i></i><i></i><i></i></div>
+          <button class="bouton souffle__bouton" type="button">Commencer · 30 s</button>
+          <div class="souffle__fin" hidden>
+            <p>Imaginez ces trente secondes avant chaque réunion difficile&nbsp;: c'est ce que Quieto offre à chacun de vos salariés.</p>
+            <a class="lien-fleche" href="#demo">Demander une démo <span class="fleche" aria-hidden="true">→</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  5. POURQUOI AGIR (les cartes de couleur de Headspace)  =========== -->
+    <section id="pourquoi" class="pourquoi">
+      <div class="conteneur">
+        <div class="entete-section" data-apparition>
+          <h2>Pourquoi agir<br /><em>maintenant</em></h2>
+          <p class="intro">La santé mentale au travail n'a jamais autant pesé, sur les personnes comme sur les entreprises.</p>
+        </div>
+        <div class="cartes-couleur" data-apparition-groupe>
+          <article class="carte-couleur carte-couleur--bleu">
+            <span class="carte-couleur__etiquette">Détresse</span>
+            <span class="carte-couleur__valeur">1 sur 2</span>
+            <p>salarié se dit en détresse psychologique, un niveau record depuis 2020.</p>
+            <small>Empreinte Humaine / OpinionWay, juin 2026</small>
+          </article>
+          <article class="carte-couleur carte-couleur--violet">
+            <span class="carte-couleur__etiquette">Arrêts longs</span>
+            <span class="carte-couleur__valeur">37,8&nbsp;%</span>
+            <p>des arrêts de plus d'un mois sont liés à des troubles psychologiques.</p>
+            <small>Malakoff Humanis, 2026</small>
+          </article>
+          <article class="carte-couleur carte-couleur--aube">
+            <span class="carte-couleur__etiquette">Coût caché</span>
+            <span class="carte-couleur__valeur">4&nbsp;000&nbsp;€</span>
+            <p>de coût caché de l'absentéisme, en moyenne, par salarié et par an.</p>
+            <small>Ayming, 2026</small>
+          </article>
+          <article class="carte-couleur carte-couleur--creme">
+            <span class="carte-couleur__etiquette">Sommeil</span>
+            <span class="carte-couleur__valeur">48&nbsp;%</span>
+            <p>des salariés souffrent de troubles du sommeil.</p>
+            <small>Ifop / Moka.Care / BCG, mars 2026</small>
+          </article>
+        </div>
+        <p class="pourquoi__note" data-apparition>Quieto ne remplace pas vos actions de prévention&nbsp;: il les complète, avec un soutien disponible pour chacun, à toute heure.</p>
+      </div>
+    </section>
+
+    <!-- ===========  6. POURQUOI QUIETO (accordéon numéroté + visuel)  =========== -->
+    <section id="pourquoi-quieto" class="atouts">
+      <div class="conteneur atouts__grille">
+        <div class="atouts__visuel" data-apparition>
+          <div class="cadre-profond">
+            <img src="assets/img/decouverte.webp" alt="Une silhouette assise en méditation au bord de la mer, sous la lune." loading="lazy" data-profondeur="0.07" />
+          </div>
+          <div class="vignette vignette--atout" aria-hidden="true">
+            <span class="vignette__type">Séance · 4 min</span>
+            <span class="vignette__titre">Cohérence cardiaque</span>
+          </div>
+        </div>
+        <div class="atouts__texte">
+          <p class="surtitre" data-apparition>Pourquoi Quieto</p>
+          <h2 data-apparition style="--delai: 0.08s">Pensé pour le quotidien<br /><em>de vos équipes</em></h2>
+          <div class="atouts__liste" data-apparition-groupe="0.06">
+            <details open>
+              <summary><span>01</span>Conçu en France, pour la vie d'ici</summary>
+              <p>Tout est en français, avec des séances qui parlent du quotidien réel&nbsp;: les transports bondés, l'appel difficile, l'actualité qui angoisse, le réveil en panique.</p>
+            </details>
+            <details>
+              <summary><span>02</span>Vos salariés osent s'en servir</summary>
+              <p>Parce que ce qu'on y confie reste personnel, chacun l'utilise vraiment, et pas seulement le jour de la présentation. C'est ce qui fait que ça marche.</p>
+            </details>
+            <details>
+              <summary><span>03</span>Un soutien à toute heure</summary>
+              <p>Louane répond de jour comme de nuit, sans rendez-vous. En cas de détresse, elle oriente vers le 3114 et les secours.</p>
+            </details>
+            <details>
+              <summary><span>04</span>Des séances courtes</summary>
+              <p>De 1 à 14 minutes&nbsp;: de quoi souffler entre deux réunions, dans le métro ou avant de dormir, sans bouleverser l'agenda.</p>
+            </details>
+            <details>
+              <summary><span>05</span>Zéro gestion pour les RH</summary>
+              <p>Pas de fichier de salariés à envoyer, pas d'outil à installer&nbsp;: un code, transmis à l'équipe, et c'est tout.</p>
+            </details>
+            <details>
+              <summary><span>06</span>Sans engagement</summary>
+              <p>Au mois, vous arrêtez quand vous voulez depuis votre espace. À l'année, deux mois sont offerts.</p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  7. POUR QUI (employeurs / consultants / mutuelles chez Headspace)  =========== -->
+    <section id="pour-qui" class="pour-qui">
+      <div class="conteneur">
+        <div class="entete-section" data-apparition>
+          <h2>Un soutien pour <em>toute l'organisation</em></h2>
+        </div>
+        <div class="pour-qui__grille" data-apparition-groupe>
+          <article class="pour-qui__carte">
+            <h3>Pour les employeurs</h3>
+            <p>Offrez à toute l'équipe un soutien du quotidien, du stress passager aux nuits difficiles. Un forfait, un code, et chacun y a accès.</p>
+            <a href="tarifs.html">Calculer mon tarif <span class="fleche" aria-hidden="true">→</span></a>
+          </article>
+          <article class="pour-qui__carte">
+            <h3>Pour les CSE</h3>
+            <p>Proposez Quieto à tous les salariés dans le cadre de vos activités sociales et culturelles, par abonnement ou par virement.</p>
+            <a href="#demo">Nous écrire <span class="fleche" aria-hidden="true">→</span></a>
+          </article>
+          <article class="pour-qui__carte">
+            <h3>Pour les mutuelles et partenaires</h3>
+            <p>Intégrez Quieto à votre offre de prévention pour vos adhérents ou vos clients entreprises.</p>
+            <a href="#demo">Construire un partenariat <span class="fleche" aria-hidden="true">→</span></a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  8. TARIFS (libre-service, comme le Team plan de Headspace)  =========== -->
+    <section id="tarifs" class="tarifs-section">
+      <div class="conteneur">
+        <div class="entete-section" data-apparition>
+          <p class="surtitre">Tarifs</p>
+          <h2>Un forfait pour <em>toute l'équipe</em></h2>
+          <p class="intro">Premium complet pour chaque personne couverte. Paiement en ligne par prélèvement SEPA ou par carte, factures automatiques.</p>
+        </div>
+
+        <div class="accroche-tarif" data-apparition>
+          <div>
+            <p class="accroche-tarif__prix">À partir de <b>44,88&nbsp;€</b> HT par salarié et par an</p>
+            <p>Un prix au nombre exact de personnes, qui baisse quand l'équipe grandit&nbsp;: de 56,04&nbsp;€ pour 10 personnes à 44,88&nbsp;€ à partir de 800. Au mois ou à l'année.</p>
+          </div>
+          <a class="bouton" href="tarifs.html">Calculer mon tarif</a>
+        </div>
+
+        <div class="faq" data-apparition>
+          <h3>Questions fréquentes</h3>
+          <details>
+            <summary>Un salarié quitte l'entreprise&nbsp;?</summary>
+            <p>Écrivez-nous&nbsp;: nous libérons sa place pour quelqu'un d'autre. Il garde son compte et peut continuer avec la version gratuite ou son propre abonnement.</p>
+          </details>
+          <details>
+            <summary>Notre équipe grandit&nbsp;?</summary>
+            <p>Écrivez-nous&nbsp;: nous ajoutons des places à votre abonnement, et le même code continue de fonctionner.</p>
+          </details>
+          <details>
+            <summary>Un salarié a déjà un abonnement Quieto&nbsp;?</summary>
+            <p>L'application le prévient au moment d'activer son accès, pour qu'il résilie son abonnement personnel et ne paie pas deux fois.</p>
+          </details>
+          <details>
+            <summary>Le CSE peut-il le proposer&nbsp;?</summary>
+            <p>Oui, le CSE peut souscrire exactement de la même façon, ou nous écrire pour un paiement par virement.</p>
+          </details>
+          <details>
+            <summary>Qu'est-ce que l'entreprise voit&nbsp;?</summary>
+            <p>Rien d'individuel. Ni les noms des personnes qui activent leur accès, ni leur utilisation, ni leurs échanges avec Louane.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===========  9. DEMANDE DE DÉMO (texte + visuel à gauche, formulaire à droite)  =========== -->
+    <section id="demo" class="demo">
+      <div class="conteneur demo__grille">
+        <div class="demo__texte" data-apparition>
+          <p class="surtitre">Demander une démo</p>
+          <h2>Parlons de<br /><em>votre équipe</em></h2>
+          <p class="intro">Une présentation de 20 minutes, un devis sur mesure, ou simplement une question&nbsp;: nous vous répondons en moins de 24&nbsp;heures.</p>
+          <div class="demo__visuel">
+            <div class="cadre-profond">
+              <img src="assets/img/sleep.webp" alt="Pleine lune se reflétant sur une mer bleue." loading="lazy" data-profondeur="0.06" />
+            </div>
+            <div class="vignette vignette--demo" aria-hidden="true">
+              <span class="vignette__type">Louane</span>
+              <span class="vignette__bulle">Prends ton temps. On regarde ça ensemble.</span>
+            </div>
+          </div>
+        </div>
+
+        <!--
+          Le formulaire envoie la demande à la fonction « demandeEntreprise »
+          (quieto-backend), qui la range dans Firestore et l'envoie par e-mail.
+          En cas d'échec, on propose l'e-mail direct.
+        -->
+        <form class="formulaire" id="formulaire-demo" novalidate data-apparition style="--delai: 0.12s">
+          <label>Vous êtes<span>*</span>
+            <select name="profil" required>
+              <option value="">Choisir</option>
+              <option>Un employeur</option>
+              <option>Un CSE</option>
+              <option>Une mutuelle ou un partenaire</option>
+              <option>Autre</option>
+            </select>
+          </label>
+          <div class="formulaire__ligne">
+            <label>Prénom<span>*</span><input name="prenom" autocomplete="given-name" required maxlength="60" /></label>
+            <label>Nom<span>*</span><input name="nom" autocomplete="family-name" required maxlength="60" /></label>
+          </div>
+          <label>E-mail professionnel<span>*</span><input name="email" type="email" autocomplete="email" required maxlength="120" /></label>
+          <div class="formulaire__ligne">
+            <label>Entreprise<span>*</span><input name="entreprise" autocomplete="organization" required maxlength="100" /></label>
+            <label>Téléphone<input name="telephone" type="tel" autocomplete="tel" maxlength="30" /></label>
+          </div>
+          <label>Taille de l'équipe
+            <select name="taille">
+              <option value="">Choisir</option>
+              <option>1 à 10 personnes</option>
+              <option>11 à 25 personnes</option>
+              <option>26 à 50 personnes</option>
+              <option>51 à 100 personnes</option>
+              <option>Plus de 100 personnes</option>
+            </select>
+          </label>
+          <label>Message<textarea name="message" rows="4" maxlength="2000"></textarea></label>
+          <!-- Piège à robots : invisible pour les humains -->
+          <label class="formulaire__piege" aria-hidden="true">Site<input name="site" tabindex="-1" autocomplete="off" /></label>
+          <p class="formulaire__rgpd">Vos informations servent uniquement à vous répondre au sujet de votre demande. Voir nos <a href="mentions-legales.html">mentions légales</a>.</p>
+          <button class="bouton" type="submit">Envoyer ma demande</button>
+          <p class="formulaire__etat" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===========  PIED DE PAGE en colonnes  =========== -->
+  <footer class="pied">
+    <div class="conteneur pied__grille">
+      <div class="pied__marque">
+        <a class="logo" href="#" aria-label="Quieto Entreprise">
+          <span class="logo__lotus" aria-hidden="true"></span>
+          <span class="logo__nom">Quieto</span>
+        </a>
+        <p>Le soutien mental de toute votre équipe. Une application éditée par Cofonde.</p>
+      </div>
+      <nav aria-label="L'offre">
+        <h4>L'offre</h4>
+        <a href="#journee">Une journée avec Quieto</a>
+        <a href="#pourquoi-quieto">Pourquoi Quieto</a>
+        <a href="tarifs.html">Tarifs</a>
+      </nav>
+      <nav aria-label="Pour qui">
+        <h4>Pour qui</h4>
+        <a href="#pour-qui">Employeurs</a>
+        <a href="#pour-qui">CSE</a>
+        <a href="#pour-qui">Mutuelles et partenaires</a>
+      </nav>
+      <nav aria-label="Informations">
+        <h4>Informations</h4>
+        <a href="mentions-legales.html">Mentions légales</a>
+        <a href="cgv.html">Conditions de vente</a>
+        <a href="https://cofonde.com/quieto-confidentialite">Confidentialité de l'app</a>
+        <a href="https://cofonde.com/quieto-cgu">Conditions d'utilisation</a>
+      </nav>
+      <nav aria-label="Contact">
+        <h4>Contact</h4>
+        <a href="#demo">Demander une démo</a>
+        <a href="mailto:quieto@cofonde.com">quieto@cofonde.com</a>
+      </nav>
+    </div>
+    <div class="conteneur pied__bas">
+      <p>
+        Quieto est une application de bien-être et ne remplace pas un suivi
+        médical ou psychologique&nbsp;; Louane n'est pas un professionnel de
+        santé. En cas d'urgence, appelez le 15. Si vous avez des pensées
+        suicidaires, le 3114 est joignable gratuitement 24h/24.
+      </p>
+      <span>© <span data-annee>2026</span> Quieto · Cofonde</span>
+    </div>
+  </footer>
+
+  <script src="assets/js/site.js?v=17"></script>
+</body>
+</html>

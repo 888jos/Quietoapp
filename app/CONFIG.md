@@ -12,6 +12,20 @@ flutter run --dart-define-from-file=.env.json     # idem pour flutter build ipa 
 
 `lib/core/config/revenue_cat_config.dart` les lit avec `String.fromEnvironment('REVENUE_CAT_KEY')` (iOS) et `REVENUE_CAT_KEY_ANDROID`. ⚠️ Sans ce flag, les clés sont vides et les achats ne marchent pas (paywall sans produits).
 
+⚠️ **Dépôt unique (maj 28/09/2026).** Depuis le 26/09/2026 l'app est le dossier `app/` du dépôt `~/Desktop/dev/Quieto` : « la racine du repo » ci-dessus se lit **`Quieto/app/`**. **`.env.json` n'y a pas encore été recopié** : en attendant, les builds passent `--dart-define-from-file=/Users/macbookpaulollivier/Desktop/dev/QuietoApp/.env.json` (ancien dossier, archive). `tool/build-release.sh` cherche `.env.json` dans `app/` et ne marche pas sans lui.
+
+### Fichiers non versionnés à recopier après un clone (maj 28/09/2026)
+
+| Fichier | État dans `Quieto/app` au 28/09 |
+|---|---|
+| `.env.json` | **absent** — à recopier par Paul |
+| `lib/firebase_options.dart` | recopié le 28/09 |
+| `ios/Runner/GoogleService-Info.plist` | recopié le 28/09 |
+| `android/app/google-services.json` | recopié le 28/09 |
+| `android/local.properties` | recopié le 28/09 |
+
+Côté backend : `backend/functions/.env` et `backend/functions/.secret.local` (recopiés le 26/09). Tous sont ignorés par git (`app/.gitignore`, `backend/.gitignore`, `backend/functions/.gitignore`).
+
 RevenueCat est initialisé automatiquement dans `main.dart` au démarrage.
 Obtenir ou renouveler les clés sur : https://app.revenuecat.com → Project Settings → API Keys
 
@@ -22,7 +36,7 @@ Obtenir ou renouveler les clés sur : https://app.revenuecat.com → Project Set
 Les séances sont sur **Firebase Storage** (projet `quieto-06`), lues en streaming — plus rien à embarquer dans l'app.
 
 1. Uploader le `.mp3` **à plat** dans le bucket Storage (pas de sous-dossiers) : le lecteur ne garde que le nom de fichier du champ `audioFile` et construit l'URL avec `AppConstants.audioBaseUrl` (voir `audio_handler.dart`). Nom en ASCII pur — voir ADR-024.
-2. Déclarer la séance dans `lib/features/explore/data/explore_repository.dart` **et** dans le catalogue backend `quieto-backend/functions/catalogue_seances.json` (« garder synchro avec l'app ») pour que Louane et `genererParcours` la connaissent.
+2. Déclarer la séance dans `lib/features/explore/data/explore_repository.dart` **et** dans le catalogue backend `../backend/functions/catalogue_seances.json` (avant le 26/09/2026 : `quieto-backend/…`) (« garder synchro avec l'app ») pour que Louane et `genererParcours` la connaissent.
 
 Format recommandé : MP3 128kbps, mono, normalisé à -16 LUFS.
 
@@ -71,7 +85,7 @@ flutter run -d <udid> --use-application-binary=build/ios/iphoneos/Runner.app
 
 ## Tests sur iPhone physique — jeton App Check debug (maj 28/08/2026)
 
-En debug, App Check utilise le **provider de débogage** (`main.dart` : `AppleDebugProvider` / `AndroidDebugProvider` sous `kDebugMode`). Le jeton de débogage est propre à chaque installation : **réinstaller un build debug en génère un nouveau**, à enregistrer dans la console Firebase (projet `quieto-06` → App Check → Apps → gérer les jetons de débogage) — sinon **tous les appels aux Cloud Functions échouent depuis ce build** (Louane, `trace`/Vigie : erreurs `HttpsCallable` dans les logs). Le jeton s'affiche dans la console Xcode au premier lancement. Le jeton courant du build de test de Paul est noté dans `~/dev/JOURNAL-QUIETO.md` (pas ici : ce repo est poussé).
+En debug, App Check utilise le **provider de débogage** (`main.dart` : `AppleDebugProvider` / `AndroidDebugProvider` sous `kDebugMode`). Le jeton de débogage est propre à chaque installation : **réinstaller un build debug en génère un nouveau**, à enregistrer dans la console Firebase (projet `quieto-06` → App Check → Apps → gérer les jetons de débogage) — sinon **tous les appels aux Cloud Functions échouent depuis ce build** (Louane, `trace`/Vigie : erreurs `HttpsCallable` dans les logs). Le jeton s'affiche dans la console Xcode au premier lancement. Le jeton courant du build de test de Paul est noté dans `~/dev/JOURNAL-QUIETO.md` (pas ici : ce repo est poussé). ⚠️ *(maj 28/09/2026)* Le journal est maintenant `../docs/JOURNAL-QUIETO.md`, **dans le même dépôt**, poussé sur GitHub (privé) : la précaution « pas ici » ne tient plus, le jeton du 28/08 est dans un fichier versionné.
 
 ---
 
@@ -94,5 +108,7 @@ En debug, App Check utilise le **provider de débogage** (`main.dart` : `AppleDe
 - [ ] Build release Android : `tool/build-release.sh appbundle`
 - [ ] Archiver le dossier `symbols/<version>/` avec la release (lecture des crashs ; jamais dans git)
 - [ ] Mettre à jour `QUIETO.md` + la fiche mémoire fonctionnalités (règle de release)
+- [ ] *(ajout 28/09/2026)* Bumper **`AppConstants.appVersion`** (`lib/core/config/app_constants.dart`) en même temps que `pubspec.yaml` : c'est lui qu'envoie la Vigie. Au 28/09 il est resté à `1.0.25` alors que `pubspec.yaml` est à `1.0.28+39`.
+- [ ] *(ajout 28/09/2026)* **Fermer Xcode** avant `tool/build-release.sh ipa`, et ne jamais re-archiver depuis Xcode (l'archive perd les `--dart-define`, donc la clé RevenueCat — c'est ce qui a cassé le paywall de la 1.0.22, sortie le 01/09/2026) ; vérifier la version, le numéro de build et la présence de la clé dans l'archive avant l'envoi.
 
 (Les anciens points « clés placeholders », « audio dans assets/ », « configurer les Bundle ID », « background audio iOS » sont réglés depuis longtemps — voir sections ci-dessus.)

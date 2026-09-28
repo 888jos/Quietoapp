@@ -3,6 +3,7 @@
 > Maj 12/08/2026 — ajout des features Louane & Parcours, nav 3 onglets (Accueil / Louane / Profil), stack et navigation resynchronisées avec le code (v1.0.15+22).
 > Maj 26/08/2026 (v1.0.20+29) — onboarding resynchronisé (écran « compréhension », respiration avant Apple Santé), shaders GPU de la home (`shaders/aurora.frag`, `stardust.frag`), bandeaux de catégorie (`assets/images/categories/`), plus aucun outil de dev dans l'app (commit `9e82c22` : fini `?demo=1`, `premium_force_dev`, `avancerJourDev()`).
 > Maj 28/08/2026 — bas de l'app en **pilules flottantes** translucides (`home_shell.dart` : nav qui se range sur Louane, contenu qui défile derrière — `extendBody` + `SafeArea bottom:false`, commits `83f21a3` → `dee58a0`) ; **mini-lecteur retiré de l'UI** (`mini_player.dart` orphelin, plus référencé) ; **paywall au démarrage à froid** dans `splash_page.dart` (`5acdfff` + transition lente `29f2b65`) ; un seul outil de dev restant, l'interrupteur « Premium (mode test) » du profil, verrouillé `kDebugMode` (`d7e232b` — ADR-035).
+> Maj 28/09/2026 (v1.0.28+39) — l'app est le dossier `app/` du **dépôt unique `Quieto`** depuis le 26/09 (backend dans `../backend`, branche `main`) ; **voile flou de l'en-tête Louane ramené de 14 à 6 couches** (`_VoileEnTete`, `7cb12eb` — règle n°9) ; stack complétée (`in_app_review`, `flutter_secure_storage`, `app_settings`). ⚠️ Ce document n'a pas été resynchronisé en entier entre le 28/08 et le 28/09 : l'arbre `lib/` ci-dessous ne cite pas encore l'accès entreprise (`core/services/acces_entreprise.dart`, `profile/presentation/widgets/acces_entreprise_sheet.dart`), le menu d'actions sur un message (`louane/presentation/widgets/menu_bulle.dart`) ni la carte d'analyse Santé (`carte_analyse_sante.dart`).
 
 ## Vue d'ensemble
 
@@ -53,8 +54,12 @@ lib/
 | Partage | `share_plus ^11.0.0` + `path_provider` (version contrainte — voir le commentaire dans `pubspec.yaml`) |
 | Icônes | `iconsax_flutter ^1.0.0`, `material_symbols_icons` |
 | Liens URL | `url_launcher ^6.3.0` |
+| Notation (popup natif) | `in_app_review ^2.0.10` *(ajout 28/09/2026)* |
+| Stockage chiffré | `flutter_secure_storage ^9.2.4` — fiche mémoire de Louane, réponses d'onboarding, prénom (audit du 02/09/2026) *(ajout 28/09/2026)* |
+| Réglages système | `app_settings ^7.0.0` *(ajout 28/09/2026)* |
 
 (maj 12/08/2026 — liste resynchronisée avec `pubspec.yaml`)
+(maj 28/09/2026 — trois paquets ajoutés d'après `pubspec.yaml`. Ligne « Voix (Louane) » : seul `speech_to_text` est encore importé dans `lib/` (la dictée du chat) ; `flutter_tts` reste déclaré dans `pubspec.yaml` mais n'est plus importé nulle part. Le mode vocal a été annulé le 22/09/2026.)
 
 ## Flux de données
 
@@ -75,6 +80,7 @@ UI (ConsumerWidget)
 6. **Assets en ASCII pur** — les noms de fichiers dans `assets/audio/` et `assets/images/sessions/` ne contiennent ni accents ni espaces (problème NFD/NFC sur macOS, voir ADR-024).
 7. **Haptic ciblé** — les vibrations ne sont posées que sur les actions à valeur (validation, navigation principale, contrôles audio), pas sur les retours arrière ou éléments décoratifs (voir ADR-022).
 8. **iPad = la mise en page téléphone, zoomée** (11/09/2026) — l'app reste en portrait ; sur iPad, `EchelleTablette` (posé une fois dans le `builder` de `MaterialApp.router`, `core/ui/colonne_tablette.dart`) fait croire à l'app qu'elle est sur un écran de 600 pt de large puis la peint zoomée (×1,7 sur le 13", ×1,4 sur le 11", ×1,25 sur le mini) : textes, boutons, marges et fonds grossissent ensemble, rien ne s'étire. Aucune page n'a rien à faire ; `Tablette.estTablette(context)` sert aux rares réglages non géométriques (hauteur de couverture, « ton iPad »). Pour tout agrandir encore : baisser `Tablette.largeurLogique`.
+9. **Le flou coûte cher : compter les `BackdropFilter`** (28/09/2026) — chaque `BackdropFilter` fait relire et flouter l'écran par le GPU à CHAQUE image. Le voile de l'en-tête Louane (`_VoileEnTete`, `louane_page.dart`) en empilait 14 entre la 1.0.23 et la 1.0.26 : la page saccadait en permanence. Il en a 6 depuis le commit `7cb12eb` (`_sigmas = [1.5, 2.5, 4.0, 6.0, 9.0, 20.0]`, même flou cumulé ≈ 24 au sommet). Ne pas en rajouter sans tester sur un vrai iPhone en build release.
 
 ## Modèles de données
 

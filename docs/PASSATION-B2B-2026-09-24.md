@@ -1,5 +1,7 @@
 # Passation — Quieto Entreprise (B2B), au 24/09/2026 (soir)
 
+> ⚠️ **maj 28/09/2026 — ce document est une photo du 24/09.** Depuis : Stripe est passé en réel (24/09 au soir) et un achat réel de test a réussi (25/09) ; l'app 1.0.27 est publiée sur l'App Store et la 1.0.28+39 a été envoyée aux deux stores le 28/09 ; tout vit dans le dépôt unique `~/Desktop/dev/Quieto` depuis le 26/09. Lire donc `QuietoApp/…` = `Quieto/app/…`, `quieto-backend/…` = `Quieto/backend/…`, `quieto-entreprise-site/…` = `Quieto/sites/entreprise/…`, et ce fichier = `Quieto/docs/PASSATION-B2B-2026-09-24.md`. L'état à jour est dans `JOURNAL-QUIETO.md`.
+
 ## En une phrase
 Tout le circuit B2B marche de bout en bout **en mode test Stripe** : une entreprise paie sur le site, reçoit son code (page merci + e-mail), et ses salariés activent Premium dans l'app. Il reste à passer Stripe en réel, publier le site, publier la mise à jour de l'app et faire le ménage.
 

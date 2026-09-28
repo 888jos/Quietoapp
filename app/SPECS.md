@@ -3,10 +3,11 @@
 > Maj 12/08/2026 — resynchronisé avec le code (v1.0.15+22). Ce document datait du MVP ; les sections marquées « historique » décrivent l'app d'avant. Pour l'état produit courant, `QUIETO.md` fait foi.
 > Maj 26/08/2026 — resynchronisé avec la v1.0.20+29 (notes datées dans les sections concernées).
 > Maj 28/08/2026 — bas de l'app en pilules flottantes, mini-lecteur supprimé, paywall au démarrage à froid (notes datées dans les sections Player, Louane, Home, Profil et Paywall).
+> Maj 28/09/2026 (v1.0.28+39) — dépôt unique, page Louane fluide, limites de Louane, accès entreprise (notes datées dans les sections Concept, Louane, Profil et Monétisation). ⚠️ Passage partiel : les fonctionnalités arrivées entre la 1.0.22 et la 1.0.27 (compte anonyme, actions sur un message, analyse Santé dans le chat, carte d'avis, iPad) sont décrites dans le journal, pas encore ici.
 
 ## Concept
 
-Quieto est une application de méditation guidée **en français**, pensée pour rendre la méditation accessible à tous les niveaux. Les séances audio sont hébergées sur **Firebase Storage** et lues en **streaming** (connexion requise — le seul audio embarqué est `assets/audio/onboarding_ambient.mp3`). Backend : Cloud Functions (`~/dev/quieto-backend` — `louane`, `trace`, `genererParcours`, `revenuecat`).
+Quieto est une application de méditation guidée **en français**, pensée pour rendre la méditation accessible à tous les niveaux. Les séances audio sont hébergées sur **Firebase Storage** et lues en **streaming** (connexion requise — le seul audio embarqué est `assets/audio/onboarding_ambient.mp3`). Backend : Cloud Functions (`~/dev/quieto-backend` — `louane`, `trace`, `genererParcours`, `revenuecat`). *(maj 28/09/2026 : le backend est le dossier `../backend` du dépôt unique depuis le 26/09 ; il exporte 15 fonctions, liste dans `../backend/README.md`.)*
 
 ## Fonctionnalités MVP
 
@@ -38,6 +39,8 @@ L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil*
 - **Programme 7 jours** (« parcours ») : créé par Louane via la Cloud Function `genererParcours` — écran de génération (`/parcours/creation`), constellation d'étoiles de progression, carte de partage (stories). Persisté en SharedPreferences (`ParcoursModel`).
 - *(maj 26/08/2026, 1.0.20)* Le **jour 1 du tout premier programme est toujours « Ma première méditation »** : tant qu'aucune séance n'a jamais été terminée (`parcoursDejaCree` faux OU `completedCount == 0`), l'app envoie `premierParcours: true` et le serveur applique le verrou `forcerPremiereMeditation` (app `258ee18`, backend `39853fd`).
 - Louane reste accessible aux utilisateurs **gratuits** (meilleure surface de conversion — voulu).
+- *(maj 28/09/2026, relevé dans `backend/functions/index.js`)* **Limites** : 40 messages découverte offerts au total pour un utilisateur gratuit, puis Quieto Premium (`GRATUIT_MAX`) ; 100 messages par jour pour un abonné (`PLAFOND_JOUR_ABONNE`). Le Veilleur (sécurité) tourne toujours, même au-delà des limites.
+- *(maj 28/09/2026, 1.0.28)* **Page fluide** : le voile flou de l'en-tête (`_VoileEnTete`) passe de 14 à 6 couches de `BackdropFilter` (`7cb12eb`) — la page saccadait en permanence. Côté serveur : aucun caractère d'une autre écriture dans une bulle (filet `sansEcritureEtrangere`), et à un « salut » qui répond à sa question d'ouverture, Louane rend le salut et repose la même question. Modèle : GPT-5.6 Luna (GPT-6 Luna essayé du 26 au 28/09/2026, abandonné).
 
 ### Preparation screen
 - Affiché avant chaque séance (tap sur une session card → `/preparation/:sessionId`)
@@ -62,6 +65,7 @@ L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil*
 - CTA vers Paywall
 - Section "Paramètres" : toggle notifications + « Heure du rappel » (bottom sheet, persisté SharedPreferences). *(maj 26/08/2026 : le « reset onboarding » était un outil de dev — retiré avec tous les autres, commit `9e82c22`.)* *(maj 28/08/2026 : un interrupteur « 🛠 Premium (mode test) » existe en `kDebugMode` UNIQUEMENT — invisible TestFlight/App Store, `d7e232b`, ADR-035.)*
 - Section "Informations légales" : politique de confidentialité + conditions d'utilisation (ouvre URL via `url_launcher`) — *(maj 26/08/2026)* les URLs pointent sur **cofonde.com** (`/quieto-confidentialite`, `/quieto-cgu`) depuis la 1.0.20 (`6985199`), plus sur Notion.
+- *(maj 28/09/2026)* Ligne **« Accès offert par mon entreprise »** (B2B, 23/09/2026) : le salarié saisit le code reçu de son employeur (`widgets/acces_entreprise_sheet.dart`, Cloud Function `accesEntreprise`) ; le profil affiche alors « ✨ Premium offert par [entreprise] ».
 
 ### Paywall (maj 12/08/2026)
 - **Paywall Flutter maison** (`lib/features/paywall/presentation/paywall_screen.dart`, branche `feat/paywall-flutter`) — le `PaywallView` natif RevenueCat n'est plus utilisé ; les offres et prix réels viennent de RevenueCat (`purchases_flutter`).
@@ -108,6 +112,7 @@ L'onglet Explorer n'existe plus : la bottom nav est **Accueil / Louane / Profil*
 - Intégration RevenueCat (`purchases_flutter`)
 - Entitlement : `premium`
 - Offering : `default`
+- *(maj 28/09/2026)* « Louane (non bridée) » n'est plus exact : 40 messages découverte offerts, puis Premium (voir la section Louane). Durée de l'essai : le journal (entrée du 20/08) relève **7 jours sur l'annuel, 3 jours sur le mensuel**. Autre voie d'accès au Premium : l'**accès entreprise** (payé par l'employeur via Stripe, accordé chez RevenueCat).
 
 ## Assets audio (maj 12/08/2026)
 

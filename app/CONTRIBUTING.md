@@ -10,13 +10,15 @@
 ## Setup
 
 ```bash
-git clone https://github.com/agencymape-coder/Quieto.git
-cd Quieto
+git clone https://github.com/Paul-Oll/Quieto.git   # dépôt unique, privé (maj 28/09/2026)
+cd Quieto/app
 flutter pub get
 flutter run --dart-define-from-file=.env.json
 ```
 
 ⚠️ `.env.json` (clés RevenueCat, non versionné) est obligatoire — sans le flag, les achats ne fonctionnent pas (voir `CONFIG.md`). (maj 12/08/2026)
+
+*(maj 28/09/2026)* Depuis le 26/09/2026, l'app est le dossier `app/` du dépôt unique `Paul-Oll/Quieto` (avant : `agencymape-coder/Quieto`, dont l'historique a été importé). Après un clone, recopier à la main les fichiers non versionnés listés dans `CONFIG.md`. **Le push se fait depuis GitHub Desktop, par Paul** : le git du terminal n'a pas accès au dépôt privé.
 
 ## Conventions de code
 
@@ -107,6 +109,8 @@ class _MyAnimatedWidgetState extends ConsumerState<MyAnimatedWidget>
 - `hotfix/xxx` / `fix/xxx` — correction de bug
 
 (Il n'y a pas de branche `develop` : les features partent de `main` et y reviennent.)
+
+*(maj 28/09/2026)* Dans le dépôt unique, il n'y a qu'une branche : **`main`**. L'ancienne `feat/vigie-conversion` y a été importée le 26/09/2026 ; elle n'existe plus que dans l'archive `QuietoApp`. ⚠️ Jamais de `git checkout` sur du travail non commité (incident du 10-11/09/2026 : 13 fichiers de la 1.0.24 effacés, récupérés de justesse — voir le journal).
 
 ## Commit convention
 

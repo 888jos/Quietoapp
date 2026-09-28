@@ -1,7 +1,15 @@
 # Louane — prompt de VOIX (oral uniquement)
 
+> ⚠️ **État au 28/09/2026 : document d'archive.** Le mode vocal de Louane a été
+> **annulé par Paul le 22/09/2026** (code retiré, retour au chat écrit — voir le
+> journal, entrée ❌ 22/09). Rien de ce qui suit n'est branché dans l'app ni dans
+> le backend : Louane ne parle pas à voix haute, le micro du chat ne sert qu'à
+> la dictée. Ce fichier ne décrit PAS le prompt du chat : celui-là est
+> `PROMPT_VOIX`, dans `backend/functions/index.js`.
+
 Décrit **comment Louane sonne quand elle parle**. Ne remplace pas `PROMPT_VOIX`
-(backend `quieto-backend/functions/index.js:32`) qui décrit ce qu'elle DIT — ici,
+(`backend/functions/index.js`, ligne 350 au 28/09/2026 — ce fichier disait
+`quieto-backend/functions/index.js:32`) qui décrit ce qu'elle DIT — ici,
 c'est uniquement le grain, le débit, la prosodie, les silences.
 
 ---

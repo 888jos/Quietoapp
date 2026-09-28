@@ -1,8 +1,9 @@
 # Quieto — c'est quoi ?
 
 > Document de présentation. À donner tel quel à une IA (ou une personne) pour comprendre vite ce qu'est Quieto et où le projet va.
-> Mainteneur : Cofonde · Version de l'app : **1.0.21+30** (ipa buildé — reste l'upload Transporter + la soumission ; la **1.0.20 est approuvée sur les deux stores**) · Plateformes : **iOS + Android** (⚠️ retirée de Google Play depuis le 05/08/2026, restauration demandée)
-> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu). (maj 30/08/2026)
+> Mainteneur : Cofonde · Version de l'app : **1.0.28+39** (builds envoyés à App Store Connect et à la Play Console par Paul le 28/09/2026 ; la **1.0.27 est publiée sur l'App Store** — la fiche affiche « 1.27 », en ligne depuis le 25/09) · Plateformes : **iOS + Android** (la fiche Google Play répond de nouveau, relevé le 28/09/2026 ; l'app en avait été retirée le 05/08)
+> ⚠️ À remettre à jour à chaque release (version, fonctionnalités, prix, contenu). (maj 28/09/2026)
+> 📁 Depuis le 26/09/2026, tout Quieto vit dans un seul dépôt, `~/Desktop/dev/Quieto` : ce fichier est dans `app/`, le backend dans `backend/`, le journal dans `docs/`.
 
 ## En une phrase
 **Quieto est une application de méditation guidée en français**, pensée pour rendre la méditation simple et accessible : des séances courtes, ancrées dans les vrais moments de la journée (un appel difficile, les transports, juste avant de dormir…), et **Louane**, une compagnonne IA qui accompagne l'utilisateur au quotidien.
@@ -24,6 +25,10 @@ Une **compagnonne IA** intégrée à l'app — un personnage dessiné en code (v
 
 Côté serveur : Cloud Functions `louane`, `genererParcours` et `accueilOnboarding` — **tout sur GPT-5.6 Luna (OpenAI) depuis le 14/08/2026** (Voix, Veilleur sécurité, Mémoire ; la Plume a été supprimée). C'est la meilleure surface de conversion de l'app — Louane reste accessible aux utilisateurs gratuits, c'est voulu.
 
+*(maj 28/09/2026)* Le modèle se règle en un seul endroit, la constante `MODELE` de `backend/functions/index.js`. **GPT-6 Luna a été essayé du 26 au 28/09/2026** (moitié prix, réponses plus courtes) puis abandonné : Paul préfère la voix de la 5.6. Deux filets serveur ajoutés le 28/09 : aucun caractère d'une autre écriture dans une bulle (`sansEcritureEtrangere`), et à un « salut » qui répond à sa question d'ouverture, Louane rend le salut et repose la même question. Côté app (1.0.28) : la page Louane ne saccade plus (voile flou de l'en-tête passé de 14 à 6 couches).
+
+*(maj 28/09/2026, relevé dans le code)* Limites de Louane : **40 messages découverte offerts** au total pour un utilisateur gratuit, puis Quieto Premium (`GRATUIT_MAX`) ; **100 messages par jour** pour un abonné (`PLAFOND_JOUR_ABONNE`). Le Veilleur (sécurité) tourne toujours, même au-delà des limites.
+
 Depuis la 1.0.20, le **jour 1 du tout premier programme est toujours « Ma première méditation »** (quasi personne n'a jamais médité) — flag `premierParcours` envoyé par l'app, verrou `forcerPremiereMeditation` côté serveur. Et depuis le 30/08/2026 (décision Paul, backend `5b5dcee` déployé), **les séances flash « Une minute pour toi » (1-3 min) ne vont JAMAIS dans un programme** : trop courtes pour porter un jour — le catalogue montré au modèle est filtré et un verrou serveur remplace tout id express.
 
 ## Ce que Quieto fait aujourd'hui
@@ -35,14 +40,16 @@ Onboarding personnalisé (questions sur ton état émotionnel + prénom + propos
 **Apple Santé / Health Connect :** les minutes de pleine conscience sont enregistrées dans l'app Santé du téléphone.
 
 **Modèle économique :** freemium.
-- **Gratuit** : la catégorie Découverte + les Express de base, et Louane (non bridée).
+- **Gratuit** : la catégorie Découverte + les Express de base, et Louane (~~non bridée~~ *maj 28/09/2026 : 40 messages découverte offerts, puis Premium*).
 - **Premium** : tout le reste — **essai gratuit de 7 jours**, puis **89 €/an** ou **16,90 €/mois**. Stratégie assumée : l'annuel d'abord (le mensuel est volontairement cher pour ancrer le prix).
 - Paiements gérés par RevenueCat (App Store + Google Play).
 - *(maj 28/08/2026, 1.0.20)* Le paywall s'affiche **à chaque démarrage à froid** pour les non-abonnés (montée douce sous voile, `5acdfff` + `29f2b65`). L'écran du mur lui-même ne bouge pas (règle « le mur ne se touche pas », décision Paul du 25/08).
 
-**Analytics :** la « Vigie », outil maison — événements envoyés par l'app à la Cloud Function `trace` → Firestore, webhook RevenueCat pour l'issue des essais, dashboard local (`~/dev/Quieto IA/analytics`).
+**Analytics :** la « Vigie », outil maison — événements envoyés par l'app à la Cloud Function `trace` → Firestore, webhook RevenueCat pour l'issue des essais, dashboard local (`~/Desktop/dev/Quieto IA/analytics`, hors du dépôt unique).
 
-**Technique :** app **Flutter** (un seul code pour iOS + Android). Audios hébergés sur **Firebase Storage**, lus en streaming (connexion requise). Backend : Cloud Functions (`~/dev/quieto-backend`).
+**Technique :** app **Flutter** (un seul code pour iOS + Android). Audios hébergés sur **Firebase Storage**, lus en streaming (connexion requise). Backend : Cloud Functions (`../backend` — avant le 26/09/2026 : `~/dev/quieto-backend`).
+
+**Quieto Entreprise (B2B)** *(maj 28/09/2026)* : un employeur peut offrir le Premium à ses salariés. L'entreprise paie sur le web par Stripe (site `sites/entreprise/`), reçoit un code, et le salarié le saisit dans le profil (« Accès offert par mon entreprise », `acces_entreprise_sheet.dart`, fonction `accesEntreprise`). Détail : `../docs/PASSATION-B2B-2026-09-24.md`.
 
 ## Ce que Quieto va devenir (vision / prochaines étapes)
 - **Faire écouter la première séance** — chantier n°1 depuis l'analyse Vigie du 25/08/2026 (`AMELIORATIONS.md`) : 88 % des installés n'écoutent jamais une méditation en entier. Trois pistes retenues : notification proposée en fin d'onboarding, programme 7 jours en haut de la home, relances J+1/J+3 pendant l'essai. ⚠️ Le mur de paiement, lui, ne se touche pas (décision Paul, 25/08).
@@ -121,4 +128,5 @@ Fonds clairs · un 2ᵉ accent coloré · coins carrés · ombres dures/noires �
 - `DECISIONS.md` — choix techniques et pourquoi.
 - `AMELIORATIONS.md` — backlog produit conversion & rétention (chiffres Vigie du 25/08/2026).
 - `DIRECTION-ARTISTIQUE.md` + `PROMPTS-VISUELS.md` — parti pris visuel gouache et méthode de génération des images.
-- `~/dev/JOURNAL-QUIETO.md` — journal de bord (état du projet, chiffres clés, prochaines actions).
+- `../docs/JOURNAL-QUIETO.md` — journal de bord (état du projet, chiffres clés, prochaines actions). *(maj 28/09/2026 : dans le dépôt unique ; avant : `~/dev/JOURNAL-QUIETO.md`)*
+- `../backend/README.md` — les fonctions du serveur, le banc de voix.

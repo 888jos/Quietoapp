@@ -421,3 +421,57 @@ assets/images/sessions/
 **Décision** : Les séances de la catégorie **express** (1 à 3 min) ne composent **jamais** un jour de programme 7 jours. Backend : le catalogue montré au modèle est filtré (`SEANCES_PARCOURS`, 27 séances sur 35), règle explicite dans `PROMPT_PARCOURS`, et **verrou dans `validerParcours`** — un id express est traité comme invalide et remplacé, tous les filets piochent dans la liste filtrée ; `IDS_GRATUITS` filtré (jour 1 gratuit = les 3 découverte) ; programme par défaut « sommeil » : jour 1 `express_4` → `decouverte_1` avec mot ajusté. App : le programme d'aperçu de l'onboarding (`weekly_program.dart`) remplace « Juste avant de dormir » (3 min, express) par « Plongée dans le silence » (6 min) dans la branche « moins de 5 minutes » du pool « Mieux dormir ». Elles restent bien sûr dans le catalogue et jouables à l'unité. **ADR-032 confirmée au passage** : « Ma première méditation » reste toujours le jour 1 du tout premier programme.
 
 **Pourquoi** : trop courtes pour porter un jour de programme — un « jour 3 » d'une minute dévalorise le parcours. Effet attendu côté Vigie : chute VOULUE des `express_*` dans les programmes.
+
+---
+
+> ℹ️ *Note du Scribe (28/09/2026)* : aucune décision n'a été consignée ici entre le 30/08 et le 26/09/2026. Celles de cette période (audit sécurité en deux temps, mise en page iPad zoomée, mode vocal annulé, paiement B2B par Stripe…) sont dans le journal, `../docs/JOURNAL-QUIETO.md`.
+
+---
+
+## ADR-037 — Un seul dépôt pour tout Quieto
+
+*Consignée le 28/09/2026 (Scribe) — fait le 26/09/2026, commits `63aba81` → `4ad9f96` → `bdf45a6` → `7ee3aeb`.*
+
+**Décision** : Tout Quieto vit dans **un dépôt**, `~/Desktop/dev/Quieto` → `github.com/Paul-Oll/Quieto` (privé), branche `main`. `app/` = l'ancien `QuietoApp` (branche `feat/vigie-conversion`) et `backend/` = l'ancien `quieto-backend`, importés **avec leur historique** (git subtree) ; `sites/entreprise/`, `sites/cofonde/`, `docs/` (dont le journal) et `logo/` copiés. « Quieto IA » (compta, archives, la Vigie) reste **volontairement dehors**. Les anciens dossiers `QuietoApp` et `quieto-backend` sont des archives : on n'y travaille plus. Le push se fait depuis GitHub Desktop, par Paul. Les fichiers de secrets et de configuration Firebase restent hors git et se recopient à la main (liste dans `CONFIG.md`).
+
+**Pourquoi** : un seul endroit à ouvrir, à sauvegarder et à relire ; app, backend, sites et journal avancent ensemble dans le même historique.
+
+---
+
+## ADR-038 — Le modèle se règle en un seul endroit ; GPT-6 Luna essayé, retour à GPT-5.6 Luna
+
+*Consignée le 28/09/2026 (Scribe) — backend `380a08a` (26/09), décision de Paul du 28/09, backend `da1fbef`.*
+
+**Décision** : Le modèle de TOUS les appels (Voix, Mémoire, Veilleur, Boussole, Juge, `genererParcours`, `accueilOnboarding`) est dans **une constante, `MODELE`**, en tête de `backend/functions/index.js`. Changer de modèle = changer cette ligne, **puis rejouer le banc de voix** (`backend/banc/banc-voix.mjs`) avant de déployer. **GPT-6 Luna** a tourné en prod du 26 au 28/09/2026 : moitié prix (Voix ~0,037 ¢ par message contre ~0,062 ¢), réponses plus courtes (116 caractères contre 126 sur le banc de 61 réponses), 4 questions à choix au lieu de 13. **Paul a choisi de revenir à GPT-5.6 Luna** le 28/09.
+
+**Pourquoi** : « qu'elle parle normalement, comme avant » (Paul, 28/09) — il préfère la voix de la 5.6 ; GPT-6 avait la moitié du prix mais pas le même ton. Les caractères parasites qu'il avait vus ne venaient pas de GPT-6 : les deux modèles en produisent (ADR-039).
+
+---
+
+## ADR-039 — Filet serveur : jamais un caractère d'une autre écriture dans ce que dit Louane
+
+*Consignée le 28/09/2026 (Scribe) — retour de Paul du 28/09 (capture : « Désolée◌ੑ »), backend `7cb12eb`.*
+
+**Décision** : Le serveur passe tout ce que Louane écrit dans `sansEcritureEtrangere` : forme NFC d'abord (pour qu'un « é » décomposé ne soit pas pris pour un parasite), puis on ne garde que **l'écriture latine et les signes communs** (chiffres, ponctuation, espaces). S'applique à la Voix (`bullesDepuisTexte`), à l'accueil de l'onboarding et au programme (`validerParcours`). Un signal Vigie `ecritureEtrangere` compte les bulles touchées, sans jamais stocker de texte.
+
+**Pourquoi** : Luna lâche parfois un jeton d'une autre écriture en fin de bulle — goujarati au rejeu du 28/09, cyrillique au banc du 26/09, tous deux sur la 5.6. Changer de modèle ne règle donc rien ; un filet déterministe, si. Dans la même veine que `sansTiretLong`, `sansEmoji` et `sansPrenomFinal`.
+
+---
+
+## ADR-040 — Quand Luna copie un exemple, on corrige l'exemple
+
+*Consignée le 28/09/2026 (Scribe) — retour de Paul du 28/09, backend `7cb12eb`.*
+
+**Décision** : Si la personne répond juste « salut » à la question d'ouverture de Louane, Louane **rend le salut et repose LA MÊME question, plus légère** : jamais une autre question sortie de nulle part, jamais une formule creuse (« je te laisse reprendre le fil »). Trois endroits corrigés ensemble dans `index.js` : la règle du registre, **l'exemple** de `PROMPT_VOIX` et `consigneAccueil`. Rejeu 3/3 conforme sur la 5.6 et sur la 6.
+
+**Pourquoi** : la mauvaise réponse (« t'as pu souffler un peu ? ») était recopiée de l'exemple du prompt. Leçon : corriger l'exemple, pas seulement la règle.
+
+---
+
+## ADR-041 — Voile flou de l'en-tête Louane : 6 couches, pas 14
+
+*Consignée le 28/09/2026 (Scribe) — retour de Paul du 28/09 (page saccadée), app `7cb12eb`, part avec la 1.0.28.*
+
+**Décision** : Le voile de l'en-tête de la page Louane (`_VoileEnTete`, `louane_page.dart`) passe de **14 à 6 couches de `BackdropFilter`** (`_sigmas = [1.5, 2.5, 4.0, 6.0, 9.0, 20.0]`), plus espacées, pour le même flou cumulé au sommet (≈ 24). Précise le flou progressif introduit entre la 1.0.23 et la 1.0.26.
+
+**Pourquoi** : chaque couche fait relire et flouter le haut de l'écran par le GPU à chaque image ; à 14 couches la page saccadait en permanence, alors que les autres pages restaient fluides. Testé par Paul sur son iPhone 11 en build release le 28/09 : « beaucoup mieux ».

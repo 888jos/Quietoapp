@@ -6,6 +6,19 @@
 > 🔎 **Point de contrôle du 12/08/2026** : chaque bug re-vérifié dans le code. Bugs 1 à 7 : **toujours ouverts** (nuances notées en italique dans les fiches). Bug 8 : **résolu**.
 > 🔎 **Point de contrôle du 26/08/2026** (préparation 1.0.20) : bugs 1 à 7 re-vérifiés dans le code — **tous toujours ouverts, état strictement identique au 12/08** (artwork à chemin fixe et écriture non protégée ; retour du lecteur en `go('/category/…')` hors `viaLancement` ; splash à 5 500 ms ; `lastPositions` jamais branché ; `saveProgress` loggé mais avalé). Le grand ménage du 26/08 (`9e82c22`) portait sur les outils de dev, pas sur ces fiches.
 > 🔎 **Point de contrôle du 28/08/2026** : rien de changé sur les fiches 1 à 7 malgré la grosse journée de commits — le splash garde ses 5 500 ms (`splash_page.dart:85`, le mur d'ouverture `5acdfff` s'y ajoute sans le raccourcir), et le retour du lecteur est toujours en `go('/category/…')` hors `viaLancement`. À noter : les bugs corrigés le 28/08 (clavier du chat qui survivait à la navigation `450e54d`, séance du programme qui continuait après « Arrêter le programme » `d387539`) n'avaient jamais été listés ici — trouvés et réglés dans la même session.
+> 🔎 **Point de contrôle du 28/09/2026** (v1.0.28+39, dépôt unique) : bugs 1 à 7 re-vérifiés dans le code — **tous toujours ouverts, même état qu'au 28/08** (artwork à chemin fixe `quieto_artwork.png` et écriture non protégée, `audio_handler.dart:160-161` ; retour du lecteur en `go(categoryPath)` hors `viaLancement`, `player_page.dart:83-87` ; splash à 5 500 ms, `splash_page.dart:85` ; `savePosition` / `lastPosition` jamais appelés hors du modèle ; `saveProgress` loggé mais avalé, `storage_service.dart:274-281` ; `dispose()` du handler sans appelant). Les numéros de ligne des fiches ci-dessous datent du 24/06 : se fier à ceux de cette note. Le rapport de nuit est maintenant à `../../Quieto IA/rapports-nuit/rapport-nuit-1.md` (l'app est passée dans `Quieto/app/` le 26/09). Quatre bugs trouvés et réglés les 26 et 28/09 sont consignés dans la section suivante.
+
+---
+
+## ✅ Réglés les 26 et 28/09/2026 (jamais listés ici avant)
+- **L'accueil de l'onboarding plantait à chaque appel** (serveur, du 02/09 au 26/09) : `accueilOnboarding` levait `ReferenceError: Cannot access 'texte' before initialization` — une variable locale `texte` masquait la fonction `texte()` des bornes. Tous les nouveaux utilisateurs recevaient l'accueil de repli de l'app. **Résolu : commit `380a08a`** (variable renommée `contenu`), déployé le 26/09.
+- **Signes bizarres en fin de bulle** (« Désolée◌ੑ ») : Luna lâche parfois un jeton d'une autre écriture. **Résolu : commit `7cb12eb`**, filet serveur `sansEcritureEtrangere` (Voix, accueil, programme). À suivre avec le signal Vigie `ecritureEtrangere`.
+- **Phrase creuse après un « salut »** (« Salut ! Je te laisse reprendre le fil quand tu veux ») : **résolu : commit `7cb12eb`** (règle, exemple du prompt et `consigneAccueil`).
+- **Page Louane saccadée en permanence** (voile introduit entre la 1.0.23 et la 1.0.26, encore là en 1.0.27) : 14 couches de `BackdropFilter` dans le voile de l'en-tête. **Résolu : commit `7cb12eb`** (6 couches), part avec la 1.0.28.
+
+## ⚠️ Vu le 28/09/2026, pas encore corrigé
+- **`AppConstants.appVersion` est resté à `1.0.25`** (`lib/core/config/app_constants.dart:6`) alors que `pubspec.yaml` est à `1.0.28+39`. La Vigie, la carte d'avis et le mail « Nous contacter » annoncent donc « 1.0.25 » pour les builds 1.0.26, 1.0.27 et 1.0.28 : impossible de comparer ces versions entre elles dans la Vigie. **Fix** : aligner la constante à chaque bump (le commentaire du fichier le demande déjà). **Sévérité** : moyenne pour la mesure, nulle pour l'utilisateur.
+- **`flutter_tts` déclaré mais plus utilisé** : le paquet est dans `pubspec.yaml`, aucun fichier de `lib/` ne l'importe (mode vocal annulé le 22/09). **Fix** : le retirer de `pubspec.yaml`. **Sévérité** : très faible.
 
 ---
 

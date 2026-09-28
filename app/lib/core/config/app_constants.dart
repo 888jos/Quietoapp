@@ -3,7 +3,10 @@ abstract final class AppConstants {
   static const appName = 'Quieto';
   // ⚠️ À METTRE À JOUR EN MÊME TEMPS QUE pubspec.yaml (version: x.y.z+n).
   // Sert à la Vigie : comparer le funnel d'une version à l'autre.
-  static const appVersion = '1.0.25';
+  // (Resté à 1.0.25 dans les builds 1.0.26, 1.0.27 et 1.0.28 : ces trois
+  // versions se présentent comme « 1.0.25 » dans la Vigie. Depuis le 28/09,
+  // tool/build-release.sh refuse de builder si les deux ne concordent pas.)
+  static const appVersion = '1.0.28';
 
   // ── Support ──────────────────────────────────────────
   // Adresse affichée dans « Nous contacter » (profil).

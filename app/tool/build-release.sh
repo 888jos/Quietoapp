@@ -13,6 +13,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 cible="${1:-ipa}"
 version="$(grep -E '^version:' pubspec.yaml | awk '{print $2}')"
+# La Vigie lit AppConstants.appVersion : il doit suivre pubspec.yaml (il était
+# resté à 1.0.25 de la 1.0.26 à la 1.0.28, vu le 28/09/2026).
+constante="$(grep -E 'static const appVersion' lib/core/config/app_constants.dart | sed -E "s/.*'([^']+)'.*/\1/")"
+if [ "${constante}" != "${version%%+*}" ]; then
+  echo "✗ AppConstants.appVersion (${constante}) ≠ pubspec.yaml (${version%%+*}) : corrige lib/core/config/app_constants.dart." >&2
+  exit 1
+fi
 dossier="symbols/${version}"
 mkdir -p "$dossier"
 echo "▶ flutter build ${cible} — version ${version}, symboles dans ${dossier}/"

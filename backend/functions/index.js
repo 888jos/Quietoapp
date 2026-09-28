@@ -36,10 +36,13 @@ const VIGIE_ECRITURE = !(process.env.FUNCTIONS_EMULATOR === "true" &&
 const OPENAI_KEY = defineSecret("OPENAI_KEY");
 
 // Le modèle de TOUS les appels (Voix, Mémoire, Veilleur, Boussole, Juge,
-// parcours, accueil). GPT-5.6 Luna du 14/08 au 26/09/2026, puis GPT-6 Luna
-// (0,10 $ / 0,50 $ le M au lieu de 0,20 $ / 1,20 $). Revenir en arrière =
-// changer cette ligne.
-const MODELE = "gpt-6-luna";
+// parcours, accueil). GPT-5.6 Luna depuis le 14/08/2026. GPT-6 Luna essayé
+// du 26 au 28/09 (moitié prix : 0,10 $ / 0,50 $ le M) : Paul préfère la voix
+// de la 5.6 (« qu'elle parle normalement, comme avant »). Les caractères
+// parasites qu'il a vus viennent des DEUX modèles → filet
+// sansEcritureEtrangere, pas le modèle. Changer de modèle = cette ligne,
+// puis rejouer le banc (banc/banc-voix.mjs) avant de déployer.
+const MODELE = "gpt-5.6-luna";
 
 // ============================================================
 //  SÉCURITÉ (audit du 02/09/2026) — identité, bornes, quotas serveur.
@@ -3310,9 +3313,9 @@ exports.genererParcours = onCall(
       const reponse = await client.chat.completions.create({
         model: MODELE,
         // Marge au-dessus des ~1000 tokens du JSON : les reasoning_tokens
-        // comptent dans le plafond (risque de JSON tronqué → retry). 4000
-        // depuis GPT-6 Luna, qui réfléchit jusqu'à 2× plus que la 5.6
-        // (270-680 tokens de réflexion par programme en prod sur la 5.6).
+        // comptent dans le plafond (risque de JSON tronqué → retry). 4000 :
+        // large marge (la 5.6 réfléchit 270-680 tokens par programme en
+        // prod, GPT-6 essayé le 26/09 jusqu'à 2× plus).
         max_completion_tokens: 4000,
         // Préfixe propre (PROMPT_PARCOURS) → clé de cache dédiée, mode
         // explicite comme la Voix (point de coupe en fin de bloc fixe).

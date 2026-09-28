@@ -1210,10 +1210,16 @@ class _VoileEnTete extends StatelessWidget {
   static const double debord = 44;
 
   /// Sigmas des couches, de la plus longue (tout le voile, à peine floue) à
-  /// la plus courte (le haut, sous l'heure). Cumulé au sommet ≈ 24.
-  static const _sigmas = [
-    0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.8, 3.5, 4.5, 6.0, 8.0, 10.0, 12.0, 14.0,
-  ];
+  /// la plus courte (le haut, sous l'heure). Cumulé au sommet ≈ 24 (les
+  /// flous s'ajoutent en quadrature : √Σσ²).
+  ///
+  /// ⚠️ Chaque couche est un BackdropFilter : le GPU relit et floute tout
+  /// le haut de l'écran à CHAQUE image, dès qu'une bulle apparaît, que le
+  /// fil défile ou que le sous-titre s'anime. À 14 couches (1.0.23 → 1.0.26)
+  /// la page saccadait en permanence (retour de Paul du 28/09) alors que les
+  /// autres pages restaient fluides. Six couches, plus espacées : même flou
+  /// au sommet, plus de deux fois moins de travail par image.
+  static const _sigmas = [1.5, 2.5, 4.0, 6.0, 9.0, 20.0];
 
   @override
   Widget build(BuildContext context) {

@@ -394,7 +394,14 @@ TON REGISTRE (le plus important) : deux tons, selon ce qu'elle vient de dire.
   drôle, jamais moqueuse. La gravité de ta réponse suit toujours la sienne :
   à un « salut », tu réponds comme à un « salut » (« Salut ! Ça va ? »), pas
   avec « tu peux prendre ton temps, je suis là », qui est ridicule en réponse
-  à un bonjour et ne se dit que quand quelque chose pèse vraiment.
+  à un bonjour et ne se dit que quand quelque chose pèse vraiment. Si tu
+  venais de lui poser une question et qu'elle répond juste « salut », tu
+  rends son salut et tu reposes LA MÊME question, plus légère (« Salut !
+  [BULLE] Alors, t'as prévu quoi aujourd'hui ? ») : jamais une autre
+  question sortie de nulle part, jamais une formule creuse (« je te laisse
+  reprendre le fil », « on reprend quand tu veux »), et si elle te demande
+  ensuite pourquoi tu as dit ça, tu réponds en une phrase simple, sans
+  t'excuser trois fois ni te dire « embrouillée ».
 - QUAND ELLE TE TESTE OU QUE ÇA N'A PAS DE SENS : elle répète la même chose
   (« salut » trois fois, le même mot, la même bêtise), elle tape n'importe
   quoi (« azerazer », « dfghjk », des lettres au hasard), elle envoie des
@@ -524,8 +531,9 @@ POUR SENTIR LE TON (n'en recopie jamais une réplique telle quelle : c'est le
 registre qui compte. Remarque le calme, les réponses sans question, et les
 [BULLE] qui coupent en petits messages) :
 
+Toi : "Alors, qu'est-ce que t'as prévu aujourd'hui ?"
 Elle : "salut"
-Toi : "Salut ! [BULLE] Alors, t'as pu souffler un peu aujourd'hui ?"
+Toi : "Salut ! [BULLE] Alors, t'as prévu quoi aujourd'hui ?"
 Elle : "salut"
 Toi : "Haha, tu me testes ?"
 Elle : "salut"
@@ -867,13 +875,16 @@ function consigneAccueil(accueil) {
   return `\n\nTu as ouvert la conversation avec ces mots : « ${texte} ». ` +
     "Le premier message de la personne y répond sans doute. Tu as donc DÉJÀ " +
     "salué et déjà posé ta question d'ouverture : ne re-salue pas (pas de " +
-    "« contente de te retrouver ») et ne repose jamais cette question sous " +
-    "une autre forme. Si elle répond juste « salut » ou « coucou » sans " +
-    "répondre à ta question, tu lui rends son salut chaleureusement, et tu " +
-    "peux reprendre ta question d'ouverture avec légèreté (« Salut ! Alors, " +
-    "t'as pu souffler un peu ? ») : jamais un « alors ? » sec, jamais la " +
-    "forcer à répondre. Si elle redit « salut » encore, tu en souris avec " +
-    "elle (« Haha, salut encore. Tu me testes ? »).";
+    "« contente de te retrouver ») et, si elle y a répondu, ne la repose " +
+    "jamais sous une autre forme. Si elle répond juste « salut » ou " +
+    "« coucou » sans répondre à ta question, tu lui rends son salut " +
+    "chaleureusement, puis tu reprends LA MÊME question d'ouverture, en plus " +
+    "léger (si tu avais demandé « qu'est-ce que t'as prévu aujourd'hui ? » : " +
+    "« Salut ! [BULLE] Alors, t'as prévu quoi aujourd'hui ? ») : jamais une " +
+    "autre question, jamais une formule creuse (« je te laisse reprendre le " +
+    "fil »), jamais un « alors ? » sec, jamais la forcer à répondre. Si elle " +
+    "redit « salut » encore, tu en souris avec elle (« Haha, salut encore. " +
+    "Tu me testes ? »).";
 }
 
 // ------------------------------------------------------------
@@ -1950,13 +1961,16 @@ function bullesDepuisTexte(texteVoix, prenom) {
   // découpage : il ne doit pas effacer les sauts de ligne qui servent à
   // séparer les bulles).
   const avantPrenom = bulles.join("\n");
-  bulles = bulles.map(sansTiretLong).map(sansEmoji)
+  // Bulles avec un jeton parasite d'une autre écriture (compté AVANT nettoyage).
+  const ecritureEtrangere = bulles.filter(aEcritureEtrangere).length;
+  bulles = bulles.map(sansTiretLong).map(sansEmoji).map(sansEcritureEtrangere)
     .map((b) => sansPrenomFinal(b, prenom)).map(sansPointFinal).filter(Boolean);
   return {
     bulles,
     // Signaux Vigie : les filets ont-ils dû corriger la Voix ? (compteurs, pas de texte)
     phrasesCoupees: nbBullesPhrases - nbBullesVoix, // > 0 : la Voix collait des phrases
     prenomRetire: avantPrenom !== bulles.join("\n"),
+    ecritureEtrangere,
     filtreQuestions,
   };
 }
@@ -2132,7 +2146,7 @@ exports.louane = onCall(
   // Marqueurs retirés, découpe en bulles et tous les filets (une phrase =
   // une bulle, une seule question, ni tiret long ni emoji ni prénom final,
   // pas de point final) : voir bullesDepuisTexte.
-  const { bulles, phrasesCoupees, prenomRetire, filtreQuestions } =
+  const { bulles, phrasesCoupees, prenomRetire, ecritureEtrangere, filtreQuestions } =
     bullesDepuisTexte(texteVoix, prenom);
   const texteComplet = bulles.join("\n\n");
   const parcoursPropose = marqueurPresent && !(parcours && parcours.actif === true);
@@ -2169,6 +2183,7 @@ exports.louane = onCall(
     phrasesCoupees: Math.max(0, phrasesCoupees),
     prenomRetire,
     questionsRetirees: filtreQuestions.retirees, // le filet « une seule question » a coupé
+    ecritureEtrangere, // bulles où un jeton d'une autre écriture a été retiré (28/09)
   };
 
   // Niveau 2 = danger. On donne le message de sécurité validé (3114/15) — mais UNE
@@ -2984,6 +2999,23 @@ function sansEmoji(texte) {
     .replace(/[ \t]{2,}/g, " ").trim();
 }
 
+// Jamais un caractère d'une autre écriture dans une bulle : Luna (5.6 comme 6)
+// lâche parfois un jeton parasite en fin de phrase — « …répondre à çaાવે »
+// (goujarati, rejeu du 28/09), « …ce que tu vis участ » (cyrillique, banc du
+// 26/09), un signe combinant seul qui s'affiche « ◌ੑ » (prod, 28/09, capture
+// de Paul). Louane écrit en français : on ne garde que l'écriture latine et
+// les signes communs (chiffres, ponctuation, espaces, «», …, €). La forme NFC
+// d'abord, pour qu'un « é » décomposé (e + accent) ne soit pas pris pour un
+// parasite ; après ça, un accent seul n'a plus de raison d'être.
+const REGEX_ECRITURE_ETRANGERE = new RegExp("[^\\p{Script=Latin}\\p{Script=Common}]", "gu");
+function aEcritureEtrangere(texte) {
+  return REGEX_ECRITURE_ETRANGERE.test(String(texte || "").normalize("NFC"));
+}
+function sansEcritureEtrangere(texte) {
+  return String(texte || "").normalize("NFC").replace(REGEX_ECRITURE_ETRANGERE, "")
+    .replace(/[ \t]{2,}/g, " ").trim();
+}
+
 // « Tu me testes » est toujours la DERNIÈRE bulle (demande de Paul, 02/09 :
 // « faut juste dire je crois que tu me testes », rien collé derrière). Le
 // modèle rajoutait une question par réflexe ; ce filet coupe ce qui suit.
@@ -3056,8 +3088,9 @@ function sansPrenomFinal(texte, prenom) {
 // ------------------------------------------------------------
 function validerParcours(brut) {
   if (!brut || typeof brut !== "object" || !Array.isArray(brut.jours)) return null;
-  const titre = sansTiretLong(brut.titre).slice(0, 80);
-  const sousTitre = sansTiretLong(brut.sousTitre).slice(0, 200);
+  // Même filet contre les jetons parasites d'une autre écriture que le chat.
+  const titre = sansEcritureEtrangere(sansTiretLong(brut.titre)).slice(0, 80);
+  const sousTitre = sansEcritureEtrangere(sansTiretLong(brut.sousTitre)).slice(0, 200);
   if (!titre || !sousTitre) return null;
 
   const utilises = new Set();
@@ -3080,7 +3113,7 @@ function validerParcours(brut) {
         SEANCES_PARCOURS.find((s) => !utilises.has(s.id));
     }
     if (!seance) return null;
-    const mot = sansTiretLong(j.motDeLouane).slice(0, 400);
+    const mot = sansEcritureEtrangere(sansTiretLong(j.motDeLouane)).slice(0, 400);
     if (!mot) return null;
     utilises.add(seance.id);
     jours.push({ jour: jours.length + 1, sessionId: seance.id, motDeLouane: mot });
@@ -3463,7 +3496,7 @@ exports.accueilOnboarding = onCall(
     }
     // Deux bulles au plus : la troisième (l'invitation à l'exercice) est
     // écrite en dur côté app, jamais générée. Même filet à tirets que le chat.
-    bulles = bulles.slice(0, 2).map(sansTiretLong).filter(Boolean);
+    bulles = bulles.slice(0, 2).map(sansTiretLong).map(sansEcritureEtrangere).filter(Boolean);
 
     // Vigie : une ligne par accueil (jamais de texte, jamais le prénom).
     if (VIGIE_ECRITURE) try {

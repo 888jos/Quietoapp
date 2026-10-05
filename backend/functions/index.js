@@ -34,6 +34,9 @@ const VIGIE_ECRITURE = !(process.env.FUNCTIONS_EMULATOR === "true" &&
 // Depuis le 14/08/2026 : tout tourne sur OpenAI (Luna), clé unique.
 // (ANTHROPIC_KEY retirée — l'ancien secret existe encore dans Secret Manager.)
 const OPENAI_KEY = defineSecret("OPENAI_KEY");
+// Transitional bridge during Firebase Auth -> Supabase Auth migration. Only the
+// authenticated Supabase Edge Function knows this secret; native clients never do.
+const SUPABASE_PROXY_SECRET = defineSecret("SUPABASE_PROXY_SECRET");
 
 // Le modèle de TOUS les appels (Voix, Mémoire, Veilleur, Boussole, Juge,
 // parcours, accueil). GPT-5.6 Luna depuis le 14/08/2026. GPT-6 Luna essayé
@@ -145,7 +148,17 @@ function identite(request) {
   if (EXIGER_APP_CHECK && !request.app) {
     throw new HttpsError("unauthenticated", "Application non reconnue.");
   }
-  const uid = request.auth && typeof request.auth.uid === "string" ? request.auth.uid : "";
+  let uid = request.auth && typeof request.auth.uid === "string" ? request.auth.uid : "";
+  if (!uid) {
+    const headers = request.rawRequest && request.rawRequest.headers || {};
+    const supplied = typeof headers["x-quieto-proxy-secret"] === "string" ? headers["x-quieto-proxy-secret"] : "";
+    const bridgedUID = typeof headers["x-quieto-supabase-user"] === "string" ? headers["x-quieto-supabase-user"] : "";
+    const expected = SUPABASE_PROXY_SECRET.value() || "";
+    if (expected && bridgedUID && supplied.length === expected.length &&
+        crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))) {
+      uid = bridgedUID.slice(0, 128);
+    }
+  }
   if (EXIGER_AUTH && !uid) {
     throw new HttpsError("unauthenticated", "Connexion requise.");
   }
@@ -256,11 +269,19 @@ async function verifierAbonne(uid, forcer = false) {
   } catch (e) {
     console.error("[Abonne] cache inécrivable :", e.message);
   }
-  if (!cache || cache.premium !== premium) {
+  if (!cache || cache.premium !== premium || forcer) {
     try {
-      await getAuth().setCustomUserClaims(uid, { premium });
+      // `role` rend le jeton Firebase utilisable par l'intégration Auth tierce
+      // Supabase pendant la migration. Toujours fusionner les claims : ne pas
+      // effacer `premium` ni un futur droit en remplaçant l'objet complet.
+      const utilisateur = await getAuth().getUser(uid);
+      await getAuth().setCustomUserClaims(uid, {
+        ...(utilisateur.customClaims || {}),
+        premium,
+        role: "authenticated",
+      });
     } catch (e) {
-      console.error("[Abonne] custom claim non posé :", e.message);
+      console.error("[Abonne] custom claims non posés :", e.message);
     }
   }
   return premium;
@@ -1981,7 +2002,7 @@ function bullesDepuisTexte(texteVoix, prenom) {
 // maxInstances + concurrency : robinet anti-abus (2ᵉ étage derrière App
 // Check). Largement au-dessus des besoins réels d'utilisateurs légitimes.
 exports.louane = onCall(
-  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
+  { secrets: [OPENAI_KEY, SUPABASE_PROXY_SECRET], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
   async (request) => {
   // ── Identité, quotas, bornes (audit sécurité du 02/09/2026) ──
   const uid = identite(request);

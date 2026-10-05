@@ -1,0 +1,15 @@
+project_id = "quieto-local"
+
+[auth]
+enabled = true
+enable_anonymous_sign_ins = true
+
+# Zero-downtime bridge. Configure the same integration in the hosted
+# dashboard before enabling dual-write in production.
+[auth.third_party.firebase]
+enabled = true
+project_id = "quieto-06"
+
+[functions.revenuecat-webhook]
+verify_jwt = false
+

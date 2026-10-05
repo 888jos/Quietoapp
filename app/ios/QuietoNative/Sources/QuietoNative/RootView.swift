@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var model: HomeViewModel
     @StateObject private var audioPlayer: QuietoAudioPlayer
 
@@ -28,13 +29,21 @@ struct RootView: View {
                 LouaneView(audioPlayer: audioPlayer).tag(QuietoTab.louane).tabItem { Label("Louane", systemImage: "link") }
                 ProfileView().tag(QuietoTab.profile).tabItem { Label("Profil", systemImage: "person") }
             }
-            if audioPlayer.currentSession != nil { MiniPlayerView(player: audioPlayer).padding(.bottom, 58) }
+            if audioPlayer.currentSession != nil { MiniPlayerView(player: audioPlayer) { audioPlayer.presentFullPlayer() }.padding(.bottom, 58) }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundStyle(QuietoColor.textPrimary)
         .background(QuietoColor.background.ignoresSafeArea())
         .tint(QuietoColor.mint)
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $audioPlayer.isFullPlayerPresented) {
+            NowPlayingView(player: audioPlayer)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { audioPlayer.keepAudioSessionAlive() }
+        }
     }
 }
 

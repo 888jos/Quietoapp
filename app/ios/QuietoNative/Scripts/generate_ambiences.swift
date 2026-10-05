@@ -89,6 +89,17 @@ let files: [(String, UInt64, (Int, Double, inout Generator, inout Double, inout 
         let insect = sin(2 * .pi * (3_400 + 90 * sin(time * 0.6)) * time) * pulse * 0.045
         let chirp = frame % 104_729 < 1_900 ? sin(2 * .pi * 2_100 * time) * sin(.pi * Double(frame % 104_729) / 1_900) * 0.07 : 0
         return 0.10 * slower + insect + chirp
+    }),
+    ("ambience-wind", 99, { _, time, rng, low, slower in
+        let n = rng.random(); low += 0.018 * (n - low); slower += 0.0015 * (low - slower)
+        let gust = 0.5 + 0.5 * sin(time * 0.22)
+        return gust * (0.09 * n + 0.22 * low + 0.18 * slower)
+    }),
+    ("ambience-distant-storm", 111, { frame, time, rng, low, slower in
+        let n = rng.random(); low += 0.004 * (n - low); slower += 0.0007 * (low - slower)
+        let rumble = 0.13 * slower + 0.035 * sin(time * 1.7)
+        let roll = frame % 180_000 < 35_000 ? 0.045 * sin(time * 0.9) : 0
+        return 0.07 * n + rumble + roll
     })
 ]
 

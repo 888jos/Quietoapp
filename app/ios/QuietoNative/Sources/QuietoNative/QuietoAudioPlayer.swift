@@ -1,5 +1,6 @@
 import AVFoundation
 import MediaPlayer
+import UIKit
 
 @MainActor
 final class QuietoAudioPlayer: NSObject, ObservableObject {
@@ -12,6 +13,7 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     @Published private(set) var timerRemaining: TimeInterval?
     @Published private(set) var selectedAmbience: QuietoAmbience?
     @Published var ambienceVolume: Double = 0.28 { didSet { ambiencePlayer?.volume = Float(ambienceVolume) } }
+    @Published var isFullPlayerPresented = false
 
     private var player: AVPlayer?
     private var timeObserver: Any?
@@ -25,7 +27,18 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
 
     override init() {
         super.init()
+        UIApplication.shared.beginReceivingRemoteControlEvents()
         setupRemoteCommands()
+    }
+
+    func presentFullPlayer() { isFullPlayerPresented = true }
+
+    /// Called when the scene resigns active. It intentionally does not pause playback:
+    /// the AVAudioSession + UIBackgroundModes audio configuration owns continuation.
+    func keepAudioSessionAlive() {
+        guard player != nil || ambiencePlayer != nil else { return }
+        try? AVAudioSession.sharedInstance().setActive(true, options: [])
+        updateNowPlaying()
     }
 
     func play(_ session: QuietoSession, localURL: URL? = nil) {
@@ -161,6 +174,11 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
             Task { @MainActor in self?.seek(to: event.positionTime) }
             return .success
         }
+        commands.playCommand.isEnabled = true
+        commands.pauseCommand.isEnabled = true
+        commands.skipForwardCommand.isEnabled = true
+        commands.skipBackwardCommand.isEnabled = true
+        commands.changePlaybackPositionCommand.isEnabled = true
     }
 
     private func savePosition() { guard let id = currentSession?.id else { return }; UserDefaults.standard.set(position, forKey: "quieto.native.audio.position.\(id)") }

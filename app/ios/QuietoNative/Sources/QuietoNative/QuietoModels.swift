@@ -37,6 +37,7 @@ struct QuietoSession: Identifiable, Equatable {
     let preparation: String
     let steps: [String]
     let transcript: String
+    let breathingPattern: QuietoBreathingPattern?
 
     init(
         id: String,
@@ -54,7 +55,8 @@ struct QuietoSession: Identifiable, Equatable {
         longDescription: String? = nil,
         preparation: String = "Installe-toi dans une position stable et confortable. Tu peux garder les yeux ouverts ou les fermer.",
         steps: [String]? = nil,
-        transcript: String? = nil
+        transcript: String? = nil,
+        breathingPattern: QuietoBreathingPattern? = nil
     ) {
         self.id = id
         self.title = title
@@ -76,7 +78,30 @@ struct QuietoSession: Identifiable, Equatable {
             "Revenir progressivement à ce qui t’entoure."
         ]
         self.transcript = transcript ?? QuietoTranscript.make(title: title, intention: intention, practice: practiceType)
+        self.breathingPattern = breathingPattern ?? (practiceType == .breathing ? .coherence : nil)
     }
+
+    var readerMode: QuietoReaderMode { practiceType == .breathing ? .breathing : .guidedVoice }
+}
+
+enum QuietoReaderMode { case guidedVoice, breathing }
+
+enum QuietoBreathingPattern: String, CaseIterable, Codable {
+    case coherence = "Cohérence 5–5"
+    case box = "Carré 4–4–4–4"
+    case longExhale = "Expiration 4–6"
+    case fourSevenEight = "4–7–8"
+
+    var phases: [(label: String, seconds: Double)] {
+        switch self {
+        case .coherence: [("Inspire", 5), ("Expire", 5)]
+        case .box: [("Inspire", 4), ("Garde", 4), ("Expire", 4), ("Garde", 4)]
+        case .longExhale: [("Inspire", 4), ("Expire", 6)]
+        case .fourSevenEight: [("Inspire", 4), ("Garde", 7), ("Expire", 8)]
+        }
+    }
+
+    var cycleDuration: Double { phases.reduce(0) { $0 + $1.seconds } }
 }
 
 private enum QuietoTranscript {
@@ -116,6 +141,8 @@ struct QuietoAmbience: Identifiable, Equatable {
         .init(id: "white-noise", title: "Bruit blanc", subtitle: "Souffle uniforme", assetName: "ambience-white-noise.png", audioResource: "ambience-white-noise"),
         .init(id: "pink-noise", title: "Bruit rose", subtitle: "Grave et enveloppant", assetName: "ambience-pink-noise.png", audioResource: "ambience-pink-noise"),
         .init(id: "night", title: "Nuit d’été", subtitle: "Insectes au loin", assetName: "ambience-night.png", audioResource: "ambience-night")
+        , .init(id: "wind", title: "Vent doux", subtitle: "Air dans les arbres", assetName: "ambience-wind.png", audioResource: "ambience-wind")
+        , .init(id: "distant-storm", title: "Orage lointain", subtitle: "Rumble feutré", assetName: "ambience-distant-storm.png", audioResource: "ambience-distant-storm")
     ]
 }
 

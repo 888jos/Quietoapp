@@ -34,7 +34,9 @@ let sessionIDs = [
     "emotion_1", "emotion_2", "emotion_3", "emotion_4", "emotion_5",
     "new_body_scan_sleep", "new_nidra_pause", "new_soft_reset", "new_thoughts_on_clouds",
     "new_sensory_shelter", "new_focus_reset", "new_after_conflict", "new_box_breathing",
-    "new_long_exhale", "new_walking_pause", "new_morning_window", "new_commute_boundary", "new_safe_place"
+    "new_long_exhale", "new_walking_pause", "new_morning_window", "new_commute_boundary", "new_safe_place",
+    "breathing_5", "daybreak_stillness", "daybreak_grounding", "morning_breathing_space", "morning_kind_start", "late_morning_focus", "lunch_reset", "after_lunch_energy", "afternoon_fog", "afternoon_reframe", "before_meeting", "between_calls", "after_work", "commute_home", "doorstep_pause", "evening_unwind", "evening_release", "blue_hour", "after_dinner", "screen_off", "night_watch", "middle_of_night", "night_sky", "sunday_reset", "monday_arrival", "friday_release", "lonely_evening", "decision_pause", "creative_block", "gentle_recovery", "small_joy",
+    "meditation_01", "meditation_02", "meditation_03", "meditation_04", "meditation_05", "meditation_06", "meditation_07", "meditation_08", "meditation_09", "meditation_10", "meditation_11", "meditation_12", "meditation_13", "meditation_14", "meditation_15", "meditation_16", "meditation_17"
 ]
 
 let bases = basePaths.compactMap { NSImage(contentsOf: root.appendingPathComponent($0)) }

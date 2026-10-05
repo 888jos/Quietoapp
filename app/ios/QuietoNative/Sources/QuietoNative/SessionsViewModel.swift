@@ -28,11 +28,14 @@ final class SessionsViewModel: ObservableObject {
 
     var filteredSessions: [QuietoSession] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).folding(options: .diacriticInsensitive, locale: .current).lowercased()
+        // A search is global by design: the default “Sommeil” pillar must not
+        // hide a matching session from another pillar.
+        let pillarFilter = needle.isEmpty ? selectedPillar : nil
         return catalog.sessions.filter { session in
             let searchableText = ([session.title, session.subtitle, session.intention, session.pillar.rawValue, session.practiceType.rawValue] + session.keywords)
                 .joined(separator: " ").folding(options: .diacriticInsensitive, locale: .current).lowercased()
             let matchesQuery = needle.isEmpty || searchableText.contains(needle)
-            return matchesQuery && (selectedPillar == nil || session.pillar == selectedPillar) && durationFilter.includes(session.durationMinutes) && (practiceFilter == nil || session.practiceType == practiceFilter)
+            return matchesQuery && (pillarFilter == nil || session.pillar == pillarFilter) && durationFilter.includes(session.durationMinutes) && (practiceFilter == nil || session.practiceType == practiceFilter)
         }
     }
 

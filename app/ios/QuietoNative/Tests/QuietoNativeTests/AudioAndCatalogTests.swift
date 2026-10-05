@@ -5,7 +5,9 @@ import XCTest
 final class AudioAndCatalogTests: XCTestCase {
     func testEveryCatalogSessionHasUniqueArtworkAndDetailedContent() {
         let sessions = SessionCatalog().sessions
-        XCTAssertEqual(sessions.count, 48)
+        XCTAssertGreaterThanOrEqual(sessions.count, 79)
+        XCTAssertGreaterThanOrEqual(sessions.filter { $0.practiceType == .meditation }.count, 40)
+        XCTAssertGreaterThanOrEqual(sessions.filter { $0.practiceType == .breathing }.count, 10)
         XCTAssertEqual(Set(sessions.map(\.imageName)).count, sessions.count)
         XCTAssertTrue(sessions.allSatisfy { $0.longDescription.count > 140 })
         XCTAssertTrue(sessions.allSatisfy { $0.transcript.count > 400 })
@@ -14,7 +16,7 @@ final class AudioAndCatalogTests: XCTestCase {
     }
 
     func testAllBundledAmbiencesArePlayableThirtySecondMP3Files() async throws {
-        XCTAssertEqual(QuietoAmbience.all.count, 8)
+        XCTAssertGreaterThanOrEqual(QuietoAmbience.all.count, 10)
         for ambience in QuietoAmbience.all {
             let url = try XCTUnwrap(Bundle.main.url(forResource: ambience.audioResource, withExtension: "mp3"))
             XCTAssertNotNil(Bundle.main.url(forResource: ambience.assetName, withExtension: nil))

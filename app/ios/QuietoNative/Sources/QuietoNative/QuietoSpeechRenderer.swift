@@ -10,6 +10,7 @@ enum QuietoSpeechRenderError: LocalizedError {
 /// Spoken phrases are separated by genuine PCM silence so the produced track
 /// has the exact editorial duration advertised by the catalog.
 final class QuietoSpeechRenderer {
+    private static let cacheVersion = "v3-audible"
     private final class Job {
         let session: QuietoSession
         let url: URL
@@ -32,10 +33,11 @@ final class QuietoSpeechRenderer {
 
     func render(_ session: QuietoSession) async throws -> URL {
         let folder = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            .appendingPathComponent("QuietoNarrations-v2", isDirectory: true)
+            .appendingPathComponent("QuietoNarrations-\(Self.cacheVersion)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appendingPathComponent("\(session.id).caf")
-        if FileManager.default.fileExists(atPath: url.path) { return url }
+        if FileManager.default.fileExists(atPath: url.path), Self.isAudibleAudioFile(at: url) { return url }
+        try? FileManager.default.removeItem(at: url)
 
         let sentences = session.transcript
             .replacingOccurrences(of: "? ", with: "?\n")
@@ -88,10 +90,27 @@ final class QuietoSpeechRenderer {
             let targetFrames = AVAudioFramePosition(Double(job.session.durationMinutes * 60) * file.processingFormat.sampleRate)
             let remainingFrames = max(0, targetFrames - file.length)
             if remainingFrames > 0 { try appendSilence(frames: remainingFrames, to: file) }
+            guard Self.isAudibleAudioFile(at: job.url) else { throw QuietoSpeechRenderError.unavailable }
             job.completed = true
             activeJob = nil
             job.continuation.resume(returning: job.url)
         } catch { fail(job, error: error) }
+    }
+
+    /// Rejects stale files that have a valid duration but contain only PCM silence.
+    /// This is intentionally lightweight and samples at most the first 20 seconds.
+    static func isAudibleAudioFile(at url: URL) -> Bool {
+        guard let file = try? AVAudioFile(forReading: url) else { return false }
+        let format = file.processingFormat
+        let frames = AVAudioFrameCount(min(file.length, AVAudioFramePosition(format.sampleRate * 20)))
+        guard frames > 0, let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else { return false }
+        do { try file.read(into: buffer, frameCount: frames) } catch { return false }
+        guard let channels = buffer.floatChannelData, buffer.frameLength > 0 else { return false }
+        var peak: Float = 0
+        for channel in 0..<Int(format.channelCount) {
+            for frame in 0..<Int(buffer.frameLength) { peak = max(peak, abs(channels[channel][frame])) }
+        }
+        return peak > 0.001
     }
 
     private func appendSilence(seconds: Double, to file: AVAudioFile) throws {

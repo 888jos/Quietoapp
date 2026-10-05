@@ -42,7 +42,13 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     }
 
     func play(_ session: QuietoSession, localURL: URL? = nil) {
-        if currentSession?.id == session.id, let player { player.play(); isPlaying = true; updateNowPlaying(); return }
+        if currentSession?.id == session.id, let player {
+            if duration > 0, position >= duration - 3 { seek(to: 0) }
+            player.playImmediately(atRate: 1)
+            isPlaying = true
+            updateNowPlaying()
+            return
+        }
         stop()
         currentSession = session
         isLoading = true
@@ -106,6 +112,7 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     private func configureAudioSession() throws {
         let audio = AVAudioSession.sharedInstance()
         try audio.setCategory(.playback, mode: .spokenAudio, options: [.allowBluetoothA2DP, .allowAirPlay])
+        try audio.setPreferredIOBufferDuration(0.023)
         try audio.setActive(true)
     }
 
@@ -113,11 +120,22 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
         do {
             try configureAudioSession()
             let item = AVPlayerItem(url: url)
+            item.preferredForwardBufferDuration = 1
             player = AVPlayer(playerItem: item)
+            player?.isMuted = false
+            player?.volume = 1
+            player?.automaticallyWaitsToMinimizeStalling = false
             observe(item: item, session: session)
+            duration = Self.audioDuration(at: url) ?? Double(session.durationMinutes * 60)
             let saved = UserDefaults.standard.double(forKey: "quieto.native.audio.position.\(session.id)")
-            if saved > 0 { player?.seek(to: CMTime(seconds: saved, preferredTimescale: 600)) }
-            player?.play()
+            if saved > 0, saved < duration - 5 {
+                player?.seek(to: CMTime(seconds: saved, preferredTimescale: 600))
+                position = saved
+            } else {
+                UserDefaults.standard.removeObject(forKey: "quieto.native.audio.position.\(session.id)")
+                position = 0
+            }
+            player?.playImmediately(atRate: 1)
             isPlaying = true
             isLoading = false
             updateNowPlaying()
@@ -140,6 +158,10 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.isPlaying = false
+                self.position = 0
+                UserDefaults.standard.removeObject(forKey: "quieto.native.audio.position.\(session.id)")
+                self.player?.seek(to: .zero)
+                self.updateNowPlaying()
                 let key = "quieto.native.activity.\(session.id)"
                 let old = UserDefaults.standard.integer(forKey: key)
                 UserDefaults.standard.set(old + max(1, session.durationMinutes * 60), forKey: key)
@@ -182,6 +204,10 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     }
 
     private func savePosition() { guard let id = currentSession?.id else { return }; UserDefaults.standard.set(position, forKey: "quieto.native.audio.position.\(id)") }
+    private static func audioDuration(at url: URL) -> Double? {
+        guard let file = try? AVAudioFile(forReading: url), file.processingFormat.sampleRate > 0 else { return nil }
+        return Double(file.length) / file.processingFormat.sampleRate
+    }
     private func updateNowPlaying() {
         guard let session = currentSession else { return }
         var info: [String: Any] = [

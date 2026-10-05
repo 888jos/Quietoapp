@@ -51,5 +51,12 @@ final class AudioAndCatalogTests: XCTestCase {
         let duration = try await AVURLAsset(url: url).load(.duration).seconds
         XCTAssertEqual(duration, 60, accuracy: 0.05)
         XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        XCTAssertTrue(QuietoSpeechRenderer.isAudibleAudioFile(at: url), "La narration générée ne doit jamais être silencieuse.")
+    }
+
+    func testEveryGuidedMeditationHasNarrationContent() {
+        let guided = SessionCatalog().sessions.filter { $0.readerMode == .guidedVoice }
+        XCTAssertFalse(guided.isEmpty)
+        XCTAssertTrue(guided.allSatisfy { $0.transcript.count > 400 })
     }
 }

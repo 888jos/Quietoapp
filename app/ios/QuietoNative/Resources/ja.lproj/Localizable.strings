@@ -230,3 +230,7 @@
 "%d séances terminées" = "%d回完了";
 "%d minutes réellement écoutées" = "実際に聴いた時間：%d分";
 "Continuer · %d min" = "続ける · %d分";
+"Commencer la respiration" = "呼吸エクササイズを開始";
+"Écouter la méditation" = "瞑想を再生";
+"Préparation de la méditation…" = "瞑想を準備中…";
+"Cet exercice de %d minutes se pratique sans narration. Le point monte avec l’inspiration, marque les pauses éventuelles et redescend avec l’expiration. Adapte ou arrête le rythme dès qu’il devient inconfortable." = "この%d分間のエクササイズに音声ガイドはありません。点は吸うと上がり、必要な停止を示し、吐くと下がります。苦しくなったらペースを調整するか中止してください。";

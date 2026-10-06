@@ -24,6 +24,8 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     private let speechRenderer = QuietoSpeechRenderer()
     private var playbackTask: Task<Void, Never>?
     private var routeObserver: NSObjectProtocol?
+    private var breathingTimer: Timer?
+    private var breathingStartedAt: Date?
 
     override init() {
         super.init()
@@ -42,6 +44,11 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     }
 
     func play(_ session: QuietoSession, localURL: URL? = nil) {
+        if currentSession?.id == session.id, session.readerMode == .breathing {
+            if duration > 0, position >= duration - 3 { seek(to: 0) }
+            resumeBreathing()
+            return
+        }
         if currentSession?.id == session.id, let player {
             if duration > 0, position >= duration - 3 { seek(to: 0) }
             player.playImmediately(atRate: 1)
@@ -51,6 +58,10 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
         }
         stop()
         currentSession = session
+        if session.readerMode == .breathing {
+            startBreathing(session)
+            return
+        }
         isLoading = true
         playbackTask = Task { [weak self] in
             guard let self else { return }
@@ -72,8 +83,26 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
         }
     }
 
-    func toggle() { guard let player else { return }; if isPlaying { player.pause() } else { player.play() }; isPlaying.toggle(); savePosition(); updateNowPlaying() }
-    func seek(to value: Double) { player?.seek(to: CMTime(seconds: value, preferredTimescale: 600)); position = value; savePosition() }
+    func toggle() {
+        if currentSession?.readerMode == .breathing {
+            isPlaying ? pauseBreathing() : resumeBreathing()
+            return
+        }
+        guard let player else { return }
+        if isPlaying { player.pause() } else { player.play() }
+        isPlaying.toggle(); savePosition(); updateNowPlaying()
+    }
+    func seek(to value: Double) {
+        let bounded = max(0, min(duration, value))
+        if currentSession?.readerMode == .breathing {
+            position = bounded
+            breathingStartedAt = isPlaying ? Date().addingTimeInterval(-bounded) : nil
+        } else {
+            player?.seek(to: CMTime(seconds: bounded, preferredTimescale: 600))
+            position = bounded
+        }
+        savePosition()
+    }
     func skip(by seconds: Double) { seek(to: max(0, min(duration, position + seconds))) }
     func setSleepTimer(minutes: Int?) { timer?.invalidate(); timerRemaining = minutes.map { TimeInterval($0 * 60) }; guard minutes != nil else { return }; timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in Task { @MainActor in self?.tickTimer() } } }
 
@@ -96,6 +125,7 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
 
     func stop() {
         playbackTask?.cancel(); playbackTask = nil
+        breathingTimer?.invalidate(); breathingTimer = nil; breathingStartedAt = nil
         player?.pause(); savePosition()
         if let timeObserver { player?.removeTimeObserver(timeObserver) }; timeObserver = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }; endObserver = nil
@@ -105,6 +135,47 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
         timer?.invalidate(); timer = nil; timerRemaining = nil
         stopAmbience()
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
+    private func startBreathing(_ session: QuietoSession) {
+        duration = Double(session.durationMinutes * 60)
+        let saved = UserDefaults.standard.double(forKey: "quieto.native.audio.position.\(session.id)")
+        position = saved > 0 && saved < duration - 5 ? saved : 0
+        isLoading = false
+        resumeBreathing()
+    }
+
+    private func resumeBreathing() {
+        guard currentSession?.readerMode == .breathing else { return }
+        if duration > 0, position >= duration { position = 0 }
+        breathingStartedAt = Date().addingTimeInterval(-position)
+        breathingTimer?.invalidate()
+        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in self?.tickBreathing() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        breathingTimer = timer
+        isPlaying = true
+    }
+
+    private func pauseBreathing() {
+        tickBreathing()
+        breathingTimer?.invalidate(); breathingTimer = nil; breathingStartedAt = nil
+        isPlaying = false
+        savePosition()
+    }
+
+    private func tickBreathing() {
+        guard isPlaying, let startedAt = breathingStartedAt, let session = currentSession else { return }
+        position = min(duration, Date().timeIntervalSince(startedAt))
+        savePosition()
+        if position >= duration {
+            breathingTimer?.invalidate(); breathingTimer = nil; breathingStartedAt = nil
+            isPlaying = false
+            position = 0
+            UserDefaults.standard.removeObject(forKey: "quieto.native.audio.position.\(session.id)")
+            recordCompletion(session)
+        }
     }
 
     private func tickTimer() { guard let left = timerRemaining else { return }; if left <= 1 { player?.pause(); isPlaying = false; stopAmbience(); setSleepTimer(minutes: nil); updateNowPlaying() } else { timerRemaining = left - 1 } }
@@ -162,12 +233,7 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
                 UserDefaults.standard.removeObject(forKey: "quieto.native.audio.position.\(session.id)")
                 self.player?.seek(to: .zero)
                 self.updateNowPlaying()
-                let key = "quieto.native.activity.\(session.id)"
-                let old = UserDefaults.standard.integer(forKey: key)
-                UserDefaults.standard.set(old + max(1, session.durationMinutes * 60), forKey: key)
-                var events = UserDefaults.standard.array(forKey: "quieto.native.activity.events") as? [[String: Any]] ?? []
-                events.append(["id": session.id, "seconds": max(1, session.durationMinutes * 60), "date": Date().timeIntervalSince1970])
-                UserDefaults.standard.set(events, forKey: "quieto.native.activity.events")
+                self.recordCompletion(session)
             }
         }
         interruptionObserver = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
@@ -204,6 +270,14 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     }
 
     private func savePosition() { guard let id = currentSession?.id else { return }; UserDefaults.standard.set(position, forKey: "quieto.native.audio.position.\(id)") }
+    private func recordCompletion(_ session: QuietoSession) {
+        let seconds = max(1, session.durationMinutes * 60)
+        let key = "quieto.native.activity.\(session.id)"
+        UserDefaults.standard.set(UserDefaults.standard.integer(forKey: key) + seconds, forKey: key)
+        var events = UserDefaults.standard.array(forKey: "quieto.native.activity.events") as? [[String: Any]] ?? []
+        events.append(["id": session.id, "seconds": seconds, "date": Date().timeIntervalSince1970])
+        UserDefaults.standard.set(events, forKey: "quieto.native.activity.events")
+    }
     private static func audioDuration(at url: URL) -> Double? {
         guard let file = try? AVAudioFile(forReading: url), file.processingFormat.sampleRate > 0 else { return nil }
         return Double(file.length) / file.processingFormat.sampleRate

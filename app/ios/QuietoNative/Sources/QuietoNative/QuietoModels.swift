@@ -91,6 +91,12 @@ struct QuietoSession: Identifiable, Equatable {
 
     var localizedLongDescription: String {
         guard !QuietoLocalization.isFrench else { return longDescription }
+        if readerMode == .breathing {
+            return String(
+                format: "Cet exercice de %d minutes se pratique sans narration. Le point monte avec l’inspiration, marque les pauses éventuelles et redescend avec l’expiration. Adapte ou arrête le rythme dès qu’il devient inconfortable.".quietoLocalized,
+                durationMinutes
+            )
+        }
         return String(
             format: "Cette séance de %d minutes utilise la %@. Les consignes sont courtes et alternent avec des silences pour te laisser pratiquer à ton rythme.".quietoLocalized,
             durationMinutes,

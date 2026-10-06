@@ -230,3 +230,7 @@
 "%d séances terminées" = "%d개 세션 완료";
 "%d minutes réellement écoutées" = "실제 청취 시간 %d분";
 "Continuer · %d min" = "계속 · %d분";
+"Commencer la respiration" = "호흡 운동 시작";
+"Écouter la méditation" = "명상 재생";
+"Préparation de la méditation…" = "명상 준비 중…";
+"Cet exercice de %d minutes se pratique sans narration. Le point monte avec l’inspiration, marque les pauses éventuelles et redescend avec l’expiration. Adapte ou arrête le rythme dès qu’il devient inconfortable." = "이 %d분 운동에는 음성 안내가 없습니다. 들이쉴 때 점이 올라가고, 필요하면 멈춘 뒤, 내쉴 때 내려옵니다. 불편하면 속도를 조절하거나 중단하세요.";

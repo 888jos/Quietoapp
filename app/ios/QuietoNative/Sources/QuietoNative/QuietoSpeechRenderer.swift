@@ -32,6 +32,9 @@ final class QuietoSpeechRenderer {
     private var activeJob: Job?
 
     func render(_ session: QuietoSession) async throws -> URL {
+        guard session.readerMode == .guidedVoice else {
+            throw QuietoSpeechRenderError.unavailable
+        }
         let folder = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             .appendingPathComponent("QuietoNarrations-\(Self.cacheVersion)-\(QuietoLocalization.languageCode)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

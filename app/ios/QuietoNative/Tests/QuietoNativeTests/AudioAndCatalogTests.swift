@@ -80,6 +80,19 @@ final class AudioAndCatalogTests: XCTestCase {
         XCTAssertTrue(guided.allSatisfy { $0.transcript.count > 400 })
     }
 
+    func testBreathingExercisesNeverUseSpeechRendering() async throws {
+        let breathing = try XCTUnwrap(SessionCatalog().sessions.first { $0.practiceType == .breathing })
+        guard case .breathing = breathing.readerMode else {
+            return XCTFail("Breathing sessions must use the visual breathing mode")
+        }
+        do {
+            _ = try await QuietoSpeechRenderer().render(breathing)
+            XCTFail("A breathing exercise must never generate spoken audio")
+        } catch QuietoSpeechRenderError.unavailable {
+            // Expected: breathing is driven by the visual cycle, not by speech synthesis.
+        }
+    }
+
     private func localizationDictionary(table: String, localization: String) throws -> [String: String] {
         let path = try XCTUnwrap(
             Bundle.main.path(forResource: table, ofType: "strings", inDirectory: nil, forLocalization: localization),

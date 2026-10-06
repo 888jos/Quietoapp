@@ -32,20 +32,25 @@ struct SessionDetailView: View {
                         Button { model.toggleFavorite(session) } label: {
                             Label(model.favorites.contains(session.id) ? "Dans les favoris" : "Favori", systemImage: model.favorites.contains(session.id) ? "bookmark.fill" : "bookmark")
                         }
-                        Button { model.toggleDownload(session) } label: {
-                            Label(model.downloads.isDownloaded(session) ? "Supprimer" : "Télécharger", systemImage: model.downloads.isDownloaded(session) ? "trash" : "arrow.down.circle")
+                        if session.readerMode == .guidedVoice {
+                            Button { model.toggleDownload(session) } label: {
+                                Label(model.downloads.isDownloaded(session) ? "Supprimer" : "Télécharger", systemImage: model.downloads.isDownloaded(session) ? "trash" : "arrow.down.circle")
+                            }
                         }
                     }
                     .font(QuietoFont.sans(13, weight: .semibold)).foregroundStyle(QuietoColor.mint)
                     .buttonStyle(.bordered).buttonBorderShape(.capsule)
 
-                    if let value = model.downloads.progress[session.id], value < 1 {
+                    if session.readerMode == .guidedVoice, let value = model.downloads.progress[session.id], value < 1 {
                         HStack { ProgressView(value: value).tint(QuietoColor.mint); Button("Annuler") { model.downloads.cancel(session) } }
                             .font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
                     }
 
                     if isCurrent { playerControls } else {
-                        QuietoPrimaryButton(title: "Écouter avec la voix Apple", systemImage: "play.fill") { model.play(session) }
+                        QuietoPrimaryButton(
+                            title: session.readerMode == .breathing ? "Commencer la respiration" : "Écouter la méditation",
+                            systemImage: "play.fill"
+                        ) { model.play(session) }
                     }
 
                     detailSection(title: "Avant de commencer", icon: "figure.mind.and.body") {
@@ -65,13 +70,15 @@ struct SessionDetailView: View {
 
                     ambienceSection
 
-                    DisclosureGroup(isExpanded: $transcriptExpanded) {
-                        Text(session.localizedTranscript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(6).padding(.top, 12)
-                    } label: {
-                        Label("Transcription de la séance", systemImage: "text.quote")
-                            .font(QuietoFont.serif(21, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
+                    if session.readerMode == .guidedVoice {
+                        DisclosureGroup(isExpanded: $transcriptExpanded) {
+                            Text(session.localizedTranscript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(6).padding(.top, 12)
+                        } label: {
+                            Label("Transcription de la séance", systemImage: "text.quote")
+                                .font(QuietoFont.serif(21, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
+                        }
+                        .tint(QuietoColor.mint)
                     }
-                    .tint(QuietoColor.mint)
 
                     timerMenu
                 }
@@ -88,7 +95,7 @@ struct SessionDetailView: View {
                 if session.readerMode == .breathing {
                     BreathingVisual(session: session, player: model.audioPlayer).frame(height: 190)
                 }
-                if model.audioPlayer.isLoading { ProgressView("Préparation de la voix Apple…").tint(QuietoColor.mint) }
+                if model.audioPlayer.isLoading, session.readerMode == .guidedVoice { ProgressView("Préparation de la méditation…").tint(QuietoColor.mint) }
                 Slider(value: Binding(get: { model.audioPlayer.position }, set: { model.audioPlayer.seek(to: $0) }), in: 0...max(model.audioPlayer.duration, 1)).tint(QuietoColor.mint)
                 HStack {
                     Text(format(model.audioPlayer.position)); Spacer(); Text("−\(format(max(0, model.audioPlayer.duration - model.audioPlayer.position)))")
@@ -211,7 +218,9 @@ struct NowPlayingView: View {
                             Menu { ForEach([5, 10, 20, 30, 45, 60], id: \.self) { min in Button("\(min) min") { player.setSleepTimer(minutes: min) } }; Button("Désactiver") { player.setSleepTimer(minutes: nil) } } label: { Text(player.timerRemaining.map { "Arrêt dans \(Int(ceil($0 / 60))) min" } ?? "Minuterie") }
                         }.font(QuietoFont.sans(14, weight: .semibold)).foregroundStyle(QuietoColor.mint)
                         if let ambience = player.selectedAmbience { Text("\("Ambiance".quietoLocalized) · \(ambience.title.quietoLocalized)").font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary) }
-                        Text(session.localizedTranscript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(5).frame(maxWidth: 560, alignment: .leading)
+                        if session.readerMode == .guidedVoice {
+                            Text(session.localizedTranscript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(5).frame(maxWidth: 560, alignment: .leading)
+                        }
                     }.padding(.horizontal, 22).padding(.bottom, 38)
                 }
             } else { EmptyState(title: "Aucune séance", message: "Choisis une séance pour commencer.") }
@@ -224,33 +233,81 @@ struct BreathingVisual: View {
     let session: QuietoSession
     @ObservedObject var player: QuietoAudioPlayer
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    private var state: (label: String, progress: Double, cycle: Int) {
-        let pattern = session.breathingPattern ?? .coherence
+    private var pattern: QuietoBreathingPattern { session.breathingPattern ?? .coherence }
+    private var state: (label: String, progress: Double, cycleProgress: Double, cycle: Int) {
         let cycle = max(pattern.cycleDuration, 1)
         let elapsed = max(player.position, 0).truncatingRemainder(dividingBy: cycle)
         var cursor = 0.0
         for phase in pattern.phases {
-            if elapsed < cursor + phase.seconds { return (phase.label, (elapsed - cursor) / phase.seconds, Int(player.position / cycle) + 1) }
+            if elapsed < cursor + phase.seconds {
+                return (phase.label, (elapsed - cursor) / phase.seconds, elapsed / cycle, Int(player.position / cycle) + 1)
+            }
             cursor += phase.seconds
         }
-        return (pattern.phases.last?.label ?? "Respire", 1, Int(player.position / cycle) + 1)
+        return (pattern.phases.last?.label ?? "Respire", 1, 1, Int(player.position / cycle) + 1)
     }
     var body: some View {
-        VStack(spacing: 10) {
-            GeometryReader { _ in
-                let p = state.progress
-                let inhale = state.label == "Inspire"
-                let hold = state.label == "Garde"
-                let scale = hold ? 0.93 : (inhale ? 0.68 + p * 0.25 : 0.93 - p * 0.25)
+        VStack(spacing: 12) {
+            Text(state.label.quietoLocalized)
+                .font(QuietoFont.serif(27, weight: .semibold))
+                .contentTransition(.numericText())
+            GeometryReader { proxy in
+                let inset: CGFloat = 16
+                let markerPoint = point(at: state.cycleProgress, size: proxy.size, inset: inset)
                 ZStack {
-                    Circle().stroke(QuietoColor.mint.opacity(0.22), lineWidth: 2).padding(18)
-                    Circle().fill(QuietoColor.mint.opacity(0.16)).frame(width: 132, height: 132).scaleEffect(reduceMotion ? 0.82 : scale)
-                    Circle().fill(QuietoColor.mint).frame(width: 14, height: 14).offset(y: -62).rotationEffect(.degrees(p * 360))
-                    Text(state.label.quietoLocalized).font(QuietoFont.serif(24, weight: .semibold))
-                }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Canvas { context, size in
+                        var guide = Path()
+                        guide.move(to: point(at: 0, size: size, inset: inset))
+                        for step in 1...160 {
+                            guide.addLine(to: point(at: Double(step) / 160, size: size, inset: inset))
+                        }
+                        context.stroke(guide, with: .color(QuietoColor.mint.opacity(0.45)), style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                    }
+                    Circle()
+                        .fill(QuietoColor.mint)
+                        .frame(width: 18, height: 18)
+                        .shadow(color: QuietoColor.mint.opacity(0.45), radius: reduceMotion ? 0 : 9)
+                        .position(markerPoint)
+                }
             }
+            .frame(height: 105)
             Text("\("Cycle".quietoLocalized) \(state.cycle) · \((session.breathingPattern?.rawValue ?? "Respiration guidée").quietoLocalized)").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
-        }.animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: state.label + String(format: "%.1f", state.progress))
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(state.label.quietoLocalized), \("Cycle".quietoLocalized) \(state.cycle)")
+    }
+
+    private func point(at progress: Double, size: CGSize, inset: CGFloat) -> CGPoint {
+        let bounded = max(0, min(1, progress))
+        let usableHeight = max(1, size.height - inset * 2)
+        return CGPoint(
+            x: inset + CGFloat(bounded) * max(1, size.width - inset * 2),
+            y: inset + (1 - CGFloat(breathLevel(at: bounded))) * usableHeight
+        )
+    }
+
+    /// Produces the inhale/hold/exhale profile: climb, plateau, descent, plateau.
+    private func breathLevel(at cycleProgress: Double) -> Double {
+        let targetTime = max(0, min(1, cycleProgress)) * pattern.cycleDuration
+        var cursor = 0.0
+        var level = pattern.phases.first?.label == "Expire" ? 1.0 : 0.0
+        for phase in pattern.phases {
+            let end = cursor + phase.seconds
+            let target: Double
+            switch phase.label {
+            case "Inspire": target = 1
+            case "Expire": target = 0
+            default: target = level
+            }
+            if targetTime <= end {
+                let local = phase.seconds > 0 ? (targetTime - cursor) / phase.seconds : 1
+                let eased = 0.5 - cos(max(0, min(1, local)) * .pi) / 2
+                return level + (target - level) * eased
+            }
+            level = target
+            cursor = end
+        }
+        return level
     }
 }
 

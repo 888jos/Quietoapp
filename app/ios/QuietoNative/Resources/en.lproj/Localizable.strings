@@ -230,3 +230,7 @@
 "%d séances terminées" = "%d sessions completed";
 "%d minutes réellement écoutées" = "%d minutes actually listened";
 "Continuer · %d min" = "Continue · %d min";
+"Commencer la respiration" = "Start breathing exercise";
+"Écouter la méditation" = "Play meditation";
+"Préparation de la méditation…" = "Preparing meditation…";
+"Cet exercice de %d minutes se pratique sans narration. Le point monte avec l’inspiration, marque les pauses éventuelles et redescend avec l’expiration. Adapte ou arrête le rythme dès qu’il devient inconfortable." = "This %d-minute exercise has no narration. The dot rises as you inhale, pauses when needed, and descends as you exhale. Adjust or stop the pace whenever it feels uncomfortable.";

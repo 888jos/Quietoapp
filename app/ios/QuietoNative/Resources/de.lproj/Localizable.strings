@@ -230,3 +230,7 @@
 "%d séances terminées" = "%d Einheiten abgeschlossen";
 "%d minutes réellement écoutées" = "%d tatsächlich gehörte Minuten";
 "Continuer · %d min" = "Fortsetzen · %d Min.";
+"Commencer la respiration" = "Atemübung starten";
+"Écouter la méditation" = "Meditation abspielen";
+"Préparation de la méditation…" = "Meditation wird vorbereitet…";
+"Cet exercice de %d minutes se pratique sans narration. Le point monte avec l’inspiration, marque les pauses éventuelles et redescend avec l’expiration. Adapte ou arrête le rythme dès qu’il devient inconfortable." = "Diese %d-minütige Übung kommt ohne Sprachausgabe aus. Der Punkt steigt beim Einatmen, zeigt mögliche Pausen und sinkt beim Ausatmen. Passe den Rhythmus an oder stoppe, sobald es unangenehm wird.";

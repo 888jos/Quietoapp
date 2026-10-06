@@ -153,6 +153,9 @@ struct SessionCatalog: QuietoSessionCatalogProviding {
     }
 
     private static func detail(for id: String, title: String, duration: Int, intention: String, practice: QuietoPracticeType) -> String {
+        if practice == .breathing {
+            return "Cet exercice de \(duration) minutes se pratique sans narration. Un point suit une courbe : la montée accompagne l’inspiration, le plateau indique une pause éventuelle et la descente guide l’expiration. \(intention) Le rythme peut être interrompu ou adapté à tout moment ; il ne faut jamais forcer ni retenir le souffle si cela devient inconfortable."
+        }
         if id == "sleep_4" {
             return "Entre deux mondes accompagne précisément le passage entre l’éveil et le sommeil. La séance commence par les points de contact du corps, ralentit le souffle sans imposer de compte, puis utilise une visualisation très simple pour laisser les pensées perdre leur urgence. Tu peux l’écouter au lit : la fin ne demande aucune action et laisse une plage de silence pour continuer à t’endormir."
         }

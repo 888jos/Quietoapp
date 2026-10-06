@@ -3,6 +3,26 @@ import XCTest
 @testable import QuietoNative
 
 final class AudioAndCatalogTests: XCTestCase {
+    func testEverySupportedLanguageHasTheSameLocalizationKeys() throws {
+        let localizations = ["en", "es", "de", "ja", "ko"]
+        let tables = ["Localizable", "Catalog", "Extended"]
+
+        for table in tables {
+            let reference = try localizationDictionary(table: table, localization: "en")
+            XCTAssertFalse(reference.isEmpty, table)
+            for localization in localizations.dropFirst() {
+                let candidate = try localizationDictionary(table: table, localization: localization)
+                XCTAssertEqual(Set(candidate.keys), Set(reference.keys), "\(table) is incomplete for \(localization)")
+            }
+        }
+
+        let sessionTitleKeys = Set(SessionCatalog().sessions.map(\.title))
+        for localization in localizations {
+            let catalog = try localizationDictionary(table: "Catalog", localization: localization)
+            XCTAssertTrue(sessionTitleKeys.isSubset(of: Set(catalog.keys)), "Session titles are incomplete for \(localization)")
+        }
+    }
+
     func testEveryCatalogSessionHasUniqueArtworkAndDetailedContent() {
         let sessions = SessionCatalog().sessions
         XCTAssertGreaterThanOrEqual(sessions.count, 79)
@@ -58,5 +78,13 @@ final class AudioAndCatalogTests: XCTestCase {
         let guided = SessionCatalog().sessions.filter { $0.readerMode == .guidedVoice }
         XCTAssertFalse(guided.isEmpty)
         XCTAssertTrue(guided.allSatisfy { $0.transcript.count > 400 })
+    }
+
+    private func localizationDictionary(table: String, localization: String) throws -> [String: String] {
+        let path = try XCTUnwrap(
+            Bundle.main.path(forResource: table, ofType: "strings", inDirectory: nil, forLocalization: localization),
+            "Missing \(table).strings for \(localization)"
+        )
+        return try XCTUnwrap(NSDictionary(contentsOfFile: path) as? [String: String])
     }
 }

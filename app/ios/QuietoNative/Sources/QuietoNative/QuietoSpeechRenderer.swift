@@ -33,13 +33,13 @@ final class QuietoSpeechRenderer {
 
     func render(_ session: QuietoSession) async throws -> URL {
         let folder = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            .appendingPathComponent("QuietoNarrations-\(Self.cacheVersion)", isDirectory: true)
+            .appendingPathComponent("QuietoNarrations-\(Self.cacheVersion)-\(QuietoLocalization.languageCode)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appendingPathComponent("\(session.id).caf")
         if FileManager.default.fileExists(atPath: url.path), Self.isAudibleAudioFile(at: url) { return url }
         try? FileManager.default.removeItem(at: url)
 
-        let sentences = session.transcript
+        let sentences = session.localizedTranscript
             .replacingOccurrences(of: "? ", with: "?\n")
             .replacingOccurrences(of: "! ", with: "!\n")
             .replacingOccurrences(of: ". ", with: ".\n")
@@ -59,7 +59,7 @@ final class QuietoSpeechRenderer {
         guard job.index < job.sentences.count else { finish(job); return }
 
         let utterance = AVSpeechUtterance(string: job.sentences[job.index])
-        utterance.voice = AVSpeechSynthesisVoice(language: "fr-FR")
+        utterance.voice = AVSpeechSynthesisVoice(language: Self.voiceLanguage)
         utterance.rate = 0.43
         utterance.pitchMultiplier = 0.94
 
@@ -111,6 +111,17 @@ final class QuietoSpeechRenderer {
             for frame in 0..<Int(buffer.frameLength) { peak = max(peak, abs(channels[channel][frame])) }
         }
         return peak > 0.001
+    }
+
+    private static var voiceLanguage: String {
+        switch QuietoLocalization.languageCode {
+        case "en": "en-US"
+        case "es": "es-ES"
+        case "de": "de-DE"
+        case "ja": "ja-JP"
+        case "ko": "ko-KR"
+        default: "fr-FR"
+        }
     }
 
     private func appendSilence(seconds: Double, to file: AVAudioFile) throws {

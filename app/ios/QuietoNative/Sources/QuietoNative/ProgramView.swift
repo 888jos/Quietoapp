@@ -17,6 +17,8 @@ final class ProgramViewModel: ObservableObject {
             case .sustained: "Une séance par jour"
             }
         }
+        var localizedName: String { rawValue.quietoLocalized }
+        var localizedDetail: String { detail.quietoLocalized }
     }
 
     let sessions: [QuietoSession]
@@ -40,7 +42,7 @@ final class ProgramViewModel: ObservableObject {
     func saveRhythm(_ value: ProgramRhythm) {
         rhythm = value
         defaults.set(value.rawValue, forKey: "quieto.program.rhythm")
-        feedback = "Rythme enregistré : \(value.detail.lowercased())."
+        feedback = String(format: "Rythme enregistré : %@.".quietoLocalized, value.localizedDetail.lowercased())
     }
 }
 
@@ -82,13 +84,13 @@ struct ProgramView: View {
             }
             .confirmationDialog("Adapter mon rythme", isPresented: $showingRhythm, titleVisibility: .visible) {
                 ForEach(ProgramViewModel.ProgramRhythm.allCases) { rhythm in
-                    Button("\(rhythm.rawValue) · \(rhythm.detail)") { model.saveRhythm(rhythm) }
+                    Button("\(rhythm.localizedName) · \(rhythm.localizedDetail)") { model.saveRhythm(rhythm) }
                 }
                 Button("Annuler", role: .cancel) {}
             }
             .overlay(alignment: .top) {
                 if let feedback = model.feedback {
-                    Text(feedback)
+                    Text(feedback.quietoLocalized)
                         .font(QuietoFont.sans(13, weight: .medium))
                         .foregroundStyle(QuietoColor.background)
                         .padding(.horizontal, 14).padding(.vertical, 9)
@@ -115,7 +117,7 @@ struct ProgramView: View {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Laisser la journée derrière soi".quietoLocalized).font(QuietoFont.serif(23, weight: .semibold))
-                        Text("\(model.completedCount) sur \(model.sessions.count) séances terminées")
+                        Text(String(format: "%d séances terminées sur %d".quietoLocalized, model.completedCount, model.sessions.count))
                             .font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
                     }
                     Spacer()
@@ -125,7 +127,7 @@ struct ProgramView: View {
                 ProgressView(value: Double(model.completedCount), total: Double(max(model.sessions.count, 1)))
                     .tint(QuietoColor.mint)
                 if let next = model.nextSession {
-                    QuietoPrimaryButton(title: "Continuer · \(next.durationMinutes) min", systemImage: "play.fill") { play(next) }
+                    QuietoPrimaryButton(title: String(format: "Continuer · %d min".quietoLocalized, next.durationMinutes), systemImage: "play.fill") { play(next) }
                 } else {
                     Label("Programme terminé", systemImage: "checkmark.seal.fill")
                         .font(QuietoFont.sans(15, weight: .semibold)).foregroundStyle(QuietoColor.mint)
@@ -151,7 +153,7 @@ struct ProgramView: View {
                         .font(.system(size: 13, weight: .semibold)).frame(width: 34, height: 34)
                         VStack(alignment: .leading, spacing: 3) {
                             Text(session.title.quietoLocalized).font(QuietoFont.serif(18, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
-                            Text("\(session.durationMinutes) min · \(session.practiceType.rawValue)")
+                            Text("\(session.durationMinutes) min · \(session.practiceType.rawValue.quietoLocalized)")
                                 .font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
                         }
                         Spacer()
@@ -178,7 +180,7 @@ struct ProgramView: View {
                     Image(systemName: "slider.horizontal.3").foregroundStyle(QuietoColor.mint).frame(width: 28)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Adapter mon rythme").font(QuietoFont.sans(15, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
-                        Text("\(model.rhythm.rawValue) · \(model.rhythm.detail)").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+                        Text("\(model.rhythm.localizedName) · \(model.rhythm.localizedDetail)").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
                     }
                     Spacer()
                     Image(systemName: "chevron.right").foregroundStyle(QuietoColor.textSecondary)

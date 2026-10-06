@@ -82,6 +82,38 @@ struct QuietoSession: Identifiable, Equatable {
     }
 
     var readerMode: QuietoReaderMode { practiceType == .breathing ? .breathing : .guidedVoice }
+
+    var localizedIntention: String {
+        let translated = intention.quietoLocalized
+        if QuietoLocalization.isFrench || translated != intention { return translated }
+        return String(format: "Une pratique de %@ pour créer une pause simple et accessible.".quietoLocalized, practiceType.rawValue.quietoLocalized.lowercased())
+    }
+
+    var localizedLongDescription: String {
+        guard !QuietoLocalization.isFrench else { return longDescription }
+        return String(
+            format: "Cette séance de %d minutes utilise la %@. Les consignes sont courtes et alternent avec des silences pour te laisser pratiquer à ton rythme.".quietoLocalized,
+            durationMinutes,
+            practiceType.rawValue.quietoLocalized.lowercased()
+        )
+    }
+
+    var localizedPreparation: String {
+        QuietoLocalization.isFrench ? preparation : "Installe-toi dans une position stable et confortable. Tu peux garder les yeux ouverts ou les fermer.".quietoLocalized
+    }
+
+    var localizedSteps: [String] {
+        guard !QuietoLocalization.isFrench else { return steps }
+        return [
+            "Prendre contact avec le corps et le souffle.".quietoLocalized,
+            "Explorer la pratique à ton rythme.".quietoLocalized,
+            "Revenir progressivement à ce qui t’entoure.".quietoLocalized
+        ]
+    }
+
+    var localizedTranscript: String {
+        QuietoLocalization.isFrench ? transcript : QuietoTranscript.make(title: title.quietoLocalized, intention: localizedIntention, practice: practiceType)
+    }
 }
 
 enum QuietoReaderMode { case guidedVoice, breathing }
@@ -121,7 +153,13 @@ private enum QuietoTranscript {
         case .meditation:
             middle = "Laisse les sons, les sensations et les pensées apparaître. Quand l’attention part, remarque-le sans jugement, puis reviens à un point d’appui : le souffle, le contact des pieds ou un son stable. Chaque retour fait partie de la pratique."
         }
-        return "Bienvenue dans \(title). \(intention) Prends un instant pour ajuster ta posture. Rien à réussir ici. \(middle) Reste encore quelques instants avec ce rythme. Puis élargis l’attention à la pièce autour de toi. Bouge doucement les mains et les pieds. Quand tu es prêt ou prête, termine cette pause en gardant seulement ce qui t’a été utile."
+        guard !QuietoLocalization.isFrench else {
+            return "Bienvenue dans \(title). \(intention) Prends un instant pour ajuster ta posture. Rien à réussir ici. \(middle) Reste encore quelques instants avec ce rythme. Puis élargis l’attention à la pièce autour de toi. Bouge doucement les mains et les pieds. Quand tu es prêt ou prête, termine cette pause en gardant seulement ce qui t’a été utile."
+        }
+        let intro = String(format: "Bienvenue dans %@. %@ Prends un instant pour ajuster ta posture. Rien à réussir ici.".quietoLocalized, title, intention)
+        let translatedMiddle = middle.quietoLocalized
+        let outro = "Reste encore quelques instants avec ce rythme. Puis élargis l’attention à la pièce autour de toi. Bouge doucement les mains et les pieds. Termine cette pause en gardant seulement ce qui t’a été utile.".quietoLocalized
+        return "\(intro) \(translatedMiddle) \(outro)"
     }
 }
 

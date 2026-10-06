@@ -20,13 +20,13 @@ struct SessionDetailView: View {
                         Text(session.title.quietoLocalized).font(QuietoFont.serif(34, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
                         HStack(spacing: 8) {
                             MetadataChip(text: "\(session.durationMinutes) min", icon: "clock")
-                            MetadataChip(text: session.practiceType.rawValue, icon: "waveform")
-                            MetadataChip(text: session.pillar.rawValue, icon: session.pillar.symbol)
+                            MetadataChip(text: session.practiceType.rawValue.quietoLocalized, icon: "waveform")
+                            MetadataChip(text: session.pillar.rawValue.quietoLocalized, icon: session.pillar.symbol)
                         }
                     }
 
-                    Text(session.intention.quietoLocalized).font(QuietoFont.serif(23)).fixedSize(horizontal: false, vertical: true)
-                    Text(session.longDescription.quietoLocalized).font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(5)
+                    Text(session.localizedIntention).font(QuietoFont.serif(23)).fixedSize(horizontal: false, vertical: true)
+                    Text(session.localizedLongDescription).font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(5)
 
                     HStack(spacing: 10) {
                         Button { model.toggleFavorite(session) } label: {
@@ -49,11 +49,11 @@ struct SessionDetailView: View {
                     }
 
                     detailSection(title: "Avant de commencer", icon: "figure.mind.and.body") {
-                        Text(session.preparation.quietoLocalized).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(4)
+                        Text(session.localizedPreparation).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(4)
                     }
                     detailSection(title: "Déroulé", icon: "list.number") {
                         VStack(alignment: .leading, spacing: 12) {
-                            ForEach(Array(session.steps.enumerated()), id: \.offset) { index, step in
+                            ForEach(Array(session.localizedSteps.enumerated()), id: \.offset) { index, step in
                                 HStack(alignment: .top, spacing: 12) {
                                     Text("\(index + 1)").font(QuietoFont.sans(12, weight: .bold)).foregroundStyle(QuietoColor.background)
                                         .frame(width: 24, height: 24).background(QuietoColor.mint, in: Circle())
@@ -66,7 +66,7 @@ struct SessionDetailView: View {
                     ambienceSection
 
                     DisclosureGroup(isExpanded: $transcriptExpanded) {
-                        Text(session.transcript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(6).padding(.top, 12)
+                        Text(session.localizedTranscript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(6).padding(.top, 12)
                     } label: {
                         Label("Transcription de la séance", systemImage: "text.quote")
                             .font(QuietoFont.serif(21, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
@@ -161,7 +161,7 @@ private struct MetadataChip: View {
     var body: some View { Label(text, systemImage: icon).font(QuietoFont.sans(12, weight: .medium)).foregroundStyle(QuietoColor.textSecondary).padding(.horizontal, 10).padding(.vertical, 7).background(QuietoColor.surface, in: Capsule()) }
 }
 
-struct LibraryView: View { let title: String; let sessions: [QuietoSession]; @ObservedObject var model: SessionsViewModel; var body: some View { NavigationStack { ZStack { QuietoColor.background.ignoresSafeArea(); ScrollView { VStack(alignment: .leading) { Text(title).font(QuietoFont.serif(32, weight: .semibold)); if sessions.isEmpty { EmptyState(title: "Rien ici pour l’instant", message: "Ta bibliothèque se remplira au fil de tes écoutes.") } else { ForEach(sessions) { session in SessionRow(session: session, isFavorite: model.favorites.contains(session.id), isDownloaded: model.downloads.isDownloaded(session), action: { model.selectedSession = session }, play: { model.play(session) }, favorite: { model.toggleFavorite(session) }) } } }.padding(QuietoSpacing.md) } }.navigationTitle(title).navigationBarTitleDisplayMode(.inline) } } }
+struct LibraryView: View { let title: String; let sessions: [QuietoSession]; @ObservedObject var model: SessionsViewModel; var body: some View { NavigationStack { ZStack { QuietoColor.background.ignoresSafeArea(); ScrollView { VStack(alignment: .leading) { Text(title.quietoLocalized).font(QuietoFont.serif(32, weight: .semibold)); if sessions.isEmpty { EmptyState(title: "Rien ici pour l’instant", message: "Ta bibliothèque se remplira au fil de tes écoutes.") } else { ForEach(sessions) { session in SessionRow(session: session, isFavorite: model.favorites.contains(session.id), isDownloaded: model.downloads.isDownloaded(session), action: { model.selectedSession = session }, play: { model.play(session) }, favorite: { model.toggleFavorite(session) }) } } }.padding(QuietoSpacing.md) } }.navigationTitle(Text(title.quietoLocalized)).navigationBarTitleDisplayMode(.inline) } } }
 
 struct MiniPlayerView: View {
     @ObservedObject var player: QuietoAudioPlayer
@@ -197,7 +197,7 @@ struct NowPlayingView: View {
                     VStack(spacing: 22) {
                         Capsule().fill(QuietoColor.textSecondary.opacity(0.55)).frame(width: 42, height: 5).padding(.top, 8)
                         QuietoAssetImage(session.imageName, contentMode: .fill).frame(maxWidth: 330).aspectRatio(1, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous)).shadow(color: .black.opacity(0.25), radius: 22, y: 10)
-                        VStack(spacing: 7) { Text(session.title.quietoLocalized).font(QuietoFont.serif(30, weight: .semibold)).multilineTextAlignment(.center); Text("Quieto · \(session.practiceType.rawValue)").font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary) }
+                        VStack(spacing: 7) { Text(session.title.quietoLocalized).font(QuietoFont.serif(30, weight: .semibold)).multilineTextAlignment(.center); Text("Quieto · \(session.practiceType.rawValue.quietoLocalized)").font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary) }
                         if session.readerMode == .breathing { BreathingVisual(session: session, player: player).frame(height: 160) }
                         Slider(value: Binding(get: { player.position }, set: { player.seek(to: $0) }), in: 0...max(player.duration, 1)).tint(QuietoColor.mint)
                         HStack { Text(time(player.position)); Spacer(); Text("−\(time(max(0, player.duration - player.position)))") }.font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
@@ -210,8 +210,8 @@ struct NowPlayingView: View {
                             Image(systemName: "timer")
                             Menu { ForEach([5, 10, 20, 30, 45, 60], id: \.self) { min in Button("\(min) min") { player.setSleepTimer(minutes: min) } }; Button("Désactiver") { player.setSleepTimer(minutes: nil) } } label: { Text(player.timerRemaining.map { "Arrêt dans \(Int(ceil($0 / 60))) min" } ?? "Minuterie") }
                         }.font(QuietoFont.sans(14, weight: .semibold)).foregroundStyle(QuietoColor.mint)
-                        if let ambience = player.selectedAmbience { Text("Ambiance · \(ambience.title.quietoLocalized)").font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary) }
-                        Text(session.transcript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(5).frame(maxWidth: 560, alignment: .leading)
+                        if let ambience = player.selectedAmbience { Text("\("Ambiance".quietoLocalized) · \(ambience.title.quietoLocalized)").font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary) }
+                        Text(session.localizedTranscript).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).lineSpacing(5).frame(maxWidth: 560, alignment: .leading)
                     }.padding(.horizontal, 22).padding(.bottom, 38)
                 }
             } else { EmptyState(title: "Aucune séance", message: "Choisis une séance pour commencer.") }
@@ -246,12 +246,12 @@ struct BreathingVisual: View {
                     Circle().stroke(QuietoColor.mint.opacity(0.22), lineWidth: 2).padding(18)
                     Circle().fill(QuietoColor.mint.opacity(0.16)).frame(width: 132, height: 132).scaleEffect(reduceMotion ? 0.82 : scale)
                     Circle().fill(QuietoColor.mint).frame(width: 14, height: 14).offset(y: -62).rotationEffect(.degrees(p * 360))
-                    Text(state.label).font(QuietoFont.serif(24, weight: .semibold))
+                    Text(state.label.quietoLocalized).font(QuietoFont.serif(24, weight: .semibold))
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            Text("Cycle \(state.cycle) · \(session.breathingPattern?.rawValue ?? "Respiration guidée")").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+            Text("\("Cycle".quietoLocalized) \(state.cycle) · \((session.breathingPattern?.rawValue ?? "Respiration guidée").quietoLocalized)").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
         }.animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: state.label + String(format: "%.1f", state.progress))
     }
 }
 
-struct EmptyState: View { let title: String; let message: String; var body: some View { VStack(spacing: 8) { Image(systemName: "magnifyingglass").font(.title2).foregroundStyle(QuietoColor.mint); Text(title).font(QuietoFont.serif(21, weight: .semibold)); Text(message).font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center) }.frame(maxWidth: .infinity).padding(28).background(QuietoColor.surfaceRaised, in: RoundedRectangle(cornerRadius: 14)) } }
+struct EmptyState: View { let title: String; let message: String; var body: some View { VStack(spacing: 8) { Image(systemName: "magnifyingglass").font(.title2).foregroundStyle(QuietoColor.mint); Text(title.quietoLocalized).font(QuietoFont.serif(21, weight: .semibold)); Text(message.quietoLocalized).font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center) }.frame(maxWidth: .infinity).padding(28).background(QuietoColor.surfaceRaised, in: RoundedRectangle(cornerRadius: 14)) } }

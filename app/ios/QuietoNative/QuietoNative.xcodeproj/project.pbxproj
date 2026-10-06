@@ -187,6 +187,7 @@
 		00620E263CA3D6F18B07B908 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		038649441517FF32870ABB6A /* session-actualite_3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-actualite_3.png"; sourceTree = "<group>"; };
 		08A9C13EFE4F75A0A608D479 /* session-decouverte_1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-decouverte_1.png"; sourceTree = "<group>"; };
+		092BA4FF12EC41C42F026743 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		0AC5E1093A0D890E09D62DA5 /* QuietoSpeechRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuietoSpeechRenderer.swift; sourceTree = "<group>"; };
 		0B153C3ACB1F9BD5CE182D76 /* need-conflict.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "need-conflict.png"; sourceTree = "<group>"; };
 		0B6720F9760549759C265D1F /* LouaneViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LouaneViewModel.swift; sourceTree = "<group>"; };
@@ -314,6 +315,7 @@
 		C3F8648E9CBBFA350362FF01 /* session-afternoon_fog.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-afternoon_fog.png"; sourceTree = "<group>"; };
 		C544D8B2071BD11E6C9B2F05 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/Extended.strings; sourceTree = "<group>"; };
 		C55CCF2D93FBF8D5935C6B7F /* session-after_lunch_energy.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-after_lunch_energy.png"; sourceTree = "<group>"; };
+		C82BF052DA8944E154BD7797 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Extended.strings; sourceTree = "<group>"; };
 		C9B7872ADD946641318E0660 /* session-breathing_1.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-breathing_1.png"; sourceTree = "<group>"; };
 		CA62A88D457D2DCEB6F30DDB /* SuperwallService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperwallService.swift; sourceTree = "<group>"; };
 		CA90FC575DA58C5507E7596A /* LouaneServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LouaneServices.swift; sourceTree = "<group>"; };
@@ -345,6 +347,7 @@
 		E61424AC2EA0109BF03465CB /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
 		E7BB23C336E6648798991619 /* QuietoNative.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = QuietoNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E907353865BD44E699D45027 /* ambience-campfire.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "ambience-campfire.mp3"; sourceTree = "<group>"; };
+		E9193852FBD4A1A337DB7C12 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Catalog.strings; sourceTree = "<group>"; };
 		E95D51CB39BD402012B18403 /* session-meditation_14.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-meditation_14.png"; sourceTree = "<group>"; };
 		EC1C5696368B6289303DE476 /* session-stress_5.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-stress_5.png"; sourceTree = "<group>"; };
 		EEAF04EDB063092517D73EDE /* QuietoSessionDetailViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuietoSessionDetailViews.swift; sourceTree = "<group>"; };
@@ -702,6 +705,7 @@
 				de,
 				en,
 				es,
+				fr,
 				ja,
 				ko,
 			);
@@ -926,6 +930,7 @@
 				C544D8B2071BD11E6C9B2F05 /* de */,
 				461BDE45FC62CC2DA31C7BCE /* en */,
 				B051153244C030149005D296 /* es */,
+				C82BF052DA8944E154BD7797 /* fr */,
 				77E3CC5DF2AFDE7F0684756B /* ja */,
 				7B05183F4B6A7E0C343C9A65 /* ko */,
 			);
@@ -938,6 +943,7 @@
 				E0113FD4B7E8CEB0F57FA8E1 /* de */,
 				00620E263CA3D6F18B07B908 /* en */,
 				79999B83AAC8CD9720FD0D9F /* es */,
+				092BA4FF12EC41C42F026743 /* fr */,
 				9E61ADC3074542A05BAD4E96 /* ja */,
 				31016C3069E3DD1C785A14EC /* ko */,
 			);
@@ -950,6 +956,7 @@
 				964DCA510FAD1772AF5B112A /* de */,
 				F8CC31475AAB2887D7AE34DC /* en */,
 				127C86C8E3FCFEFB9006769B /* es */,
+				E9193852FBD4A1A337DB7C12 /* fr */,
 				2881957D3E19DF58B565D684 /* ja */,
 				B268DFBCA555725944647E4C /* ko */,
 			);

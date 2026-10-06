@@ -211,8 +211,8 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     private func updateNowPlaying() {
         guard let session = currentSession else { return }
         var info: [String: Any] = [
-            MPMediaItemPropertyTitle: session.title,
-            MPMediaItemPropertyArtist: "Quieto · \(session.practiceType.rawValue)",
+            MPMediaItemPropertyTitle: session.title.quietoLocalized,
+            MPMediaItemPropertyArtist: "Quieto · \(session.practiceType.rawValue.quietoLocalized)",
             MPMediaItemPropertyPlaybackDuration: duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1 : 0

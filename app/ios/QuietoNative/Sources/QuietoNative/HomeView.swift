@@ -25,7 +25,7 @@ struct HomeView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 92) }
         .overlay(alignment: .top) {
             if let lastAction = model.lastAction {
-                Text(lastAction)
+                Text(lastAction.quietoLocalized)
                     .font(QuietoFont.sans(13, weight: .medium))
                     .foregroundStyle(QuietoColor.background)
                     .padding(.horizontal, 14).padding(.vertical, 9)
@@ -43,7 +43,7 @@ struct HomeView: View {
         if model.snapshot.isLoading {
             ProgressView().tint(QuietoColor.mint).frame(maxWidth: .infinity).padding(.vertical, 80)
         } else if let errorMessage = model.snapshot.errorMessage {
-            ErrorState(message: errorMessage) { Task { await model.refresh() } }
+            ErrorState(message: errorMessage.quietoLocalized) { Task { await model.refresh() } }
         } else {
             if model.snapshot.isOffline { OfflineBanner() }
             NextSessionCard(session: model.snapshot.nextSession) { session in model.play(session, source: "home_next") }
@@ -72,9 +72,9 @@ private struct HomeHeader: View {
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
-        case 5..<12: return "Bonjour"
-        case 12..<18: return "Bon après-midi"
-        default: return "Bonsoir"
+        case 5..<12: return "Bonjour".quietoLocalized
+        case 12..<18: return "Bon après-midi".quietoLocalized
+        default: return "Bonsoir".quietoLocalized
         }
     }
 
@@ -113,7 +113,7 @@ private struct ErrorState: View {
         QuietoCard {
             VStack(alignment: .leading, spacing: QuietoSpacing.sm) {
                 Label("Accueil indisponible", systemImage: "moon.zzz").font(QuietoFont.sans(16, weight: .semibold))
-                Text(message).font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
+                Text(message.quietoLocalized).font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
                 QuietoOutlineButton(title: "Réessayer", systemImage: "arrow.clockwise", action: retry)
             }
         }

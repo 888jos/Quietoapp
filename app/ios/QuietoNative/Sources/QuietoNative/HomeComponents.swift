@@ -19,7 +19,7 @@ struct NextSessionCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     VStack(alignment: .leading, spacing: 6) {
                         Text(session.title.quietoLocalized).font(QuietoFont.serif(27, weight: .medium)).foregroundStyle(QuietoColor.textPrimary)
-                        Text("\(session.durationMinutes) min · Étape 3 sur 7").font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
+                        Text("\(session.durationMinutes) min · \("Étape 3 sur 7".quietoLocalized)").font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
                         QuietoPrimaryButton(title: "Commencer ma séance", systemImage: "play.fill") { onPlay(session) }
                             .padding(.top, 8)
                     }
@@ -62,7 +62,7 @@ struct ProgramSummary: View {
                     Text(program.title.quietoLocalized).font(QuietoFont.serif(21, weight: .medium))
                     ProgressSegments(completed: program.completedDays.count, total: program.totalDays)
                     HStack {
-                        Text("\(program.completedDays.count) séance\(program.completedDays.count == 1 ? "" : "s") terminée\(program.completedDays.count == 1 ? "" : "s")")
+                        Text(String(format: "%d séances terminées".quietoLocalized, program.completedDays.count))
                         Spacer()
                         Button("Adapter mon rythme", action: onAdjust)
                             .foregroundStyle(QuietoColor.mint)
@@ -119,7 +119,7 @@ struct ExpressSection: View {
                             Image(systemName: session.id == "breathing_1" ? "wind" : "leaf").font(.system(size: 24, weight: .light)).foregroundStyle(QuietoColor.textPrimary)
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(session.title.quietoLocalized).font(QuietoFont.serif(17, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary).lineLimit(1)
-                                Text(session.subtitle).font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
+                                Text(session.subtitle.quietoLocalized).font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
                             }
                             Spacer(minLength: 0)
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(QuietoColor.textSecondary)
@@ -188,7 +188,7 @@ private struct NeedExplorerView: View {
                     Button { selection = need } label: {
                         VStack(alignment: .leading, spacing: 9) {
                             QuietoAssetImage(need.imageName, contentMode: .fill).frame(height: 106).clipped().clipShape(RoundedRectangle(cornerRadius: 13))
-                            Text(need.rawValue).font(QuietoFont.serif(18, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary).fixedSize(horizontal: false, vertical: true)
+                            Text(need.rawValue.quietoLocalized).font(QuietoFont.serif(18, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary).fixedSize(horizontal: false, vertical: true)
                         }.frame(maxWidth: .infinity, minHeight: 168, alignment: .topLeading).padding(9)
                             .background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 16)).overlay { RoundedRectangle(cornerRadius: 16).stroke(QuietoColor.divider) }
                     }.buttonStyle(.plain)
@@ -200,10 +200,10 @@ private struct NeedExplorerView: View {
     private func recommendations(for need: QuietoNeed) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             QuietoAssetImage(need.imageName, contentMode: .fill).frame(maxWidth: .infinity).frame(height: 190).clipped().clipShape(RoundedRectangle(cornerRadius: 18))
-            Text(need.rawValue).font(QuietoFont.serif(30, weight: .semibold))
-            Text(need.explanation).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary)
+            Text(need.rawValue.quietoLocalized).font(QuietoFont.serif(30, weight: .semibold))
+            Text(need.explanation.quietoLocalized).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary)
             if let planned = model.snapshot.nextSession {
-                Label("Ta séance prévue « \(planned.title) » reste inchangée.", systemImage: "checkmark.shield")
+                Label(String(format: "Ta séance prévue « %@ » reste inchangée.".quietoLocalized, planned.title.quietoLocalized), systemImage: "checkmark.shield")
                     .font(QuietoFont.sans(13, weight: .medium)).foregroundStyle(QuietoColor.mint)
             }
             Text("Séances proposées").quietoSectionTitle()
@@ -266,7 +266,7 @@ struct RecentSessionCard: View {
                     QuietoAssetImage(session.imageName, contentMode: .fill).frame(width: 76, height: 66).clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     VStack(alignment: .leading, spacing: 5) {
                         Text(session.title.quietoLocalized).font(QuietoFont.serif(20, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
-                        Text("\(session.durationMinutes) min · Écoutée hier").font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
+                        Text("\(session.durationMinutes) min · \("Écoutée hier".quietoLocalized)").font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
                     }
                     Spacer()
                     Image(systemName: "play.fill").font(.system(size: 15, weight: .semibold)).foregroundStyle(QuietoColor.background).frame(width: 34, height: 34).background(QuietoColor.textPrimary, in: Circle())

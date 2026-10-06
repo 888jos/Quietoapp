@@ -33,7 +33,7 @@ struct ProfileView: View {
         .sheet(isPresented: Binding(get: { model.exportURL != nil }, set: { if !$0 { model.exportURL = nil } })) {
             if let url = model.exportURL { ShareLink(item: url) { Label("Partager mon export", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity, minHeight: 52) }.buttonStyle(.borderedProminent).tint(QuietoColor.mint).foregroundStyle(QuietoColor.background).padding() }
         }
-        .alert("Quieto", isPresented: Binding(get: { model.feedback != nil }, set: { if !$0 { model.feedback = nil } })) { Button("OK") {} } message: { Text(model.feedback ?? "") }
+        .alert("Quieto", isPresented: Binding(get: { model.feedback != nil }, set: { if !$0 { model.feedback = nil } })) { Button("OK") {} } message: { Text((model.feedback ?? "").quietoLocalized) }
     }
 
     private var header: some View {
@@ -65,7 +65,7 @@ struct ProfileView: View {
         }
     }
 
-    private func stat(_ icon: String, value: String, label: String) -> some View { HStack { Image(systemName: icon).font(.title2).foregroundStyle(QuietoColor.mint); VStack(alignment: .leading) { Text(value).font(QuietoFont.serif(26, weight: .semibold)); Text(label).font(QuietoFont.sans(14)) } }.frame(maxWidth: .infinity) }
+    private func stat(_ icon: String, value: String, label: String) -> some View { HStack { Image(systemName: icon).font(.title2).foregroundStyle(QuietoColor.mint); VStack(alignment: .leading) { Text(value).font(QuietoFont.serif(26, weight: .semibold)); Text(label.quietoLocalized).font(QuietoFont.sans(14)) } }.frame(maxWidth: .infinity) }
 
     private var preferenceSection: some View {
         section("Tes préférences", rows: [
@@ -114,27 +114,27 @@ struct ProfileDestinationView: View {
     @State private var selectedTime = Date()
 
     var body: some View {
-        NavigationStack { content.navigationTitle(title).navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fermer") { dismiss() } } } }
+        NavigationStack { content.navigationTitle(Text(title.quietoLocalized)).navigationBarTitleDisplayMode(.inline).toolbar { ToolbarItem(placement: .cancellationAction) { Button("Fermer") { dismiss() } } } }
     }
     private var title: String { switch destination { case .profile: "Mon profil"; case .progress: "Ma progression"; case .reminders: "Rappels"; case .audio: "Audio & ambiances"; case .accessibility: "Accessibilité"; case .health: "Apple Santé"; case .account: "Mon compte"; case .privacy: "Données & autorisations"; case .louaneMemory: "Mémoire de Louane"; case .delete: "Supprimer mon compte"; case .faq: "Questions fréquentes"; case .legal: "Conditions & confidentialité" } }
     @ViewBuilder private var content: some View {
         switch destination {
         case .profile: Form { Section("Identité") { TextField("Prénom", text: $name); Button("Enregistrer") { model.saveName(name); dismiss() } } }.onAppear { name = model.firstName }
-        case .progress: Form { Section("Cette semaine") { Label("\(model.completedSessions) séance\(model.completedSessions == 1 ? "" : "s") terminée\(model.completedSessions == 1 ? "" : "s")", systemImage: "leaf"); Label("\(model.listenedMinutes) minute\(model.listenedMinutes == 1 ? "" : "s") réellement écoutée\(model.listenedMinutes == 1 ? "" : "s")", systemImage: "clock"); Text("Ces chiffres proviennent des séances terminées par le lecteur natif.").foregroundStyle(.secondary) } }
+        case .progress: Form { Section("Cette semaine") { Label(String(format: "%d séances terminées".quietoLocalized, model.completedSessions), systemImage: "leaf"); Label(String(format: "%d minutes réellement écoutées".quietoLocalized, model.listenedMinutes), systemImage: "clock"); Text("Ces chiffres proviennent des séances terminées par le lecteur natif.").foregroundStyle(.secondary) } }
         case .reminders: Form { Section { Toggle("Rappel quotidien", isOn: Binding(get: { model.remindersEnabled }, set: { value in Task { await model.setReminders(value) } })); DatePicker("Heure", selection: $selectedTime, displayedComponents: .hourAndMinute).onChange(of: selectedTime) { _, value in let c = Calendar.current; model.setReminderTime(hour: c.component(.hour, from: value), minute: c.component(.minute, from: value)) } } footer: { Text("Un seul rappel par jour, dans ton fuseau horaire. L’autorisation système est demandée uniquement à l’activation.") } }.onAppear { selectedTime = Calendar.current.date(from: DateComponents(hour: model.reminderHour, minute: model.reminderMinute)) ?? .now }
         case .audio: Form { Section { Toggle("Ambiance musicale", isOn: $model.ambientMusic); Button("Enregistrer") { model.saveAmbient(); dismiss() } } footer: { Text("L’ambiance reste désactivée tant qu’un mix audio réel n’est pas disponible.") } }
         case .accessibility: Form { Section { Toggle("Réduire les animations", isOn: $model.reduceMotion); Toggle("Texte plus grand dans Quieto", isOn: $model.largerText); Button("Enregistrer") { model.saveAccessibility(); dismiss() } } }
         case .health: Form { Section("Apple Santé") { Text("Quieto peut écrire les minutes de pleine conscience uniquement si HealthKit et ses autorisations sont configurés."); Button("Vérifier la connexion") { model.requestHealth() } }.foregroundStyle(QuietoColor.textPrimary) }
         case .account: Form {
             Section("État") {
-                Text(model.isAnonymous ? "Tu utilises Quieto sans compte." : "Compte connecté")
+                Text((model.isAnonymous ? "Tu utilises Quieto sans compte." : "Compte connecté").quietoLocalized)
                 if model.isAnonymous {
                     Button("Continuer avec Apple") { model.signInWithApple() }
                 } else {
                     Button("Se déconnecter", role: .destructive) { model.signOut() }
                 }
             }
-            Section("Abonnement") { Text(model.subscriptionState.rawValue); Button("Gérer mon abonnement") { model.manageSubscription() }; Button("Restaurer les achats") { model.restorePurchases() } }
+            Section("Abonnement") { Text(model.subscriptionState.rawValue.quietoLocalized); Button("Gérer mon abonnement") { model.manageSubscription() }; Button("Restaurer les achats") { model.restorePurchases() } }
         }
         case .privacy: Form { Section { Text("Le profil, la progression, les conversations non temporaires et la mémoire sont synchronisés avec Supabase quand il est configuré."); Button("Préparer mon export") { model.exportData() } } header: { Text("Données et autorisations") } footer: { Text("Les données historiques de migration Firebase et RevenueCat restent conservées côté serveur jusqu’à validation de la migration et selon les obligations applicables.") } }
         case .louaneMemory: Form { Section("Ce que Louane retient") { TextEditor(text: $model.memoryText).frame(minHeight: 150); Button("Enregistrer") { model.saveMemory() }; Button("Supprimer la mémoire", role: .destructive) { model.deleteMemory() } } }.task { await model.loadMemory() }

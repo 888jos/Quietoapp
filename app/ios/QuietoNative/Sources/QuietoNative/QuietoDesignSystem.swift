@@ -1,7 +1,24 @@
 import SwiftUI
 
+enum QuietoLocalization {
+    static var languageCode: String {
+        let identifier = Bundle.main.preferredLocalizations.first ?? Locale.preferredLanguages.first ?? "fr"
+        return Locale(identifier: identifier).language.languageCode?.identifier ?? "fr"
+    }
+    static var isFrench: Bool { languageCode == "fr" }
+}
+
 extension String {
-    var quietoLocalized: String { NSLocalizedString(self, comment: "") }
+    /// Looks up product copy across the three localization tables used by Quieto.
+    /// `NSLocalizedString` only searches Localizable.strings by default, which used
+    /// to leave catalogue titles in French while the surrounding UI was translated.
+    var quietoLocalized: String {
+        for table in ["Localizable", "Catalog", "Extended"] {
+            let value = Bundle.main.localizedString(forKey: self, value: nil, table: table)
+            if value != self { return value }
+        }
+        return self
+    }
 }
 
 enum QuietoColor {
@@ -70,7 +87,7 @@ struct QuietoPrimaryButton: View {
         Button(action: action) {
             HStack(spacing: 10) {
                 if let systemImage { Image(systemName: systemImage).font(.system(size: 15, weight: .semibold)) }
-                Text(title).font(QuietoFont.sans(16, weight: .semibold))
+                Text(title.quietoLocalized).font(QuietoFont.sans(16, weight: .semibold))
             }
             .foregroundStyle(QuietoColor.background)
             .frame(maxWidth: .infinity)
@@ -91,7 +108,7 @@ struct QuietoOutlineButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 8) {
-                Text(title).font(QuietoFont.sans(15, weight: .medium))
+                Text(title.quietoLocalized).font(QuietoFont.sans(15, weight: .medium))
                 if let systemImage { Image(systemName: systemImage).font(.system(size: 13, weight: .semibold)) }
             }
             .foregroundStyle(QuietoColor.textPrimary)
@@ -146,6 +163,6 @@ struct LouaneMark: View {
         HStack(spacing: size * 0.12) {
             Capsule().fill(color).frame(width: size * 0.28, height: size * 0.78).rotationEffect(.degrees(28))
             Capsule().fill(color.opacity(0.72)).frame(width: size * 0.28, height: size * 0.78).rotationEffect(.degrees(-28))
-        }.frame(width: size, height: size).accessibilityLabel("Symbole de Louane")
+        }.frame(width: size, height: size).accessibilityLabel("Symbole de Louane".quietoLocalized)
     }
 }

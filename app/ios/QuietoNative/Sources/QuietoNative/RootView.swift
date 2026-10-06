@@ -56,8 +56,8 @@ struct NativePlaceholderView: View {
             QuietoColor.background.ignoresSafeArea()
             VStack(spacing: QuietoSpacing.md) {
                 Image(systemName: tab.systemImage).font(.system(size: 30, weight: .light)).foregroundStyle(QuietoColor.mint)
-                Text(tab.rawValue).font(QuietoFont.serif(32, weight: .semibold))
-                Text(message).font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center).padding(.horizontal, 32)
+                Text(tab.rawValue.quietoLocalized).font(QuietoFont.serif(32, weight: .semibold))
+                Text(message.quietoLocalized).font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center).padding(.horizontal, 32)
             }
         }
     }

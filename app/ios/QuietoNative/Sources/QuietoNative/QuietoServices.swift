@@ -170,7 +170,7 @@ final class HomeViewModel: ObservableObject {
     func play(_ session: QuietoSession, source: String) {
         services.playback.play(session)
         services.analytics.track("session_played", properties: ["session": session.id, "source": source])
-        lastAction = "Lecture de « \(session.title) »"
+        lastAction = String(format: "Lecture de « %@ »".quietoLocalized, session.title.quietoLocalized)
     }
 
     func sessions(for need: QuietoNeed) -> [QuietoSession] {
@@ -185,7 +185,7 @@ final class HomeViewModel: ObservableObject {
     func play(_ ambience: QuietoAmbience, source: String) {
         services.playback.playAmbience(ambience)
         services.analytics.track("ambience_played", properties: ["ambience": ambience.id, "source": source])
-        lastAction = "Ambiance « \(ambience.title) »"
+        lastAction = String(format: "Ambiance « %@ »".quietoLocalized, ambience.title.quietoLocalized)
     }
 
     func openProgram() {

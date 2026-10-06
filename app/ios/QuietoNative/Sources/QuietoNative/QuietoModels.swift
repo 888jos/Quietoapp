@@ -82,6 +82,7 @@ struct QuietoSession: Identifiable, Equatable {
     }
 
     var readerMode: QuietoReaderMode { practiceType == .breathing ? .breathing : .guidedVoice }
+    var isDownloadAvailable: Bool { readerMode == .guidedVoice && !audioFile.isEmpty }
 
     var localizedIntention: String {
         let translated = intention.quietoLocalized

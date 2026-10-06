@@ -17,6 +17,7 @@ final class ProfileViewModel: ObservableObject {
     @Published var remindersEnabled: Bool
     @Published var reminderHour: Int
     @Published var reminderMinute: Int
+    @Published var selectedReminderDays: Set<Int>
     @Published var ambientMusic = false
     @Published var reduceMotion: Bool
     @Published var largerText: Bool
@@ -36,6 +37,8 @@ final class ProfileViewModel: ObservableObject {
         remindersEnabled = defaults.bool(forKey: "quieto.profile.remindersEnabled")
         reminderHour = defaults.object(forKey: "quieto.profile.reminderHour") as? Int ?? 21
         reminderMinute = defaults.object(forKey: "quieto.profile.reminderMinute") as? Int ?? 30
+        let storedDays = defaults.array(forKey: "quieto.profile.reminderDays") as? [Int] ?? Array(1...7)
+        selectedReminderDays = Set(storedDays)
         ambientMusic = defaults.bool(forKey: "quieto.profile.ambientMusic")
         reduceMotion = defaults.bool(forKey: "quieto.profile.reduceMotion")
         largerText = defaults.bool(forKey: "quieto.profile.largerText")
@@ -82,7 +85,23 @@ final class ProfileViewModel: ObservableObject {
         defaults.set(hour, forKey: "quieto.profile.reminderHour")
         defaults.set(minute, forKey: "quieto.profile.reminderMinute")
         if remindersEnabled { scheduleReminder() }
+        syncPreferences()
         feedback = "Horaire enregistré"
+    }
+
+    func toggleReminderDay(_ weekday: Int) {
+        if selectedReminderDays.contains(weekday) {
+            guard selectedReminderDays.count > 1 else {
+                feedback = "Choisis au moins un jour pour le rappel."
+                return
+            }
+            selectedReminderDays.remove(weekday)
+        } else {
+            selectedReminderDays.insert(weekday)
+        }
+        defaults.set(selectedReminderDays.sorted(), forKey: "quieto.profile.reminderDays")
+        if remindersEnabled { scheduleReminder() }
+        syncPreferences()
     }
 
     func setReminders(_ enabled: Bool) async {
@@ -98,11 +117,13 @@ final class ProfileViewModel: ObservableObject {
             remindersEnabled = true
             defaults.set(true, forKey: "quieto.profile.remindersEnabled")
             scheduleReminder()
+            syncPreferences()
             feedback = "Rappel activé"
         } else {
             remindersEnabled = false
             defaults.set(false, forKey: "quieto.profile.remindersEnabled")
-            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [reminderID])
+            removeReminderRequests()
+            syncPreferences()
             feedback = "Rappel désactivé"
         }
     }
@@ -112,24 +133,35 @@ final class ProfileViewModel: ObservableObject {
         content.title = "Quieto"
         content.body = "Une pause quand tu en as besoin."
         content.sound = .default
-        var components = DateComponents()
-        components.calendar = Calendar.current
-        components.timeZone = .autoupdatingCurrent
-        components.hour = reminderHour; components.minute = reminderMinute
-        let request = UNNotificationRequest(identifier: reminderID, content: content, trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true))
         let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: [reminderID])
-        center.add(request)
+        removeReminderRequests()
+        for weekday in selectedReminderDays.sorted() {
+            var components = DateComponents()
+            components.calendar = Calendar.autoupdatingCurrent
+            components.timeZone = .autoupdatingCurrent
+            components.weekday = weekday
+            components.hour = reminderHour
+            components.minute = reminderMinute
+            let request = UNNotificationRequest(identifier: "\(reminderID).\(weekday)", content: content, trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: true))
+            center.add(request)
+        }
+    }
+
+    private func removeReminderRequests() {
+        let identifiers = [reminderID] + (1...7).map { "\(reminderID).\($0)" }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 
     func saveAccessibility() {
         defaults.set(reduceMotion, forKey: "quieto.profile.reduceMotion")
         defaults.set(largerText, forKey: "quieto.profile.largerText")
+        syncPreferences()
         feedback = "Accessibilité enregistrée"
     }
 
     func saveAmbient() {
         defaults.set(ambientMusic, forKey: "quieto.profile.ambientMusic")
+        syncPreferences()
         feedback = "Audio enregistré"
     }
 
@@ -181,6 +213,42 @@ final class ProfileViewModel: ObservableObject {
             defaults.set(remoteName, forKey: "quieto.profile.firstName")
         }
         remoteSubscriptionState = (try? await backend.subscriptionState()) ?? (QuietoSuperwallService.shared.isConfigured ? .inactive : .unavailable)
+        if let remote = try? await backend.loadPreferences() {
+            remindersEnabled = remote.reminderEnabled
+            selectedReminderDays = Set(remote.reminderDays)
+            reminderHour = remote.reminderHour
+            reminderMinute = remote.reminderMinute
+            ambientMusic = remote.ambientLevel > 0
+            reduceMotion = remote.reduceMotion
+            largerText = remote.largerText
+            persistPreferencesLocally()
+            if remindersEnabled { scheduleReminder() }
+        }
+    }
+
+    private func persistPreferencesLocally() {
+        defaults.set(remindersEnabled, forKey: "quieto.profile.remindersEnabled")
+        defaults.set(reminderHour, forKey: "quieto.profile.reminderHour")
+        defaults.set(reminderMinute, forKey: "quieto.profile.reminderMinute")
+        defaults.set(selectedReminderDays.sorted(), forKey: "quieto.profile.reminderDays")
+        defaults.set(ambientMusic, forKey: "quieto.profile.ambientMusic")
+        defaults.set(reduceMotion, forKey: "quieto.profile.reduceMotion")
+        defaults.set(largerText, forKey: "quieto.profile.largerText")
+    }
+
+    private func syncPreferences() {
+        persistPreferencesLocally()
+        let value = QuietoRemotePreferences(
+            reminderEnabled: remindersEnabled,
+            reminderDays: selectedReminderDays.sorted(),
+            reminderHour: reminderHour,
+            reminderMinute: reminderMinute,
+            reminderTimezone: TimeZone.autoupdatingCurrent.identifier,
+            ambientLevel: ambientMusic ? 0.28 : 0,
+            reduceMotion: reduceMotion,
+            largerText: largerText
+        )
+        Task { try? await backend.savePreferences(value) }
     }
 
     func exportData() {

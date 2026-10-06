@@ -4,6 +4,12 @@ import SwiftUI
 final class ProgramViewModel: ObservableObject {
     @Published var feedback: String?
     @Published var rhythm: ProgramRhythm
+    @Published private(set) var sessions: [QuietoSession]
+    @Published private(set) var completedIDs: Set<String> = []
+    @Published private(set) var title = "Laisser la journée derrière soi"
+    @Published private(set) var isLoading = false
+    @Published private(set) var loadError: String?
+    @Published private(set) var hasProgram = true
 
     enum ProgramRhythm: String, CaseIterable, Identifiable {
         case gentle = "Doux"
@@ -21,28 +27,86 @@ final class ProgramViewModel: ObservableObject {
         var localizedDetail: String { detail.quietoLocalized }
     }
 
-    let sessions: [QuietoSession]
     private let defaults: UserDefaults
+    private let catalog: SessionCatalog
+    private let backend: QuietoSupabaseService
+    private var remoteProgramID: UUID?
+    private let preferredIDs = ["decouverte_1", "breathing_1", "decouverte_2", "stress_4", "emotion_1", "sleep_2", "decouverte_3"]
 
-    init(catalog: SessionCatalog = SessionCatalog(), defaults: UserDefaults = .standard) {
+    init(catalog: SessionCatalog = SessionCatalog(), defaults: UserDefaults = .standard, backend: QuietoSupabaseService = .shared) {
         self.defaults = defaults
-        let preferred = ["decouverte_1", "breathing_1", "decouverte_2", "stress_4", "emotion_1", "sleep_2", "decouverte_3"]
-        sessions = preferred.compactMap { id in catalog.sessions.first { $0.id == id } }
+        self.catalog = catalog
+        self.backend = backend
+        sessions = preferredIDs.compactMap { id in catalog.sessions.first { $0.id == id } }
         rhythm = ProgramRhythm(rawValue: defaults.string(forKey: "quieto.program.rhythm") ?? "") ?? .regular
+        refreshLocalProgress()
     }
 
-    var completedIDs: Set<String> {
+    func refreshLocalProgress() {
         let events = defaults.array(forKey: "quieto.native.activity.events") as? [[String: Any]] ?? []
-        return Set(events.compactMap { $0["id"] as? String })
+        completedIDs = Set(events.compactMap { $0["id"] as? String })
     }
 
     var completedCount: Int { sessions.filter { completedIDs.contains($0.id) }.count }
     var nextSession: QuietoSession? { sessions.first { !completedIDs.contains($0.id) } }
 
+    func load() async {
+        refreshLocalProgress()
+        guard backend.client != nil else {
+            hasProgram = true
+            loadError = "Programme disponible hors ligne. La synchronisation reprendra automatiquement."
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            if let remote = try await backend.loadActiveProgram(catalog: catalog) {
+                remoteProgramID = remote.id
+                title = remote.title
+                sessions = remote.sessions
+                completedIDs.formUnion(remote.completedSessionIDs)
+                if let raw = remote.rhythm, let value = ProgramRhythm(rawValue: raw) { rhythm = value }
+                hasProgram = !sessions.isEmpty
+            } else {
+                remoteProgramID = nil
+                sessions = []
+                hasProgram = false
+            }
+            loadError = nil
+        } catch {
+            hasProgram = true
+            sessions = preferredIDs.compactMap { id in catalog.sessions.first { $0.id == id } }
+            loadError = "Le programme local reste disponible ; la synchronisation a échoué."
+        }
+    }
+
+    func createProgram() async {
+        sessions = preferredIDs.compactMap { id in catalog.sessions.first { $0.id == id } }
+        hasProgram = true
+        guard backend.client != nil else {
+            feedback = "Programme créé sur cet iPhone. Il sera synchronisé plus tard."
+            return
+        }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            remoteProgramID = try await backend.createProgram(title: title, sessionIDs: sessions.map(\.id), rhythm: rhythm.rawValue)
+            feedback = "Programme créé"
+        } catch {
+            feedback = "Programme créé sur cet iPhone ; la synchronisation reprendra plus tard."
+        }
+    }
+
     func saveRhythm(_ value: ProgramRhythm) {
         rhythm = value
         defaults.set(value.rawValue, forKey: "quieto.program.rhythm")
         feedback = String(format: "Rythme enregistré : %@.".quietoLocalized, value.localizedDetail.lowercased())
+        if let remoteProgramID {
+            Task {
+                do { try await backend.updateProgramRhythm(programID: remoteProgramID, rhythm: value.rawValue) }
+                catch { feedback = "Rythme enregistré sur cet iPhone ; la synchronisation reprendra plus tard." }
+            }
+        }
     }
 }
 
@@ -65,9 +129,18 @@ struct ProgramView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: QuietoSpacing.lg) {
                         header
-                        progressCard
-                        sessionsList
-                        rhythmCard
+                        if model.isLoading && model.sessions.isEmpty {
+                            ProgressView("Chargement du programme…".quietoLocalized).tint(QuietoColor.mint).frame(maxWidth: .infinity).padding(.vertical, 80)
+                        } else if !model.hasProgram {
+                            emptyProgram
+                        } else {
+                            if let error = model.loadError {
+                                Label(error.quietoLocalized, systemImage: "wifi.slash").font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
+                            }
+                            progressCard
+                            sessionsList
+                            rhythmCard
+                        }
                         Color.clear.frame(height: 128)
                     }
                     .frame(maxWidth: QuietoMetrics.contentMaxWidth)
@@ -99,6 +172,25 @@ struct ProgramView: View {
                         .onTapGesture { model.feedback = nil }
                 }
             }
+            .task { await model.load() }
+            .onReceive(NotificationCenter.default.publisher(for: .quietoSessionCompleted)) { _ in
+                model.refreshLocalProgress()
+                Task { await model.load() }
+            }
+        }
+    }
+
+    private var emptyProgram: some View {
+        QuietoCard {
+            VStack(alignment: .leading, spacing: 14) {
+                Image(systemName: "map").font(.system(size: 28)).foregroundStyle(QuietoColor.mint)
+                Text("Commencer un parcours").font(QuietoFont.serif(25, weight: .semibold))
+                Text("Sept étapes alternent méditation, respiration et relaxation. Tu pourras changer le rythme à tout moment.")
+                    .font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary)
+                QuietoPrimaryButton(title: "Créer mon programme", systemImage: "plus") {
+                    Task { await model.createProgram() }
+                }
+            }
         }
     }
 
@@ -116,7 +208,7 @@ struct ProgramView: View {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Laisser la journée derrière soi".quietoLocalized).font(QuietoFont.serif(23, weight: .semibold))
+                        Text(model.title.quietoLocalized).font(QuietoFont.serif(23, weight: .semibold))
                         Text(String(format: "%d séances terminées sur %d".quietoLocalized, model.completedCount, model.sessions.count))
                             .font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
                     }

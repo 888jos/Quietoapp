@@ -19,11 +19,15 @@ private struct QuietoProgressRow: Codable {
     let completedCount: Int
     let lastPlayedAt: Date?
     let isFavorite: Bool
+    let listenedSeconds: Int?
+    let playCount: Int?
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
         case completedCount = "completed_count"
         case lastPlayedAt = "last_played_at"
         case isFavorite = "is_favorite"
+        case listenedSeconds = "listened_seconds"
+        case playCount = "play_count"
     }
 }
 
@@ -31,6 +35,12 @@ private struct QuietoProgramRow: Codable {
     let id: UUID
     let title: String
     let status: String
+    let rawProgram: [String: String]?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, status
+        case rawProgram = "raw_program"
+    }
 }
 
 private struct QuietoProgramStepRow: Codable {
@@ -91,6 +101,132 @@ private struct QuietoMemoryRow: Codable {
     enum CodingKeys: String, CodingKey { case userID = "user_id"; case memoryText = "memory_text"; case consentedAt = "consented_at" }
 }
 
+struct QuietoRemoteProgram: Equatable {
+    let id: UUID
+    let title: String
+    let sessions: [QuietoSession]
+    let completedSessionIDs: Set<String>
+    let rhythm: String?
+}
+
+struct QuietoRemotePreferences: Equatable {
+    let reminderEnabled: Bool
+    let reminderDays: [Int]
+    let reminderHour: Int
+    let reminderMinute: Int
+    let reminderTimezone: String
+    let ambientLevel: Double
+    let reduceMotion: Bool
+    let largerText: Bool
+}
+
+private struct QuietoProgramInsert: Encodable {
+    let id: UUID
+    let userID: String
+    let title: String
+    let status: String
+    let source: String
+    let rawProgram: [String: String]
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, status, source
+        case userID = "user_id"
+        case rawProgram = "raw_program"
+    }
+}
+
+private struct QuietoProgramStepInsert: Encodable {
+    let programID: UUID
+    let stepNumber: Int
+    let sessionID: String
+    let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case status
+        case programID = "program_id"
+        case stepNumber = "step_number"
+        case sessionID = "session_id"
+    }
+}
+
+private struct QuietoProgressUpsert: Encodable {
+    let userID: String
+    let sessionID: String
+    let lastPositionSeconds: Int
+    let listenedSeconds: Int
+    let playCount: Int
+    let completedCount: Int
+    let lastPlayedAt: Date
+    let completedAt: Date?
+    let isFavorite: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case sessionID = "session_id"
+        case lastPositionSeconds = "last_position_seconds"
+        case listenedSeconds = "listened_seconds"
+        case playCount = "play_count"
+        case completedCount = "completed_count"
+        case lastPlayedAt = "last_played_at"
+        case completedAt = "completed_at"
+        case isFavorite = "is_favorite"
+    }
+}
+
+private struct QuietoFavoriteUpsert: Encodable {
+    let userID: String
+    let sessionID: String
+    let isFavorite: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case sessionID = "session_id"
+        case isFavorite = "is_favorite"
+    }
+}
+
+private struct QuietoPreferenceRow: Codable {
+    let userID: String
+    let reminderEnabled: Bool
+    let reminderDays: [Int]
+    let reminderLocalTime: String?
+    let reminderTimezone: String?
+    let ambientLevel: Double
+    let reduceMotion: Bool
+    let largerText: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case reminderEnabled = "reminder_enabled"
+        case reminderDays = "reminder_days"
+        case reminderLocalTime = "reminder_local_time"
+        case reminderTimezone = "reminder_timezone"
+        case ambientLevel = "ambient_level"
+        case reduceMotion = "reduce_motion"
+        case largerText = "larger_text"
+    }
+}
+
+private struct QuietoListeningEventInsert: Encodable {
+    let userID: String
+    let sessionID: String
+    let eventType: String
+    let positionSeconds: Int
+    let listenedDeltaSeconds: Int
+    let clientEventID: UUID
+    let occurredAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case userID = "user_id"
+        case sessionID = "session_id"
+        case eventType = "event_type"
+        case positionSeconds = "position_seconds"
+        case listenedDeltaSeconds = "listened_delta_seconds"
+        case clientEventID = "client_event_id"
+        case occurredAt = "occurred_at"
+    }
+}
+
 extension QuietoSupabaseService {
     func loadHome(catalog: SessionCatalog = SessionCatalog()) async throws -> QuietoHomeSnapshot {
         guard let client else { throw QuietoBackendError.notConfigured }
@@ -136,6 +272,111 @@ extension QuietoSupabaseService {
         case "expired": return .expired
         default: return .inactive
         }
+    }
+
+    func loadActiveProgram(catalog: SessionCatalog = SessionCatalog()) async throws -> QuietoRemoteProgram? {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        let userID = try await client.auth.session.user.id.uuidString
+        let rows: [QuietoProgramRow] = try await client.from("programs")
+            .select("id,title,status,raw_program")
+            .eq("user_id", value: userID)
+            .eq("status", value: "active")
+            .limit(1)
+            .execute().value
+        guard let program = rows.first else { return nil }
+        let steps: [QuietoProgramStepRow] = try await client.from("program_steps")
+            .select("session_id,step_number,status")
+            .eq("program_id", value: program.id.uuidString)
+            .order("step_number", ascending: true)
+            .execute().value
+        let sessions = steps.compactMap { step in catalog.sessions.first { $0.id == step.sessionID } }
+        return QuietoRemoteProgram(
+            id: program.id,
+            title: program.title,
+            sessions: sessions,
+            completedSessionIDs: Set(steps.filter { $0.status == "completed" }.map(\.sessionID)),
+            rhythm: program.rawProgram?["rhythm"]
+        )
+    }
+
+    func createProgram(title: String, sessionIDs: [String], rhythm: String) async throws -> UUID {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        let userID = try await client.auth.session.user.id.uuidString
+        let id = UUID()
+        let program = QuietoProgramInsert(id: id, userID: userID, title: String(title.prefix(120)), status: "active", source: "catalog", rawProgram: ["rhythm": rhythm])
+        try await client.from("programs").insert(program).execute()
+        do {
+            let steps = sessionIDs.enumerated().map { index, sessionID in
+                QuietoProgramStepInsert(programID: id, stepNumber: index + 1, sessionID: sessionID, status: index == 0 ? "available" : "planned")
+            }
+            try await client.from("program_steps").insert(steps).execute()
+            return id
+        } catch {
+            try? await client.from("programs").delete().eq("id", value: id.uuidString).execute()
+            throw error
+        }
+    }
+
+    func updateProgramRhythm(programID: UUID, rhythm: String) async throws {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        try await client.from("programs").update(["raw_program": ["rhythm": rhythm]]).eq("id", value: programID.uuidString).execute()
+    }
+
+    func setFavorite(sessionID: String, favorite: Bool) async throws {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        let userID = try await client.auth.session.user.id.uuidString
+        let row = QuietoFavoriteUpsert(userID: userID, sessionID: sessionID, isFavorite: favorite)
+        try await client.from("session_progress").upsert(row, onConflict: "user_id,session_id").execute()
+    }
+
+    func recordCompletion(sessionID: String, listenedSeconds: Int) async throws {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        let userID = try await client.auth.session.user.id.uuidString
+        let existing: [QuietoProgressRow] = try await client.from("session_progress")
+            .select("session_id,completed_count,last_played_at,is_favorite,listened_seconds,play_count")
+            .eq("user_id", value: userID).eq("session_id", value: sessionID).limit(1).execute().value
+        let now = Date()
+        let row = QuietoProgressUpsert(userID: userID, sessionID: sessionID, lastPositionSeconds: 0, listenedSeconds: (existing.first?.listenedSeconds ?? 0) + max(0, listenedSeconds), playCount: (existing.first?.playCount ?? 0) + 1, completedCount: (existing.first?.completedCount ?? 0) + 1, lastPlayedAt: now, completedAt: now, isFavorite: existing.first?.isFavorite ?? false)
+        try await client.from("session_progress").upsert(row, onConflict: "user_id,session_id").execute()
+        let event = QuietoListeningEventInsert(userID: userID, sessionID: sessionID, eventType: "completed", positionSeconds: max(0, listenedSeconds), listenedDeltaSeconds: max(0, listenedSeconds), clientEventID: UUID(), occurredAt: now)
+        try await client.from("listening_events").insert(event).execute()
+
+        let programs: [QuietoProgramRow] = try await client.from("programs").select("id,title,status,raw_program").eq("user_id", value: userID).eq("status", value: "active").limit(1).execute().value
+        if let program = programs.first {
+            try await client.from("program_steps")
+                .update(["status": "completed", "completed_at": ISO8601DateFormatter().string(from: now)])
+                .eq("program_id", value: program.id.uuidString)
+                .eq("session_id", value: sessionID)
+                .execute()
+            let steps: [QuietoProgramStepRow] = try await client.from("program_steps")
+                .select("session_id,step_number,status")
+                .eq("program_id", value: program.id.uuidString)
+                .order("step_number", ascending: true)
+                .execute().value
+            if !steps.isEmpty && steps.allSatisfy({ $0.status == "completed" || $0.sessionID == sessionID }) {
+                try await client.from("programs").update(["status": "completed", "completed_at": ISO8601DateFormatter().string(from: now)]).eq("id", value: program.id.uuidString).execute()
+            } else if let next = steps.first(where: { $0.status == "planned" }) {
+                try await client.from("program_steps").update(["status": "available"]).eq("program_id", value: program.id.uuidString).eq("step_number", value: next.stepNumber).execute()
+            }
+        }
+    }
+
+    func loadPreferences() async throws -> QuietoRemotePreferences? {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        let userID = try await client.auth.session.user.id.uuidString
+        let rows: [QuietoPreferenceRow] = try await client.from("user_preferences")
+            .select("user_id,reminder_enabled,reminder_days,reminder_local_time,reminder_timezone,ambient_level,reduce_motion,larger_text")
+            .eq("user_id", value: userID).limit(1).execute().value
+        guard let row = rows.first else { return nil }
+        let parts = (row.reminderLocalTime ?? "21:30").split(separator: ":").compactMap { Int($0) }
+        return QuietoRemotePreferences(reminderEnabled: row.reminderEnabled, reminderDays: row.reminderDays, reminderHour: parts.first ?? 21, reminderMinute: parts.dropFirst().first ?? 30, reminderTimezone: row.reminderTimezone ?? TimeZone.autoupdatingCurrent.identifier, ambientLevel: row.ambientLevel, reduceMotion: row.reduceMotion, largerText: row.largerText)
+    }
+
+    func savePreferences(_ preferences: QuietoRemotePreferences) async throws {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        let userID = try await client.auth.session.user.id.uuidString
+        let row = QuietoPreferenceRow(userID: userID, reminderEnabled: preferences.reminderEnabled, reminderDays: preferences.reminderDays, reminderLocalTime: String(format: "%02d:%02d:00", preferences.reminderHour, preferences.reminderMinute), reminderTimezone: preferences.reminderTimezone, ambientLevel: preferences.ambientLevel, reduceMotion: preferences.reduceMotion, largerText: preferences.largerText)
+        try await client.from("user_preferences").upsert(row, onConflict: "user_id").execute()
     }
 
     func track(_ event: String, properties: [String: String]) async {

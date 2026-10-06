@@ -20,4 +20,13 @@ final class SessionsViewModelTests: XCTestCase {
         model.durationFilter = .underFive
         XCTAssertTrue(model.filteredSessions.allSatisfy { $0.durationMinutes <= 5 })
     }
+
+    func testOfflineDownloadRequiresPublishedAudioPath() throws {
+        let sessions = SessionCatalog().sessions.filter { $0.readerMode == .guidedVoice }
+        let available = try XCTUnwrap(sessions.first { !$0.audioFile.isEmpty })
+        let unavailable = try XCTUnwrap(sessions.first { $0.audioFile.isEmpty })
+        XCTAssertTrue(available.isDownloadAvailable)
+        XCTAssertFalse(unavailable.isDownloadAvailable)
+        XCTAssertTrue(SessionCatalog().sessions.filter { $0.readerMode == .breathing }.allSatisfy { !$0.isDownloadAvailable })
+    }
 }

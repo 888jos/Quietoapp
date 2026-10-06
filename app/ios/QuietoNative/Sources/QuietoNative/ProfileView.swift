@@ -121,7 +121,38 @@ struct ProfileDestinationView: View {
         switch destination {
         case .profile: Form { Section("Identité") { TextField("Prénom", text: $name); Button("Enregistrer") { model.saveName(name); dismiss() } } }.onAppear { name = model.firstName }
         case .progress: Form { Section("Cette semaine") { Label(String(format: "%d séances terminées".quietoLocalized, model.completedSessions), systemImage: "leaf"); Label(String(format: "%d minutes réellement écoutées".quietoLocalized, model.listenedMinutes), systemImage: "clock"); Text("Ces chiffres proviennent des séances terminées par le lecteur natif.").foregroundStyle(.secondary) } }
-        case .reminders: Form { Section { Toggle("Rappel quotidien", isOn: Binding(get: { model.remindersEnabled }, set: { value in Task { await model.setReminders(value) } })); DatePicker("Heure", selection: $selectedTime, displayedComponents: .hourAndMinute).onChange(of: selectedTime) { _, value in let c = Calendar.current; model.setReminderTime(hour: c.component(.hour, from: value), minute: c.component(.minute, from: value)) } } footer: { Text("Un seul rappel par jour, dans ton fuseau horaire. L’autorisation système est demandée uniquement à l’activation.") } }.onAppear { selectedTime = Calendar.current.date(from: DateComponents(hour: model.reminderHour, minute: model.reminderMinute)) ?? .now }
+        case .reminders: Form {
+            Section {
+                Toggle("Activer les rappels", isOn: Binding(get: { model.remindersEnabled }, set: { value in Task { await model.setReminders(value) } }))
+                DatePicker("Heure", selection: $selectedTime, displayedComponents: .hourAndMinute)
+                    .onChange(of: selectedTime) { _, value in
+                        let calendar = Calendar.autoupdatingCurrent
+                        model.setReminderTime(hour: calendar.component(.hour, from: value), minute: calendar.component(.minute, from: value))
+                    }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Jours").font(.subheadline.weight(.semibold))
+                    HStack(spacing: 7) {
+                        ForEach(1...7, id: \.self) { weekday in
+                            Button {
+                                model.toggleReminderDay(weekday)
+                            } label: {
+                                Text(shortWeekday(weekday))
+                                    .font(.caption.weight(.semibold))
+                                    .frame(maxWidth: .infinity, minHeight: 34)
+                                    .foregroundStyle(model.selectedReminderDays.contains(weekday) ? QuietoColor.background : QuietoColor.textPrimary)
+                                    .background(model.selectedReminderDays.contains(weekday) ? QuietoColor.mint : QuietoColor.surfaceRaised, in: Circle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(fullWeekday(weekday))
+                            .accessibilityAddTraits(model.selectedReminderDays.contains(weekday) ? .isSelected : [])
+                        }
+                    }
+                }
+            } footer: {
+                Text("Quieto crée un rappel uniquement pour les jours choisis, dans le fuseau horaire actuel. L’autorisation système est demandée à l’activation.")
+            }
+        }
+        .onAppear { selectedTime = Calendar.autoupdatingCurrent.date(from: DateComponents(hour: model.reminderHour, minute: model.reminderMinute)) ?? .now }
         case .audio: Form { Section { Toggle("Ambiance musicale", isOn: $model.ambientMusic); Button("Enregistrer") { model.saveAmbient(); dismiss() } } footer: { Text("L’ambiance reste désactivée tant qu’un mix audio réel n’est pas disponible.") } }
         case .accessibility: Form { Section { Toggle("Réduire les animations", isOn: $model.reduceMotion); Toggle("Texte plus grand dans Quieto", isOn: $model.largerText); Button("Enregistrer") { model.saveAccessibility(); dismiss() } } }
         case .health: Form { Section("Apple Santé") { Text("Quieto peut écrire les minutes de pleine conscience uniquement si HealthKit et ses autorisations sont configurés."); Button("Vérifier la connexion") { model.requestHealth() } }.foregroundStyle(QuietoColor.textPrimary) }
@@ -139,8 +170,18 @@ struct ProfileDestinationView: View {
         case .privacy: Form { Section { Text("Le profil, la progression, les conversations non temporaires et la mémoire sont synchronisés avec Supabase quand il est configuré."); Button("Préparer mon export") { model.exportData() } } header: { Text("Données et autorisations") } footer: { Text("Les données historiques de migration Firebase et RevenueCat restent conservées côté serveur jusqu’à validation de la migration et selon les obligations applicables.") } }
         case .louaneMemory: Form { Section("Ce que Louane retient") { TextEditor(text: $model.memoryText).frame(minHeight: 150); Button("Enregistrer") { model.saveMemory() }; Button("Supprimer la mémoire", role: .destructive) { model.deleteMemory() } } }.task { await model.loadMemory() }
         case .delete: Form { Section { Text("Cette action supprime le compte Supabase et ses données Quieto. Elle ne résilie jamais automatiquement un abonnement Apple et ne supprime pas les preuves techniques de migration soumises à une durée de conservation distincte."); Button("Supprimer définitivement mon compte", role: .destructive) { model.deleteAccount() }.disabled(model.isSaving) } }
-        case .faq: Form { Section("Questions fréquentes") { DisclosureGroup("Comment fonctionne un rappel ?") { Text("Un seul rappel quotidien est programmé à l’heure choisie.") }; DisclosureGroup("Mes données sont-elles supprimées ?") { Text("Les garanties dépendent du service réellement connecté ; Quieto ne promet pas une suppression non implémentée.") } } }
+        case .faq: Form { Section("Questions fréquentes") { DisclosureGroup("Comment fonctionne un rappel ?") { Text("Un rappel est programmé à l’heure choisie pour chacun des jours sélectionnés, sans doublon.") }; DisclosureGroup("Mes données sont-elles supprimées ?") { Text("Les garanties dépendent du service réellement connecté ; Quieto ne promet pas une suppression non implémentée.") } } }
         case .legal: Form { Section { Link("Conditions d’utilisation", destination: URL(string: "https://cofonde.com/quieto-cgu")!); Link("Politique de confidentialité", destination: URL(string: "https://cofonde.com/quieto-confidentialite")!) } }
         }
+    }
+
+    private func shortWeekday(_ weekday: Int) -> String {
+        let symbols = Calendar.autoupdatingCurrent.veryShortWeekdaySymbols
+        return symbols.indices.contains(weekday - 1) ? symbols[weekday - 1] : "\(weekday)"
+    }
+
+    private func fullWeekday(_ weekday: Int) -> String {
+        let symbols = Calendar.autoupdatingCurrent.weekdaySymbols
+        return symbols.indices.contains(weekday - 1) ? symbols[weekday - 1] : "\(weekday)"
     }
 }

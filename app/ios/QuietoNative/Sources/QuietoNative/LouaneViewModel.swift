@@ -15,6 +15,7 @@ final class LouaneViewModel: ObservableObject {
     @Published var temporaryConversation = false
     @Published private(set) var history: [QuietoConversationSummary] = []
     @Published private(set) var historyError: String?
+    @Published var deletionError: String?
 
     let backend: LouaneBackendProviding
     let memory: LouaneMemoryProviding
@@ -23,6 +24,7 @@ final class LouaneViewModel: ObservableObject {
     private let defaults: UserDefaults
     private let draftKey = "quieto.native.louane.draft"
     private var conversationID = UUID()
+    private var responseTask: Task<Void, Never>?
 
     init(backend: LouaneBackendProviding = URLSessionLouaneBackend(), memory: LouaneMemoryProviding = LouaneMemoryStore(), audioPlayer: QuietoAudioPlayer, catalog: SessionCatalog = SessionCatalog(), defaults: UserDefaults = .standard) {
         self.backend = backend; self.memory = memory; self.audioPlayer = audioPlayer; self.catalog = catalog; self.defaults = defaults
@@ -39,15 +41,29 @@ final class LouaneViewModel: ObservableObject {
         draft = ""; saveDraft()
         let message = LouaneMessage(author: .user, text: text)
         messages.append(message); status = .sending; persist()
-        Task { await requestReply(for: message) }
+        responseTask = Task { await requestReply(for: message) }
     }
 
-    func retry(_ message: LouaneMessage) { guard !isSending else { return }; status = .sending; Task { await requestReply(for: message) } }
-    func newConversation() { messages.removeAll(); conversationID = UUID(); status = .idle; temporaryConversation = false; persist() }
+    func retry(_ message: LouaneMessage) { guard !isSending else { return }; status = .sending; responseTask = Task { await requestReply(for: message) } }
+    func cancelResponse() { responseTask?.cancel(); responseTask = nil; status = .idle }
+    func newConversation() { cancelResponse(); messages.removeAll(); conversationID = UUID(); status = .idle; temporaryConversation = false; persist() }
     func deleteConversation() {
         let deletedID = conversationID
-        messages.removeAll(); conversationID = UUID(); status = .idle; isDeleteConfirmationPresented = false
-        Task { try? await QuietoSupabaseService.shared.deleteConversation(deletedID) }
+        cancelResponse()
+        isDeleteConfirmationPresented = false
+        guard QuietoSupabaseService.shared.client != nil else {
+            messages.removeAll(); conversationID = UUID(); status = .idle
+            deletionError = "Conversation supprimée de cet iPhone. Aucun effacement distant n’a été annoncé."
+            return
+        }
+        Task {
+            do {
+                try await QuietoSupabaseService.shared.deleteConversation(deletedID)
+                messages.removeAll(); conversationID = UUID(); status = .idle; deletionError = nil
+            } catch {
+                deletionError = error.localizedDescription
+            }
+        }
     }
     func play(_ recommendation: LouaneRecommendation) {
         guard let session = catalog.sessions.first(where: { $0.id == recommendation.sessionID }) else { return }
@@ -99,9 +115,17 @@ final class LouaneViewModel: ObservableObject {
         do {
             let reply = try await backend.send(message: message.text, history: messages, temporary: temporaryConversation)
             guard !Task.isCancelled else { return }
-            let response = LouaneMessage(author: .louane, text: reply.text, recommendation: reply.recommendation)
+            let validatedRecommendation = reply.recommendation.flatMap { recommendation in
+                catalog.sessions.contains(where: { $0.id == recommendation.sessionID }) ? recommendation : nil
+            }
+            let response = LouaneMessage(author: .louane, text: reply.text, recommendation: validatedRecommendation)
             messages.append(response); status = .idle; persist()
-        } catch { status = .failed(error.localizedDescription); persist() }
+        } catch is CancellationError {
+            status = .idle
+        } catch {
+            status = .failed(error.localizedDescription); persist()
+        }
+        responseTask = nil
     }
 
     private func persist() {

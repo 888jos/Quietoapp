@@ -2,6 +2,10 @@ import AVFoundation
 import MediaPlayer
 import UIKit
 
+extension Notification.Name {
+    static let quietoSessionCompleted = Notification.Name("quieto.session.completed")
+}
+
 @MainActor
 final class QuietoAudioPlayer: NSObject, ObservableObject {
     @Published private(set) var currentSession: QuietoSession?
@@ -277,6 +281,10 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
         var events = UserDefaults.standard.array(forKey: "quieto.native.activity.events") as? [[String: Any]] ?? []
         events.append(["id": session.id, "seconds": seconds, "date": Date().timeIntervalSince1970])
         UserDefaults.standard.set(events, forKey: "quieto.native.activity.events")
+        NotificationCenter.default.post(name: .quietoSessionCompleted, object: session.id)
+        Task {
+            try? await QuietoSupabaseService.shared.recordCompletion(sessionID: session.id, listenedSeconds: seconds)
+        }
     }
     private static func audioDuration(at url: URL) -> Double? {
         guard let file = try? AVAudioFile(forReading: url), file.processingFormat.sampleRate > 0 else { return nil }

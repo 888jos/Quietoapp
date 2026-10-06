@@ -32,7 +32,7 @@ struct SessionDetailView: View {
                         Button { model.toggleFavorite(session) } label: {
                             Label(model.favorites.contains(session.id) ? "Dans les favoris" : "Favori", systemImage: model.favorites.contains(session.id) ? "bookmark.fill" : "bookmark")
                         }
-                        if session.readerMode == .guidedVoice {
+                        if session.isDownloadAvailable {
                             Button { model.toggleDownload(session) } label: {
                                 Label(model.downloads.isDownloaded(session) ? "Supprimer" : "Télécharger", systemImage: model.downloads.isDownloaded(session) ? "trash" : "arrow.down.circle")
                             }
@@ -40,6 +40,11 @@ struct SessionDetailView: View {
                     }
                     .font(QuietoFont.sans(13, weight: .semibold)).foregroundStyle(QuietoColor.mint)
                     .buttonStyle(.bordered).buttonBorderShape(.capsule)
+
+                    if session.readerMode == .guidedVoice && !session.isDownloadAvailable {
+                        Label("Lecture disponible ; téléchargement hors ligne après publication du fichier audio.", systemImage: "icloud.slash")
+                            .font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+                    }
 
                     if session.readerMode == .guidedVoice, let value = model.downloads.progress[session.id], value < 1 {
                         HStack { ProgressView(value: value).tint(QuietoColor.mint); Button("Annuler") { model.downloads.cancel(session) } }

@@ -50,7 +50,13 @@ final class SessionsViewModel: ObservableObject {
         }
     }
 
-    func toggleFavorite(_ session: QuietoSession) { if favorites.contains(session.id) { favorites.remove(session.id) } else { favorites.insert(session.id) }; defaults.set(Array(favorites), forKey: "quieto.native.session.favorites") }
+    func toggleFavorite(_ session: QuietoSession) {
+        let isFavorite: Bool
+        if favorites.contains(session.id) { favorites.remove(session.id); isFavorite = false }
+        else { favorites.insert(session.id); isFavorite = true }
+        defaults.set(Array(favorites), forKey: "quieto.native.session.favorites")
+        Task { try? await QuietoSupabaseService.shared.setFavorite(sessionID: session.id, favorite: isFavorite) }
+    }
     func play(_ session: QuietoSession) {
         let startPlayback = { [weak self] in
             guard let self else { return }
@@ -67,6 +73,10 @@ final class SessionsViewModel: ObservableObject {
         }
     }
     func toggleDownload(_ session: QuietoSession) {
+        guard session.isDownloadAvailable else {
+            feedback = "Le fichier audio hors ligne n’est pas encore publié pour cette séance."
+            return
+        }
         if downloads.isDownloaded(session) { downloads.delete(session); feedback = "Séance supprimée des téléchargements."; return }
         let startDownload = { [weak self] in
             guard let self else { return }

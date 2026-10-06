@@ -17,4 +17,20 @@ final class LouaneViewModelTests: XCTestCase {
             XCTFail("Le backend absent ne doit pas produire de réponse simulée.")
         } catch { XCTAssertTrue(true) }
     }
+
+    @MainActor
+    func testUnknownStructuredRecommendationIsRejected() async {
+        let model = LouaneViewModel(backend: InvalidRecommendationBackend(), audioPlayer: QuietoAudioPlayer())
+        model.draft = "Une pause"
+        model.send()
+        try? await Task.sleep(nanoseconds: 80_000_000)
+        XCTAssertEqual(model.messages.last?.author, .louane)
+        XCTAssertNil(model.messages.last?.recommendation)
+    }
+}
+
+private struct InvalidRecommendationBackend: LouaneBackendProviding {
+    func send(message: String, history: [LouaneMessage], temporary: Bool) async throws -> LouaneBackendReply {
+        LouaneBackendReply(text: "Voici une réponse valide sans carte inventée.", recommendation: .init(id: "missing", sessionID: "missing", reason: ""))
+    }
 }

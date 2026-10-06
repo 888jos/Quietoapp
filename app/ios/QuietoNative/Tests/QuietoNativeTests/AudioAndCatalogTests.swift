@@ -57,6 +57,15 @@ final class AudioAndCatalogTests: XCTestCase {
         XCTAssertEqual(model.snapshot.nextSession?.id, planned)
     }
 
+    @MainActor
+    func testEverySituationCanDriveTheHomeExplorer() {
+        let model = HomeViewModel()
+        for situation in QuietoSituation.allCases {
+            XCTAssertEqual(model.sessions(for: situation).count, 6, situation.rawValue)
+            XCTAssertGreaterThanOrEqual(model.ambiences(for: situation).count, 2, situation.rawValue)
+        }
+    }
+
     func testAppleSpeechRendererCreatesASeekableAudioFile() async throws {
         let session = QuietoSession(
             id: "test_native_voice_\(UUID().uuidString)",
@@ -78,6 +87,22 @@ final class AudioAndCatalogTests: XCTestCase {
         let guided = SessionCatalog().sessions.filter { $0.readerMode == .guidedVoice }
         XCTAssertFalse(guided.isEmpty)
         XCTAssertTrue(guided.allSatisfy { $0.transcript.count > 400 })
+    }
+
+    func testEverySituationHasSixMeditationsAndEveryMeditationIsReferenced() {
+        let sessions = SessionCatalog().sessions
+        let byID = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, $0) })
+
+        for situation in QuietoSituation.allCases {
+            XCTAssertEqual(Set(situation.sessionIDs).count, 6, situation.rawValue)
+            let recommendations = situation.sessionIDs.compactMap { byID[$0] }
+            XCTAssertEqual(recommendations.count, 6, situation.rawValue)
+            XCTAssertTrue(recommendations.allSatisfy { $0.practiceType == .meditation }, situation.rawValue)
+        }
+
+        let meditations = sessions.filter { $0.practiceType == .meditation }
+        XCTAssertTrue(meditations.allSatisfy { !$0.themes.isEmpty })
+        XCTAssertTrue(meditations.allSatisfy { !$0.situations.isEmpty })
     }
 
     func testBreathingExercisesNeverUseSpeechRendering() async throws {

@@ -126,6 +126,18 @@ struct SessionCatalog: QuietoSessionCatalogProviding {
     }
 
     private static func make(_ id: String, _ title: String, _ duration: Int, _ intention: String, _ audio: String, _ category: String, _ premium: Bool, _ pillar: QuietoPillar, _ practice: QuietoPracticeType) -> QuietoSession {
+        let situations = QuietoSituation.allCases.filter { $0.sessionIDs.contains(id) }
+        let contextualThemes = Set(situations.flatMap(\.themes))
+        let pillarTheme: QuietoTheme = switch pillar {
+        case .sleep: .sleep
+        case .stress: .stress
+        case .thoughts: .focus
+        case .emotions: .emotions
+        }
+        let themes = Array(contextualThemes.union([pillarTheme])).sorted { $0.rawValue < $1.rawValue }
+        let searchTerms = [title, category, pillar.rawValue, practice.rawValue, intention]
+            + themes.map(\.rawValue)
+            + situations.flatMap { [$0.rawValue, $0.subtitle] }
         return QuietoSession(
             id: id,
             title: title,
@@ -138,7 +150,9 @@ struct SessionCatalog: QuietoSessionCatalogProviding {
             pillar: pillar,
             practiceType: practice,
             intention: intention,
-            keywords: [title, category, pillar.rawValue, practice.rawValue],
+            keywords: searchTerms,
+            themes: themes,
+            situations: situations,
             longDescription: detail(for: id, title: title, duration: duration, intention: intention, practice: practice),
             breathingPattern: pattern(for: id, practice: practice)
         )

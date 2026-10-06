@@ -23,6 +23,15 @@ struct SessionDetailView: View {
                             MetadataChip(text: session.practiceType.rawValue.quietoLocalized, icon: "waveform")
                             MetadataChip(text: session.pillar.rawValue.quietoLocalized, icon: session.pillar.symbol)
                         }
+                        if !session.themes.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 7) {
+                                    ForEach(session.themes) { theme in
+                                        MetadataChip(text: theme.rawValue.quietoLocalized, icon: theme.symbol)
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     Text(session.localizedIntention).font(QuietoFont.serif(23)).fixedSize(horizontal: false, vertical: true)

@@ -160,7 +160,7 @@ struct CheckInSection: View {
 private struct NeedExplorerView: View {
     @ObservedObject var model: HomeViewModel
     @Environment(\.dismiss) private var dismiss
-    @State private var selection: QuietoNeed?
+    @State private var selection: QuietoSituation?
 
     var body: some View {
         NavigationStack {
@@ -184,11 +184,13 @@ private struct NeedExplorerView: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Pas besoin de trouver le mot parfait. Choisis ce qui ressemble le plus à maintenant.").font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                ForEach(QuietoNeed.allCases) { need in
-                    Button { selection = need } label: {
+                ForEach(QuietoSituation.allCases) { situation in
+                    Button { selection = situation } label: {
                         VStack(alignment: .leading, spacing: 9) {
-                            QuietoAssetImage(need.imageName, contentMode: .fill).frame(height: 106).clipped().clipShape(RoundedRectangle(cornerRadius: 13))
-                            Text(need.rawValue.quietoLocalized).font(QuietoFont.serif(18, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary).fixedSize(horizontal: false, vertical: true)
+                            if let imageName = model.sessions(for: situation).first?.imageName {
+                                QuietoAssetImage(imageName, contentMode: .fill).frame(height: 106).clipped().clipShape(RoundedRectangle(cornerRadius: 13))
+                            }
+                            Text(situation.rawValue.quietoLocalized).font(QuietoFont.serif(18, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary).fixedSize(horizontal: false, vertical: true)
                         }.frame(maxWidth: .infinity, minHeight: 168, alignment: .topLeading).padding(9)
                             .background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 16)).overlay { RoundedRectangle(cornerRadius: 16).stroke(QuietoColor.divider) }
                     }.buttonStyle(.plain)
@@ -197,17 +199,19 @@ private struct NeedExplorerView: View {
         }
     }
 
-    private func recommendations(for need: QuietoNeed) -> some View {
+    private func recommendations(for situation: QuietoSituation) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            QuietoAssetImage(need.imageName, contentMode: .fill).frame(maxWidth: .infinity).frame(height: 190).clipped().clipShape(RoundedRectangle(cornerRadius: 18))
-            Text(need.rawValue.quietoLocalized).font(QuietoFont.serif(30, weight: .semibold))
-            Text(need.explanation.quietoLocalized).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary)
+            if let imageName = model.sessions(for: situation).first?.imageName {
+                QuietoAssetImage(imageName, contentMode: .fill).frame(maxWidth: .infinity).frame(height: 190).clipped().clipShape(RoundedRectangle(cornerRadius: 18))
+            }
+            Text(situation.rawValue.quietoLocalized).font(QuietoFont.serif(30, weight: .semibold))
+            Text(situation.subtitle.quietoLocalized).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary)
             if let planned = model.snapshot.nextSession {
                 Label(String(format: "Ta séance prévue « %@ » reste inchangée.".quietoLocalized, planned.title.quietoLocalized), systemImage: "checkmark.shield")
                     .font(QuietoFont.sans(13, weight: .medium)).foregroundStyle(QuietoColor.mint)
             }
             Text("Séances proposées").quietoSectionTitle()
-            ForEach(model.sessions(for: need)) { session in
+            ForEach(model.sessions(for: situation)) { session in
                 Button { model.play(session, source: "daily_checkin"); dismiss() } label: {
                     HStack(spacing: 12) {
                         QuietoAssetImage(session.imageName, contentMode: .fill).frame(width: 76, height: 66).clipped().clipShape(RoundedRectangle(cornerRadius: 11))
@@ -217,7 +221,7 @@ private struct NeedExplorerView: View {
                 }.buttonStyle(.plain)
             }
             Text("Ou simplement un son").quietoSectionTitle()
-            ForEach(model.ambiences(for: need)) { ambience in
+            ForEach(model.ambiences(for: situation)) { ambience in
                 Button { model.play(ambience, source: "daily_checkin"); dismiss() } label: {
                     HStack(spacing: 12) {
                         QuietoAssetImage(ambience.assetName, contentMode: .fill).frame(width: 68, height: 58).clipped().clipShape(RoundedRectangle(cornerRadius: 10))

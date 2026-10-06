@@ -182,6 +182,22 @@ final class HomeViewModel: ObservableObject {
         need.ambienceIDs.compactMap { id in QuietoAmbience.all.first { $0.id == id } }
     }
 
+    func sessions(for situation: QuietoSituation) -> [QuietoSession] {
+        let catalog = SessionCatalog().sessions
+        return situation.sessionIDs.compactMap { id in catalog.first { $0.id == id } }
+    }
+
+    func ambiences(for situation: QuietoSituation) -> [QuietoAmbience] {
+        let ids: [String]
+        if situation.themes.contains(.sleep) { ids = ["pink-noise", "rain", "ocean"] }
+        else if situation.themes.contains(.energy) { ids = ["forest", "river"] }
+        else if situation.themes.contains(.work) || situation.themes.contains(.focus) { ids = ["white-noise", "river"] }
+        else if situation.themes.contains(.relationships) || situation.themes.contains(.solitude) { ids = ["campfire", "ocean"] }
+        else if situation.themes.contains(.digital) { ids = ["forest", "rain"] }
+        else { ids = ["forest", "ocean"] }
+        return ids.compactMap { id in QuietoAmbience.all.first { $0.id == id } }
+    }
+
     func play(_ ambience: QuietoAmbience, source: String) {
         services.playback.playAmbience(ambience)
         services.analytics.track("ambience_played", properties: ["ambience": ambience.id, "source": source])

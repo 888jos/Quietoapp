@@ -5,7 +5,9 @@ enum QuietoLibrary: String, Identifiable { case favorites = "Favoris", downloads
 @MainActor
 final class SessionsViewModel: ObservableObject {
     @Published var query = ""
-    @Published var selectedPillar: QuietoPillar? = .sleep
+    @Published var selectedPillar: QuietoPillar?
+    @Published var selectedTheme: QuietoTheme?
+    @Published var selectedSituation: QuietoSituation?
     @Published var durationFilter: QuietoDurationFilter = .all
     @Published var practiceFilter: QuietoPracticeType?
     @Published private(set) var favorites: Set<String>
@@ -28,15 +30,43 @@ final class SessionsViewModel: ObservableObject {
 
     var filteredSessions: [QuietoSession] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).folding(options: .diacriticInsensitive, locale: .current).lowercased()
-        // A search is global by design: the default “Sommeil” pillar must not
-        // hide a matching session from another pillar.
-        let pillarFilter = needle.isEmpty ? selectedPillar : nil
         return catalog.sessions.filter { session in
-            let searchableText = ([session.title, session.subtitle, session.intention, session.pillar.rawValue, session.practiceType.rawValue] + session.keywords)
+            let source = [session.title, session.subtitle, session.intention, session.pillar.rawValue, session.practiceType.rawValue]
+                + session.themes.flatMap { [$0.rawValue, $0.rawValue.quietoLocalized] }
+                + session.situations.flatMap { [$0.rawValue, $0.rawValue.quietoLocalized, $0.subtitle, $0.subtitle.quietoLocalized] }
+                + session.keywords
+            let searchableText = source
                 .joined(separator: " ").folding(options: .diacriticInsensitive, locale: .current).lowercased()
             let matchesQuery = needle.isEmpty || searchableText.contains(needle)
-            return matchesQuery && (pillarFilter == nil || session.pillar == pillarFilter) && durationFilter.includes(session.durationMinutes) && (practiceFilter == nil || session.practiceType == practiceFilter)
+            let matchesPillar = selectedPillar == nil || session.pillar == selectedPillar
+            let matchesTheme = selectedTheme.map { session.themes.contains($0) } ?? true
+            let matchesSituation = selectedSituation.map { session.situations.contains($0) } ?? true
+            return matchesQuery && matchesPillar && matchesTheme && matchesSituation
+                && durationFilter.includes(session.durationMinutes)
+                && (practiceFilter == nil || session.practiceType == practiceFilter)
         }
+    }
+
+    var hasActiveFilters: Bool {
+        selectedPillar != nil || selectedTheme != nil || selectedSituation != nil || durationFilter != .all || practiceFilter != nil
+    }
+
+    func selectSituation(_ situation: QuietoSituation) {
+        selectedSituation = selectedSituation == situation ? nil : situation
+        if selectedSituation != nil { selectedPillar = nil }
+    }
+
+    func selectTheme(_ theme: QuietoTheme) {
+        selectedTheme = selectedTheme == theme ? nil : theme
+        if selectedTheme != nil { selectedPillar = nil }
+    }
+
+    func resetFilters() {
+        selectedPillar = nil
+        selectedTheme = nil
+        selectedSituation = nil
+        durationFilter = .all
+        practiceFilter = nil
     }
 
     var shortSessions: [QuietoSession] { catalog.sessions.filter { $0.durationMinutes <= 3 }.prefix(2).map { $0 } }

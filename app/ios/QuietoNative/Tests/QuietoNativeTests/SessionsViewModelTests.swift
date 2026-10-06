@@ -21,6 +21,28 @@ final class SessionsViewModelTests: XCTestCase {
         XCTAssertTrue(model.filteredSessions.allSatisfy { $0.durationMinutes <= 5 })
     }
 
+    @MainActor
+    func testThemeAndSituationFiltersUseStructuredMetadata() {
+        let model = SessionsViewModel(audioPlayer: QuietoAudioPlayer())
+        model.selectTheme(.work)
+        XCTAssertFalse(model.filteredSessions.isEmpty)
+        XCTAssertTrue(model.filteredSessions.allSatisfy { $0.themes.contains(.work) })
+
+        model.resetFilters()
+        model.selectSituation(.tiredButAwake)
+        XCTAssertEqual(model.filteredSessions.count, 6)
+        XCTAssertTrue(model.filteredSessions.allSatisfy { $0.practiceType == .meditation })
+        XCTAssertTrue(model.filteredSessions.allSatisfy { $0.situations.contains(.tiredButAwake) })
+    }
+
+    @MainActor
+    func testSearchIndexesThemesAndSituations() {
+        let model = SessionsViewModel(audioPlayer: QuietoAudioPlayer())
+        model.query = "solitude"
+        XCTAssertFalse(model.filteredSessions.isEmpty)
+        XCTAssertTrue(model.filteredSessions.allSatisfy { $0.themes.contains(.solitude) })
+    }
+
     func testOfflineDownloadRequiresPublishedAudioPath() throws {
         let sessions = SessionCatalog().sessions.filter { $0.readerMode == .guidedVoice }
         let available = try XCTUnwrap(sessions.first { !$0.audioFile.isEmpty })

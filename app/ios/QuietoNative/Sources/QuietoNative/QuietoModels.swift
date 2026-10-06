@@ -33,6 +33,8 @@ struct QuietoSession: Identifiable, Equatable {
     let practiceType: QuietoPracticeType
     let intention: String
     let keywords: [String]
+    let themes: [QuietoTheme]
+    let situations: [QuietoSituation]
     let longDescription: String
     let preparation: String
     let steps: [String]
@@ -52,6 +54,8 @@ struct QuietoSession: Identifiable, Equatable {
         practiceType: QuietoPracticeType = .meditation,
         intention: String = "Une pause simple, à ton rythme.",
         keywords: [String] = [],
+        themes: [QuietoTheme] = [],
+        situations: [QuietoSituation] = [],
         longDescription: String? = nil,
         preparation: String = "Installe-toi dans une position stable et confortable. Tu peux garder les yeux ouverts ou les fermer.",
         steps: [String]? = nil,
@@ -70,6 +74,8 @@ struct QuietoSession: Identifiable, Equatable {
         self.practiceType = practiceType
         self.intention = intention
         self.keywords = keywords
+        self.themes = themes
+        self.situations = situations
         self.longDescription = longDescription ?? "« \(title) » est une pause guidée de \(durationMinutes) minutes. \(intention) La pratique avance sans objectif de performance : tu peux l’adapter, bouger ou t’arrêter à tout moment."
         self.preparation = preparation
         self.steps = steps ?? [
@@ -120,6 +126,124 @@ struct QuietoSession: Identifiable, Equatable {
 
     var localizedTranscript: String {
         QuietoLocalization.isFrench ? transcript : QuietoTranscript.make(title: title.quietoLocalized, intention: localizedIntention, practice: practiceType)
+    }
+}
+
+enum QuietoTheme: String, CaseIterable, Identifiable, Hashable {
+    case work = "Travail"
+    case sleep = "Sommeil"
+    case energy = "Énergie"
+    case relationships = "Relations"
+    case solitude = "Solitude"
+    case stress = "Stress"
+    case emotions = "Émotions"
+    case focus = "Concentration"
+    case digital = "Écrans et actualité"
+    case transitions = "Transitions"
+    case confidence = "Confiance en soi"
+    case uncertainty = "Incertitude"
+    case rest = "Repos"
+    case dailyLife = "Quotidien"
+
+    var id: String { String(describing: self) }
+    var symbol: String {
+        switch self {
+        case .work: "briefcase"
+        case .sleep: "moon"
+        case .energy: "bolt"
+        case .relationships: "person.2"
+        case .solitude: "person"
+        case .stress: "waveform.path.ecg"
+        case .emotions: "heart"
+        case .focus: "scope"
+        case .digital: "rectangle.slash"
+        case .transitions: "arrow.left.arrow.right"
+        case .confidence: "figure.arms.open"
+        case .uncertainty: "ellipsis"
+        case .rest: "bed.double"
+        case .dailyLife: "sun.max"
+        }
+    }
+}
+
+enum QuietoSituation: String, CaseIterable, Identifiable, Hashable {
+    case tiredButAwake = "Je suis fatigué·e, mais je n’arrive pas à dormir"
+    case awakeAtNight = "Je me réveille au milieu de la nuit"
+    case exhaustedMorning = "Je me sens épuisé·e dès le réveil"
+    case importantEvent = "J’appréhende un événement important"
+    case difficultConversation = "Je viens de vivre une conversation difficile"
+    case racingThoughts = "Je pense trop et je n’arrive pas à décrocher"
+    case overwhelmed = "Je me sens débordé·e"
+    case lowEnergy = "Je manque d’énergie ou de motivation"
+    case afterWork = "Ma journée est finie, mais mon esprit travaille encore"
+    case lonely = "Je me sens seul·e ou déconnecté·e"
+    case selfCritical = "Je suis dur·e avec moi-même"
+    case uncertainty = "J’attends une réponse et je suis dans l’incertitude"
+    case newsOverload = "L’actualité et les réseaux m’épuisent"
+    case strongEmotion = "Je ressens une émotion forte"
+    case quickPause = "J’ai besoin d’une pause très courte"
+
+    var id: String { String(describing: self) }
+
+    var subtitle: String {
+        switch self {
+        case .tiredButAwake: "Retirer la pression de devoir dormir."
+        case .awakeAtNight: "Revenir au repos sans regarder l’heure."
+        case .exhaustedMorning: "Commencer sans demander trop d’énergie."
+        case .importantEvent: "Faire une place au trac avant d’entrer."
+        case .difficultConversation: "Laisser retomber l’intensité avant de répondre."
+        case .racingThoughts: "Créer de l’espace sans combattre les pensées."
+        case .overwhelmed: "Revenir à une seule chose possible maintenant."
+        case .lowEnergy: "Retrouver un élan doux, sans se brusquer."
+        case .afterWork: "Créer une frontière entre le travail et le reste."
+        case .lonely: "Retrouver une présence intérieure accueillante."
+        case .selfCritical: "Remplacer le jugement par une parole plus juste."
+        case .uncertainty: "Habiter l’attente sans inventer la réponse."
+        case .newsOverload: "Retrouver une juste distance avec le flux."
+        case .strongEmotion: "Observer le ressenti avant de décider quoi faire."
+        case .quickPause: "Revenir à soi en cinq minutes ou moins."
+        }
+    }
+
+    var themes: [QuietoTheme] {
+        switch self {
+        case .tiredButAwake, .awakeAtNight: [.sleep, .rest]
+        case .exhaustedMorning: [.energy, .rest, .dailyLife]
+        case .importantEvent: [.stress, .confidence, .work]
+        case .difficultConversation: [.relationships, .emotions]
+        case .racingThoughts: [.stress, .focus]
+        case .overwhelmed: [.stress, .work, .focus]
+        case .lowEnergy: [.energy, .dailyLife]
+        case .afterWork: [.work, .transitions, .rest]
+        case .lonely: [.solitude, .relationships, .emotions]
+        case .selfCritical: [.confidence, .emotions]
+        case .uncertainty: [.uncertainty, .stress]
+        case .newsOverload: [.digital, .stress]
+        case .strongEmotion: [.emotions, .relationships]
+        case .quickPause: [.dailyLife, .transitions]
+        }
+    }
+
+    /// Six genuinely guided meditations for every situation. A meditation can
+    /// answer several situations; themes remain independent filters.
+    var sessionIDs: [String] {
+        switch self {
+        case .tiredButAwake: ["sleep_5", "night_watch", "meditation_12", "meditation_16", "evening_release", "meditation_17"]
+        case .awakeAtNight: ["night_watch", "sleep_5", "meditation_14", "meditation_02", "meditation_15", "meditation_12"]
+        case .exhaustedMorning: ["express_3", "new_morning_window", "daybreak_stillness", "late_morning_focus", "after_lunch_energy", "meditation_03"]
+        case .importantEvent: ["monday_arrival", "decision_pause", "meditation_09", "meditation_11", "meditation_15", "meditation_01"]
+        case .difficultConversation: ["between_calls", "decision_pause", "meditation_05", "meditation_08", "meditation_10", "meditation_17"]
+        case .racingThoughts: ["decouverte_2", "meditation_14", "meditation_02", "meditation_06", "meditation_13", "evening_release"]
+        case .overwhelmed: ["actualite_1", "meditation_04", "actualite_5", "meditation_11", "meditation_13", "new_focus_reset"]
+        case .lowEnergy: ["after_lunch_energy", "small_joy", "emotion_2", "express_3", "meditation_03", "meditation_15"]
+        case .afterWork: ["commute_home", "evening_release", "meditation_17", "meditation_12", "meditation_16", "morning_breathing_space"]
+        case .lonely: ["small_joy", "emotion_2", "meditation_05", "meditation_08", "meditation_10", "meditation_15"]
+        case .selfCritical: ["decouverte_1", "small_joy", "meditation_05", "meditation_08", "meditation_10", "meditation_15"]
+        case .uncertainty: ["decision_pause", "meditation_01", "meditation_02", "meditation_07", "meditation_14", "meditation_17"]
+        case .newsOverload: ["actualite_1", "actualite_2", "actualite_4", "actualite_5", "meditation_13", "meditation_14"]
+        case .strongEmotion: ["emotion_3", "meditation_05", "meditation_08", "meditation_10", "meditation_15", "small_joy"]
+        case .quickPause: ["express_3", "between_calls", "meditation_01", "small_joy", "meditation_09", "meditation_16"]
+        }
     }
 }
 

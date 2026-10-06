@@ -1,4 +1,3 @@
-/* eslint-disable */
 // ============================================================
 //  Cloud Function "louane" — fait parler la VOIX (version 2)
 //  + le VEILLEUR (sécurité) qui tourne en parallèle sur chaque message.
@@ -46,6 +45,14 @@ const SUPABASE_PROXY_SECRET = defineSecret("SUPABASE_PROXY_SECRET");
 // sansEcritureEtrangere, pas le modèle. Changer de modèle = cette ligne,
 // puis rejouer le banc (banc/banc-voix.mjs) avant de déployer.
 const MODELE = "gpt-5.6-luna";
+
+// Client OpenAI (06/10/2026) : délai BORNÉ sur tous les appels. Le défaut du
+// SDK (10 min, 2 réessais) laissait une requête pendre jusqu'au timeout de
+// la fonction, sans message de repli ni filet de sécurité. 20 s couvre
+// largement une réponse de la Voix ; la génération de parcours passe plus.
+function nouveauClientOpenAI(options = {}) {
+  return new OpenAI({ apiKey: OPENAI_KEY.value(), timeout: 20000, maxRetries: 1, ...options });
+}
 
 // ============================================================
 //  SÉCURITÉ (audit du 02/09/2026) — identité, bornes, quotas serveur.
@@ -143,6 +150,30 @@ function nettoyerEcoutes(brut) {
     .map((e) => ({ id: texte(e.id, 40), fois: Number(e.fois) || 1, jours: Number(e.jours) }));
 }
 
+// ── Appels PONTÉS (06/10/2026) : app iOS native → Edge Function Supabase
+// → `louane`. Contrat avec le proxy (tous les en-têtes ne valent QUE si
+// `x-quieto-proxy-secret` est le bon secret) :
+//   x-quieto-supabase-user  uid à utiliser (UID Firebase historique ou UUID Supabase)
+//   x-quieto-premium        "1" = le proxy a vérifié un droit Premium actif
+//   x-quieto-client-ip      IP de la personne (sinon on verrait celle du proxy)
+//   x-quieto-anonymous      "1" = session anonyme, "0" sinon
+// Les infos du pont sont rangées à côté de la requête (WeakMap) : `identite`
+// renvoie toujours l'uid, ipDe / fournisseurAuth / louane lisent `pontDe`.
+const PONTS = new WeakMap();
+function pontDe(request) {
+  return (request && PONTS.get(request)) || null;
+}
+
+// Le secret du proxy n'est lié qu'à `louane` : ailleurs, `.value()` ne doit
+// rien casser (pas de secret = pas de pont possible).
+function secretProxy() {
+  try {
+    return SUPABASE_PROXY_SECRET.value() || "";
+  } catch (_) {
+    return "";
+  }
+}
+
 // Identité Firebase de l'appel ("" si l'app n'a pas envoyé de jeton).
 function identite(request) {
   if (EXIGER_APP_CHECK && !request.app) {
@@ -150,13 +181,22 @@ function identite(request) {
   }
   let uid = request.auth && typeof request.auth.uid === "string" ? request.auth.uid : "";
   if (!uid) {
-    const headers = request.rawRequest && request.rawRequest.headers || {};
-    const supplied = typeof headers["x-quieto-proxy-secret"] === "string" ? headers["x-quieto-proxy-secret"] : "";
-    const bridgedUID = typeof headers["x-quieto-supabase-user"] === "string" ? headers["x-quieto-supabase-user"] : "";
-    const expected = SUPABASE_PROXY_SECRET.value() || "";
-    if (expected && bridgedUID && supplied.length === expected.length &&
-        crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))) {
-      uid = bridgedUID.slice(0, 128);
+    const headers = (request.rawRequest && request.rawRequest.headers) || {};
+    const entete = (k) => (typeof headers[k] === "string" ? headers[k] : "");
+    const fourni = entete("x-quieto-proxy-secret");
+    const uidPonte = entete("x-quieto-supabase-user").trim();
+    const attendu = secretProxy();
+    // Longueurs en OCTETS : un en-tête non ASCII de même longueur en
+    // caractères ferait jeter timingSafeEqual (RangeError → INTERNAL).
+    if (attendu && uidPonte && fourni &&
+        Buffer.byteLength(fourni) === Buffer.byteLength(attendu) &&
+        crypto.timingSafeEqual(Buffer.from(fourni), Buffer.from(attendu))) {
+      uid = uidPonte.slice(0, 128);
+      PONTS.set(request, {
+        premium: entete("x-quieto-premium") === "1",
+        ip: entete("x-quieto-client-ip").trim().slice(0, 64),
+        anonyme: entete("x-quieto-anonymous") === "1",
+      });
     }
   }
   if (EXIGER_AUTH && !uid) {
@@ -168,7 +208,11 @@ function identite(request) {
 // IP du client : derrière le front Google, la DERNIÈRE entrée de
 // X-Forwarded-For est celle ajoutée par Google (les précédentes peuvent venir
 // du client). Ne sert que de clé de quota, hachée, jamais stockée en clair.
+// Appel ponté : l'IP vue ici est celle du proxy Supabase → on prend celle
+// qu'il transmet (authentifiée par le secret du proxy).
 function ipDe(request) {
+  const pont = pontDe(request);
+  if (pont && pont.ip) return pont.ip;
   const raw = request.rawRequest;
   const xff = raw && raw.headers ? raw.headers["x-forwarded-for"] : "";
   const liste = typeof xff === "string" ?
@@ -178,32 +222,43 @@ function ipDe(request) {
 const cleIp = (ip) => crypto.createHash("sha256").update(String(ip)).digest("hex").slice(0, 32);
 // Fournisseur d'identité du jeton ("anonymous", "apple.com", "google.com"…).
 function fournisseurAuth(request) {
+  const pont = pontDe(request);
+  if (pont) return pont.anonyme ? "anonymous" : "supabase";
   const t = request.auth && request.auth.token;
   const f = t && t.firebase;
   return f && typeof f.sign_in_provider === "string" ? f.sign_in_provider : "";
 }
-const jourUtc = () => new Date().toISOString().slice(0, 10);
+// Jour de Paris (AAAA-MM-JJ) : fenêtre unique des quotas et compteurs. L'ancien
+// jourUtc() est retiré le 06/10/2026 (voir compterParJour).
 const jourParis = () => new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris" }).format(new Date());
 
 // Compteur journalier {jour, champ: n} dans `collection/id`. Renvoie false
 // si le plafond est atteint. Un nouveau jour remet tous les champs à zéro.
 // Panne Firestore → on laisse passer (le quota est un filet, pas le produit).
+// 06/10/2026 :
+//  - lecture + écriture dans UNE transaction : avant, deux appels simultanés
+//    lisaient le même n, et le « nouveau jour » écrasé (set sans merge)
+//    pouvait perdre des incréments → plafonds dépassables en rafale ;
+//  - le jour est celui de PARIS (jourParis), comme les compteurs Louane :
+//    une seule fenêtre « jour » partout (avant : UTC, minuit à 1 h/2 h de
+//    Paris). Même format AAAA-MM-JJ : les documents existants restent lus.
 async function compterParJour(collection, id, champ, plafond, poids = 1) {
   if (!VIGIE_ECRITURE) return true;
   const ref = db.collection(collection).doc(String(id).replace(/\//g, "_").slice(0, 200));
   try {
-    const snap = await ref.get();
-    const d = snap.exists ? snap.data() : {};
-    const jour = jourUtc();
-    const n = d.jour === jour ? (Number(d[champ]) || 0) : 0;
-    if (n + poids > plafond) return false;
-    // L'écriture n'est pas attendue (22/09) : un seul aller-retour Firestore
-    // au lieu de deux avant de répondre. Le filet reste un filet.
-    const ecriture = d.jour === jour ?
-      ref.set({ [champ]: FieldValue.increment(poids) }, { merge: true }) :
-      ref.set({ jour, [champ]: poids });
-    ecriture.catch((e) => console.error("[Quota]", collection, champ, "écriture échouée :", e.message));
-    return true;
+    const jour = jourParis();
+    return await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const d = snap.exists ? snap.data() : {};
+      const n = d.jour === jour ? (Number(d[champ]) || 0) : 0;
+      if (n + poids > plafond) return false;
+      if (d.jour === jour) {
+        t.update(ref, { [champ]: n + poids });
+      } else {
+        t.set(ref, { jour, [champ]: poids }); // nouveau jour : tout repart de zéro
+      }
+      return true;
+    });
   } catch (e) {
     console.error("[Quota]", collection, champ, "illisible (on laisse passer) :", e.message);
     return true;
@@ -287,11 +342,19 @@ async function verifierAbonne(uid, forcer = false) {
   return premium;
 }
 
-// Sans jeton (vieilles apps, tant que EXIGER_AUTH est false) : on retombe
-// sur ce que dit l'app — l'ancien comportement, borné par les quotas IP.
-async function abonnementVerifie(request, uid, abonneClient) {
+// Abonnement de l'appel :
+//  - appel ponté (app native via le proxy Supabase) : le proxy a déjà
+//    vérifié le droit côté serveur → en-tête `x-quieto-premium`, pas de
+//    RevenueCat ici (l'uid peut être un UUID Supabase inconnu de RevenueCat) ;
+//  - sinon : RevenueCat (verifierAbonne).
+// 06/10/2026 : l'ancien repli sur le booléen `abonne` envoyé par l'app
+// (appels sans jeton) est retiré — mort depuis EXIGER_AUTH = true (identite
+// jette avant). Sans uid → jamais abonné.
+async function abonnementVerifie(request, uid) {
+  const pont = pontDe(request);
+  if (pont) return pont.premium;
   if (uid) return verifierAbonne(uid);
-  return abonneClient === true;
+  return false;
 }
 
 // Oublie le cache d'abonnement de ces identifiants (webhook RevenueCat).
@@ -308,8 +371,9 @@ async function oublierCacheAbonne(ids) {
 
 // ── Compteurs de messages Louane, côté serveur : `compteurs/{uid}` ──
 // {total, jour, n} : total = messages depuis toujours (limite découverte),
-// n = messages du jour de Paris (plafond abonné). Null = pas d'identité (ou
-// émulateur sans Firestore) → on retombe sur les compteurs envoyés par l'app.
+// n = messages du jour de Paris (plafond abonné). Null = pas d'identité,
+// émulateur sans Firestore (banc local) ou Firestore illisible → on retombe
+// sur les compteurs envoyés par l'app (inchangé le 06/10 : le banc s'en sert).
 async function lireCompteurs(uid) {
   if (!uid || !VIGIE_ECRITURE) return null;
   try {
@@ -322,15 +386,25 @@ async function lireCompteurs(uid) {
     return null;
   }
 }
+// 06/10/2026 : en transaction, relu au moment d'écrire. Avant, `n` était
+// réécrit à partir de la lecture faite AVANT la Voix (compteurs.n + 1) : deux
+// messages simultanés comptaient pour un dans le plafond du jour.
 async function incrementerCompteurs(uid, compteurs) {
   if (!uid || !compteurs || !VIGIE_ECRITURE) return;
+  const ref = db.collection("compteurs").doc(uid);
   try {
-    await db.collection("compteurs").doc(uid).set({
-      total: FieldValue.increment(1),
-      jour: compteurs.jour,
-      n: compteurs.n + 1,
-      maj: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const d = snap.exists ? snap.data() : {};
+      const jour = jourParis();
+      const n = d.jour === jour ? (Number(d.n) || 0) : 0;
+      t.set(ref, {
+        total: (Number(d.total) || 0) + 1,
+        jour,
+        n: n + 1,
+        maj: FieldValue.serverTimestamp(),
+      }, { merge: true });
+    });
   } catch (e) {
     console.error("[Compteurs] incrément échoué :", e.message);
   }
@@ -1657,6 +1731,10 @@ RÈGLES :
 Tu réponds UNIQUEMENT avec la fiche mémoire mise à jour, rien d'autre.
 `;
 
+// Mémoire et Juge tournent APRÈS la Voix, la personne attend : délai court
+// et pas de réessai (ils retombent déjà proprement en cas d'échec).
+const OPTIONS_APRES_REPONSE = { timeout: 12000, maxRetries: 0 };
+
 async function appelMemoire(client, memoireActuelle, echanges) {
   try {
     const contenu =
@@ -1672,7 +1750,7 @@ async function appelMemoire(client, memoireActuelle, echanges) {
         { role: "system", content: PROMPT_MEMOIRE },
         { role: "user", content: contenu },
       ],
-    });
+    }, OPTIONS_APRES_REPONSE);
     console.log("[Mémoire] usage:", JSON.stringify(r.usage));
     const fiche = ((r.choices[0] && r.choices[0].message.content) || "").trim();
     return fiche || memoireActuelle;
@@ -1683,8 +1761,67 @@ async function appelMemoire(client, memoireActuelle, echanges) {
 }
 
 // ------------------------------------------------------------
-//  Appel du Veilleur (Luna). Ne DOIT JAMAIS faire échouer la requête :
-//  en cas d'erreur, on renvoie niveau 0 (la Voix répond normalement).
+//  FILET LEXICAL DE SÉCURITÉ (06/10/2026). Quand le Veilleur est muet
+//  (OpenAI en panne, délai dépassé, réponse illisible), on ne peut plus
+//  supposer « niveau 0 » : ce filet cherche les mots explicites de crise
+//  (français + anglais courant) dans le message. Volontairement large → il
+//  ne sert QU'EN SECOURS, jamais quand le Veilleur a répondu (faux positifs).
+//  Texte normalisé : NFD sans accents, minuscules, apostrophes droites.
+// ------------------------------------------------------------
+const FILET_LEXICAL = [
+  ["suicide", new RegExp([
+    "suicid", // suicide, me suicider, suicidaire, suicidal
+    "\\b(me|m')\\s?(tuer|pendre|foutre en l'air|flinguer|buter)\\b",
+    "\\ben finir\\b",
+    "\\bmettre fin a (mes jours|ma vie)",
+    "\\b(envie|besoin) de (mourir|crever|disparaitre)",
+    "\\bje (veux|voudrais|vais) (mourir|crever)",
+    "\\b(plus|pas) (envie|la force|le courage) de vivre",
+    "\\bmourir\\b",
+    "\\boverdose\\b",
+    "\\bsauter (du|d'un|depuis le|par la) (pont|fenetre|balcon|toit)",
+    "\\b(me jeter|sauter) (sous|devant) (un|le) (train|metro|camion|voiture)",
+    "\\bkill(ing)? myself\\b",
+    "\\bend(ing)? (my life|it all)\\b",
+    "\\b(want|wanna|going) to die\\b",
+    "\\btake my (own )?life\\b",
+  ].join("|"))],
+  ["automutilation", new RegExp([
+    "\\b(me|m')\\s?faire du mal\\b",
+    "scarifi", // scarifier, scarification
+    "auto-?mutil", // automutilation, auto-mutilation
+    "\\bme (couper|tailler) (les veines|les bras|la peau)",
+    "\\bself[- ]?harm",
+    "\\b(cut|hurt)(ting)? myself\\b",
+  ].join("|"))],
+];
+function normaliserPourFilet(message) {
+  return String(message || "").normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase().replace(/[’`´]/g, "'").replace(/\s+/g, " ");
+}
+// Renvoie la catégorie (« suicide » | « automutilation ») ou "" si rien.
+function filetLexicalDetresse(message) {
+  const t = normaliserPourFilet(message);
+  for (const [categorie, re] of FILET_LEXICAL) if (re.test(t)) return categorie;
+  return "";
+}
+
+// Verdict de secours quand le Veilleur n'a pas pu trancher : niveau 2 si le
+// filet lexical accroche, niveau 0 sinon. Toujours journalisé.
+function verdictSecours(message, cause) {
+  const categorie = filetLexicalDetresse(message);
+  if (categorie) {
+    console.warn("[Veilleur] muet (" + cause + ") : filet lexical → niveau 2 (" + categorie + ")");
+    return { niveau: 2, categorie, raison: "filet_lexical", secours: true };
+  }
+  console.error("[Veilleur] muet (" + cause + ") : filet lexical muet → niveau 0");
+  return { niveau: 0, categorie: "aucune", raison: "", secours: true };
+}
+
+// ------------------------------------------------------------
+//  Appel du Veilleur (Luna). Ne DOIT JAMAIS faire échouer la requête.
+//  06/10/2026 : en cas d'erreur ou de réponse illisible, plus de « niveau 0 »
+//  silencieux → verdictSecours (filet lexical ci-dessus).
 //  response_format json_object = JSON garanti par l'API (remplace l'ancien
 //  préremplissage "{" d'Anthropic, que OpenAI ne supporte pas).
 // ------------------------------------------------------------
@@ -1709,14 +1846,17 @@ async function appelVeilleur(client, historique, message) {
     console.log("[Veilleur] usage:", JSON.stringify(reponse.usage));
     const brut = (reponse.choices[0] && reponse.choices[0].message.content) || "";
     const signal = extraireJson(brut);
-    const niveau = Number(signal && signal.niveau);
+    // `niveau` absent ou hors 0/1/2 = verdict illisible, pas un « tout va bien ».
+    const niveau = signal && signal.niveau !== undefined && signal.niveau !== null &&
+      signal.niveau !== "" ? Number(signal.niveau) : NaN;
     if (niveau === 1 || niveau === 2) {
       return { niveau, categorie: signal.categorie || "", raison: signal.raison || "" };
     }
-    return { niveau: 0, categorie: "aucune", raison: "" };
+    if (niveau === 0) return { niveau: 0, categorie: "aucune", raison: "" };
+    return verdictSecours(message, "réponse illisible");
   } catch (e) {
-    console.error("[Veilleur] erreur (on retombe en niveau 0) :", e);
-    return { niveau: 0, categorie: "aucune", raison: "" };
+    console.error("[Veilleur] erreur :", e);
+    return verdictSecours(message, "erreur API");
   }
 }
 
@@ -1751,6 +1891,7 @@ Tu réponds UNIQUEMENT avec cet objet JSON, rien d'autre :
 { "sujets": ["couple"], "emotion": "tristesse", "intensite": 1 }
 `;
 
+// eslint-disable-next-line no-unused-vars -- en pause (voir plus haut), gardée pour la rebrancher
 async function appelBoussole(client, historique, message) {
   try {
     const reponse = await client.chat.completions.create({
@@ -1875,7 +2016,7 @@ async function appelJuge(client, historique, message, reponseLouane) {
         { role: "system", content: PROMPT_JUGE },
         { role: "user", content: fil },
       ],
-    });
+    }, OPTIONS_APRES_REPONSE);
     console.log("[Juge] usage:", JSON.stringify(r.usage));
     const verdict = extraireJson((r.choices[0] && r.choices[0].message.content) || "");
     if (!verdict) return null;
@@ -2001,17 +2142,27 @@ function bullesDepuisTexte(texteVoix, prenom) {
 
 // maxInstances + concurrency : robinet anti-abus (2ᵉ étage derrière App
 // Check). Largement au-dessus des besoins réels d'utilisateurs légitimes.
+// timeoutSeconds (06/10/2026) : Voix ∥ Veilleur (≤ 2 × 20 s, un réessai),
+// puis Mémoire ∥ Juge (≤ 12 s, sans réessai) + Firestore. 75 s laisse la
+// marge ; au-delà, l'app a de toute façon abandonné.
 exports.louane = onCall(
-  { secrets: [OPENAI_KEY, SUPABASE_PROXY_SECRET], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
+  {
+    secrets: [OPENAI_KEY, SUPABASE_PROXY_SECRET], enforceAppCheck: false,
+    maxInstances: 1, concurrency: 4, timeoutSeconds: 75,
+  },
   async (request) => {
   // ── Identité, quotas, bornes (audit sécurité du 02/09/2026) ──
   const uid = identite(request);
+  // Appel ponté (app iOS native via le proxy Supabase) : voir `identite`.
+  const pont = pontDe(request);
+  // `{"data": null}` ne doit pas finir en TypeError → INTERNAL.
+  const d = request.data && typeof request.data === "object" ? request.data : {};
   // Le quota par réseau est vérifié EN PARALLÈLE des autres lectures (plus
   // bas), plus avant elles : ~250 ms de moins avant que la Voix ne parte
   // (mesuré le 22/09 : chaque aller-retour Firestore US ↔ Europe compte).
   const quotaIp = exigerQuotaIp(request, "louane", uid);
   quotaIp.catch(() => {}); // rejet relevé dans le Promise.all ci-dessous
-  const message = texte(request.data.message, BORNES.message + 1);
+  const message = texte(d.message, BORNES.message + 1);
   if (!message.trim()) {
     throw new HttpsError("invalid-argument", "Le message est vide.");
   }
@@ -2019,50 +2170,54 @@ exports.louane = onCall(
     throw new HttpsError("invalid-argument",
       `Message trop long (${BORNES.message} caractères max).`);
   }
-  const historique = nettoyerHistorique(request.data.historique);
-  const heure = texte(request.data.heure, BORNES.heure); // heure locale du téléphone, ex. "23:47"
-  const jour = texte(request.data.jour, BORNES.jour); // jour local en toutes lettres
-  const accueil = texte(request.data.accueil, BORNES.accueil); // bulles d'accueil en dur
-  const prenom = texte(request.data.prenom, BORNES.prenom); // prénom (onboarding)
-  const memoire = texte(request.data.memoire, BORNES.memoire); // fiche mémoire de Louane
-  const profil = nettoyerProfil(request.data.profil); // réponses d'onboarding
+  const historique = nettoyerHistorique(d.historique);
+  const heure = texte(d.heure, BORNES.heure); // heure locale du téléphone, ex. "23:47"
+  const jour = texte(d.jour, BORNES.jour); // jour local en toutes lettres
+  const accueil = texte(d.accueil, BORNES.accueil); // bulles d'accueil en dur
+  const prenom = texte(d.prenom, BORNES.prenom); // prénom (onboarding)
+  const memoire = texte(d.memoire, BORNES.memoire); // fiche mémoire de Louane
+  const profil = nettoyerProfil(d.profil); // réponses d'onboarding
   // Programme 7 jours en cours : {actif, titre, jour, seanceDuJourFaite, termine}.
-  const parcours = nettoyerParcours(request.data.parcours);
+  const parcours = nettoyerParcours(d.parcours);
   // Historique d'écoute des séances : [{id, fois, jours}].
-  const ecoutes = nettoyerEcoutes(request.data.ecoutes);
+  const ecoutes = nettoyerEcoutes(d.ecoutes);
   // Résumé des évaluations bien-être d'Apple Santé (niveau grossier).
   // ⚠️ Donnée sensible : ne JAMAIS l'écrire dans les logs ni dans Firestore.
-  const sante = texte(request.data.sante, BORNES.sante);
-  const santeDispo = request.data.santeDispo === true;
+  const sante = texte(d.sante, BORNES.sante);
+  const santeDispo = d.santeDispo === true;
   // Vigie : ID d'installation anonyme (généré par l'app) + ID de session.
-  const vigie = texte(request.data.vigie, 40);
-  const session = texte(request.data.session, 40);
+  // Format exact de l'app (06/10/2026) : un identifiant forgé est ignoré
+  // (stats sans installation), jamais un refus du message.
+  const vigie = REGEX_VIGIE_ID.test(texte(d.vigie, 40)) ? d.vigie : "";
+  const session = REGEX_SESSION_ID.test(texte(d.session, 40)) ? d.session : "";
 
-  // Abonnement et compteurs : dès qu'il y a une identité Firebase, c'est le
-  // SERVEUR qui sait (RevenueCat + `compteurs/{uid}`). Ce que l'app envoie
-  // (`abonne`, `compteurTotal`, `compteurJour`) ne sert plus qu'aux vieilles
-  // apps sans jeton, tant que EXIGER_AUTH est false.
+  // Abonnement et compteurs : c'est le SERVEUR qui sait (RevenueCat, ou le
+  // proxy Supabase pour un appel ponté, + `compteurs/{uid}`). Le booléen
+  // `abonne` envoyé par l'app n'est plus lu (06/10/2026) ; `compteurTotal` /
+  // `compteurJour` ne servent plus que si `compteurs/{uid}` est illisible
+  // (ou au banc local sans Firestore).
   // Lectures Firestore EN PARALLÈLE (la base est en Europe, la fonction aux
   // États-Unis : chaque lecture en série coûtait un aller-retour transatlantique).
   const [abonne, compteurs] = await Promise.all([
-    abonnementVerifie(request, uid, request.data.abonne),
+    abonnementVerifie(request, uid),
     lireCompteurs(uid),
     quotaIp,
   ]);
   // Première prise de parole d'un compte ANONYME : plafond par réseau, sinon
   // une identité neuve (réinstallation, script) = 40 messages gratuits neufs.
-  if (compteurs && compteurs.total === 0 && !abonne && fournisseurAuth(request) === "anonymous") {
+  // (Appel ponté : inutile, aucun message gratuit côté app native — mur dur.)
+  if (!pont && compteurs && compteurs.total === 0 && !abonne && fournisseurAuth(request) === "anonymous") {
     if (!(await compterParJour("quota_ip", cleIp(ipDe(request)), "nouveaux", PLAFOND_IP.nouveaux))) {
       throw new HttpsError("resource-exhausted", "Trop de nouveaux comptes depuis ce réseau aujourd'hui.");
     }
   }
-  const compteurTotal = compteurs ? compteurs.total : (Number(request.data.compteurTotal) || 0);
-  const compteurJour = compteurs ? compteurs.n : (Number(request.data.compteurJour) || 0);
+  const compteurTotal = compteurs ? compteurs.total : (Number(d.compteurTotal) || 0);
+  const compteurJour = compteurs ? compteurs.n : (Number(d.compteurJour) || 0);
   // Clé de la mémoire d'alerte (message 3114) : le compte, sinon l'installation.
   const cleSecurite = uid || vigie;
 
   // Un seul client OpenAI pour tout : Voix, Veilleur, Mémoire (Luna, voir MODELE).
-  const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
+  const client = nouveauClientOpenAI();
 
   // Socle commun d'une ligne de stats Vigie (sans texte, sans prénom).
   const statsBase = {
@@ -2091,7 +2246,10 @@ exports.louane = onCall(
   // la Voix, mais le Veilleur vérifie quand même le message. Si danger → le
   // message de sécurité part quoi qu'il arrive. Sinon → signal paywall/plafond,
   // c'est l'app qui affiche l'écran correspondant.
-  const limiteGratuit = !abonne && compteurTotal >= GRATUIT_MAX;
+  // App native (appel ponté) : MUR DUR, aucun message découverte offert
+  // (06/10/2026) — sans Premium vérifié par le proxy, c'est le paywall.
+  // L'app Flutter historique garde ses 40 messages découverte.
+  const limiteGratuit = !abonne && (!!pont || compteurTotal >= GRATUIT_MAX);
   const limiteAbonne = abonne && compteurJour >= PLAFOND_JOUR_ABONNE;
   if (limiteGratuit || limiteAbonne) {
     // Vigie : on note qu'une personne a tapé le mur (gratuit : le Veilleur
@@ -2101,6 +2259,7 @@ exports.louane = onCall(
       ...statsBase,
       niveau: veilleurSeul.niveau,
       categorie: veilleurSeul.categorie,
+      veilleurSecours: !!veilleurSeul.secours, // Veilleur muet → filet lexical (06/10)
       paywall: limiteGratuit,
       plafond: limiteAbonne,
       carReponse: 0,
@@ -2132,11 +2291,41 @@ exports.louane = onCall(
 
   // La Voix et le Veilleur tournent EN PARALLÈLE (pas de latence ajoutée).
   // (La Boussole, en pause, se rebrancherait ici — voir plus haut.)
+  // 06/10/2026 : une panne de la Voix n'emporte plus le Veilleur. Si la Voix
+  // tombe ET que le message est en danger (niveau 2, Veilleur ou filet
+  // lexical), le message de sécurité part quand même au lieu d'une erreur.
+  let erreurVoix = null;
   const [texteVoix, veilleur] = await Promise.all([
     appelVoix(client, historique, message, heure, jour, prenom, memoire, profil, accueil, parcours, ecoutes, sante, santeDispo,
-      consigneQuota(abonne, compteurTotal)),
+      consigneQuota(abonne, compteurTotal)).catch((e) => {
+      erreurVoix = e;
+      return "";
+    }),
     appelVeilleur(client, historique, message),
   ]);
+  if (erreurVoix) {
+    if (veilleur.niveau === 2) {
+      // Pas de Voix pour « continuer à accompagner » : on redonne le message
+      // de sécurité même s'il a déjà été donné dans les 24 h (mieux vaut le
+      // répéter qu'afficher une erreur à quelqu'un en danger).
+      console.error("[Voix] erreur, niveau 2 → message de sécurité :", erreurVoix);
+      await marquerAlerte(cleSecurite);
+      await enregistrerStatsLouane({
+        ...statsBase, niveau: 2, categorie: veilleur.categorie, paywall: false, plafond: false,
+        carReponse: MESSAGE_SECURITE.length, voixEnPanne: true, veilleurSecours: !!veilleur.secours,
+      });
+      return {
+        reponse: MESSAGE_SECURITE,
+        bulles: [MESSAGE_SECURITE],
+        securite: true,
+        niveau: 2,
+        categorie: veilleur.categorie,
+        memoire: memoire,
+      };
+    }
+    // Hors danger : l'erreur remonte comme avant (l'app affiche son repli).
+    throw erreurVoix;
+  }
   // Message répondu → compté côté serveur (les vieilles apps comptent en local).
   await incrementerCompteurs(uid, compteurs);
 
@@ -2194,6 +2383,7 @@ exports.louane = onCall(
     ...statsBase,
     niveau: veilleur.niveau,
     categorie: veilleur.categorie,
+    veilleurSecours: !!veilleur.secours, // Veilleur muet → filet lexical (06/10)
     paywall: false,
     plafond: false,
     parcoursPropose,
@@ -2319,23 +2509,25 @@ const REGEX_TYPE_EVENEMENT = /^[a-z0-9_]{1,40}$/;
 const REGEX_VERSION = /^\d{1,3}\.\d{1,3}\.\d{1,3}$/;
 
 exports.trace = onCall(
-  { enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
+  { enforceAppCheck: false, maxInstances: 1, concurrency: 8, timeoutSeconds: 30 },
   async (request) => {
     // Audit du 02/09/2026 : identifiants au format exact de l'app (les
     // sessions réservées au serveur — "revenuecat", "rappels", "cron" — ne
     // peuvent donc plus être forgées), types en snake_case, quotas par IP et
     // par installation, événements plafonnés. Refus = { ok: false }, jamais
     // d'erreur : l'app ne doit pas rejouer un lot refusé.
-    const uid = identite(request);
-    const vigie = texte(request.data.vigie, 40);
-    const session = texte(request.data.session, 40);
+    identite(request);
+    // `{"data": null}` → traitement normal, pas de TypeError → INTERNAL (06/10).
+    const d = request.data && typeof request.data === "object" ? request.data : {};
+    const vigie = texte(d.vigie, 40);
+    const session = texte(d.session, 40);
     if (!REGEX_VIGIE_ID.test(vigie) || !REGEX_SESSION_ID.test(session)) {
       return { ok: false };
     }
-    const evenements = Array.isArray(request.data.evenements) ?
-      request.data.evenements.slice(0, TRACE_MAX_EVENEMENTS) : [];
-    const version = REGEX_VERSION.test(request.data.version) ? request.data.version : "";
-    const os = ["ios", "android"].includes(request.data.os) ? request.data.os : "";
+    const evenements = Array.isArray(d.evenements) ?
+      d.evenements.slice(0, TRACE_MAX_EVENEMENTS) : [];
+    const version = REGEX_VERSION.test(d.version) ? d.version : "";
+    const os = ["ios", "android"].includes(d.os) ? d.os : "";
     if (evenements.length === 0) return { ok: false };
 
     if (!(await compterParJour("quota_ip", cleIp(ipDe(request)), "trace", PLAFOND_IP.trace))) {
@@ -2394,17 +2586,19 @@ const RETOUR_TEXTE_MAX = 1000; // même borne que retourTexteMax dans l'app
 const REGEX_DECLENCHEUR = /^[a-z_]{1,40}$/;
 
 exports.retour = onCall(
-  { enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
+  { enforceAppCheck: false, maxInstances: 1, concurrency: 4, timeoutSeconds: 30 },
   async (request) => {
     identite(request);
-    const vigie = texte(request.data.vigie, 40);
-    const session = texte(request.data.session, 40);
+    // `{"data": null}` → traitement normal, pas de TypeError → INTERNAL (06/10).
+    const d = request.data && typeof request.data === "object" ? request.data : {};
+    const vigie = texte(d.vigie, 40);
+    const session = texte(d.session, 40);
     if (!REGEX_VIGIE_ID.test(vigie) || !REGEX_SESSION_ID.test(session)) {
       return { ok: false };
     }
-    const raisons = Array.isArray(request.data.raisons) ?
-      [...new Set(request.data.raisons.filter((r) => RAISONS_RETOUR.includes(r)))] : [];
-    const mot = texte(request.data.texte, RETOUR_TEXTE_MAX).trim();
+    const raisons = Array.isArray(d.raisons) ?
+      [...new Set(d.raisons.filter((r) => RAISONS_RETOUR.includes(r)))] : [];
+    const mot = texte(d.texte, RETOUR_TEXTE_MAX).trim();
     if (raisons.length === 0 && !mot) return { ok: false };
 
     if (!(await compterParJour("quota_ip", cleIp(ipDe(request)), "retour", PLAFOND_IP.retour))) {
@@ -2416,13 +2610,13 @@ exports.retour = onCall(
     // Banc local sans émulateur Firestore : on ne salit pas la vraie boîte.
     if (!VIGIE_ECRITURE) return { ok: true };
 
-    const version = texte(request.data.version, 12);
-    const declencheur = texte(request.data.declencheur, 40);
+    const version = texte(d.version, 12);
+    const declencheur = texte(d.declencheur, 40);
     await db.collection("retours").add({
       vigie,
       session,
       version: REGEX_VERSION.test(version) ? version : "",
-      os: ["ios", "android"].includes(request.data.os) ? request.data.os : "",
+      os: ["ios", "android"].includes(d.os) ? d.os : "",
       declencheur: REGEX_DECLENCHEUR.test(declencheur) ? declencheur : "",
       raisons,
       texte: mot,
@@ -2487,11 +2681,20 @@ exports.revenuecat = onRequest(
     // Rejeu (RevenueCat renvoie un événement tant qu'il n'a pas eu 200) : un
     // événement déjà traité ne doit ni dupliquer la ligne Vigie ni rejouer
     // la fiche de rappel. `rc_events/{id}` : create() échoue s'il existe.
+    // 06/10/2026 : si le traitement échoue APRÈS la pose du marqueur, on
+    // l'efface avant de répondre 500 — sinon le rejeu de RevenueCat était
+    // pris pour un doublon et l'événement perdu pour de bon.
+    // `expireAt` (+90 j) : ⚠️ une politique TTL Firestore doit être activée
+    // sur rc_events.expireAt (console ou `gcloud firestore fields ttls
+    // update expireAt --collection-group=rc_events --enable-ttl`), sinon les
+    // marqueurs s'accumulent à vie.
     const idEvenement = String(e.id || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 100);
-    if (idEvenement) {
+    const marqueur = idEvenement ? db.collection("rc_events").doc(idEvenement) : null;
+    if (marqueur) {
       try {
-        await db.collection("rc_events").doc(idEvenement).create({
+        await marqueur.create({
           type: e.type, ts: FieldValue.serverTimestamp(),
+          expireAt: new Date(Date.now() + RC_EVENTS_RETENTION_MS),
         });
       } catch (err) {
         if (err.code === 6) { // ALREADY_EXISTS
@@ -2501,52 +2704,68 @@ exports.revenuecat = onRequest(
         throw err;
       }
     }
-
-    // L'étiquette posée par l'app (setAttributes). À défaut (versions d'app
-    // antérieures à la 1.0.15), on retombe sur l'ID RevenueCat : l'événement
-    // est quand même compté, juste pas encore croisable avec le parcours.
-    const attrs = e.subscriber_attributes || {};
-    const etiquette = attrs.vigie && typeof attrs.vigie.value === "string" ?
-      attrs.vigie.value : "";
-    const vigie = (etiquette || String(e.app_user_id || "rc_inconnu")).slice(0, 40);
-
-    const typeVigie = typeVigieDepuisRc(e);
-    await db.collection("vigie_events").doc().set({
-      vigie,
-      session: "revenuecat",
-      version: "webhook",
-      type: typeVigie,
-      props: nettoyerProps({
-        produit: e.product_id,
-        magasin: e.store,
-        env: e.environment,
-        prix: e.price_in_purchased_currency,
-        devise: e.currency,
-        raison: e.cancel_reason,
-        // Un remboursement arrive en CANCELLATION avec cette raison précise.
-        remboursement: e.cancel_reason === "CUSTOMER_SUPPORT" || undefined,
-        rc_user: e.app_user_id,
-      }),
-      tsc: Number(e.event_timestamp_ms) || null,
-      ts: FieldValue.serverTimestamp(),
-    });
-
-    // La promesse du mur (« on te prévient avant la fin de l'essai ») se
-    // tient ici : chaque événement d'essai met à jour la fiche de rappel
-    // e-mail (section RAPPELS ci-dessous). Un pépin ne doit PAS faire
-    // échouer le webhook : RevenueCat rejouerait l'événement et dupliquerait
-    // la ligne Vigie écrite juste au-dessus.
     try {
-      await majRappelEssai(e, typeVigie, vigie);
+      await traiterEvenementRc(e);
     } catch (err) {
-      console.error("[Rappels] mise à jour de la fiche échouée (ignorée) :", err);
+      console.error("[RevenueCat] traitement échoué, marqueur retiré pour le rejeu :", err);
+      if (marqueur) {
+        await marqueur.delete().catch((errSuppr) =>
+          console.error("[RevenueCat] marqueur non retiré :", idEvenement, errSuppr.message));
+      }
+      res.status(500).send("erreur, réessaie");
+      return;
     }
-    // L'abonnement a bougé : on oublie le cache serveur de ces identifiants
-    // (le prochain appel de l'app relit RevenueCat et repose le custom claim).
-    await oublierCacheAbonne([e.app_user_id, e.original_app_user_id,
-      ...(Array.isArray(e.aliases) ? e.aliases : [])]);
     res.status(200).json({ ok: true });
   });
+
+const RC_EVENTS_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
+// Traitement d'un événement RevenueCat (déjà authentifié et dédoublonné).
+async function traiterEvenementRc(e) {
+  // L'étiquette posée par l'app (setAttributes). À défaut (versions d'app
+  // antérieures à la 1.0.15), on retombe sur l'ID RevenueCat : l'événement
+  // est quand même compté, juste pas encore croisable avec le parcours.
+  const attrs = e.subscriber_attributes || {};
+  const etiquette = attrs.vigie && typeof attrs.vigie.value === "string" ?
+    attrs.vigie.value : "";
+  const vigie = (etiquette || String(e.app_user_id || "rc_inconnu")).slice(0, 40);
+
+  const typeVigie = typeVigieDepuisRc(e);
+  await db.collection("vigie_events").doc().set({
+    vigie,
+    session: "revenuecat",
+    version: "webhook",
+    type: typeVigie,
+    props: nettoyerProps({
+      produit: e.product_id,
+      magasin: e.store,
+      env: e.environment,
+      prix: e.price_in_purchased_currency,
+      devise: e.currency,
+      raison: e.cancel_reason,
+      // Un remboursement arrive en CANCELLATION avec cette raison précise.
+      remboursement: e.cancel_reason === "CUSTOMER_SUPPORT" || undefined,
+      rc_user: e.app_user_id,
+    }),
+    tsc: Number(e.event_timestamp_ms) || null,
+    ts: FieldValue.serverTimestamp(),
+  });
+
+  // La promesse du mur (« on te prévient avant la fin de l'essai ») se
+  // tient ici : chaque événement d'essai met à jour la fiche de rappel
+  // e-mail (section RAPPELS ci-dessous). Un pépin ne doit PAS faire
+  // échouer le webhook : RevenueCat rejouerait l'événement et dupliquerait
+  // la ligne Vigie écrite juste au-dessus.
+  try {
+    await majRappelEssai(e, typeVigie, vigie);
+  } catch (err) {
+    console.error("[Rappels] mise à jour de la fiche échouée (ignorée) :", err);
+  }
+  // L'abonnement a bougé : on oublie le cache serveur de ces identifiants
+  // (le prochain appel de l'app relit RevenueCat et repose le custom claim).
+  await oublierCacheAbonne([e.app_user_id, e.original_app_user_id,
+    ...(Array.isArray(e.aliases) ? e.aliases : [])]);
+}
 
 // ============================================================
 //  RAPPELS DE FIN D'ESSAI — tenir la promesse du paywall :
@@ -2724,29 +2943,50 @@ Tu reçois ce message parce qu'un essai gratuit a été activé sur Quieto avec 
   return { sujet, texte, html };
 }
 
-// Envoie un rappel via Resend (API HTTP, fetch natif de Node 24 — pas de
-// dépendance). Jette en cas d'échec : l'appelant gère le réessai.
-async function envoyerRappel(f) {
-  const { sujet, texte, html } = contenuRappel(f);
+// POST vers Resend (API HTTP, fetch natif de Node 24 — pas de dépendance).
+// 06/10/2026 : délai borné (8 s) et, quand l'appelant en donne une, clé
+// d'idempotence (en-tête `Idempotency-Key`, retenue 24 h par Resend) : un
+// même e-mail rejoué (réessai, webhook en double) ne part qu'une fois.
+// Resend répond 409 quand la clé a déjà servi (ou sert en ce moment) : on
+// le traite comme « déjà envoyé ». Jette sur toute autre erreur.
+async function postResend(corps, cleIdempotence) {
+  const headers = {
+    "Authorization": "Bearer " + RESEND_KEY.value(),
+    "Content-Type": "application/json",
+  };
+  if (cleIdempotence) {
+    headers["Idempotency-Key"] = crypto.createHash("sha256")
+      .update(String(cleIdempotence)).digest("hex");
+  }
   const reponse = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      "Authorization": "Bearer " + RESEND_KEY.value(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: EXPEDITEUR_RAPPEL,
-      to: [f.email],
-      reply_to: REPONSE_RAPPEL,
-      subject: sujet,
-      text: texte,
-      html,
-    }),
+    headers,
+    body: JSON.stringify(corps),
+    signal: AbortSignal.timeout(8000),
   });
+  if (reponse.status === 409 && cleIdempotence) {
+    console.warn("[Resend] clé d'idempotence déjà utilisée : e-mail considéré comme envoyé.");
+    return;
+  }
   if (!reponse.ok) {
     const detail = (await reponse.text().catch(() => "")).slice(0, 300);
     throw new Error(`Resend ${reponse.status} : ${detail}`);
   }
+}
+
+// Envoie un rappel via Resend. Jette en cas d'échec : l'appelant gère le
+// réessai. Clé d'idempotence = la fiche + la fin d'essai : un rappel déjà
+// parti (mise à jour de la fiche ratée juste après) ne repart pas.
+async function envoyerRappel(f, idFiche) {
+  const { sujet, texte, html } = contenuRappel(f);
+  await postResend({
+    from: EXPEDITEUR_RAPPEL,
+    to: [f.email],
+    reply_to: REPONSE_RAPPEL,
+    subject: sujet,
+    text: texte,
+    html,
+  }, `rappel-essai/${idFiche}/${f.finEssaiMs}`);
 }
 
 // La première fonction programmée du backend : toutes les heures, envoie
@@ -2786,7 +3026,7 @@ exports.rappelsEssai = onSchedule(
       }
 
       try {
-        await envoyerRappel(f);
+        await envoyerRappel(f, doc.id);
         envoyes++;
         await doc.ref.update({
           statut: "envoye",
@@ -3288,27 +3528,31 @@ function parcoursDefautPour(profil) {
 // Un appel par création de programme (rare : ~1 par utilisateur), bridé
 // comme le reste. La qualité des mots personnels EST le produit — surveiller
 // les programmes générés depuis la bascule Sonnet → Luna du 14/08/2026.
+// timeoutSeconds : jusqu'à deux générations (45 s chacune, + réessai réseau).
 exports.genererParcours = onCall(
-  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 2 },
+  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 2, timeoutSeconds: 180 },
   async (request) => {
     // Audit du 02/09/2026 : identité, quotas, bornes, abonnement vérifié.
     const uid = identite(request);
+    // `{"data": null}` → traitement normal, pas de TypeError → INTERNAL (06/10).
+    const d = request.data && typeof request.data === "object" ? request.data : {};
     await exigerQuotaIp(request, "parcours", uid);
-    const memoire = texte(request.data.memoire, BORNES.memoire);
-    const profil = nettoyerProfil(request.data.profil);
-    const prenom = texte(request.data.prenom, BORNES.prenom).trim();
+    const memoire = texte(d.memoire, BORNES.memoire);
+    const profil = nettoyerProfil(d.profil);
+    const prenom = texte(d.prenom, BORNES.prenom).trim();
     // ⚠️ Donnée sensible (Apple Santé) : jamais dans les logs ni Firestore.
-    const sante = texte(request.data.sante, BORNES.sante);
-    const ecoutes = nettoyerEcoutes(request.data.ecoutes) || [];
+    const sante = texte(d.sante, BORNES.sante);
+    const ecoutes = nettoyerEcoutes(d.ecoutes) || [];
     // Tout premier programme de la personne (envoyé par l'app 1.0.20+) :
     // jour 1 forcé à « Ma première méditation ». Voir en tête de section.
-    const premierParcours = request.data.premierParcours === true;
-    const vigie = texte(request.data.vigie, 40);
-    const session = texte(request.data.session, 40);
+    const premierParcours = d.premierParcours === true;
+    // Identifiants Vigie au format exact de l'app, sinon ignorés (06/10).
+    const vigie = REGEX_VIGIE_ID.test(texte(d.vigie, 40)) ? d.vigie : "";
+    const session = REGEX_SESSION_ID.test(texte(d.session, 40)) ? d.session : "";
 
     // Le programme 7 jours est réservé aux abonnées Premium : vérifié auprès
     // de RevenueCat dès qu'il y a un compte (voir abonnementVerifie).
-    const abonne = await abonnementVerifie(request, uid, request.data.abonne);
+    const abonne = await abonnementVerifie(request, uid);
     if (!abonne) {
       throw new HttpsError("permission-denied", "Le programme est réservé à Quieto Premium.");
     }
@@ -3316,7 +3560,7 @@ exports.genererParcours = onCall(
     // Historique nettoyé (rôles valides, texte borné, fenêtre glissante) ; on
     // fusionne les rôles consécutifs identiques et on démarre sur un message
     // user (exigences de l'API).
-    let historique = nettoyerHistorique(request.data.historique);
+    let historique = nettoyerHistorique(d.historique);
     while (historique.length && historique[0].role !== "user") historique = historique.slice(1);
     const messages = [];
     for (const m of [...historique, { role: "user", content: "Crée maintenant mon programme de 7 jours." }]) {
@@ -3327,7 +3571,9 @@ exports.genererParcours = onCall(
         messages.push({ role: m.role, content: m.content });
       }
     }
-    const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
+    // Jusqu'à 4000 tokens de JSON + réflexion, et un 2ᵉ appel si le JSON est
+    // invalide : 45 s par appel (au lieu de 20), un réessai réseau.
+    const client = nouveauClientOpenAI({ timeout: 45000 });
     const debut = Date.now();
 
     const appeler = async () => {
@@ -3457,20 +3703,22 @@ const CONSIGNE_ACCUEIL_ONBOARDING =
   "aucune séance nommée.";
 
 exports.accueilOnboarding = onCall(
-  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
+  { secrets: [OPENAI_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8, timeoutSeconds: 60 },
   async (request) => {
     // Audit du 02/09/2026 : identité, quotas, bornes.
     const uid = identite(request);
+    // `{"data": null}` → traitement normal, pas de TypeError → INTERNAL (06/10).
+    const d = request.data && typeof request.data === "object" ? request.data : {};
     await exigerQuotaIp(request, "accueil", uid);
-    const prenom = texte(request.data.prenom, BORNES.prenom);
-    const heure = texte(request.data.heure, BORNES.heure);
-    const jour = texte(request.data.jour, BORNES.jour);
-    const profil = nettoyerProfil(request.data.profil);
-    const vigie = texte(request.data.vigie, 40);
-    const session = texte(request.data.session, 40);
+    const prenom = texte(d.prenom, BORNES.prenom);
+    const heure = texte(d.heure, BORNES.heure);
+    const jour = texte(d.jour, BORNES.jour);
+    const profil = nettoyerProfil(d.profil);
+    const vigie = texte(d.vigie, 40);
+    const session = texte(d.session, 40);
 
     const debut = Date.now();
-    const client = new OpenAI({ apiKey: OPENAI_KEY.value() });
+    const client = nouveauClientOpenAI();
 
     const reponse = await client.chat.completions.create({
       model: MODELE,
@@ -3556,7 +3804,7 @@ exports.accueilOnboarding = onCall(
 const RC_API_KEY = defineSecret("RC_API_KEY");
 
 exports.synchroniserAbonnement = onCall(
-  { secrets: [RC_API_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
+  { secrets: [RC_API_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8, timeoutSeconds: 30 },
   async (request) => {
     const uid = request.auth && request.auth.uid;
     if (!uid) throw new HttpsError("unauthenticated", "Connexion requise.");
@@ -3589,7 +3837,7 @@ exports.synchroniserAbonnement = onCall(
 // ============================================================
 
 exports.supprimerDonnees = onCall(
-  { secrets: [RC_API_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4 },
+  { secrets: [RC_API_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 4, timeoutSeconds: 60 },
   async (request) => {
     const uid = request.auth && request.auth.uid;
     if (!uid) throw new HttpsError("unauthenticated", "Connexion requise.");
@@ -3778,7 +4026,7 @@ async function quitterEntreprise(uid) {
 // Les erreurs portent `details.raison` (compte | inconnu | inactif |
 // complet) et un message déjà rédigé pour l'écran.
 exports.accesEntreprise = onCall(
-  { secrets: [RC_API_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8 },
+  { secrets: [RC_API_KEY], enforceAppCheck: false, maxInstances: 1, concurrency: 8, timeoutSeconds: 60 },
   async (request) => {
     const uid = request.auth && request.auth.uid;
     if (!uid) throw new HttpsError("unauthenticated", "Connexion requise.");
@@ -3996,9 +4244,16 @@ async function synchroniserEntrepriseStripe(idAbo, session) {
     if (!avant || !avant.nomManuel) maj.nom = nom;
     if (!avant || !avant.code) Object.assign(maj, { code, codeCle: normaliserCode(code) });
     if (!avant) Object.assign(maj, { nbMembres: 0, codeEnvoye: false, creeLe: FieldValue.serverTimestamp() });
+    // Réservation de l'envoi DANS la transaction (06/10/2026) : deux
+    // webhooks simultanés lisaient tous deux codeEnvoye = false → deux
+    // e-mails. La réservation expire au bout de 10 min (envoi planté).
+    const enCoursMs = Number(avant && avant.codeEnvoiEnCoursMs) || 0;
+    const envoyer = actif && !(avant && avant.codeEnvoye) && !!email &&
+      Date.now() - enCoursMs > 10 * 60 * 1000;
+    if (envoyer) maj.codeEnvoiEnCoursMs = Date.now();
     t.set(ref, maj, { merge: true });
     return {
-      envoyer: actif && !(avant && avant.codeEnvoye) && !!email,
+      envoyer, idAbo,
       code, email, places,
       nom: maj.nom || avant.nom,
       gererUrl: maj.gererUrl,
@@ -4006,8 +4261,14 @@ async function synchroniserEntrepriseStripe(idAbo, session) {
     };
   });
   if (bilan.envoyer) {
-    await envoyerCodeEntreprise(bilan);
-    await ref.update({ codeEnvoye: true });
+    try {
+      await envoyerCodeEntreprise(bilan);
+    } catch (e) {
+      // Réservation levée : le rejeu de Stripe (500) retentera l'envoi.
+      await ref.update({ codeEnvoiEnCoursMs: 0 }).catch(() => {});
+      throw e;
+    }
+    await ref.update({ codeEnvoye: true, codeEnvoiEnCoursMs: 0 });
   }
   console.log("[Stripe]", idAbo, bilan.nom, statut, places, "places, payé", paye, enCours ? "(SEPA en cours)" : "",
     "fin", finMs ? new Date(finMs).toISOString() : "—");
@@ -4108,27 +4369,19 @@ function contenuCodeEntreprise({ nom, code, places, gererUrl, factureUrl: pdf })
   return { sujet, texte, html };
 }
 
+// Clé d'idempotence = l'abonnement + le code : deux webhooks Stripe
+// simultanés (ou un rejeu après un échec de `codeEnvoye`) n'envoient
+// qu'un seul e-mail.
 async function envoyerCodeEntreprise(b) {
   const { sujet, texte, html } = contenuCodeEntreprise(b);
-  const reponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": "Bearer " + RESEND_KEY.value(),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: EXPEDITEUR_RAPPEL,
-      to: [b.email],
-      reply_to: CONTACT_ENTREPRISE,
-      subject: sujet,
-      text: texte,
-      html,
-    }),
-  });
-  if (!reponse.ok) {
-    const detail = (await reponse.text().catch(() => "")).slice(0, 300);
-    throw new Error(`Resend ${reponse.status} : ${detail}`);
-  }
+  await postResend({
+    from: EXPEDITEUR_RAPPEL,
+    to: [b.email],
+    reply_to: CONTACT_ENTREPRISE,
+    subject: sujet,
+    text: texte,
+    html,
+  }, `code-entreprise/${b.idAbo}/${b.code}`);
 }
 
 // ── Formulaire « Demander une démo » du site Quieto Entreprise ──
@@ -4180,18 +4433,13 @@ exports.demandeEntreprise = onRequest(
       demande.message || "(pas de message)",
     ];
     try {
-      const r = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { "Authorization": "Bearer " + RESEND_KEY.value(), "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from: EXPEDITEUR_RAPPEL,
-          to: [CONTACT_ENTREPRISE],
-          reply_to: demande.email,
-          subject: `Quieto Entreprise : demande de ${demande.entreprise}${demande.taille ? " (" + demande.taille + ")" : ""}`,
-          text: lignes.join("\n"),
-        }),
+      await postResend({
+        from: EXPEDITEUR_RAPPEL,
+        to: [CONTACT_ENTREPRISE],
+        reply_to: demande.email,
+        subject: `Quieto Entreprise : demande de ${demande.entreprise}${demande.taille ? " (" + demande.taille + ")" : ""}`,
+        text: lignes.join("\n"),
       });
-      if (!r.ok) throw new Error("Resend " + r.status + " " + (await r.text().catch(() => "")).slice(0, 200));
     } catch (e) {
       console.error("[Démo] e-mail non envoyé :", e.message);
       res.status(502).json({ ok: false, erreur: "envoi impossible" });
@@ -4345,7 +4593,7 @@ exports.factureEntreprise = onRequest(
       return;
     }
     try {
-      const r = await fetch(u);
+      const r = await fetch(u, { signal: AbortSignal.timeout(8000) });
       if (!r.ok) throw new Error("Stripe " + r.status);
       const dispo = r.headers.get("content-disposition") || "";
       const numero = (dispo.match(/-(\d+)\.pdf/i) || [])[1];

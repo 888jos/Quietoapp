@@ -13,3 +13,7 @@ project_id = "quieto-06"
 [functions.revenuecat-webhook]
 verify_jwt = false
 
+
+# Svix-signed webhook (SUPERWALL_WEBHOOK_SECRET); no Supabase JWT.
+[functions.superwall-webhook]
+verify_jwt = false

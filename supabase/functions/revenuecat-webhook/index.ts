@@ -1,102 +1,85 @@
+// Legacy RevenueCat → Supabase entitlements, kept until the Flutter app is
+// retired. Same single writer as Superwall (public.apply_store_subscription),
+// so retries and replays can never overwrite a newer state.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-
-const jsonHeaders = { "content-type": "application/json" };
-
-function response(status: number, body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), { status, headers: jsonHeaders });
-}
+import { adminClient, readBody, reply, timingSafeEqual } from "../_shared/http.ts";
+import { applyArguments, revenueCatState } from "../_shared/entitlements.ts";
 
 async function digest(value: string): Promise<Uint8Array> {
-  const bytes = new TextEncoder().encode(value);
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
-}
-
-async function constantTimeEqual(left: string, right: string): Promise<boolean> {
-  const [a, b] = await Promise.all([digest(left), digest(right)]);
-  let difference = a.length ^ b.length;
-  const size = Math.max(a.length, b.length);
-  for (let index = 0; index < size; index += 1) {
-    difference |= (a[index % a.length] ?? 0) ^ (b[index % b.length] ?? 0);
-  }
-  return difference === 0;
-}
-
-function entitlementStatus(event: Record<string, unknown>): string {
-  const type = String(event.type ?? "").toUpperCase();
-  if (type === "BILLING_ISSUE") return "billing_issue";
-  if (type === "EXPIRATION") return "expired";
-  if (type === "CANCELLATION" && Number(event.expiration_at_ms ?? 0) <= Date.now()) return "expired";
-  if (type === "UNCANCELLATION" || type === "RENEWAL" || type === "INITIAL_PURCHASE" || type === "PRODUCT_CHANGE") return "active";
-  if (type === "NON_RENEWING_PURCHASE") return "active";
-  if (String(event.period_type ?? "").toUpperCase() === "TRIAL") return "trial";
-  return "unknown";
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
 }
 
 Deno.serve(async (request: Request) => {
-  if (request.method !== "POST") return response(405, { error: "method_not_allowed" });
+  if (request.method !== "POST") return reply(405, { error: "method_not_allowed" });
 
   const expected = Deno.env.get("REVENUECAT_WEBHOOK_SECRET") ?? "";
   const supplied = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
-  if (!expected || !supplied || !(await constantTimeEqual(supplied, expected))) {
-    return response(401, { error: "unauthorized" });
+  if (!expected || !supplied || !timingSafeEqual(await digest(supplied), await digest(expected))) {
+    return reply(401, { error: "unauthorized" });
   }
+  const admin = adminClient();
+  if (!admin) return reply(503, { error: "server_not_configured" });
 
+  const body = await readBody(request, 128 * 1024);
+  if (body === null) return reply(413, { error: "payload_too_large" });
   let payload: Record<string, unknown>;
   try {
-    payload = await request.json();
+    payload = JSON.parse(body);
   } catch {
-    return response(400, { error: "invalid_json" });
+    return reply(400, { error: "invalid_json" });
   }
 
   const event = (payload.event ?? payload) as Record<string, unknown>;
-  const eventID = String(event.id ?? "");
-  const appUserID = String(event.app_user_id ?? "");
-  if (!eventID || !appUserID) return response(400, { error: "missing_event_identity" });
+  const eventID = String(event.id ?? "").slice(0, 200);
+  if (!eventID) return reply(200, { ok: true, ignored: "missing_event_id" });
+  const appUserID = typeof event.app_user_id === "string" ? event.app_user_id.slice(0, 128) : "";
 
-  const supabaseURL = Deno.env.get("SUPABASE_URL");
-  const secretKey = Deno.env.get("SUPABASE_SECRET_KEY");
-  if (!supabaseURL || !secretKey) return response(503, { error: "server_not_configured" });
-  const supabase = createClient(supabaseURL, secretKey, { auth: { persistSession: false } });
-
-  const occurredAtMs = Number(event.event_timestamp_ms ?? event.purchased_at_ms ?? Date.now());
-  const expiresAtMs = Number(event.expiration_at_ms ?? 0);
-  const aliases = Array.isArray(event.aliases) ? event.aliases.map(String) : [];
-
-  const { error: profileError } = await supabase.from("profiles").upsert({
-    user_id: appUserID,
-    firebase_uid: appUserID,
-    is_anonymous: false,
-  }, { onConflict: "user_id", ignoreDuplicates: true });
-  if (profileError) return response(500, { error: "profile_upsert_failed" });
-
-  const { error: eventError } = await supabase.from("subscription_events").upsert({
+  const { error: insertError } = await admin.from("subscription_events").upsert({
     source: "revenuecat",
     source_event_id: eventID,
-    user_id: appUserID,
-    event_type: String(event.type ?? "UNKNOWN"),
-    occurred_at: new Date(occurredAtMs).toISOString(),
+    event_type: String(event.type ?? "UNKNOWN").slice(0, 80),
+    occurred_at: new Date(Number(event.event_timestamp_ms ?? Date.now())).toISOString(),
     payload,
-    processed_at: new Date().toISOString(),
   }, { onConflict: "source,source_event_id", ignoreDuplicates: true });
-  if (eventError) return response(500, { error: "event_persist_failed" });
+  if (insertError) return reply(500, { error: "event_persist_failed" });
 
-  const { error: accountError } = await supabase.from("subscription_accounts").upsert({
-    user_id: appUserID,
-    revenuecat_app_user_id: appUserID,
-    original_app_user_id: String(event.original_app_user_id ?? appUserID),
-    status: entitlementStatus(event),
-    product_id: event.product_id ? String(event.product_id) : null,
-    store: event.store ? String(event.store) : null,
-    environment: event.environment ? String(event.environment) : null,
-    expires_at: expiresAtMs > 0 ? new Date(expiresAtMs).toISOString() : null,
-    will_renew: event.will_renew === true,
-    source: "revenuecat",
-    source_updated_at: new Date(occurredAtMs).toISOString(),
-    raw_customer_info: { event, aliases },
-  }, { onConflict: "user_id" });
-  if (accountError) return response(500, { error: "entitlement_projection_failed" });
+  const { data: stored, error: readError } = await admin.from("subscription_events")
+    .select("id, processed_at").eq("source", "revenuecat").eq("source_event_id", eventID).single();
+  if (readError || !stored) return reply(500, { error: "event_read_failed" });
+  if (stored.processed_at) return reply(200, { ok: true, duplicate: true });
 
-  return response(200, { ok: true, id: eventID });
+  // TRANSFER, TEST and events without a user are recorded but change nothing.
+  const state = revenueCatState(event);
+  if (!state || !appUserID) {
+    await admin.from("subscription_events").update({ processed_at: new Date().toISOString(), processing_error: "not_applicable" }).eq("id", stored.id);
+    return reply(200, { ok: true, ignored: String(event.type ?? "unknown") });
+  }
+
+  // A Firebase account already linked to a Supabase user resolves to that user;
+  // otherwise the legacy Firebase UID gets its own (server-side) profile row.
+  const { data: linked } = await admin.from("profiles").select("user_id").eq("firebase_uid", appUserID).limit(1);
+  let userID = linked?.[0]?.user_id as string | undefined;
+  if (!userID) {
+    const { error: profileError } = await admin.from("profiles").upsert(
+      { user_id: appUserID, is_anonymous: false },
+      { onConflict: "user_id", ignoreDuplicates: true },
+    );
+    if (profileError) return reply(500, { error: "profile_upsert_failed" });
+    userID = appUserID;
+  }
+
+  const { data: resolved, error: applyError } = await admin.rpc(
+    "apply_store_subscription",
+    applyArguments(state, userID, false, "revenuecat", event),
+  );
+  if (applyError) {
+    await admin.from("subscription_events").update({ processing_error: "apply_failed" }).eq("id", stored.id);
+    return reply(500, { error: "entitlement_projection_failed" });
+  }
+  await admin.from("subscription_events").update({
+    user_id: resolved ?? userID,
+    processed_at: new Date().toISOString(),
+    processing_error: null,
+  }).eq("id", stored.id);
+  return reply(200, { ok: true, id: eventID });
 });
-

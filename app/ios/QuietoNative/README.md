@@ -10,11 +10,11 @@ Client iOS natif de Quieto (Swift 5 + SwiftUI, iOS 17 minimum).
 4. Choisir la cible **QuietoNative**, puis un simulateur ou l'iPhone connecté.
 5. Dans **Signing & Capabilities**, conserver **Automatically manage signing** et sélectionner l'équipe voulue.
 
-Le Team ID local actuellement configuré est `NR772G2FPF`. Le bundle de migration est `com.quietoapp.app.native` afin de ne pas usurper l'identifiant de production pendant cette phase.
+Le Team ID local actuellement configuré est `NR772G2FPF`. Les builds Release utilisent le bundle de production `com.quietoapp.app`, aligné avec App Store Connect et Superwall. Les builds Debug utilisent `com.quietoapp.dev.nr772g2fpf` afin de pouvoir être installés avec l'équipe actuelle sans tenter de prendre possession de l'App ID de production. Sign in with Apple reste une capacité Release et nécessite donc l'équipe et le profil Apple de production.
 
 ## Configuration externe
 
-- Remplacer `REPLACE_WITH_SUPERWALL_PUBLIC_KEY` dans `project.yml` par la clé publique iOS Superwall, puis régénérer le projet. Les placements utilisés sont `home_session_*`, `session_play_*`, `session_download_*`, `louane_session_*` et `manage_subscription`.
+- La clé publique iOS Superwall est configurée dans `project.yml`. Toutes les fonctions premium utilisent le placement stable `premium_access`; `source`, `action` et `session_id` sont transmis comme paramètres de placement.
 - La Cloud Function Louane exige une identité Firebase. Ajouter la configuration Firebase iOS officielle du projet et un adaptateur d'authentification avant de considérer la conversation comme disponible en production. Aucune clé Firebase ou identité de production n'est inventée dans cette cible.
 - Les pistes audio restent servies par le bucket Firebase Storage existant. Les téléchargements sont stockés dans Application Support et respectent les placements premium Superwall.
 - Remplacer `REPLACE_WITH_SUPABASE_URL` et `REPLACE_WITH_SUPABASE_PUBLISHABLE_KEY` dans `project.yml`, puis régénérer. Seule la clé publishable va dans l’app. L’authentification Supabase fournit le mode anonyme et Sign in with Apple ; la capacité Apple doit aussi être activée sur l’App ID dans le portail Apple.

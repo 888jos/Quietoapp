@@ -23,7 +23,7 @@
 	<key>SUPABASE_URL</key>
 	<string>REPLACE_WITH_SUPABASE_URL</string>
 	<key>SUPERWALL_API_KEY</key>
-	<string>REPLACE_WITH_SUPERWALL_PUBLIC_KEY</string>
+	<string>pk_7IWqvzXD45PMoNfZQsNXe</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

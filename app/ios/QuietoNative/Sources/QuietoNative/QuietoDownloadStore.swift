@@ -19,7 +19,7 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
     private let fileManager = FileManager.default
     private var tasks = [Int: String]()
     private lazy var session: URLSession = {
-        let identifier = "\(Bundle.main.bundleIdentifier ?? "com.quietoapp.app.native").audio-downloads"
+        let identifier = "\(Bundle.main.bundleIdentifier ?? "com.quietoapp.app").audio-downloads"
         let configuration = URLSessionConfiguration.background(withIdentifier: identifier)
         configuration.isDiscretionary = false
         configuration.sessionSendsLaunchEvents = true

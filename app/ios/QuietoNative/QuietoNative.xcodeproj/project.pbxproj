@@ -191,7 +191,7 @@
 		0AC5E1093A0D890E09D62DA5 /* QuietoSpeechRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuietoSpeechRenderer.swift; sourceTree = "<group>"; };
 		0B153C3ACB1F9BD5CE182D76 /* need-conflict.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "need-conflict.png"; sourceTree = "<group>"; };
 		0B6720F9760549759C265D1F /* LouaneViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LouaneViewModel.swift; sourceTree = "<group>"; };
-		0F74B466113E37102C07AA89 /* recent-session.webp */ = {isa = PBXFileReference; path = "recent-session.webp"; sourceTree = "<group>"; };
+		0F74B466113E37102C07AA89 /* recent-session.webp */ = {isa = PBXFileReference; lastKnownFileType = file; path = "recent-session.webp"; sourceTree = "<group>"; };
 		111B288BD1EC3C768DD1109E /* session-express_3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-express_3.png"; sourceTree = "<group>"; };
 		127C86C8E3FCFEFB9006769B /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = es; path = es.lproj/Catalog.strings; sourceTree = "<group>"; };
 		152AEC39F073E82007C453A6 /* session-meditation_03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-meditation_03.png"; sourceTree = "<group>"; };
@@ -345,7 +345,7 @@
 		E14CE4E3B04DC6976C3D48EC /* session-stress_2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-stress_2.png"; sourceTree = "<group>"; };
 		E361805AC48DA9EE6FB594E8 /* session-commute_home.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-commute_home.png"; sourceTree = "<group>"; };
 		E61424AC2EA0109BF03465CB /* HomeViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModelTests.swift; sourceTree = "<group>"; };
-		E7BB23C336E6648798991619 /* QuietoNative.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = QuietoNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E7BB23C336E6648798991619 /* QuietoNative.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = QuietoNative.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E907353865BD44E699D45027 /* ambience-campfire.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "ambience-campfire.mp3"; sourceTree = "<group>"; };
 		E9193852FBD4A1A337DB7C12 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Catalog.strings; sourceTree = "<group>"; };
 		E95D51CB39BD402012B18403 /* session-meditation_14.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-meditation_14.png"; sourceTree = "<group>"; };
@@ -362,7 +362,7 @@
 		FB10755B7D8FD5FD061DEC76 /* session-meditation_05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-meditation_05.png"; sourceTree = "<group>"; };
 		FCE1886802DFACD09A0BCB1C /* need-quickReset.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "need-quickReset.png"; sourceTree = "<group>"; };
 		FEE39593CCC348BE1DA60B51 /* session-monday_arrival.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-monday_arrival.png"; sourceTree = "<group>"; };
-		FF816FE2FED8FDD6729CC01B /* express-session.webp */ = {isa = PBXFileReference; path = "express-session.webp"; sourceTree = "<group>"; };
+		FF816FE2FED8FDD6729CC01B /* express-session.webp */ = {isa = PBXFileReference; lastKnownFileType = file; path = "express-session.webp"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -688,7 +688,6 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					B95235F77341D76F7CF20113 = {
-						DevelopmentTeam = NR772G2FPF;
 						ProvisioningStyle = Automatic;
 					};
 					C6A3F46D6733B6A5BE22C5EE = {
@@ -981,7 +980,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.quietoapp.app.native;
+				PRODUCT_BUNDLE_IDENTIFIER = com.quietoapp.app;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -1010,16 +1009,17 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
-				CODE_SIGN_ENTITLEMENTS = QuietoNative.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RSC662VDU8;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.quietoapp.app.native;
+				PRODUCT_BUNDLE_IDENTIFIER = com.quietoapp.dev.nr772g2fpf;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};

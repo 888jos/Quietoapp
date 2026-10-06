@@ -33,10 +33,10 @@ final class QuietoSuperwallService: ObservableObject {
         #endif
     }
 
-    func register(_ placement: String, feature: @escaping () -> Void) {
+    func register(_ placement: String = "premium_access", params: [String: Any]? = nil, feature: @escaping () -> Void) {
         guard isConfigured else { lastMessage = "Superwall n’est pas configuré pour cette cible."; return }
         #if canImport(SuperwallKit)
-        Superwall.shared.register(placement: placement, feature: feature)
+        Superwall.shared.register(placement: placement, params: params, feature: feature)
         #else
         feature()
         #endif

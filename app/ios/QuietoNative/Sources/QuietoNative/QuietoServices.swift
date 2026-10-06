@@ -95,7 +95,7 @@ final class NativePlaybackService: QuietoPlaybackProviding {
             audioPlayer?.play(session)
         }
         if session.isPremium {
-            QuietoSuperwallService.shared.register("home_session_\(session.id)", feature: action)
+            QuietoSuperwallService.shared.register(params: ["source": "home", "action": "play", "session_id": session.id], feature: action)
         } else {
             action()
         }

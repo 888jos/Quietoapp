@@ -26,7 +26,7 @@ targets:
         UIBackgroundModes:
           - audio
         UILaunchScreen: {}
-        SUPERWALL_API_KEY: REPLACE_WITH_SUPERWALL_PUBLIC_KEY
+        SUPERWALL_API_KEY: pk_7IWqvzXD45PMoNfZQsNXe
         SUPABASE_URL: REPLACE_WITH_SUPABASE_URL
         SUPABASE_PUBLISHABLE_KEY: REPLACE_WITH_SUPABASE_PUBLISHABLE_KEY
         UISupportedInterfaceOrientations:
@@ -37,7 +37,7 @@ targets:
         buildPhase: resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.quietoapp.app.native
+        PRODUCT_BUNDLE_IDENTIFIER: com.quietoapp.app
         MARKETING_VERSION: 1.0.0
         CURRENT_PROJECT_VERSION: 1
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -46,6 +46,17 @@ targets:
         CODE_SIGNING_REQUIRED: YES
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_ENTITLEMENTS: QuietoNative.entitlements
+      configs:
+        Debug:
+          # Owned by the currently selected development team. Release keeps
+          # the production App Store identifier below.
+          PRODUCT_BUNDLE_IDENTIFIER: com.quietoapp.dev.nr772g2fpf
+          # The production App ID/team owns Sign in with Apple. Keeping the
+          # entitlement out of Debug lets this team provision a local build.
+          CODE_SIGN_ENTITLEMENTS: ""
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.quietoapp.app
+          CODE_SIGN_ENTITLEMENTS: QuietoNative.entitlements
     dependencies:
       - package: Superwall
         product: SuperwallKit

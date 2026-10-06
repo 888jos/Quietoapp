@@ -68,7 +68,11 @@ final class LouaneViewModel: ObservableObject {
     func play(_ recommendation: LouaneRecommendation) {
         guard let session = catalog.sessions.first(where: { $0.id == recommendation.sessionID }) else { return }
         let action: () -> Void = { [weak audioPlayer] in audioPlayer?.play(session) }
-        if session.isPremium { QuietoSuperwallService.shared.register("louane_session_\(session.id)", feature: action) } else { action() }
+        if session.isPremium {
+            QuietoSuperwallService.shared.register(params: ["source": "louane", "action": "play", "session_id": session.id], feature: action)
+        } else {
+            action()
+        }
     }
     func session(for recommendation: LouaneRecommendation) -> QuietoSession? { catalog.sessions.first { $0.id == recommendation.sessionID } }
 

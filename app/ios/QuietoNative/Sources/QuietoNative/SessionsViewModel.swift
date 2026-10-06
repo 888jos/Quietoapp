@@ -19,13 +19,17 @@ final class SessionsViewModel: ObservableObject {
     let catalog: SessionCatalog
     let downloads: QuietoDownloadManaging
     let audioPlayer: QuietoAudioPlayer
-    let isPremium: Bool
+    private let premiumOverride: Bool?
     private let defaults: UserDefaults
 
-    init(catalog: SessionCatalog = SessionCatalog(), audioPlayer: QuietoAudioPlayer, downloads: QuietoDownloadManaging = QuietoDownloadStore(), isPremium: Bool = false, defaults: UserDefaults = .standard) {
-        self.catalog = catalog; self.audioPlayer = audioPlayer; self.downloads = downloads; self.isPremium = isPremium; self.defaults = defaults
+    init(catalog: SessionCatalog = SessionCatalog(), audioPlayer: QuietoAudioPlayer, downloads: QuietoDownloadManaging = QuietoDownloadStore(), isPremium: Bool? = nil, defaults: UserDefaults = .standard) {
+        self.catalog = catalog; self.audioPlayer = audioPlayer; self.downloads = downloads; self.premiumOverride = isPremium; self.defaults = defaults
         favorites = Set(defaults.stringArray(forKey: "quieto.native.session.favorites") ?? [])
         recentIDs = defaults.stringArray(forKey: "quieto.native.session.recent") ?? []
+    }
+
+    private var hasPremiumAccess: Bool {
+        premiumOverride ?? QuietoSuperwallService.shared.hasActiveEntitlement
     }
 
     var filteredSessions: [QuietoSession] {
@@ -96,8 +100,8 @@ final class SessionsViewModel: ObservableObject {
             self.recentIDs = Array(self.recentIDs.prefix(10))
             self.defaults.set(self.recentIDs, forKey: "quieto.native.session.recent")
         }
-        if session.isPremium && !isPremium {
-            QuietoSuperwallService.shared.register("session_play_\(session.id)", feature: startPlayback)
+        if session.isPremium && !hasPremiumAccess {
+            QuietoSuperwallService.shared.register(params: ["source": "sessions", "action": "play", "session_id": session.id], feature: startPlayback)
         } else {
             startPlayback()
         }
@@ -113,8 +117,8 @@ final class SessionsViewModel: ObservableObject {
             guard self.downloads.start(session, isPremium: true) else { self.feedback = "Téléchargement indisponible pour cette séance."; return }
             self.feedback = "Téléchargement commencé."
         }
-        if session.isPremium && !isPremium {
-            QuietoSuperwallService.shared.register("session_download_\(session.id)", feature: startDownload)
+        if session.isPremium && !hasPremiumAccess {
+            QuietoSuperwallService.shared.register(params: ["source": "sessions", "action": "download", "session_id": session.id], feature: startDownload)
         } else {
             startDownload()
         }

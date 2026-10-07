@@ -164,54 +164,25 @@ struct EmptyProgramCard: View {
 /// when things overflow. It opens the eight situations, then the matching sessions.
 struct AntiStressButton: View {
     @ObservedObject var model: HomeViewModel
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isExploring = false
-    @State private var pulse = false
 
     var body: some View {
         Button { isExploring = true } label: {
-            HStack(spacing: 18) {
-                orb
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Anti-stress".quietoLocalized).quietoOverline().foregroundStyle(QuietoColor.mint)
-                    Text("J’ai besoin d’une pause".quietoLocalized)
-                        .font(QuietoFont.heading(.card)).foregroundStyle(QuietoColor.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text("Dis ce que tu traverses, Quieto te propose la bonne séance.".quietoLocalized)
-                        .font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right").font(.system(size: 14, weight: .semibold)).foregroundStyle(QuietoColor.textSecondary)
+            HStack(spacing: 10) {
+                Image(systemName: "hand.tap.fill").font(.system(size: 17, weight: .semibold))
+                Text("Anti-stress".quietoLocalized).font(QuietoFont.sans(.body, weight: .semibold))
             }
-            .padding(18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .quietoSurface(cornerRadius: QuietoRadius.hero)
+            .foregroundStyle(QuietoColor.background)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(QuietoColor.mintFill, in: RoundedRectangle(cornerRadius: QuietoRadius.hero, style: .continuous))
+            .quietoGlow()
         }
         .buttonStyle(QuietoPressStyle())
         .sensoryFeedback(.impact(weight: .medium), trigger: isExploring)
-        .accessibilityLabel("J’ai besoin d’une pause".quietoLocalized)
+        .accessibilityLabel("Anti-stress".quietoLocalized)
         .accessibilityHint("Choisis ce que tu traverses".quietoLocalized)
         .navigationDestination(isPresented: $isExploring) { NeedExplorerView(model: model) }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) { pulse = true }
-        }
-    }
-
-    /// A mint orb with two rings that breathe slowly, like a calm pulse.
-    private var orb: some View {
-        ZStack {
-            Circle().stroke(QuietoColor.mint.opacity(0.18), lineWidth: 1.5)
-                .frame(width: 96, height: 96).scaleEffect(pulse ? 1.08 : 0.9)
-            Circle().stroke(QuietoColor.mint.opacity(0.32), lineWidth: 1.5)
-                .frame(width: 78, height: 78).scaleEffect(pulse ? 1.04 : 0.94)
-            Circle().fill(QuietoColor.mintFill).frame(width: 60, height: 60)
-                .quietoGlow(radius: pulse ? 20 : 12)
-            Image(systemName: "hand.tap.fill").font(.system(size: 22, weight: .semibold)).foregroundStyle(QuietoColor.background)
-        }
-        .frame(width: 96, height: 96)
-        .accessibilityHidden(true)
     }
 }
 

@@ -16,7 +16,9 @@ struct HomeView: View {
     private var page: some View {
         ZStack(alignment: .bottom) {
             QuietoBackground()
-            ScrollView {
+            // Vertical only: the carousels bleed past the margin, which let the
+            // whole page slide sideways.
+            ScrollView(.vertical) {
                 VStack(alignment: .leading, spacing: QuietoSpacing.xl) {
                     HomeHeader(firstName: model.snapshot.firstName, journey: journey)
                     content
@@ -39,7 +41,10 @@ struct HomeView: View {
                 .frame(maxWidth: QuietoMetrics.contentMaxWidth)
                 .padding(.horizontal, QuietoSpacing.md)
                 .padding(.top, QuietoSpacing.sm)
+                .frame(maxWidth: .infinity)
+                .containerRelativeFrame(.horizontal)
             }
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             .refreshable { await model.refresh() }
             .task { await model.refresh() }
             .scrollIndicators(.hidden)

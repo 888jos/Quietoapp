@@ -3,7 +3,10 @@ import {
   bullesDepuisTexte, CATALOGUE, enPhrases, filetLexicalDetresse, NOMS_CATEGORIES, nettoyerLangue,
   nettoyerParcours, pourquoiDuMarqueur, seanceDuMarqueur, sonDuMarqueur, uneSeuleQuestion,
 } from "./logic.ts";
-import { CATALOGUE_TEXTE, CONSIGNE_CATALOGUE, consigneParcours, GUIDE_BESOINS_IDS, SONS_TEXTE } from "./prompts.ts";
+import {
+  CATALOGUE_TEXTE, CONSIGNE_CATALOGUE, CONSIGNES_PLAN, consigneParcours, consignePlan, GUIDE_BESOINS_IDS, phaseDuParcours,
+  planDuParcours, SONS_TEXTE,
+} from "./prompts.ts";
 import { lireVerdict, PROMPT_FIXE_VOIX, promptVariableVoix } from "./openai.ts";
 
 // --- Filet lexical (secours quand le Veilleur est muet) -------------------
@@ -182,4 +185,56 @@ Deno.test("programme : prochaine séance validée et citée", () => {
   assertEquals(parcours?.prochaine, "sleep_1");
   assert(consigneParcours(parcours).includes("[sleep_1]"));
   assertEquals(nettoyerParcours({ actif: true, prochaine: "inconnue_9" })?.prochaine, "");
+});
+
+// --- Plans par objectif (07/10/2026) ---------------------------------------
+
+Deno.test("plan : id, étapes et phase nettoyés", () => {
+  const p = nettoyerParcours({ actif: true, titre: "Sleep better", jour: 9, plan: "sleep", etapes: 27, phase: "practice" });
+  assertEquals([p?.plan, p?.etapes, p?.phase], ["sleep", 27, "practice"]);
+  const inconnu = nettoyerParcours({ actif: true, plan: "energy", etapes: 999, phase: "x" });
+  assertEquals([inconnu?.plan, inconnu?.etapes, inconnu?.phase], ["", 60, ""]);
+  assertEquals(nettoyerParcours({ actif: true, etapes: "abc" })?.etapes, 0);
+});
+
+Deno.test("plan : une consigne par plan, trouvée par l'id ou le titre français", () => {
+  const consignes = new Set<string>();
+  for (const [id, { titre, consigne }] of Object.entries(CONSIGNES_PLAN)) {
+    consignes.add(consigne);
+    assertEquals(planDuParcours(nettoyerParcours({ actif: true, titre, jour: 3 })), id, titre);
+    assertEquals(planDuParcours(nettoyerParcours({ actif: true, titre: "Traduit", plan: id })), id);
+    assert(consigneParcours(nettoyerParcours({ actif: true, titre, jour: 3, etapes: 20 })).includes(consigne), id);
+  }
+  assertEquals(consignes.size, 6);
+  // Apostrophe droite d'un ancien build, titre inconnu : pas de consigne de plan.
+  assertEquals(planDuParcours(nettoyerParcours({ actif: true, titre: "Apaiser l'anxiété" })), "anxiety");
+  assertEquals(planDuParcours(nettoyerParcours({ actif: true, titre: "Dormir" })), null);
+  assertEquals(consignePlan(nettoyerParcours({ actif: true, titre: "Dormir" })), "");
+});
+
+Deno.test("plan : l'étape compte sur le total du plan, plus sur 7", () => {
+  const p = nettoyerParcours({ actif: true, titre: "Mieux dormir", jour: 12, plan: "sleep", etapes: 20 });
+  const consigne = consigneParcours(p);
+  assert(consigne.includes("étape 12 sur 20"), consigne);
+  assert(!consigne.includes("sur 7"));
+  // Ancien build sans total : 28 jours pour un plan reconnu, 7 sinon.
+  assert(consigneParcours(nettoyerParcours({ actif: true, titre: "Mieux dormir", jour: 12 })).includes("étape 12 sur 28"));
+  assert(consigneParcours(nettoyerParcours({ actif: true, titre: "Dormir", jour: 12 })).includes("étape 7 sur 7"));
+});
+
+Deno.test("plan : la phase vient de l'app, sinon de l'étape", () => {
+  const avec = (jour: number, phase = "") => nettoyerParcours({ actif: true, plan: "mind", jour, etapes: 20, phase })!;
+  assertEquals(phaseDuParcours(avec(1), 20), "understand");
+  assertEquals(phaseDuParcours(avec(10), 20), "practice");
+  assertEquals(phaseDuParcours(avec(17), 20), "anchor");
+  assertEquals(phaseDuParcours(avec(2, "discovery"), 20), "discovery");
+  assert(consigneParcours(avec(2, "discovery")).includes("semaine Découverte"));
+  assert(consigneParcours(avec(18)).includes("dernière semaine"));
+});
+
+Deno.test("plan : fin de plan et plan terminé", () => {
+  const fini = consigneParcours(nettoyerParcours({ termine: true, titre: "Mieux dormir", plan: "sleep" }));
+  assert(fini.includes("terminer son programme « Mieux dormir »"));
+  assert(!fini.includes("cette semaine"));
+  assertEquals(consigneParcours(nettoyerParcours({ actif: false, termine: false })), "");
 });

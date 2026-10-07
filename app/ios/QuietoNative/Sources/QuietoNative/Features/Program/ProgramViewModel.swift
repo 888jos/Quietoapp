@@ -263,7 +263,10 @@ final class ProgramViewModel: ObservableObject {
             isActive: !schedule.isFinished,
             isFinished: schedule.isFinished,
             doneToday: doneToday,
-            nextSessionID: schedule.nextStep?.session.id
+            nextSessionID: schedule.nextStep?.session.id,
+            planID: state.planID,
+            totalSteps: schedule.steps.count,
+            phase: schedule.nextStep?.day.phase ?? .anchor
         )
     }
 

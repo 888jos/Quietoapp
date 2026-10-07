@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import QuietoNative
 
@@ -208,6 +209,22 @@ final class LouaneLaunchTests: XCTestCase {
         XCTAssertEqual(context.programme?.doneToday, true)
         XCTAssertEqual(context.programme?.isActive, true)
         XCTAssertNil(LouaneClientContext.make(events: [], programmeTitle: "", programmeIDs: [], hasProgram: false, now: now, calendar: calendar).programme)
+    }
+
+    @MainActor
+    func testGoalPlanTellsLouaneWhichPlanAndWhere() throws {
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        var state = QuietoPlanState(planID: .relationships, startedAt: .now, rhythm: .regular, prefersShort: false, includesDiscovery: true)
+        state.completions = Dictionary(uniqueKeysWithValues: (1...7).map { ($0, Date.now.addingTimeInterval(-2 * 86_400)) })
+        preferences.planState = state
+        let program = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: nil, completions: Empty().eraseToAnyPublisher())
+        let programme = try XCTUnwrap(program.louaneProgramme)
+        XCTAssertEqual(programme.step, 8)
+        let payload = try XCTUnwrap(URLSessionLouaneBackend.programmePayload(programme) as? [String: Any])
+        XCTAssertEqual(payload["plan"] as? String, "relationships")
+        XCTAssertEqual(payload["etapes"] as? Int, 27, "Découverte + 20 étapes en Régulier.")
+        XCTAssertEqual(payload["phase"] as? String, "understand")
+        XCTAssertEqual(payload["jour"] as? Int, 8)
     }
 }
 

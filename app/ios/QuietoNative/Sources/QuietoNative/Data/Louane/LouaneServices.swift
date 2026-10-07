@@ -95,14 +95,18 @@ struct URLSessionLouaneBackend: LouaneBackendProviding {
 
     static func programmePayload(_ programme: LouaneClientContext.Programme?) -> Any {
         guard let programme else { return NSNull() }
-        return [
+        var payload: [String: Any] = [
             "actif": programme.isActive,
             "termine": programme.isFinished,
             "titre": programme.title.quietoLocalized,
             "jour": programme.step,
             "seanceDuJourFaite": programme.doneToday,
             "prochaine": programme.nextSessionID ?? ""
-        ] as [String: Any]
+        ]
+        if let plan = programme.planID { payload["plan"] = plan.rawValue }
+        if let total = programme.totalSteps { payload["etapes"] = total }
+        if let phase = programme.phase { payload["phase"] = phase.rawValue }
+        return payload
     }
 
     /// `{"result": {...}}` → the reply, its launch card and the memory sheet.

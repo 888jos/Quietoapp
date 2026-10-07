@@ -100,6 +100,11 @@ struct LouaneClientContext: Equatable {
         let isFinished: Bool
         let doneToday: Bool
         let nextSessionID: String?
+        /// Goal plan: its id, its number of steps with the rhythm and the
+        /// phase of the current step, for Louane's instruction per plan.
+        var planID: QuietoPlanID?
+        var totalSteps: Int?
+        var phase: QuietoPlanPhase?
     }
 
     var listens: [Listen] = []

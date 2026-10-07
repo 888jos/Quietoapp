@@ -15,7 +15,16 @@ export type Parcours = {
   seanceDuJourFaite: boolean;
   // Native app: id of the next programme session (validated against the catalogue), or "".
   prochaine: string;
+  // Native app, goal plans (07/10/2026): plan id, number of steps with the
+  // chosen rhythm, and phase of the current step. "" / 0 when not sent.
+  plan: PlanId | "";
+  etapes: number;
+  phase: PhasePlan | "";
 };
+export const PLANS = ["sleep", "anxiety", "stress", "mind", "self", "relationships"] as const;
+export type PlanId = typeof PLANS[number];
+export const PHASES_PLAN = ["discovery", "understand", "practice", "anchor"] as const;
+export type PhasePlan = typeof PHASES_PLAN[number];
 export type Ecoute = { id: string; fois: number; jours: number };
 export type Seance = {
   id: string;
@@ -92,6 +101,9 @@ export function nettoyerParcours(brut: any): Parcours | null {
     jour: Number(brut.jour) || 1,
     seanceDuJourFaite: brut.seanceDuJourFaite === true,
     prochaine: CATALOGUE.seances.some((s) => s.id === brut.prochaine) ? String(brut.prochaine) : "",
+    plan: (PLANS as readonly string[]).includes(brut.plan) ? brut.plan as PlanId : "",
+    etapes: Math.min(Math.max(Math.trunc(Number(brut.etapes)) || 0, 0), 60),
+    phase: (PHASES_PLAN as readonly string[]).includes(brut.phase) ? brut.phase as PhasePlan : "",
   };
 }
 

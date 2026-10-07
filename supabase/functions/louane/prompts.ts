@@ -4,7 +4,7 @@
 // no 7-day programme created by Louane, Apple Health). See README.md.
 // DO NOT rewrite a prompt here without replaying the prompt bench
 // (backend/functions/banc/banc-voix.mjs) first.
-import { CATALOGUE, NOMS_CATEGORIES, GRATUIT_MAX, LANGUES, type Ecoute, type Parcours, type Profil } from "./logic.ts";
+import { CATALOGUE, NOMS_CATEGORIES, GRATUIT_MAX, LANGUES, type Ecoute, type Parcours, type PhasePlan, type PlanId, type Profil } from "./logic.ts";
 
 
 export const PROMPT_VOIX = `
@@ -733,6 +733,92 @@ export const CONSIGNE_PRESENTATION =
   "Tu restes Louane : chaleureuse et simple, jamais un argumentaire, et tu " +
   "ne parles jamais de marqueurs, de serveur ou de technique.";
 
+// Goal plans of the native app (Core/Models/QuietoPlan.swift): one instruction
+// per plan. The app sends the plan id; older builds only the French title.
+export const CONSIGNES_PLAN: Record<PlanId, { titre: string; consigne: string }> = {
+  sleep: {
+    titre: "Mieux dormir",
+    consigne: "Son plan porte sur des soirées et des nuits plus calmes. Le soir, " +
+      "privilégie les séances de nuit et les respirations lentes. Ne promets " +
+      "jamais qu'elle dormira mieux : tu parles de se reposer, pas de réussir à " +
+      "dormir. Si elle se réveille la nuit, aide-la à se reposer sans viser le " +
+      "sommeil ni regarder l'heure.",
+  },
+  anxiety: {
+    titre: "Apaiser l’anxiété",
+    consigne: "Son plan l'aide à traverser les vagues d'angoisse avec des outils " +
+      "simples : ancrage par les sens, expiration longue, lieu sûr. Tu parles " +
+      "d'outils, jamais de traitement ni de guérison, et tu ne poses aucun " +
+      "diagnostic. Si l'angoisse la submerge ou si elle parle de se faire du mal, " +
+      "sa sécurité passe avant le plan.",
+  },
+  stress: {
+    titre: "Souffler face au stress",
+    consigne: "Son plan l'aide à décompresser au quotidien et au travail. Aide-la " +
+      "à repérer les moments de pression de sa journée où glisser une pause de " +
+      "deux minutes, et à fermer sa journée de travail pour qu'elle ne la suive " +
+      "pas le soir.",
+  },
+  mind: {
+    titre: "Apaiser le mental",
+    consigne: "Son plan l'aide à moins ruminer et à mieux se concentrer. Quand " +
+      "elle rumine, ne cherche pas à résoudre chaque pensée avec elle : aide-la à " +
+      "les regarder passer et à revenir à une seule chose à la fois.",
+  },
+  self: {
+    titre: "Être bien avec soi",
+    consigne: "Son plan l'aide à accueillir ses émotions et à se parler avec plus " +
+      "de douceur. Repère la critique intérieure et invite-la à se parler comme à " +
+      "une amie. Ne la pousse jamais à « positiver » : toutes ses émotions ont " +
+      "leur place.",
+  },
+  relationships: {
+    titre: "Des relations plus apaisées",
+    consigne: "Son plan l'aide à rester elle-même avec les autres, même quand " +
+      "c'est tendu. Écoute sans prendre parti contre l'autre personne, aide-la à " +
+      "préparer ce qu'elle veut vraiment dire. Ne juge jamais ses proches et ne " +
+      "lui conseille jamais de rompre.",
+  },
+};
+
+const CONSIGNES_PHASE: Record<PhasePlan, string> = {
+  discovery: "Elle est dans la semaine Découverte, avant le plan : elle apprend " +
+    "les bases, rien n'est à réussir.",
+  understand: "Elle est en semaine 1 (Comprendre) : des séances courtes pour " +
+    "apprendre les gestes du plan.",
+  practice: "Elle est en semaines 2-3 (Pratiquer) : des séances plus longues, " +
+    "et répéter fait partie du chemin. Encourage la régularité sans jamais la " +
+    "culpabiliser.",
+  anchor: "Elle est dans la dernière semaine (Ancrer) : moins de guidage. Aide-la " +
+    "à repérer ce qui marche pour elle et ce qu'elle veut garder après le plan.",
+};
+
+/** The plan of the person: its id, or else its French title (older builds). */
+export function planDuParcours(parcours: Parcours | null): PlanId | null {
+  if (!parcours || typeof parcours !== "object") return null;
+  if (parcours.plan && parcours.plan in CONSIGNES_PLAN) return parcours.plan;
+  const titre = typeof parcours.titre === "string" ? parcours.titre.trim().replaceAll("'", "’") : "";
+  const trouve = (Object.keys(CONSIGNES_PLAN) as PlanId[]).find((id) => CONSIGNES_PLAN[id].titre === titre);
+  return trouve ?? null;
+}
+
+/** Phase of the current step: sent by the app, else deduced from the step. */
+export function phaseDuParcours(parcours: Parcours, etapes: number): PhasePlan {
+  if (parcours.phase) return parcours.phase;
+  const jour = Math.min(Math.max(Number(parcours.jour) || 1, 1), etapes);
+  if (jour <= Math.ceil(etapes / 4)) return "understand";
+  if (jour > etapes - Math.ceil(etapes / 4)) return "anchor";
+  return "practice";
+}
+
+/** The instruction of a plan in progress: what it is about and where she is. */
+export function consignePlan(parcours: Parcours | null): string {
+  const plan = planDuParcours(parcours);
+  if (!plan || !parcours) return "";
+  const etapes = parcours.etapes > 0 ? parcours.etapes : 28;
+  return " " + CONSIGNES_PLAN[plan].consigne + " " + CONSIGNES_PHASE[phaseDuParcours(parcours, etapes)];
+}
+
 export function consigneParcours(parcours: Parcours | null): string {
   // Pas de programme : on le dit EXPLICITEMENT. La fiche mémoire peut encore
   // parler d'un ancien programme (arrêté ou remplacé côté app) : sans cette
@@ -748,17 +834,20 @@ export function consigneParcours(parcours: Parcours | null): string {
   if (parcours.termine === true) {
     return "\n\nSON PROGRAMME : elle vient de terminer son programme " +
       (titre ? `« ${titre} » ` : "") + "dans l'app. Tu peux la " +
-      "féliciter avec douceur et l'écouter sur ce que cette semaine lui a " +
-      "fait.";
+      "féliciter avec douceur et l'écouter sur ce que ce plan lui a " +
+      "apporté.";
   }
   if (parcours.actif !== true) return "";
-  const jour = Math.min(Math.max(Number(parcours.jour) || 1, 1), 7);
+  // Goal plans have 20 to 35 steps; the old programmes had 7.
+  const etapes = parcours.etapes > 0 ? parcours.etapes : (planDuParcours(parcours) ? 28 : 7);
+  const jour = Math.min(Math.max(Number(parcours.jour) || 1, 1), etapes);
   const faite = parcours.seanceDuJourFaite === true;
   const prochaine = parcours.prochaine ?
     CATALOGUE.seances.find((s) => s.id === parcours.prochaine) : undefined;
   return "\n\nSON PROGRAMME EN COURS : elle suit son programme " +
     (titre ? `« ${titre} » ` : "") +
-    `dans l'app. Elle en est à l'étape ${jour} sur 7. ` +
+    `dans l'app. Elle en est à l'étape ${jour} sur ${etapes}.` +
+    consignePlan(parcours) + " " +
     (prochaine ?
       `Sa prochaine séance du programme : « ${prochaine.titre} » [${prochaine.id}]. ` +
       "Si elle te demande sa séance du jour ou la suite de son programme, c'est " +

@@ -307,6 +307,10 @@ extension QuietoSupabaseService {
             for step in steps where step.status == "completed" {
                 state.completions[step.stepNumber] = step.completedAt ?? .now
             }
+            state.situations = PlanSituations.restore(
+                planID: id, includesDiscovery: state.includesDiscovery,
+                sessionIDs: Dictionary(steps.map { ($0.stepNumber, $0.sessionID) }, uniquingKeysWith: { first, _ in first })
+            )
             plan = state
         }
         return QuietoRemoteProgram(

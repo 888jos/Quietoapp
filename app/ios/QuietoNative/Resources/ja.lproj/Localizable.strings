@@ -1027,3 +1027,6 @@
 "%@, ton étape du jour t’attend : %@ (%d min)." = "%@さん、今日のステップが待っています：%@（%d分）";
 "Ton plan fixe les jours : rythme %@ (%@)." = "日はプランで決まります：%@ペース（%@）";
 "Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "リマインダーには、現在のタイムゾーンの時刻でプランの今日のステップが表示されます。";
+
+/* Plan situation days */
+"Pour ce qui pèse en ce moment" = "いま気がかりなことのために";

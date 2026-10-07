@@ -238,7 +238,7 @@ struct ProgramView: View {
                 .font(.system(size: 13, weight: .semibold)).frame(width: 34, height: 34)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(step.session.title.quietoLocalized).font(QuietoFont.heading(.card, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
-                    Text(QuietoLocalization.format("%d min · %@", step.session.durationMinutes, (step.day.kind == .free ? "Jour libre" : step.session.practiceType.rawValue).quietoLocalized))
+                    Text(QuietoLocalization.format("%d min · %@", step.session.durationMinutes, (step.day.kind == .free ? "Jour libre" : (step.day.isSituation ? "Pour ce qui pèse en ce moment" : step.session.practiceType.rawValue)).quietoLocalized))
                         .font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
                 }
                 Spacer()

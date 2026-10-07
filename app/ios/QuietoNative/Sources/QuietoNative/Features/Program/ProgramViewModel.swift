@@ -110,6 +110,7 @@ final class ProgramViewModel: ObservableObject {
             includesDiscovery: previous == nil && (recommendation?.includesDiscovery ?? false)
         )
         newState.remoteID = nil
+        newState.situations = PlanSituations.days(for: planID, sources: answers?.multiple(.stressSources) ?? [])
         save(newState)
         isPlanPickerPresented = false
         if let previous {

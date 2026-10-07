@@ -1027,3 +1027,6 @@
 "%@, ton étape du jour t’attend : %@ (%d min)." = "%@ 님, 오늘의 단계가 기다리고 있어요: %@ (%d분)";
 "Ton plan fixe les jours : rythme %@ (%@)." = "요일은 플랜이 정해요: %@ 리듬 (%@)";
 "Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "각 알림은 현재 시간대 기준으로 플랜의 오늘 단계를 알려 줘요.";
+
+/* Plan situation days */
+"Pour ce qui pèse en ce moment" = "지금 마음을 무겁게 하는 것을 위해";

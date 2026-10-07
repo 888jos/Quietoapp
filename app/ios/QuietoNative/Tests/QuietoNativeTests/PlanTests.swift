@@ -233,4 +233,54 @@ final class PlanTests: XCTestCase {
         planner.refresh()
         XCTAssertEqual(scheduler.scheduled.count, count, "Rappels coupés : rien n’est planifié.")
     }
+
+    // MARK: Situation days
+
+    func testSituationDaysFollowWhatWeighsInWeeksTwoAndThree() {
+        XCTAssertEqual(PlanSituations.days(for: .sleep, sources: ["work"]), [12: "work_after_criticism", 19: "after_work"], "Une réponse : 2 jours.")
+        XCTAssertEqual(PlanSituations.days(for: .stress, sources: ["work"]), [12: "work_after_criticism", 19: "work_impostor"], "« Fermer la journée » est déjà dans le plan.")
+        let several = PlanSituations.days(for: .sleep, sources: ["news", "couple"])
+        XCTAssertEqual(several, [12: "rel_before_hard_talk", 16: "actualite_1", 19: "new_after_conflict"], "Plusieurs réponses : 3 jours, chacune à son tour.")
+        XCTAssertEqual(PlanSituations.days(for: .sleep, sources: ["couple", "news"]), several, "L’ordre des taps ne compte pas.")
+        XCTAssertEqual(PlanSituations.days(for: .mind, sources: ["unknown"]), [:])
+        XCTAssertEqual(PlanSituations.days(for: .mind, sources: []), [:])
+    }
+
+    func testSituationSessionsExistAndReplaceOnlyPracticeMainDays() {
+        let byID = Dictionary(uniqueKeysWithValues: catalog.map { ($0.id, $0) })
+        for (source, ids) in PlanSituations.sessions {
+            for id in ids {
+                XCTAssertNotNil(byID[id], "\(source) : \(id) absente du catalogue")
+                XCTAssertNotEqual(byID[id]?.practiceType, .breathing, id)
+            }
+        }
+        for plan in PlanCatalog.all {
+            for slot in PlanSituations.slots {
+                let day = plan.days[slot - 1]
+                XCTAssertEqual(day.kind, .main, "\(plan.title) jour \(slot)")
+                XCTAssertEqual(day.phase, .practice, "\(plan.title) jour \(slot)")
+            }
+        }
+    }
+
+    func testScheduleUsesTheSituationDaysEvenInShortVersion() {
+        var value = state(.sleep, rhythm: .regular, short: true, discovery: true)
+        value.situations = PlanSituations.days(for: .sleep, sources: ["couple", "news"])
+        let schedule = PlanSchedule(state: value, catalog: catalog, now: date(1), calendar: calendar)
+        let situationSteps = schedule.steps.filter(\.day.isSituation)
+        XCTAssertEqual(situationSteps.map(\.day.number), [19, 23, 26], "Décalés par la semaine Découverte.")
+        XCTAssertEqual(situationSteps.map(\.session.id), ["rel_before_hard_talk", "actualite_1", "new_after_conflict"])
+        XCTAssertEqual(schedule.steps.count, 27)
+
+        let restored = PlanSituations.restore(planID: .sleep, includesDiscovery: true, sessionIDs: Dictionary(uniqueKeysWithValues: schedule.allDays.map { ($0.number, $0.sessionID) }))
+        XCTAssertEqual(restored, value.situations)
+        XCTAssertNil(PlanSituations.restore(planID: .sleep, includesDiscovery: false, sessionIDs: Dictionary(uniqueKeysWithValues: PlanCatalog.plan(.sleep).days.map { ($0.number, $0.sessionID) })))
+    }
+
+    func testOnboardingPlanGetsItsSituationDays() {
+        var answers = OnboardingAnswers()
+        answers.choices[OnboardingStep.stressSources.rawValue] = ["work"]
+        let plan = OnboardingPlanBuilder.build(from: answers, choosing: .sleep, now: date(1))
+        XCTAssertEqual(plan.state.situations, [12: "work_after_criticism", 19: "after_work"])
+    }
 }

@@ -1027,3 +1027,6 @@
 "%@, ton étape du jour t’attend : %@ (%d min)." = "%@, dein Schritt für heute wartet: %@ (%d Min.).";
 "Ton plan fixe les jours : rythme %@ (%@)." = "Dein Plan legt die Tage fest: Rhythmus %@ (%@).";
 "Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "Jede Erinnerung nennt den heutigen Schritt deines Plans, zur Uhrzeit deiner aktuellen Zeitzone.";
+
+/* Plan situation days */
+"Pour ce qui pèse en ce moment" = "Für das, was dich gerade belastet";

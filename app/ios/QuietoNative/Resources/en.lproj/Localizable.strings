@@ -1027,3 +1027,6 @@
 "%@, ton étape du jour t’attend : %@ (%d min)." = "%@, today’s step is waiting for you: %@ (%d min).";
 "Ton plan fixe les jours : rythme %@ (%@)." = "Your plan sets the days: %@ rhythm (%@).";
 "Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "Each reminder names today’s step in your plan, at the time of your current time zone.";
+
+/* Plan situation days */
+"Pour ce qui pèse en ce moment" = "For what weighs on you right now";

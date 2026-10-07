@@ -46,6 +46,8 @@ struct QuietoPlanDay: Equatable {
     let sessionID: String
     /// Shorter version, for people who chose 2 or 5 minutes a day.
     let shortSessionID: String?
+    /// A session chosen for what weighs on the person (`PlanSituations`).
+    var isSituation = false
 }
 
 struct QuietoPlan: Identifiable, Equatable {
@@ -212,6 +214,59 @@ enum PlanRecommender {
     }
 }
 
+// MARK: - Situation days
+
+/// Two or three days of weeks 2-3 replaced by sessions matching the « Qu’est-ce
+/// qui pèse le plus ? » answers of the onboarding (work, news, couple…).
+/// Deterministic: the same answers always give the same days.
+enum PlanSituations {
+    /// Main days of weeks 2 and 3 (practice phase) that may be replaced.
+    static let slots = [12, 16, 19]
+
+    /// Candidates per answer, in order of preference. « unknown » has none.
+    static let sessions: [(source: String, sessionIDs: [String])] = [
+        ("work", ["work_after_criticism", "after_work", "work_impostor", "express_5"]),
+        ("studies", ["new_focus_reset", "express_8", "work_impostor"]),
+        ("couple", ["rel_before_hard_talk", "new_after_conflict", "rel_letting_go_grudge"]),
+        ("family", ["rel_worry_for_someone", "new_after_conflict", "rel_gratitude_someone"]),
+        ("money", ["emo_uncertainty", "decision_pause"]),
+        ("health", ["emo_uncertainty", "body_tension", "gentle_recovery"]),
+        ("news", ["actualite_5", "actualite_1", "actualite_2"])
+    ]
+
+    /// Plan day → session. One answer gives 2 days, several give 3, taken in
+    /// turn from each answer (in the order of the question, not of the taps).
+    /// A session already in the plan is skipped.
+    static func days(for planID: QuietoPlanID, sources: [String]) -> [Int: String] {
+        let plan = PlanCatalog.plan(planID)
+        var used = Set(plan.days.map(\.sessionID))
+        var queues = sessions.filter { sources.contains($0.source) }.map { $0.sessionIDs }
+        guard !queues.isEmpty else { return [:] }
+        let target = queues.count == 1 ? 2 : slots.count
+        var picks: [String] = []
+        while picks.count < target, queues.contains(where: { !$0.isEmpty }) {
+            for index in queues.indices where picks.count < target {
+                while let candidate = queues[index].first {
+                    queues[index].removeFirst()
+                    if used.insert(candidate).inserted { picks.append(candidate); break }
+                }
+            }
+        }
+        let chosenSlots = picks.count == 2 ? [slots[0], slots[2]] : Array(slots.prefix(picks.count))
+        return Dictionary(uniqueKeysWithValues: zip(chosenSlots, picks))
+    }
+
+    /// The situation days of a plan restored from the server: its days whose
+    /// session differs from the catalogue (day numbers include the discovery week).
+    static func restore(planID: QuietoPlanID, includesDiscovery: Bool, sessionIDs: [Int: String]) -> [Int: String]? {
+        let offset = includesDiscovery ? PlanCatalog.discoveryWeek.count : 0
+        let found = PlanCatalog.plan(planID).days.reduce(into: [Int: String]()) { result, day in
+            if let id = sessionIDs[day.number + offset], id != day.sessionID, slots.contains(day.number) { result[day.number] = id }
+        }
+        return found.isEmpty ? nil : found
+    }
+}
+
 // MARK: - Rhythm
 
 enum ProgramRhythm: String, CaseIterable, Identifiable, Codable {
@@ -260,6 +315,9 @@ struct QuietoPlanState: Codable, Equatable {
     /// Completed day numbers and when.
     var completions: [Int: Date] = [:]
     var remoteID: UUID?
+    /// Plan day (discovery week left out) → session matching what weighs on
+    /// the person, fixed when the plan starts (`PlanSituations`).
+    var situations: [Int: String]?
     /// The 0-10 stress slider of the onboarding, asked again during the plan.
     /// Stays on the iPhone: never sent to analytics nor to the server.
     var stressLevels: [StressCheckpoint: Int]?
@@ -343,7 +401,10 @@ struct PlanSchedule: Equatable {
             }
         }
         let offset = days.count
-        days += plan.days.map { QuietoPlanDay(number: $0.number + offset, kind: $0.kind, phase: $0.phase, sessionID: $0.sessionID, shortSessionID: $0.shortSessionID) }
+        days += plan.days.map { day in
+            let situation = state.situations?[day.number]
+            return QuietoPlanDay(number: day.number + offset, kind: day.kind, phase: day.phase, sessionID: situation ?? day.sessionID, shortSessionID: day.shortSessionID, isSituation: situation != nil)
+        }
         allDays = days
 
         let byID = Dictionary(catalog.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -371,7 +432,8 @@ struct PlanSchedule: Equatable {
     /// day's own short session, else one of the plan's short sessions.
     private static func session(for day: QuietoPlanDay, state: QuietoPlanState, plan: QuietoPlan, byID: [String: QuietoSession]) -> QuietoSession? {
         guard let main = byID[day.sessionID] else { return nil }
-        guard state.prefersShort, day.kind == .main, main.durationMinutes > 8 else { return main }
+        // A situation day keeps its session: it was chosen for the person.
+        guard state.prefersShort, day.kind == .main, !day.isSituation, main.durationMinutes > 8 else { return main }
         if let short = day.shortSessionID.flatMap({ byID[$0] }) { return short }
         let candidates = plan.shortSessions.compactMap { byID[$0] }
         guard !candidates.isEmpty else { return main }

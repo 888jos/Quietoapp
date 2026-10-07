@@ -1027,3 +1027,6 @@
 "%@, ton étape du jour t’attend : %@ (%d min)." = "%@, tu paso del día te espera: %@ (%d min).";
 "Ton plan fixe les jours : rythme %@ (%@)." = "Tu plan fija los días: ritmo %@ (%@).";
 "Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "Cada recordatorio menciona el paso del día de tu plan, a la hora de tu zona horaria actual.";
+
+/* Plan situation days */
+"Pour ce qui pèse en ce moment" = "Para lo que te pesa ahora mismo";

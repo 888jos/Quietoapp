@@ -219,6 +219,7 @@ enum OnboardingPlanBuilder {
             prefersShort: recommendation.prefersShort,
             includesDiscovery: recommendation.includesDiscovery
         )
+        state.situations = PlanSituations.days(for: state.planID, sources: answers.multiple(.stressSources))
         // Day 0 of the stress check-in: the slider of the onboarding.
         state.setStressLevel(Int(answers.stressBefore.rounded()), at: .start)
         let schedule = PlanSchedule(state: state, catalog: catalog.sessions, now: now)

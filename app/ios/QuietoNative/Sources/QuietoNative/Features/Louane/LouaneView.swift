@@ -41,6 +41,7 @@ struct LouaneView: View {
                     LazyVStack(alignment: .leading, spacing: 14) {
                         if model.messages.isEmpty { welcome.id("top") }
                         ForEach(model.messages) { message in MessageBubble(message: message, model: model).id(message.id) }
+                        if model.showsCrisisSupport { CrisisSupportCard() }
                         if model.isSending {
                             HStack {
                                 LouaneMark(size: 22)
@@ -118,6 +119,28 @@ struct LouaneView: View {
 }
 
 private struct MessageBubble: View { let message: LouaneMessage; @ObservedObject var model: LouaneViewModel; var body: some View { VStack(alignment: message.author == .user ? .trailing : .leading, spacing: 8) { HStack(alignment: .top, spacing: 8) { if message.author == .louane { LouaneMark(size: 22).padding(.top, 5) }; Text(verbatim: message.text).font(QuietoFont.sans(.body)).foregroundStyle(message.author == .user ? QuietoColor.background : QuietoColor.textPrimary).padding(13).background(message.author == .user ? QuietoColor.mint : QuietoColor.surface, in: RoundedRectangle(cornerRadius: QuietoRadius.card)); if message.author == .user { Spacer(minLength: 35) } }.frame(maxWidth: .infinity, alignment: message.author == .user ? .trailing : .leading); if let rec = message.recommendation, model.session(for: rec) != nil || model.ambience(for: rec) != nil { LouaneLaunchCard(session: model.session(for: rec), ambience: model.ambience(for: rec), reason: rec.reason) { model.play(rec) } } }.frame(maxWidth: .infinity, alignment: message.author == .user ? .trailing : .leading) } }
+/// Shown as soon as a crisis sign is typed, before Louane answers.
+private struct CrisisSupportCard: View {
+    private let line = CrisisLine.current
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Tu n’as pas à traverser ça seul·e.", systemImage: "heart.fill").font(QuietoFont.sans(.callout, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
+            Text(LouaneServiceError.crisisLine).font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
+            HStack(spacing: 10) {
+                if let hotline = line.hotline, let url = line.hotlineURL {
+                    Link(destination: url) { Label(QuietoLocalization.format("Appeler le %@", hotline), systemImage: "phone.fill") }
+                        .font(QuietoFont.sans(.subhead, weight: .semibold)).foregroundStyle(QuietoColor.background)
+                        .padding(.horizontal, 14).padding(.vertical, 9).background(QuietoColor.mintFill, in: Capsule())
+                }
+                Link(destination: line.emergencyURL) { Text(QuietoLocalization.format("Urgences : %@", line.emergency)) }
+                    .font(QuietoFont.sans(.subhead, weight: .semibold)).foregroundStyle(QuietoColor.mint)
+            }
+        }
+        .padding(14)
+        .quietoSurface(cornerRadius: QuietoRadius.card)
+        .accessibilityElement(children: .contain)
+    }
+}
 private struct SuggestionButton: View { let title: String; let action: () -> Void; var body: some View { Button(title.quietoLocalized, action: action).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textPrimary).padding(.horizontal, 10).padding(.vertical, 9).background(QuietoColor.surface, in: Capsule()) } }
 private struct LimitNoticeView: View { let text: String; var body: some View { HStack(alignment: .top, spacing: 8) { Image(systemName: "moon.zzz"); Text(text.quietoLocalized).font(QuietoFont.sans(.subhead)) }.foregroundStyle(QuietoColor.textSecondary).padding(12).quietoSurface(cornerRadius: QuietoRadius.card).padding(.horizontal, QuietoSpacing.md) } }
 private struct ErrorRetryView: View { let reason: String; let action: () -> Void; var body: some View { VStack(alignment: .leading, spacing: 6) { HStack { Text("Louane n’a pas pu répondre.").font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary); Button("Réessayer", action: action).foregroundStyle(QuietoColor.mint) }; if !reason.isEmpty { Text(verbatim: reason).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary) }; Text(LouaneServiceError.crisisLine).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary) }.padding(.horizontal, QuietoSpacing.md) } }

@@ -167,7 +167,7 @@ struct ProgramView: View {
                                 .frame(width: QuietoMetrics.playSmall, height: QuietoMetrics.playSmall).background(QuietoColor.mintFill, in: Circle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(QuietoLocalization.format("Lire %@", session.title.quietoLocalized))
+                        .accessibilityLabel(QuietoLocalization.format(audioPlayer.currentSession?.id == session.id && audioPlayer.isPlaying ? "Mettre en pause %@" : "Lire %@", session.title.quietoLocalized))
                     }
                     .padding(13)
                     .quietoSurface(cornerRadius: QuietoMetrics.cornerRadius)
@@ -195,6 +195,6 @@ struct ProgramView: View {
     }
 
     private func play(_ session: QuietoSession) {
-        sessionModel.play(session)
+        sessionModel.playOrPause(session)
     }
 }

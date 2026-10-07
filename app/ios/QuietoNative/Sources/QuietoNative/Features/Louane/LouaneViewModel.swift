@@ -16,6 +16,9 @@ final class LouaneViewModel: ObservableObject {
     @Published private(set) var history: [QuietoConversationSummary] = []
     @Published private(set) var historyError: String?
     @Published var deletionError: String?
+    /// A crisis sign in what the person wrote: the listening line shows at once,
+    /// whatever the server answers (or if it never answers). Never tracked.
+    @Published private(set) var showsCrisisSupport = false
 
     let memory: LouaneMemoryProviding
     private let backend: LouaneBackendProviding
@@ -54,6 +57,7 @@ final class LouaneViewModel: ObservableObject {
         guard !text.isEmpty, !isSending else { return }
         draft = ""; saveDraft()
         let message = LouaneMessage(author: .user, text: text)
+        if OnboardingSafety.containsCrisisSignal(text) { showsCrisisSupport = true }
         messages.append(message); persist()
         startReply(for: message)
     }
@@ -69,7 +73,7 @@ final class LouaneViewModel: ObservableObject {
 
     /// Stopping is not an error: the pending answer is dropped silently.
     func cancelResponse() { responseToken = UUID(); responseTask?.cancel(); responseTask = nil; status = .idle }
-    func newConversation() { cancelResponse(); messages.removeAll(); conversationID = UUID(); status = .idle; temporaryConversation = false; persist() }
+    func newConversation() { cancelResponse(); messages.removeAll(); conversationID = UUID(); status = .idle; temporaryConversation = false; showsCrisisSupport = false; persist() }
     func deleteConversation() {
         let deletedID = conversationID
         cancelResponse()
@@ -117,11 +121,14 @@ final class LouaneViewModel: ObservableObject {
     }
 
     func openConversation(_ summary: QuietoConversationSummary) async {
+        // A reply still on its way belongs to the conversation being left.
+        cancelResponse()
         do {
             guard let repository else { throw QuietoBackendError.notConfigured }
             messages = try await repository.messages(conversationID: summary.id)
             conversationID = summary.id
             status = .idle
+            showsCrisisSupport = false
             isHistoryPresented = false
         } catch { historyError = error.localizedDescription }
     }
@@ -168,7 +175,7 @@ final class LouaneViewModel: ObservableObject {
             guard token == responseToken else { return }
             if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
                 status = .idle
-            } else if let serviceError = error as? LouaneServiceError, serviceError == .premiumRequired || serviceError == .dailyLimit {
+            } else if let serviceError = error as? LouaneServiceError, serviceError == .premiumRequired || serviceError == .dailyLimit || serviceError == .tooFast {
                 status = .limited(serviceError.localizedDescription)
                 // The server says this account has no entitlement: re-check so
                 // the hard paywall reappears if the subscription really ended.

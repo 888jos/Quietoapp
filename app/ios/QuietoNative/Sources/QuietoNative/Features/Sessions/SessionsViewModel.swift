@@ -164,6 +164,10 @@ final class SessionsViewModel: ObservableObject {
         recentIDs = Array(recentIDs.prefix(10))
         preferences.recentSessionIDs = recentIDs
     }
+    /// Row buttons: the session already loaded pauses or resumes, any other starts.
+    func playOrPause(_ session: QuietoSession) {
+        if audioPlayer.currentSession?.id == session.id { audioPlayer.toggle() } else { play(session) }
+    }
     func toggleDownload(_ session: QuietoSession) {
         guard session.isDownloadAvailable else {
             feedback = "Le fichier audio hors ligne n’est pas encore publié pour cette séance."

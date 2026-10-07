@@ -943,3 +943,9 @@
 "Féminin" = "女性";
 "Masculin" = "男性";
 "Quieto s’adresse à toi au masculin ou au féminin, dans toute l’app." = "アプリ全体でこの設定に合わせて話しかけます。";
+
+"Mettre en pause %@" = "%@を一時停止";
+"Louane reçoit beaucoup de messages. Attends une minute avant de lui réécrire. %@" = "Louaneにメッセージが集中しています。1分ほど待ってから、もう一度送ってください。%@";
+"Tu n’as pas à traverser ça seul·e." = "ひとりで抱え込まなくて大丈夫です。";
+"Urgences : %@" = "緊急通報：%@";
+"Le fichier reçu n’est pas un fichier audio." = "受信したファイルは音声ファイルではありません。";

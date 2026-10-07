@@ -72,6 +72,58 @@ extension LouaneViewModelTests {
     }
 }
 
+extension LouaneViewModelTests {
+    @MainActor
+    func testCrisisWordsShowTheListeningLineBeforeAnyAnswer() {
+        let model = makeLouaneViewModel(backend: SlowBackend())
+        model.draft = "J'ai envie d'en finir"
+        model.send()
+        XCTAssertTrue(model.showsCrisisSupport)
+        model.newConversation()
+        XCTAssertFalse(model.showsCrisisSupport)
+    }
+
+    @MainActor
+    func testOrdinaryMessageDoesNotShowTheCrisisCard() {
+        let model = makeLouaneViewModel(backend: SlowBackend())
+        model.draft = "Je suis un peu fatigué ce soir"
+        model.send()
+        XCTAssertFalse(model.showsCrisisSupport)
+    }
+
+    @MainActor
+    func testCrisisSignalNeverReachesAnalytics() async {
+        let analytics = FakeAnalytics()
+        let model = makeLouaneViewModel(backend: SlowBackend(), analytics: analytics)
+        model.draft = "je veux mourir"
+        model.send()
+        try? await Task.sleep(nanoseconds: 250_000_000)
+        XCTAssertTrue(analytics.events.allSatisfy { !$0.contains("crisis") && !$0.contains("crise") })
+        XCTAssertFalse(analytics.properties.flatMap(\.values).contains { $0.contains("mourir") })
+    }
+
+    @MainActor
+    func testOpeningAnotherConversationDropsTheReplyOnItsWay() async {
+        let model = makeLouaneViewModel(backend: SlowBackend(), repository: FakeBackend())
+        model.draft = "Bonjour"
+        model.send()
+        await model.openConversation(QuietoConversationSummary(id: UUID(), title: "Hier", isTemporary: false, updatedAt: .now))
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        XCTAssertFalse(model.messages.contains { $0.text == "Réponse tardive" })
+        XCTAssertEqual(model.status, .idle)
+    }
+
+    @MainActor
+    func testRateLimitIsAShortPauseNotTheDailyCap() async {
+        let model = makeLouaneViewModel(backend: FailingBackend(error: LouaneServiceError.tooFast))
+        model.draft = "Bonjour"
+        model.send()
+        try? await Task.sleep(nanoseconds: 80_000_000)
+        XCTAssertEqual(model.status, .limited(LouaneServiceError.tooFast.localizedDescription))
+        XCTAssertNotEqual(LouaneServiceError.tooFast.localizedDescription, LouaneServiceError.dailyLimit.localizedDescription)
+    }
+}
+
 private struct SlowBackend: LouaneBackendProviding {
     func send(message: String, history: [LouaneMessage], temporary: Bool) async throws -> LouaneBackendReply {
         try? await Task.sleep(nanoseconds: 150_000_000)

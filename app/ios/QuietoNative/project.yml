@@ -37,7 +37,7 @@ targets:
         SUPERWALL_API_KEY: pk_7IWqvzXD45PMoNfZQsNXe
         SUPABASE_URL: REPLACE_WITH_SUPABASE_URL
         SUPABASE_PUBLISHABLE_KEY: REPLACE_WITH_SUPABASE_PUBLISHABLE_KEY
-        AMPLITUDE_API_KEY: ff5aa0fa4c60fb4e05386c581fe97da7
+        AMPLITUDE_API_KEY: $(QUIETO_AMPLITUDE_API_KEY)
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
     sources:
@@ -55,6 +55,13 @@ targets:
         CODE_SIGNING_REQUIRED: YES
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_ENTITLEMENTS: QuietoNative.entitlements
+      configs:
+        # Debug builds never feed the production Amplitude project: put a
+        # development project's key here to test analytics from Xcode.
+        Debug:
+          QUIETO_AMPLITUDE_API_KEY: ""
+        Release:
+          QUIETO_AMPLITUDE_API_KEY: ff5aa0fa4c60fb4e05386c581fe97da7
     dependencies:
       - package: Superwall
         product: SuperwallKit

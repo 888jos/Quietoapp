@@ -943,3 +943,9 @@
 "Féminin" = "Weiblich";
 "Masculin" = "Männlich";
 "Quieto s’adresse à toi au masculin ou au féminin, dans toute l’app." = "Quieto spricht dich in der ganzen App entsprechend an.";
+
+"Mettre en pause %@" = "%@ pausieren";
+"Louane reçoit beaucoup de messages. Attends une minute avant de lui réécrire. %@" = "Louane bekommt gerade viele Nachrichten. Warte eine Minute, bevor du ihr wieder schreibst. %@";
+"Tu n’as pas à traverser ça seul·e." = "Du musst da nicht allein durch.";
+"Urgences : %@" = "Notruf: %@";
+"Le fichier reçu n’est pas un fichier audio." = "Die empfangene Datei ist keine Audiodatei.";

@@ -943,3 +943,9 @@
 "Féminin" = "Femenino";
 "Masculin" = "Masculino";
 "Quieto s’adresse à toi au masculin ou au féminin, dans toute l’app." = "Quieto se dirige a ti en masculino o femenino en toda la app.";
+
+"Mettre en pause %@" = "Pausar %@";
+"Louane reçoit beaucoup de messages. Attends une minute avant de lui réécrire. %@" = "Louane está recibiendo muchos mensajes. Espera un minuto antes de volver a escribirle. %@";
+"Tu n’as pas à traverser ça seul·e." = "No tienes que pasar por esto solo/a.";
+"Urgences : %@" = "Emergencias: %@";
+"Le fichier reçu n’est pas un fichier audio." = "El archivo recibido no es un archivo de audio.";

@@ -162,6 +162,22 @@ final class InjectedViewModelTests: XCTestCase {
         XCTAssertTrue(model.isAnonymous)
     }
 
+    func testFailedSignOutKeepsTheAccountAndItsLocalData() async throws {
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        preferences.firstName = "Camille"
+        let auth = FakeAuth()
+        auth.state = .authenticated(userID: "apple", email: nil)
+        auth.signOutError = URLError(.notConnectedToInternet)
+        let downloads = FakeDownloads()
+        let model = makeProfile(preferences: preferences, auth: auth, downloads: downloads)
+
+        model.signOut()
+        try await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(downloads.deleteAllCount, 0)
+        XCTAssertEqual(preferences.firstName, "Camille")
+    }
+
     func testProfileShowsTheSubscriptionReadFromStoreKit() async {
         let subscriptions = FakeSubscriptions(access: .subscribed)
         let renewal = Date(timeIntervalSince1970: 1_800_000_000)

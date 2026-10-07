@@ -167,6 +167,11 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
             lastError = status == 400 || status == 403 ? "Ton abonnement doit être actif pour télécharger.".quietoLocalized : "Téléchargement impossible pour le moment.".quietoLocalized
             return
         }
+        guard Self.looksLikeAudio(response: downloadTask.response, file: location) else {
+            progress[id] = nil
+            lastError = "Le fichier reçu n’est pas un fichier audio.".quietoLocalized
+            return
+        }
         let destination = directory.appendingPathComponent(Self.fileName(fromDescription: description))
         do {
             if fileManager.fileExists(atPath: destination.path) {
@@ -181,6 +186,17 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
         }
         refreshIndex()
     }
+
+    /// A proxy or captive portal can answer 200 with an HTML page: only an audio
+    /// type (or a bare binary one) of a plausible size is kept as a session.
+    static func looksLikeAudio(response: URLResponse?, file: URL) -> Bool {
+        let mime = response?.mimeType?.lowercased() ?? ""
+        guard mime.isEmpty || mime.hasPrefix("audio/") || mime == "application/octet-stream" || mime == "video/mp4" else { return false }
+        let size = (try? FileManager.default.attributesOfItem(atPath: file.path)[.size] as? Int) ?? 0
+        return size >= minimumAudioBytes
+    }
+    /// Even a 1-minute narration weighs far more; below this it is an error body.
+    static let minimumAudioBytes = 16 * 1_024
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         guard let description = task.taskDescription, let error else { return }

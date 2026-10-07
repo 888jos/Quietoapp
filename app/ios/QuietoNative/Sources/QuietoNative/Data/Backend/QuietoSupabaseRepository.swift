@@ -494,7 +494,10 @@ extension QuietoSupabaseService {
     func signedAudioURL(path: String) async throws -> URL {
         guard let client else { throw QuietoBackendError.notConfigured }
         // The SDK builds the full `/storage/v1/object/sign/...` URL itself.
-        return try await client.storage.from("session-audio").createSignedURL(path: path, expiresIn: 900)
+        // One hour: AVPlayer keeps sending range requests with this URL for the
+        // whole session (up to 20 min, longer when paused), and a background
+        // download may be resumed later.
+        return try await client.storage.from("session-audio").createSignedURL(path: path, expiresIn: 3_600)
     }
 }
 

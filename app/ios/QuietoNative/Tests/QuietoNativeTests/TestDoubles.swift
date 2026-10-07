@@ -50,7 +50,11 @@ final class FakeAuth: AuthServicing {
         if let signInError { throw signInError }
         state = .authenticated(userID: "apple", email: nil)
     }
-    func signOutToAnonymous() async throws { signOutCount += 1; state = .anonymous(userID: "anon-2") }
+    var signOutError: Error?
+    func signOutToAnonymous() async throws {
+        if let signOutError { throw signOutError }
+        signOutCount += 1; state = .anonymous(userID: "anon-2")
+    }
     func resetAfterAccountDeletion() async { state = .anonymous(userID: "anon-3") }
     func updateProfile(firstName: String) async throws { updatedFirstNames.append(firstName) }
     var appleCode: String?

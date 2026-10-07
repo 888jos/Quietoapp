@@ -25,7 +25,9 @@ final class QuietoAmplitude {
             amplitude = nil
             return
         }
-        amplitude = Amplitude(configuration: Configuration(apiKey: key, serverZone: .US))
+        // Data minimisation: no IP address, city, DMA or carrier, the country is enough.
+        let tracking = TrackingOptions().disableTrackIpAddress().disableTrackCity().disableTrackDMA().disableTrackCarrier()
+        amplitude = Amplitude(configuration: Configuration(apiKey: key, serverZone: .US, trackingOptions: tracking))
     }
 
     func track(_ event: String, properties: [String: String]) {

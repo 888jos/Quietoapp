@@ -86,7 +86,7 @@ struct URLSessionLouaneBackend: LouaneBackendProviding {
         case 401: throw LouaneServiceError.signedOut
         case 402: throw LouaneServiceError.premiumRequired
         case 404: throw LouaneServiceError.notDeployed
-        case 429: throw LouaneServiceError.dailyLimit
+        case 429: throw LouaneServiceError.tooFast
         case 503 where String(decoding: body, as: UTF8.self).contains("not_configured"): throw LouaneServiceError.serverNotConfigured
         default: throw LouaneServiceError.unavailable
         }

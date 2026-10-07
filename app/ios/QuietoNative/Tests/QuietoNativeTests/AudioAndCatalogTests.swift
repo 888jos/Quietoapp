@@ -247,4 +247,19 @@ final class AudioAndCatalogTests: XCTestCase {
         XCTAssertTrue(QuietoSubscriptionDetails(status: .grantedByServer).hasAccess)
         XCTAssertFalse(QuietoSubscriptionDetails(status: .billingRetry).hasAccess)
     }
+
+    func testOnlyAudioOfAPlausibleSizeIsKeptAsADownload() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let url = URL(string: "https://example.supabase.co/a.m4a")!
+        func response(_ mime: String) -> URLResponse { URLResponse(url: url, mimeType: mime, expectedContentLength: -1, textEncodingName: nil) }
+
+        try Data(count: QuietoDownloadStore.minimumAudioBytes).write(to: file)
+        XCTAssertTrue(QuietoDownloadStore.looksLikeAudio(response: response("audio/mp4"), file: file))
+        XCTAssertTrue(QuietoDownloadStore.looksLikeAudio(response: response("application/octet-stream"), file: file))
+        XCTAssertFalse(QuietoDownloadStore.looksLikeAudio(response: response("text/html"), file: file))
+
+        try Data("{\"error\":\"not found\"}".utf8).write(to: file)
+        XCTAssertFalse(QuietoDownloadStore.looksLikeAudio(response: response("audio/mpeg"), file: file))
+    }
 }

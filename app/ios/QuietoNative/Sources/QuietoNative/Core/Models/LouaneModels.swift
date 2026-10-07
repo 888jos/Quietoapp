@@ -35,6 +35,8 @@ enum LouaneConversationStatus: Equatable { case idle, sending, failed(String), l
 enum LouaneServiceError: LocalizedError, Equatable {
     case premiumRequired
     case dailyLimit
+    /// 429 from the function: too many messages in a short time (or from one network).
+    case tooFast
     case unavailable
     case unreadable
     case empty
@@ -60,6 +62,7 @@ enum LouaneServiceError: LocalizedError, Equatable {
         switch self {
         case .premiumRequired: "Louane fait partie de ton abonnement Quieto. Vérifie qu’il est bien actif.".quietoLocalized
         case .dailyLimit: QuietoLocalization.format("Louane a besoin de se reposer jusqu’à demain. %@", Self.crisisLine)
+        case .tooFast: QuietoLocalization.format("Louane reçoit beaucoup de messages. Attends une minute avant de lui réécrire. %@", Self.crisisLine)
         case .unavailable: "Le service Louane est momentanément indisponible.".quietoLocalized
         case .unreadable: "La réponse de Louane est illisible.".quietoLocalized
         case .empty: "Louane n’a pas renvoyé de réponse.".quietoLocalized
@@ -78,6 +81,7 @@ enum LouaneServiceError: LocalizedError, Equatable {
         case .serverNotConfigured: "503: set OPENAI_API_KEY / SUPABASE_SECRET_KEY secrets on the function"
         case .premiumRequired: "no entitlement (user_has_premium = false)"
         case .dailyLimit: "daily cap reached"
+        case .tooFast: "429: per-user or per-network rate limit"
         case .unavailable: "unexpected HTTP status"
         case .unreadable: "response is not {result: {...}}"
         case .empty: "empty answer"

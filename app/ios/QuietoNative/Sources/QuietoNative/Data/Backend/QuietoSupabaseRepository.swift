@@ -228,40 +228,9 @@ private struct QuietoListeningEventInsert: Encodable {
 }
 
 extension QuietoSupabaseService {
-    func loadHome(catalog: SessionCatalog) async throws -> QuietoHomeSnapshot {
-        guard let client else { throw QuietoBackendError.notConfigured }
-        let session = try await client.auth.session
-        async let progressQuery: [QuietoProgressRow] = client.from("session_progress")
-            .select("session_id,completed_count,last_played_at,is_favorite")
-            .eq("user_id", value: session.user.id.uuidString)
-            .order("last_played_at", ascending: false)
-            .execute().value
-        async let programQuery: [QuietoProgramRow] = client.from("programs")
-            .select("id,title,status")
-            .eq("user_id", value: session.user.id.uuidString)
-            .eq("status", value: "active").limit(1).execute().value
-        let progress = try await progressQuery
-        let activePrograms = try await programQuery
-        let lastSession = progress.compactMap { row in catalog.sessions.first { $0.id == row.sessionID } }.first
-        let completed = Set(progress.filter { $0.completedCount > 0 }.map(\.sessionID))
-
-        var program: QuietoProgram?
-        var next = catalog.sessions.first { !completed.contains($0.id) }
-        if let active = activePrograms.first {
-            let steps: [QuietoProgramStepRow] = try await client.from("program_steps")
-                .select("session_id,step_number,status")
-                .eq("program_id", value: active.id.uuidString)
-                .order("step_number", ascending: true).execute().value
-            let completedDays = Set(steps.filter { $0.status == "completed" }.map(\.stepNumber))
-            next = steps.first(where: { $0.status != "completed" }).flatMap { step in catalog.sessions.first { $0.id == step.sessionID } }
-            program = QuietoProgram(title: active.title, completedDays: completedDays, totalDays: steps.count, currentSession: next, isFinished: !steps.isEmpty && completedDays.count == steps.count)
-        }
-        return QuietoHomeSnapshot(firstName: profile?.firstName, nextSession: next, program: program, progress: .init(completedSessionIDs: completed, lastListened: lastSession))
-    }
-
     func subscriptionState() async throws -> QuietoSubscriptionState {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let rows: [QuietoSubscriptionRow] = try await client.from("subscription_accounts")
             .select("status,expires_at").eq("user_id", value: userID).limit(1).execute().value
         guard let row = rows.first else { return .inactive }
@@ -277,7 +246,7 @@ extension QuietoSupabaseService {
 
     func loadActiveProgram(catalog: SessionCatalog) async throws -> QuietoRemoteProgram? {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let rows: [QuietoProgramRow] = try await client.from("programs")
             .select("id,title,status,raw_program")
             .eq("user_id", value: userID)
@@ -302,7 +271,7 @@ extension QuietoSupabaseService {
 
     func createProgram(title: String, sessionIDs: [String], rhythm: String) async throws -> UUID {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let id = UUID()
         let program = QuietoProgramInsert(id: id, userID: userID, title: String(title.prefix(120)), status: "active", source: "catalog", rawProgram: ["rhythm": rhythm])
         try await client.from("programs").insert(program).execute()
@@ -325,14 +294,14 @@ extension QuietoSupabaseService {
 
     func setFavorite(sessionID: String, favorite: Bool) async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let row = QuietoFavoriteUpsert(userID: userID, sessionID: sessionID, isFavorite: favorite)
         try await client.from("session_progress").upsert(row, onConflict: "user_id,session_id").execute()
     }
 
     func recordCompletion(sessionID: String, listenedSeconds: Int) async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let existing: [QuietoProgressRow] = try await client.from("session_progress")
             .select("session_id,completed_count,last_played_at,is_favorite,listened_seconds,play_count")
             .eq("user_id", value: userID).eq("session_id", value: sessionID).limit(1).execute().value
@@ -364,7 +333,7 @@ extension QuietoSupabaseService {
 
     func loadPreferences() async throws -> QuietoRemotePreferences? {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let rows: [QuietoPreferenceRow] = try await client.from("user_preferences")
             .select("user_id,reminder_enabled,reminder_days,reminder_local_time,reminder_timezone,ambient_level,reduce_motion,larger_text")
             .eq("user_id", value: userID).limit(1).execute().value
@@ -375,7 +344,7 @@ extension QuietoSupabaseService {
 
     func savePreferences(_ preferences: QuietoRemotePreferences) async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let row = QuietoPreferenceRow(userID: userID, reminderEnabled: preferences.reminderEnabled, reminderDays: preferences.reminderDays, reminderLocalTime: String(format: "%02d:%02d:00", preferences.reminderHour, preferences.reminderMinute), reminderTimezone: preferences.reminderTimezone, ambientLevel: preferences.ambientLevel, reduceMotion: preferences.reduceMotion, largerText: preferences.largerText)
         try await client.from("user_preferences").upsert(row, onConflict: "user_id").execute()
     }
@@ -384,7 +353,7 @@ extension QuietoSupabaseService {
     /// and the completion date on the profile.
     func saveOnboarding(answers: OnboardingAnswers) async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         struct Row: Encodable {
             let user_id: String
             let raw_preferences: [String: [String: [String]]]
@@ -394,23 +363,44 @@ extension QuietoSupabaseService {
     }
 
     func track(_ event: String, properties: [String: String]) async {
-        guard let client, let session = try? await client.auth.session else { return }
-        struct Event: Encodable { let user_id: String; let event_name: String; let properties: [String: String]; let client_event_id: UUID }
-        _ = try? await client.from("analytics_events").insert(Event(user_id: session.user.id.uuidString, event_name: String(event.prefix(80)), properties: properties, client_event_id: UUID())).execute()
+        guard let client else { return }
+        let value = QuietoAnalyticsEvent(name: String(event.prefix(80)), properties: properties)
+        guard let session = try? await client.auth.session else {
+            if pendingAnalyticsEvents.count < 200 { pendingAnalyticsEvents.append(value) }
+            return
+        }
+        await insert([value], userID: session.user.id.quietoUserID)
+    }
+
+    func flushPendingAnalytics() async {
+        guard !pendingAnalyticsEvents.isEmpty, let session = try? await client?.auth.session else { return }
+        let batch = pendingAnalyticsEvents
+        pendingAnalyticsEvents = []
+        await insert(batch, userID: session.user.id.quietoUserID)
+    }
+
+    private func insert(_ events: [QuietoAnalyticsEvent], userID: String) async {
+        struct Row: Encodable { let user_id: String; let event_name: String; let properties: [String: String]; let client_event_id: UUID; let occurred_at: String }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let rows = events.map { Row(user_id: userID, event_name: $0.name, properties: $0.properties, client_event_id: $0.id, occurred_at: formatter.string(from: $0.occurredAt)) }
+        _ = try? await client?.from("analytics_events").insert(rows).execute()
     }
 
     func saveConversationMessage(conversationID: UUID, title: String, message: LouaneMessage, temporary: Bool) async throws {
         guard !temporary, let client else { return }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         try await client.from("louane_conversations").upsert(QuietoConversationInsert(id: conversationID, userID: userID, title: String(title.prefix(80)), isTemporary: false), onConflict: "id").execute()
-        let recommendation = message.recommendation.map { ["session_id": $0.sessionID, "reason": $0.reason] }
+        let recommendation = message.recommendation.map { rec in
+            ["session_id": rec.sessionID, "ambience_id": rec.ambienceID, "reason": rec.reason].compactMapValues { $0 }
+        }
         let row = QuietoMessageInsert(id: message.id, conversationID: conversationID, userID: userID, role: message.author == .louane ? "assistant" : message.author.rawValue, content: String(message.text.prefix(4_000)), status: message.isFailed ? "failed" : "complete", clientMessageID: message.id, recommendation: recommendation)
         try await client.from("louane_messages").upsert(row, onConflict: "user_id,client_message_id").execute()
     }
 
     func conversationHistory() async throws -> [QuietoConversationSummary] {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         return try await client.from("louane_conversations").select("id,title,is_temporary,updated_at").eq("user_id", value: userID).is("archived_at", value: nil).order("updated_at", ascending: false).execute().value
     }
 
@@ -419,8 +409,10 @@ extension QuietoSupabaseService {
         let rows: [QuietoMessageRow] = try await client.from("louane_messages").select("id,role,content,recommendation,created_at").eq("conversation_id", value: conversationID.uuidString).order("created_at", ascending: true).execute().value
         return rows.map { row in
             let rec = row.recommendation.flatMap { values -> LouaneRecommendation? in
-                guard let sessionID = values["session_id"] else { return nil }
-                return LouaneRecommendation(id: sessionID, sessionID: sessionID, reason: values["reason"] ?? "")
+                let sessionID = values["session_id"], ambienceID = values["ambience_id"]
+                guard sessionID != nil || ambienceID != nil else { return nil }
+                let id = [sessionID, ambienceID].compactMap { $0 }.joined(separator: "+")
+                return LouaneRecommendation(id: id, sessionID: sessionID, ambienceID: ambienceID, reason: values["reason"] ?? "")
             }
             return LouaneMessage(id: row.id, author: row.role == "assistant" ? .louane : .user, text: row.content, recommendation: rec, date: row.createdAt)
         }
@@ -433,20 +425,20 @@ extension QuietoSupabaseService {
 
     func loadMemory() async throws -> String {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         let rows: [QuietoMemoryRow] = try await client.from("louane_memory").select("user_id,memory_text,consented_at").eq("user_id", value: userID).limit(1).execute().value
         return rows.first?.memoryText ?? ""
     }
 
     func saveMemory(_ value: String) async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         try await client.from("louane_memory").upsert(QuietoMemoryRow(userID: userID, memoryText: String(value.prefix(4_000)), consentedAt: .now), onConflict: "user_id").execute()
     }
 
     func deleteMemory() async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
-        let userID = try await client.auth.session.user.id.uuidString
+        let userID = try await client.auth.session.user.id.quietoUserID
         try await client.from("louane_memory").delete().eq("user_id", value: userID).execute()
     }
 
@@ -472,6 +464,12 @@ extension QuietoSupabaseService {
         try await invokeFunction("account-data", method: method)
     }
 
+    /// The Apple code lets the server revoke Sign in with Apple, as Apple
+    /// requires when an account is deleted.
+    func deleteAccount(appleAuthorizationCode: String?) async throws {
+        _ = try await invokeFunction("account-data", method: "DELETE", json: appleAuthorizationCode.map { ["apple_authorization_code": $0] })
+    }
+
     /// Sends the StoreKit signed transactions held on this device; the server
     /// verifies them with Apple's certificates and answers with the access it
     /// grants (which also covers enterprise and legacy entitlements).
@@ -486,7 +484,7 @@ extension QuietoSupabaseService {
         let data = try await invokeFunction("account-data", method: "POST", json: ["action": "link-legacy"])
         let object = try JSONSerialization.jsonObject(with: data) as? [String: Any]
         let linked = object?["linked"] as? Bool == true
-        if linked, let client, let userID = try? await client.auth.session.user.id.uuidString {
+        if linked, let client, let userID = try? await client.auth.session.user.id.quietoUserID {
             let rows: [SupabaseProfile] = (try? await client.from("profiles").select().eq("user_id", value: userID).limit(1).execute().value) ?? []
             if let row = rows.first { profile = row }
         }
@@ -502,4 +500,13 @@ extension QuietoSupabaseService {
 
 extension QuietoBackendError {
     static var serverRejected: QuietoBackendError { .requestRejected }
+}
+
+/// One analytics event as stored in `analytics_events`. `occurredAt` is the
+/// device time, so events queued before the session keep their real order.
+struct QuietoAnalyticsEvent {
+    let name: String
+    let properties: [String: String]
+    var occurredAt = Date.now
+    let id = UUID()
 }

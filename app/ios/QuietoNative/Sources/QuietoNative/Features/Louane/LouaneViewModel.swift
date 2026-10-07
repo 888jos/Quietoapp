@@ -17,24 +17,37 @@ final class LouaneViewModel: ObservableObject {
     @Published private(set) var historyError: String?
     @Published var deletionError: String?
 
-    let backend: LouaneBackendProviding
     let memory: LouaneMemoryProviding
-    let audioPlayer: QuietoAudioPlayer
-    let catalog: SessionCatalog
-    private let defaults: UserDefaults
-    private let draftKey = "quieto.native.louane.draft"
+    private let backend: LouaneBackendProviding
+    /// Nil when Supabase is not configured: conversations stay on this iPhone.
+    private let repository: LouaneRepository?
+    private let playback: QuietoPlaybackProviding
+    private let subscriptions: SubscriptionServicing?
+    private let analytics: QuietoAnalyticsProviding
+    private let catalog: SessionCatalog
+    private let preferences: QuietoPreferences
+    /// Sounds bundled in the app (`QuietoAmbience.all`), injectable for tests.
+    private let ambiences: [QuietoAmbience]
     private var conversationID = UUID()
     private var responseTask: Task<Void, Never>?
     private var responseToken = UUID()
 
-    init(backend: LouaneBackendProviding = URLSessionLouaneBackend(), memory: LouaneMemoryProviding = LouaneMemoryStore(), audioPlayer: QuietoAudioPlayer, catalog: SessionCatalog = SessionCatalog(), defaults: UserDefaults = .standard) {
-        self.backend = backend; self.memory = memory; self.audioPlayer = audioPlayer; self.catalog = catalog; self.defaults = defaults
-        draft = defaults.string(forKey: "quieto.native.louane.draft") ?? ""
+    init(backend: LouaneBackendProviding, memory: LouaneMemoryProviding, repository: LouaneRepository?, playback: QuietoPlaybackProviding, subscriptions: SubscriptionServicing?, analytics: QuietoAnalyticsProviding, catalog: SessionCatalog, preferences: QuietoPreferences, ambiences: [QuietoAmbience] = QuietoAmbience.all) {
+        self.backend = backend
+        self.memory = memory
+        self.repository = repository
+        self.playback = playback
+        self.subscriptions = subscriptions
+        self.analytics = analytics
+        self.catalog = catalog
+        self.preferences = preferences
+        self.ambiences = ambiences
+        draft = preferences.louaneDraft
         messages = []
     }
 
     var isSending: Bool { if case .sending = status { return true }; return false }
-    func saveDraft() { defaults.set(draft, forKey: draftKey) }
+    func saveDraft() { preferences.louaneDraft = draft }
 
     func send() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -61,34 +74,52 @@ final class LouaneViewModel: ObservableObject {
         let deletedID = conversationID
         cancelResponse()
         isDeleteConfirmationPresented = false
-        guard QuietoSupabaseService.shared.client != nil else {
+        guard let repository else {
             messages.removeAll(); conversationID = UUID(); status = .idle
             deletionError = "Conversation supprimée de cet iPhone. Aucun effacement distant n’a été annoncé."
             return
         }
         Task {
             do {
-                try await QuietoSupabaseService.shared.deleteConversation(deletedID)
+                try await repository.deleteConversation(deletedID)
                 messages.removeAll(); conversationID = UUID(); status = .idle; deletionError = nil
             } catch {
                 deletionError = error.localizedDescription
             }
         }
     }
+    /// The sound first, so it keeps playing under the voice of the meditation.
     func play(_ recommendation: LouaneRecommendation) {
-        guard let session = catalog.sessions.first(where: { $0.id == recommendation.sessionID }) else { return }
-        audioPlayer.play(session, localURL: QuietoDownloadStore.shared.localURL(for: session))
+        let session = session(for: recommendation), ambience = ambience(for: recommendation)
+        if let ambience { playback.playAmbience(ambience) }
+        if let session { playback.play(session) }
+        guard session != nil || ambience != nil else { return }
+        analytics.track("louane_recommendation_played", properties: [
+            "session": session?.id ?? "", "ambience": ambience?.id ?? "", "type": session?.readerMode == .breathing ? "breathing" : (session != nil ? "meditation" : "sound")
+        ])
     }
-    func session(for recommendation: LouaneRecommendation) -> QuietoSession? { catalog.sessions.first { $0.id == recommendation.sessionID } }
+    func session(for recommendation: LouaneRecommendation) -> QuietoSession? {
+        guard let id = recommendation.sessionID else { return nil }
+        return catalog.sessions.first { $0.id == id }
+    }
+    func ambience(for recommendation: LouaneRecommendation) -> QuietoAmbience? {
+        guard let id = recommendation.ambienceID else { return nil }
+        return ambiences.first { $0.id == id }
+    }
 
     func loadHistory() async {
-        do { history = try await QuietoSupabaseService.shared.conversationHistory(); historyError = nil }
+        do {
+            guard let repository else { throw QuietoBackendError.notConfigured }
+            history = try await repository.conversationHistory()
+            historyError = nil
+        }
         catch { historyError = error.localizedDescription }
     }
 
     func openConversation(_ summary: QuietoConversationSummary) async {
         do {
-            messages = try await QuietoSupabaseService.shared.messages(conversationID: summary.id)
+            guard let repository else { throw QuietoBackendError.notConfigured }
+            messages = try await repository.messages(conversationID: summary.id)
             conversationID = summary.id
             status = .idle
             isHistoryPresented = false
@@ -97,12 +128,12 @@ final class LouaneViewModel: ObservableObject {
 
     func saveMemory(_ value: String) {
         memory.update(value)
-        Task { try? await QuietoSupabaseService.shared.saveMemory(value) }
+        Task { [repository] in try? await repository?.saveMemory(value) }
     }
 
     func deleteMemory() {
         memory.remove()
-        Task { try? await QuietoSupabaseService.shared.deleteMemory() }
+        Task { [repository] in try? await repository?.deleteMemory() }
     }
 
     func reportLatestResponse() {
@@ -110,14 +141,12 @@ final class LouaneViewModel: ObservableObject {
             reportMessage = "Aucune réponse à signaler pour le moment."
             return
         }
-        Task {
-            await QuietoSupabaseService.shared.track("louane_response_reported", properties: ["conversation": conversationID.uuidString])
-            reportMessage = "Merci. Le signalement a été enregistré sans ajouter le contenu du message aux analytics."
-        }
+        analytics.track("louane_response_reported", properties: ["conversation": conversationID.uuidString])
+        reportMessage = "Merci. Le signalement a été enregistré sans ajouter le contenu du message aux analytics."
     }
 
     func refreshMemory() async {
-        if let remote = try? await QuietoSupabaseService.shared.loadMemory() { memory.update(remote) }
+        if let remote = try? await repository?.loadMemory() { memory.update(remote) }
     }
 
     private func requestReply(for message: LouaneMessage, token: UUID) async {
@@ -126,11 +155,15 @@ final class LouaneViewModel: ObservableObject {
         do {
             let reply = try await backend.send(message: message.text, history: history, temporary: temporaryConversation)
             guard !Task.isCancelled, token == responseToken else { return }
-            let validatedRecommendation = reply.recommendation.flatMap { recommendation in
-                catalog.sessions.contains(where: { $0.id == recommendation.sessionID }) ? recommendation : nil
-            }
+            let validatedRecommendation = reply.recommendation.flatMap(validated)
             let response = LouaneMessage(author: .louane, text: reply.text, recommendation: validatedRecommendation)
             messages.append(response); status = .idle; persist()
+            // The server returns the memory sheet it updated (`memoire`): keep it
+            // locally and on the account, like an edit made from the profile.
+            if !temporaryConversation, let updated = reply.memory?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !updated.isEmpty, updated != memory.text {
+                saveMemory(updated)
+            }
         } catch {
             guard token == responseToken else { return }
             if Task.isCancelled || error is CancellationError || (error as? URLError)?.code == .cancelled {
@@ -139,7 +172,7 @@ final class LouaneViewModel: ObservableObject {
                 status = .limited(serviceError.localizedDescription)
                 // The server says this account has no entitlement: re-check so
                 // the hard paywall reappears if the subscription really ended.
-                if serviceError == .premiumRequired { QuietoSuperwallService.shared.syncWithServer() }
+                if serviceError == .premiumRequired { subscriptions?.syncWithServer() }
             } else {
                 status = .failed(error.localizedDescription)
             }
@@ -147,14 +180,28 @@ final class LouaneViewModel: ObservableObject {
         if token == responseToken { responseTask = nil }
     }
 
+    /// Keeps only what the app can really play: an unknown session or a sound
+    /// not bundled is dropped, and nothing is left when both are unknown.
+    private func validated(_ recommendation: LouaneRecommendation) -> LouaneRecommendation? {
+        let sessionID = session(for: recommendation)?.id
+        let ambienceID = ambience(for: recommendation)?.id
+        guard sessionID != nil || ambienceID != nil else { return nil }
+        return LouaneRecommendation(
+            id: [sessionID, ambienceID].compactMap { $0 }.joined(separator: "+"),
+            sessionID: sessionID,
+            ambienceID: ambienceID,
+            reason: recommendation.reason
+        )
+    }
+
     private func persist() {
-        guard !temporaryConversation else { return }
+        guard !temporaryConversation, let repository else { return }
         let title = messages.first(where: { $0.author == .user })?.text ?? "Nouvel échange"
         let pending = messages
         let currentID = conversationID
         Task {
             for message in pending {
-                try? await QuietoSupabaseService.shared.saveConversationMessage(conversationID: currentID, title: title, message: message, temporary: false)
+                try? await repository.saveConversationMessage(conversationID: currentID, title: title, message: message, temporary: false)
             }
         }
     }

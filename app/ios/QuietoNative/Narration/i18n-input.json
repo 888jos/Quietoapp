@@ -1,0 +1,1059 @@
+{
+ "sessions": [
+  {
+   "id": "decouverte_1",
+   "title": "Ma première méditation",
+   "intention": "Les bases, pour celles et ceux qui n’ont jamais médité.",
+   "category": "discovery",
+   "goal": "relax",
+   "kind": "meditation",
+   "summary": "Posture, choix d’un point d’appui (le souffle), ce qu’il faut faire quand l’esprit part. Aucun prérequis.",
+   "script": "Narration/scripts/fr/decouverte_1.md"
+  },
+  {
+   "id": "discover_counting",
+   "title": "Compter les respirations",
+   "intention": "Un exercice simple pour stabiliser l’attention.",
+   "category": "discovery",
+   "goal": "focus",
+   "kind": "meditation",
+   "summary": "Compter chaque expiration jusqu’à 10 puis recommencer ; perdre le compte fait partie de l’exercice.",
+   "script": "Narration/scripts/fr/discover_counting.md"
+  },
+  {
+   "id": "decouverte_3",
+   "title": "Le moment présent",
+   "intention": "Revenir ici et maintenant grâce aux cinq sens.",
+   "category": "discovery",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "5 choses vues, 4 touchées, 3 entendues, 2 senties, 1 goûtée, guidées une par une.",
+   "script": "Narration/scripts/fr/decouverte_3.md"
+  },
+  {
+   "id": "decouverte_2",
+   "title": "Observer sans juger",
+   "intention": "Remarquer ce qui passe dans l’esprit sans s’y accrocher.",
+   "category": "discovery",
+   "goal": "perspective",
+   "kind": "meditation",
+   "summary": "Étiqueter doucement « pensée », « son », « sensation » à chaque distraction, puis revenir.",
+   "script": "Narration/scripts/fr/decouverte_2.md"
+  },
+  {
+   "id": "discover_body_scan",
+   "title": "Premier scan corporel",
+   "intention": "Parcourir le corps des pieds à la tête, sans rien changer.",
+   "category": "discovery",
+   "goal": "relax",
+   "kind": "relaxation",
+   "summary": "Parcours des pieds à la tête, zone par zone, sans chercher à changer quoi que ce soit.",
+   "script": "Narration/scripts/fr/discover_body_scan.md"
+  },
+  {
+   "id": "discover_rain",
+   "title": "Accueillir le désagréable",
+   "intention": "Apprendre à faire face à une petite gêne avec douceur.",
+   "category": "discovery",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Reconnaître, Accepter, Investiguer dans le corps, Nourrir avec douceur une petite gêne du jour.",
+   "script": "Narration/scripts/fr/discover_rain.md"
+  },
+  {
+   "id": "discover_open_sitting",
+   "title": "S’asseoir avec moins de guidage",
+   "intention": "Un premier pas vers la méditation en autonomie.",
+   "category": "discovery",
+   "goal": "focus",
+   "kind": "meditation",
+   "summary": "Courte introduction, puis rappels espacés et une cloche toutes les 2 minutes. Un pas vers la pratique en autonomie.",
+   "script": "Narration/scripts/fr/discover_open_sitting.md"
+  },
+  {
+   "id": "express_1",
+   "title": "Avant un appel difficile",
+   "intention": "Arriver centré et calme à ton prochain appel.",
+   "category": "work",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "Pieds au sol, deux respirations, droit à une pause avant de répondre.",
+   "script": "Narration/scripts/fr/express_1.md"
+  },
+  {
+   "id": "express_8",
+   "title": "Avant une présentation",
+   "intention": "Transformer le trac en énergie avant de prendre la parole.",
+   "category": "work",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "Reconnaître les signes du trac comme une préparation du corps, ancrage, plan si blanc.",
+   "script": "Narration/scripts/fr/express_8.md"
+  },
+  {
+   "id": "express_5",
+   "title": "Coup de stress au bureau",
+   "intention": "Redescendre en deux minutes quand la pression monte.",
+   "category": "work",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "Deux soupirs (double inspiration, longue expiration), puis nommer ce qui est sous contrôle maintenant.",
+   "script": "Narration/scripts/fr/express_5.md"
+  },
+  {
+   "id": "between_calls",
+   "title": "Entre deux appels",
+   "intention": "Laisser une conversation se terminer avant la suivante.",
+   "category": "work",
+   "goal": "relax",
+   "kind": "meditation",
+   "summary": "Laisser la conversation précédente se terminer : épaules, souffle, une intention pour la suivante.",
+   "script": "Narration/scripts/fr/between_calls.md"
+  },
+  {
+   "id": "new_focus_reset",
+   "title": "Une chose à la fois",
+   "intention": "Rassembler ton attention avant de reprendre une tâche précise.",
+   "category": "work",
+   "goal": "focus",
+   "kind": "meditation",
+   "summary": "Choisir une seule tâche, la visualiser en premier geste concret, réduire le champ d’attention.",
+   "script": "Narration/scripts/fr/new_focus_reset.md"
+  },
+  {
+   "id": "meditation_06",
+   "title": "Le fil de l’attention",
+   "intention": "Entraîner une attention stable, retour après retour.",
+   "category": "work",
+   "goal": "focus",
+   "kind": "meditation",
+   "summary": "Séance longue : point d’appui unique, retours répétés, consignes de plus en plus espacées.",
+   "script": "Narration/scripts/fr/meditation_06.md"
+  },
+  {
+   "id": "creative_block",
+   "title": "Faire de la place aux idées",
+   "intention": "Relâcher la pression de produire pour laisser venir les idées.",
+   "category": "work",
+   "goal": "perspective",
+   "kind": "meditation",
+   "summary": "Relâcher la pression de produire, laisser venir pensées et images sans les trier.",
+   "script": "Narration/scripts/fr/creative_block.md"
+  },
+  {
+   "id": "decision_pause",
+   "title": "Avant de décider",
+   "intention": "Écouter ce que le corps dit de chaque option.",
+   "category": "work",
+   "goal": "perspective",
+   "kind": "meditation",
+   "summary": "Poser chaque option, observer la réaction du corps, revenir à ce qui compte vraiment.",
+   "script": "Narration/scripts/fr/decision_pause.md"
+  },
+  {
+   "id": "afternoon_fog",
+   "title": "Le coup de barre de l’après-midi",
+   "intention": "Réveiller le corps et l’attention sans café.",
+   "category": "work",
+   "goal": "energy",
+   "kind": "relaxation",
+   "summary": "Redresser la posture, étirements assis, regard au loin, respiration plus tonique. Yeux ouverts.",
+   "script": "Narration/scripts/fr/afternoon_fog.md"
+  },
+  {
+   "id": "meditation_09",
+   "title": "Détendre le visage",
+   "intention": "Relâcher le front, les yeux et la mâchoire crispés par les écrans.",
+   "category": "work",
+   "goal": "relax",
+   "kind": "relaxation",
+   "summary": "Front, yeux, mâchoire, langue, nuque : les zones que les écrans crispent.",
+   "script": "Narration/scripts/fr/meditation_09.md"
+  },
+  {
+   "id": "after_work",
+   "title": "Fermer la journée de travail",
+   "intention": "Un rituel pour que le travail reste au travail.",
+   "category": "work",
+   "goal": "relax",
+   "kind": "meditation",
+   "summary": "Trois choses faites, une chose reportée à demain, puis geste symbolique de fermeture.",
+   "script": "Narration/scripts/fr/after_work.md"
+  },
+  {
+   "id": "work_impostor",
+   "title": "Le sentiment d’imposture",
+   "intention": "Répondre au doute avec des faits et un peu de douceur.",
+   "category": "work",
+   "goal": "kindness",
+   "kind": "selfCompassion",
+   "summary": "Observer la voix du doute, rappeler des faits concrets, s’adresser à soi comme à un collègue.",
+   "script": "Narration/scripts/fr/work_impostor.md"
+  },
+  {
+   "id": "work_after_criticism",
+   "title": "Après une critique",
+   "intention": "Garder ce qui est utile, laisser retomber ce qui blesse.",
+   "category": "work",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Laisser retomber la piqûre, séparer ce qui est utile de ce qui blesse, sans ruminer.",
+   "script": "Narration/scripts/fr/work_after_criticism.md"
+  },
+  {
+   "id": "express_6",
+   "title": "Après une dispute",
+   "intention": "Retrouver ton calme quand l’émotion a pris le dessus.",
+   "category": "relationships",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Une main sur la poitrine, une sur le ventre, droit de ne pas répondre tout de suite.",
+   "script": "Narration/scripts/fr/express_6.md"
+  },
+  {
+   "id": "new_after_conflict",
+   "title": "Après les mots trop forts",
+   "intention": "Comprendre ce qui s’est joué avant de répondre.",
+   "category": "relationships",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Identifier l’émotion, le besoin derrière, ce que je veux vraiment dire plus tard.",
+   "script": "Narration/scripts/fr/new_after_conflict.md"
+  },
+  {
+   "id": "rel_before_hard_talk",
+   "title": "Avant une conversation difficile",
+   "intention": "Arriver posé et clair à un échange délicat.",
+   "category": "relationships",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "Ancrage, intention pour l’échange, imaginer rester calme quand l’autre hausse le ton.",
+   "script": "Narration/scripts/fr/rel_before_hard_talk.md"
+  },
+  {
+   "id": "emotion_5",
+   "title": "Bienveillance envers les autres",
+   "intention": "Cultiver la bienveillance, de toi jusqu’aux autres.",
+   "category": "relationships",
+   "goal": "kindness",
+   "kind": "selfCompassion",
+   "summary": "Phrases de souhait pour soi, un proche, une personne neutre, une personne difficile, tout le monde.",
+   "script": "Narration/scripts/fr/emotion_5.md"
+  },
+  {
+   "id": "rel_deep_listening",
+   "title": "Écouter vraiment",
+   "intention": "S’entraîner à écouter sans préparer sa réponse.",
+   "category": "relationships",
+   "goal": "focus",
+   "kind": "meditation",
+   "summary": "S’entraîner à écouter sans préparer sa réponse : sons, puis une conversation imaginée.",
+   "script": "Narration/scripts/fr/rel_deep_listening.md"
+  },
+  {
+   "id": "rel_worry_for_someone",
+   "title": "Quand on s’inquiète pour un proche",
+   "intention": "Prendre soin de ton inquiétude sans t’y perdre.",
+   "category": "relationships",
+   "goal": "calm",
+   "kind": "selfCompassion",
+   "summary": "Faire de la place à l’inquiétude, distinguer ce qui dépend de moi, envoyer un souhait au proche.",
+   "script": "Narration/scripts/fr/rel_worry_for_someone.md"
+  },
+  {
+   "id": "rel_letting_go_grudge",
+   "title": "Lâcher une rancune",
+   "intention": "Desserrer ce que la rancune te coûte, à ton rythme.",
+   "category": "relationships",
+   "goal": "perspective",
+   "kind": "selfCompassion",
+   "summary": "Sans excuser : voir ce que la rancune me coûte, desserrer un peu, sans obligation de pardonner.",
+   "script": "Narration/scripts/fr/rel_letting_go_grudge.md"
+  },
+  {
+   "id": "rel_gratitude_someone",
+   "title": "Merci à quelqu’un",
+   "intention": "Ressentir la gratitude envers une personne précise.",
+   "category": "relationships",
+   "goal": "energy",
+   "kind": "selfCompassion",
+   "summary": "Choisir une personne, se rappeler un geste précis, ressentir la gratitude dans le corps.",
+   "script": "Narration/scripts/fr/rel_gratitude_someone.md"
+  },
+  {
+   "id": "lonely_evening",
+   "title": "Quand la maison est silencieuse",
+   "intention": "Une présence douce quand la solitude se fait sentir.",
+   "category": "relationships",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Accueillir le sentiment de solitude, se rappeler que d’autres le vivent en ce moment, présence à soi.",
+   "script": "Narration/scripts/fr/lonely_evening.md"
+  },
+  {
+   "id": "meditation_05",
+   "title": "Une place pour l’émotion",
+   "intention": "Localiser une émotion dans le corps et la laisser exister.",
+   "category": "innerSelf",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Trouver où l’émotion se loge dans le corps, la nommer, respirer autour sans la chasser.",
+   "script": "Narration/scripts/fr/meditation_05.md"
+  },
+  {
+   "id": "emotion_3",
+   "title": "Quand l’anxiété monte",
+   "intention": "Faire redescendre l’anxiété par le corps et le souffle.",
+   "category": "innerSelf",
+   "goal": "calm",
+   "kind": "meditation",
+   "summary": "Repérer les signes physiques, ralentir l’expiration, séparer pensées anxieuses et faits.",
+   "script": "Narration/scripts/fr/emotion_3.md"
+  },
+  {
+   "id": "emotion_4",
+   "title": "Peur et courage",
+   "intention": "Avancer avec la peur plutôt qu’attendre qu’elle parte.",
+   "category": "innerSelf",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Accueillir la peur, puis se relier à ce qui compte assez pour avancer quand même.",
+   "script": "Narration/scripts/fr/emotion_4.md"
+  },
+  {
+   "id": "emo_sadness",
+   "title": "Faire de la place à la tristesse",
+   "intention": "Laisser la tristesse exister sans chercher à aller mieux tout de suite.",
+   "category": "innerSelf",
+   "goal": "emotion",
+   "kind": "meditation",
+   "summary": "Ne pas chercher à aller mieux tout de suite, laisser la tristesse exister, douceur du geste.",
+   "script": "Narration/scripts/fr/emo_sadness.md"
+  },
+  {
+   "id": "emo_anger",
+   "title": "Quand la colère monte",
+   "intention": "Laisser redescendre la colère avant d’agir.",
+   "category": "innerSelf",
+   "goal": "emotion",
+   "kind": "relaxation",
+   "summary": "Sentir la chaleur et la tension, les laisser redescendre par l’expiration, avant d’agir.",
+   "script": "Narration/scripts/fr/emo_anger.md"
+  },
+  {
+   "id": "meditation_10",
+   "title": "La météo intérieure",
+   "intention": "Observer ton état du moment comme une météo qui passe.",
+   "category": "innerSelf",
+   "goal": "perspective",
+   "kind": "visualization",
+   "summary": "Décrire son état comme une météo, se rappeler qu’on est le ciel, pas l’orage.",
+   "script": "Narration/scripts/fr/meditation_10.md"
+  },
+  {
+   "id": "new_thoughts_on_clouds",
+   "title": "Les pensées comme des nuages",
+   "intention": "Regarder passer les pensées sans devoir les suivre.",
+   "category": "innerSelf",
+   "goal": "perspective",
+   "kind": "meditation",
+   "summary": "Poser chaque pensée sur un nuage et la regarder passer, sans la suivre ni la repousser.",
+   "script": "Narration/scripts/fr/new_thoughts_on_clouds.md"
+  },
+  {
+   "id": "afternoon_reframe",
+   "title": "Prendre de la hauteur",
+   "intention": "Prendre du recul sur ce qui occupe trop de place.",
+   "category": "innerSelf",
+   "goal": "perspective",
+   "kind": "visualization",
+   "summary": "Zoom arrière progressif : la pièce, la ville, le pays, la terre, puis retour au problème.",
+   "script": "Narration/scripts/fr/afternoon_reframe.md"
+  },
+  {
+   "id": "meditation_08",
+   "title": "Laisser être",
+   "intention": "Accueillir tout ce qui se présente, sans rien retenir.",
+   "category": "innerSelf",
+   "goal": "perspective",
+   "kind": "meditation",
+   "summary": "Séance longue sans point d’appui fixe : tout ce qui apparaît est accueilli, puis repart.",
+   "script": "Narration/scripts/fr/meditation_08.md"
+  },
+  {
+   "id": "emo_uncertainty",
+   "title": "Quand tout est incertain",
+   "intention": "Habiter l’attente sans inventer la réponse.",
+   "category": "innerSelf",
+   "goal": "calm",
+   "kind": "meditation",
+   "summary": "Habiter l’attente sans inventer la réponse, revenir à ce qui est connu maintenant.",
+   "script": "Narration/scripts/fr/emo_uncertainty.md"
+  },
+  {
+   "id": "emotion_1",
+   "title": "Apprendre à s’aimer",
+   "intention": "Trois étapes pour te parler avec plus de douceur.",
+   "category": "innerSelf",
+   "goal": "kindness",
+   "kind": "selfCompassion",
+   "summary": "Les 3 étapes : c’est difficile, je ne suis pas seul·e, puis-je être doux·ce avec moi.",
+   "script": "Narration/scripts/fr/emotion_1.md"
+  },
+  {
+   "id": "emo_inner_critic",
+   "title": "Quand je suis dur·e avec moi-même",
+   "intention": "Répondre à la critique intérieure comme à un ami.",
+   "category": "innerSelf",
+   "goal": "kindness",
+   "kind": "selfCompassion",
+   "summary": "Écouter la voix critique, lui répondre comme on répondrait à un ami proche.",
+   "script": "Narration/scripts/fr/emo_inner_critic.md"
+  },
+  {
+   "id": "new_safe_place",
+   "title": "Un lieu suffisamment sûr",
+   "intention": "Construire un refuge intérieur où reprendre ton souffle.",
+   "category": "innerSelf",
+   "goal": "calm",
+   "kind": "visualization",
+   "summary": "Construire un lieu par les 5 sens, l’ancrer avec un geste, pouvoir y revenir.",
+   "script": "Narration/scripts/fr/new_safe_place.md"
+  },
+  {
+   "id": "small_joy",
+   "title": "Remarquer le bon",
+   "intention": "Savourer un moment agréable quelques secondes de plus.",
+   "category": "innerSelf",
+   "goal": "energy",
+   "kind": "meditation",
+   "summary": "Repérer une sensation agréable, la laisser durer 20 secondes de plus, sans la retenir.",
+   "script": "Narration/scripts/fr/small_joy.md"
+  },
+  {
+   "id": "express_2",
+   "title": "Transports bondés",
+   "intention": "Trouver ton calme même au milieu de la foule.",
+   "category": "daily",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "Regard baissé, appuis, écoute sans comprendre, expiration lente.",
+   "script": "Narration/scripts/fr/express_2.md"
+  },
+  {
+   "id": "commute_home",
+   "title": "Le trajet vers soi",
+   "intention": "Faire du trajet un vrai passage vers ta soirée.",
+   "category": "daily",
+   "goal": "relax",
+   "kind": "anchoring",
+   "summary": "Yeux ouverts, sons comme point d’appui, laisser le travail rester derrière.",
+   "script": "Narration/scripts/fr/commute_home.md"
+  },
+  {
+   "id": "doorstep_pause",
+   "title": "Sur le seuil",
+   "intention": "Arriver vraiment chez toi avant de passer la porte.",
+   "category": "daily",
+   "goal": "relax",
+   "kind": "meditation",
+   "summary": "Une pause devant la porte pour arriver vraiment chez soi, disponible pour les autres.",
+   "script": "Narration/scripts/fr/doorstep_pause.md"
+  },
+  {
+   "id": "new_walking_pause",
+   "title": "Marcher en présence",
+   "intention": "Méditer en marchant, pas après pas.",
+   "category": "daily",
+   "goal": "focus",
+   "kind": "anchoring",
+   "summary": "Rythme des pas, contact des pieds, balancement des bras. Utilisable dehors.",
+   "script": "Narration/scripts/fr/new_walking_pause.md"
+  },
+  {
+   "id": "new_sensory_shelter",
+   "title": "Un refuge sensoriel",
+   "intention": "Réduire la surcharge quand tout est trop bruyant.",
+   "category": "daily",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "Réduire les stimulations, un seul son, une seule sensation, pour les moments trop bruyants.",
+   "script": "Narration/scripts/fr/new_sensory_shelter.md"
+  },
+  {
+   "id": "blue_hour",
+   "title": "L’heure bleue",
+   "intention": "Regarder la journée ralentir, les yeux ouverts.",
+   "category": "daily",
+   "goal": "relax",
+   "kind": "anchoring",
+   "summary": "À la fenêtre : regard large, lumière qui change, laisser la journée ralentir.",
+   "script": "Narration/scripts/fr/blue_hour.md"
+  },
+  {
+   "id": "friday_release",
+   "title": "La semaine peut se terminer",
+   "intention": "Reconnaître ta semaine et la laisser derrière toi.",
+   "category": "daily",
+   "goal": "relax",
+   "kind": "meditation",
+   "summary": "Ce qui a été fait, ce qui a été difficile, ce que je laisse pour lundi.",
+   "script": "Narration/scripts/fr/friday_release.md"
+  },
+  {
+   "id": "sunday_reset",
+   "title": "Le dimanche soir",
+   "intention": "Apaiser la boule du dimanche soir.",
+   "category": "daily",
+   "goal": "calm",
+   "kind": "meditation",
+   "summary": "Accueillir la boule du dimanche soir, revenir à la soirée présente, un seul pas pour lundi.",
+   "script": "Narration/scripts/fr/sunday_reset.md"
+  },
+  {
+   "id": "daybreak_stillness",
+   "title": "Le calme avant les messages",
+   "intention": "Commencer la journée avant de regarder ton téléphone.",
+   "category": "morning",
+   "goal": "perspective",
+   "kind": "meditation",
+   "summary": "Avant le téléphone : trois respirations, sentir le corps, choisir une intention pour la journée.",
+   "script": "Narration/scripts/fr/daybreak_stillness.md"
+  },
+  {
+   "id": "morning_wake_body",
+   "title": "Réveiller le corps",
+   "intention": "Sortir du sommeil en douceur, en bougeant.",
+   "category": "morning",
+   "goal": "energy",
+   "kind": "relaxation",
+   "summary": "Étirements doux, mobiliser mains, pieds, nuque, respiration plus ample.",
+   "script": "Narration/scripts/fr/morning_wake_body.md"
+  },
+  {
+   "id": "express_3",
+   "title": "Petit déjeuner",
+   "intention": "Une minute de gratitude pour bien commencer la journée.",
+   "category": "morning",
+   "goal": "energy",
+   "kind": "selfCompassion",
+   "summary": "Trois remerciements, première bouchée lente.",
+   "script": "Narration/scripts/fr/express_3.md"
+  },
+  {
+   "id": "new_soft_reset",
+   "title": "Épuisé·e dès le réveil",
+   "intention": "Trouver un rythme réaliste quand l’énergie manque.",
+   "category": "morning",
+   "goal": "energy",
+   "kind": "meditation",
+   "summary": "Accepter le niveau d’énergie du jour, choisir un rythme réaliste, un petit élan.",
+   "script": "Narration/scripts/fr/new_soft_reset.md"
+  },
+  {
+   "id": "morning_kind_start",
+   "title": "Commencer avec douceur",
+   "intention": "Aborder une journée chargée avec une exigence plus juste.",
+   "category": "morning",
+   "goal": "kindness",
+   "kind": "selfCompassion",
+   "summary": "Pour une journée chargée : ce qui est vraiment nécessaire, ce qui peut attendre.",
+   "script": "Narration/scripts/fr/morning_kind_start.md"
+  },
+  {
+   "id": "express_7",
+   "title": "Réveil en panique",
+   "intention": "Calmer l’angoisse qui serre le ventre au réveil.",
+   "category": "morning",
+   "goal": "calm",
+   "kind": "anchoring",
+   "summary": "Fixer un objet de la pièce, expiration longue, la journée n’a pas commencé.",
+   "script": "Narration/scripts/fr/express_7.md"
+  },
+  {
+   "id": "actualite_1",
+   "title": "Quand le monde brûle",
+   "intention": "Trouver ta juste place face aux nouvelles du monde.",
+   "category": "screens",
+   "goal": "perspective",
+   "kind": "meditation",
+   "summary": "Reconnaître l’impuissance, distinguer ce qui dépend de moi, un geste concret à ma portée.",
+   "script": "Narration/scripts/fr/actualite_1.md"
+  },
+  {
+   "id": "actualite_2",
+   "title": "La guerre en bruit de fond",
+   "intention": "Rester sensible sans absorber toute la violence du monde.",
+   "category": "screens",
+   "goal": "emotion",
+   "kind": "selfCompassion",
+   "summary": "Accueillir la peur et la peine, rester sensible sans absorber toute la violence du monde.",
+   "script": "Narration/scripts/fr/actualite_2.md"
+  },
+  {
+   "id": "actualite_3",
+   "title": "L’envie de scroller",
+   "intention": "Laisser passer l’envie de prendre ton téléphone.",
+   "category": "screens",
+   "goal": "focus",
+   "kind": "meditation",
+   "summary": "Observer l’impulsion de prendre le téléphone monter, culminer, redescendre, sans y céder.",
+   "script": "Narration/scripts/fr/actualite_3.md"
+  },
+  {
+   "id": "actualite_5",
+   "title": "Après le scroll",
+   "intention": "Décompresser après trop d’informations.",
+   "category": "screens",
+   "goal": "calm",
+   "kind": "meditation",
+   "summary": "Après trop d’infos : fermer l’écran, ce que je ressens, revenir à la pièce autour de moi.",
+   "script": "Narration/scripts/fr/actualite_5.md"
+  },
+  {
+   "id": "meditation_16",
+   "title": "Le repos des yeux",
+   "intention": "Offrir une vraie pause à tes yeux après les écrans.",
+   "category": "screens",
+   "goal": "relax",
+   "kind": "relaxation",
+   "summary": "Paumes chaudes sur les yeux, puis regard au loin pour relâcher l’accommodation.",
+   "script": "Narration/scripts/fr/meditation_16.md"
+  },
+  {
+   "id": "screen_off",
+   "title": "Éteindre les écrans",
+   "intention": "Passer des écrans au sommeil en douceur.",
+   "category": "screens",
+   "goal": "sleep",
+   "kind": "meditation",
+   "summary": "Poser le téléphone hors de portée, baisser la lumière, ralentir pour préparer le sommeil.",
+   "script": "Narration/scripts/fr/screen_off.md"
+  },
+  {
+   "id": "express_4",
+   "title": "Juste avant de dormir",
+   "intention": "Relâcher les tensions de la journée pour t’endormir.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "relaxation",
+   "summary": "Relâcher le corps de bas en haut, puis compter les respirations.",
+   "script": "Narration/scripts/fr/express_4.md"
+  },
+  {
+   "id": "new_body_scan_sleep",
+   "title": "Le corps devient lourd",
+   "intention": "Un scan corporel lent pour glisser dans le sommeil.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "relaxation",
+   "summary": "Scan très lent avec lourdeur et chaleur, la voix s’espace puis s’éteint sans réveiller.",
+   "script": "Narration/scripts/fr/new_body_scan_sleep.md"
+  },
+  {
+   "id": "sleep_2",
+   "title": "Visualisation apaisante",
+   "intention": "Une plage au crépuscule, décrite lentement jusqu’au sommeil.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "visualization",
+   "summary": "Une plage le soir, décrite en détail par les sens, de plus en plus lentement.",
+   "script": "Narration/scripts/fr/sleep_2.md"
+  },
+  {
+   "id": "sleep_4",
+   "title": "Entre deux mondes",
+   "intention": "Compter à rebours jusqu’à oublier les chiffres.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "meditation",
+   "summary": "Compter à rebours de 100 avec les expirations, se laisser oublier le chiffre.",
+   "script": "Narration/scripts/fr/sleep_4.md"
+  },
+  {
+   "id": "sleep_3",
+   "title": "Vider la tête",
+   "intention": "Ranger tes soucis pour demain et t’endormir l’esprit léger.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "meditation",
+   "summary": "Déposer chaque souci dans une boîte pour demain, puis respiration lente.",
+   "script": "Narration/scripts/fr/sleep_3.md"
+  },
+  {
+   "id": "sleep_cognitive_shuffle",
+   "title": "Les pensées qui tournent au lit",
+   "intention": "Couper la rumination avec des images sans lien entre elles.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "meditation",
+   "summary": "Imaginer des objets sans lien à partir d’un mot (B : ballon, banane…), ce qui coupe la rumination.",
+   "script": "Narration/scripts/fr/sleep_cognitive_shuffle.md"
+  },
+  {
+   "id": "sleep_5",
+   "title": "Fatigué·e mais pas sommeil",
+   "intention": "Arrêter d’essayer de dormir pour enfin te reposer.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "relaxation",
+   "summary": "Arrêter d’essayer de dormir, se reposer éveillé·e, ce qui enlève la pression.",
+   "script": "Narration/scripts/fr/sleep_5.md"
+  },
+  {
+   "id": "sleep_1",
+   "title": "Déposer la journée",
+   "intention": "Rembobiner ta journée et la laisser derrière toi.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "meditation",
+   "summary": "Revoir la journée à l’envers, scène par scène, sans juger, puis la laisser derrière.",
+   "script": "Narration/scripts/fr/sleep_1.md"
+  },
+  {
+   "id": "middle_of_night",
+   "title": "Réveil nocturne",
+   "intention": "Te rendormir sans regarder l’heure.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "meditation",
+   "summary": "Ne pas regarder l’heure, voix très basse, chaleur dans le corps, pas de consigne d’action.",
+   "script": "Narration/scripts/fr/middle_of_night.md"
+  },
+  {
+   "id": "night_watch",
+   "title": "Veille paisible",
+   "intention": "Te reposer vraiment, même quand le sommeil ne vient pas.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "relaxation",
+   "summary": "Séance longue pour les nuits difficiles : le repos compte même sans sommeil.",
+   "script": "Narration/scripts/fr/night_watch.md"
+  },
+  {
+   "id": "night_sky",
+   "title": "Sous le ciel immobile",
+   "intention": "Une histoire lente pour accompagner l’endormissement.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "visualization",
+   "summary": "Une marche lente dans la nuit vers un lieu calme, racontée de façon monotone.",
+   "script": "Narration/scripts/fr/night_sky.md"
+  },
+  {
+   "id": "stress_3",
+   "title": "Relâche",
+   "intention": "Contracter puis relâcher chaque muscle, des pieds au visage.",
+   "category": "body",
+   "goal": "relax",
+   "kind": "relaxation",
+   "summary": "Contracter 5 secondes puis relâcher chaque groupe musculaire, des pieds au visage.",
+   "script": "Narration/scripts/fr/stress_3.md"
+  },
+  {
+   "id": "new_nidra_pause",
+   "title": "Repos profond sans dormir",
+   "intention": "Un yoga nidra pour récupérer en profondeur.",
+   "category": "body",
+   "goal": "relax",
+   "kind": "relaxation",
+   "summary": "Intention (sankalpa), rotation de conscience dans le corps, sensations opposées, retour.",
+   "script": "Narration/scripts/fr/new_nidra_pause.md"
+  },
+  {
+   "id": "stress_5",
+   "title": "Le scan corporel complet",
+   "intention": "Une attention précise à chaque zone du corps.",
+   "category": "body",
+   "goal": "relax",
+   "kind": "relaxation",
+   "summary": "Version de jour, en restant éveillé·e : attention précise à chaque zone.",
+   "script": "Narration/scripts/fr/stress_5.md"
+  },
+  {
+   "id": "gentle_recovery",
+   "title": "Récupérer sans culpabiliser",
+   "intention": "Te donner la permission de te reposer.",
+   "category": "body",
+   "goal": "kindness",
+   "kind": "relaxation",
+   "summary": "Pour la fatigue ou la convalescence : se donner la permission de ne rien faire.",
+   "script": "Narration/scripts/fr/gentle_recovery.md"
+  },
+  {
+   "id": "meditation_15",
+   "title": "Présence dans les mains",
+   "intention": "Te rassurer par la chaleur de tes propres mains.",
+   "category": "body",
+   "goal": "calm",
+   "kind": "relaxation",
+   "summary": "Frotter les mains, sentir la chaleur, les poser sur soi là où c’est réconfortant.",
+   "script": "Narration/scripts/fr/meditation_15.md"
+  },
+  {
+   "id": "body_tension",
+   "title": "Faire de la place à une tension",
+   "intention": "Explorer une tension avec curiosité, sans lutter.",
+   "category": "body",
+   "goal": "relax",
+   "kind": "meditation",
+   "summary": "Explorer une tension ou une douleur avec curiosité, sans lutter. Pas un soin médical.",
+   "script": "Narration/scripts/fr/body_tension.md"
+  },
+  {
+   "id": "body_mindful_stretch",
+   "title": "Étirements conscients",
+   "intention": "Des étirements doux, au rythme du souffle.",
+   "category": "body",
+   "goal": "energy",
+   "kind": "relaxation",
+   "summary": "Étirements assis ou debout coordonnés avec le souffle, faisables au bureau.",
+   "script": "Narration/scripts/fr/body_mindful_stretch.md"
+  },
+  {
+   "id": "breathing_1",
+   "title": "Cohérence cardiaque",
+   "intention": "Six respirations par minute pour retrouver un rythme régulier.",
+   "category": "innerSelf",
+   "goal": "calm",
+   "kind": "coherence",
+   "summary": "Six respirations par minute : le rythme le plus étudié pour apaiser le système nerveux. À pratiquer jusqu’à trois fois par jour.",
+   "script": null
+  },
+  {
+   "id": "breath_sigh",
+   "title": "Soupir physiologique",
+   "intention": "Le moyen le plus rapide de redescendre.",
+   "category": "work",
+   "goal": "calm",
+   "kind": "sigh",
+   "summary": "Deux inspirations par le nez, la seconde plus courte pour remplir le haut des poumons, puis une longue expiration par la bouche. Le moyen le plus rapide de redescendre.",
+   "script": null
+  },
+  {
+   "id": "new_long_exhale",
+   "title": "Expiration longue",
+   "intention": "Allonger l’expiration pour ralentir en douceur.",
+   "category": "daily",
+   "goal": "relax",
+   "kind": "longExhale",
+   "summary": "Une expiration plus longue que l’inspiration ralentit le rythme sans retenir le souffle. Le plus simple pour commencer, une main posée sur le ventre.",
+   "script": null
+  },
+  {
+   "id": "new_box_breathing",
+   "title": "Respiration carrée",
+   "intention": "Quatre temps égaux pour stabiliser l’attention.",
+   "category": "work",
+   "goal": "focus",
+   "kind": "box",
+   "summary": "Inspirer, retenir, expirer, retenir : quatre temps égaux, poumons pleins puis poumons vides.",
+   "script": null
+  },
+  {
+   "id": "breath_triangle",
+   "title": "Respiration triangle",
+   "intention": "Une version plus simple de la respiration carrée.",
+   "category": "discovery",
+   "goal": "focus",
+   "kind": "triangle",
+   "summary": "Inspirer, retenir, expirer : trois temps égaux, une seule retenue poumons pleins.",
+   "script": null
+  },
+  {
+   "id": "stress_2",
+   "title": "4-7-8",
+   "intention": "Quatre cycles pour préparer le sommeil.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "fourSevenEight",
+   "summary": "Inspirer quatre secondes, retenir sept, expirer huit. Quatre cycles suffisent, puis le souffle redevient libre.",
+   "script": null
+  },
+  {
+   "id": "breath_sleep_descent",
+   "title": "Descente vers le sommeil",
+   "intention": "Un rythme qui ralentit tout seul jusqu’au sommeil.",
+   "category": "night",
+   "goal": "sleep",
+   "kind": "sleepDescent",
+   "summary": "Le rythme ralentit tout seul : l’expiration passe de quatre à huit secondes au fil de l’exercice.",
+   "script": null
+  },
+  {
+   "id": "breathing_3",
+   "title": "Pause en bas",
+   "intention": "Un court repos poumons vides pour une détente profonde.",
+   "category": "body",
+   "goal": "relax",
+   "kind": "lowPause",
+   "summary": "Après chaque expiration, un court repos poumons vides avant d’inspirer à nouveau.",
+   "script": null
+  },
+  {
+   "id": "breathing_2",
+   "title": "Respiration alternée",
+   "intention": "Alterner les narines pour clarifier l’esprit.",
+   "category": "work",
+   "goal": "focus",
+   "kind": "alternate",
+   "summary": "Bouche une narine avec le pouce, l’autre avec l’annulaire, et suis la narine indiquée à l’écran : inspire à gauche, expire à droite, inspire à droite, expire à gauche.",
+   "script": null
+  },
+  {
+   "id": "breathing_5",
+   "title": "Inspiration en escalier",
+   "intention": "Inspirer en trois marches, expirer d’un trait.",
+   "category": "innerSelf",
+   "goal": "calm",
+   "kind": "staircase",
+   "summary": "L’inspiration monte en trois petites marches, l’expiration descend d’un seul trait.",
+   "script": null
+  },
+  {
+   "id": "breathing_4",
+   "title": "Souffle tonique",
+   "intention": "Une inspiration plus longue pour réveiller le corps.",
+   "category": "morning",
+   "goal": "energy",
+   "kind": "energizing",
+   "summary": "Une inspiration plus longue que l’expiration éveille le corps. À éviter si tu te sens anxieux ou anxieuse.",
+   "script": null
+  },
+  {
+   "id": "breath_cooling",
+   "title": "Souffle rafraîchissant",
+   "intention": "Refroidir la colère en inspirant par la bouche.",
+   "category": "relationships",
+   "goal": "emotion",
+   "kind": "cooling",
+   "summary": "Inspire par la bouche, la langue roulée en tube ou à travers les dents serrées, puis expire lentement par le nez. L’air frais aide à faire retomber la colère.",
+   "script": null
+  },
+  {
+   "id": "breath_counting",
+   "title": "Compter les souffles",
+   "intention": "Compter tes expirations de un à dix, à ton rythme.",
+   "category": "discovery",
+   "goal": "focus",
+   "kind": "counting",
+   "summary": "Compte chaque expiration de un à dix, puis recommence.",
+   "script": null
+  }
+ ],
+ "categories": [
+  "Découverte",
+  "Travail",
+  "Relations",
+  "Soi & émotions",
+  "Quotidien & transitions",
+  "Matin & énergie",
+  "Écrans & actualité",
+  "Nuit & sommeil",
+  "Corps & récupération"
+ ],
+ "goals": [
+  "S’endormir",
+  "Se relaxer",
+  "Calmer le stress",
+  "Se concentrer",
+  "Retrouver de l’énergie",
+  "Accueillir une émotion",
+  "Prendre du recul",
+  "Bienveillance envers soi"
+ ],
+ "ambiences": [
+  {
+   "title": "Pluie sur la fenêtre",
+   "subtitle": "Pluie régulière, sans tonnerre"
+  },
+  {
+   "title": "Pluie sur la tente",
+   "subtitle": "Gouttes proches, sensation d’abri"
+  },
+  {
+   "title": "Orage lointain",
+   "subtitle": "Pluie et tonnerre rare"
+  },
+  {
+   "title": "Océan",
+   "subtitle": "Vagues lentes"
+  },
+  {
+   "title": "Rivière",
+   "subtitle": "Courant et clapotis"
+  },
+  {
+   "title": "Forêt au matin",
+   "subtitle": "Oiseaux et air calme"
+  },
+  {
+   "title": "Nuit d’été",
+   "subtitle": "Grillons au loin"
+  },
+  {
+   "title": "Vent dans les arbres",
+   "subtitle": "Rafales lentes dans les feuilles"
+  },
+  {
+   "title": "Feu de cheminée",
+   "subtitle": "Crépitements doux"
+  },
+  {
+   "title": "Café",
+   "subtitle": "Murmures et tasses, pour travailler"
+  },
+  {
+   "title": "Train de nuit",
+   "subtitle": "Roulement régulier"
+  },
+  {
+   "title": "Ventilateur",
+   "subtitle": "Souffle mécanique stable"
+  },
+  {
+   "title": "Bruit blanc",
+   "subtitle": "Masque les bruits alentour"
+  },
+  {
+   "title": "Bruit rose",
+   "subtitle": "Plus doux que le blanc"
+  },
+  {
+   "title": "Bruit brun",
+   "subtitle": "Grave et enveloppant"
+  },
+  {
+   "title": "Bols chantants",
+   "subtitle": "Résonances longues"
+  }
+ ],
+ "ui": [
+  "Ce que tu cherches",
+  "Par moment de vie",
+  "%d séances",
+  "Respirer",
+  "Treize rythmes guidés par une courbe, sans voix.",
+  "Les résultats combinent la situation, l’objectif, le moment de vie, la durée et le type.",
+  "Les sons sont embarqués dans l’app et fonctionnent hors ligne.",
+  "Durée de l’exercice",
+  "Durée",
+  "Retiens",
+  "Prépare-toi",
+  "Respire librement",
+  "Compte tes expirations",
+  "Touche à chaque expiration",
+  "Compter une expiration",
+  "Narine gauche",
+  "Narine droite",
+  "Commence par la narine gauche",
+  "libre",
+  "Installe-toi le dos droit, les épaules relâchées.",
+  "Compte chaque expiration de un à dix, puis recommence.",
+  "Suis la courbe : elle monte quand tu inspires, reste plate quand tu retiens, descend quand tu expires.",
+  "Touche l’écran à chaque expiration.",
+  "Si le rythme devient inconfortable, reviens à ton souffle naturel.",
+  "La courbe monte quand tu inspires, reste plate quand tu retiens et descend quand tu expires. Ne force jamais : si le rythme devient inconfortable, reviens à ton souffle naturel.",
+  "Une séance guidée, avec des temps de silence pour pratiquer vraiment. Tu peux t’arrêter ou ouvrir les yeux à tout moment."
+ ]
+}

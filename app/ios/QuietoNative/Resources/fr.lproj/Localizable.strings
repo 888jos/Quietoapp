@@ -1,1 +1,46 @@
 /* Le français est la langue source : les clés sont directement le texte affiché. */
+
+/* Paywall benefits */
+"Séances guidées et programmes jour après jour" = "Séances guidées et programmes jour après jour";
+"Louane, un espace de parole disponible à toute heure" = "Louane, un espace de parole disponible à toute heure";
+"Ambiances pour t’endormir et te concentrer" = "Ambiances pour t’endormir et te concentrer";
+
+/* Session sheet */
+"En savoir plus" = "En savoir plus";
+
+/* Breathing */
+"Méditations" = "Méditations";
+"Bien joué" = "Bien joué";
+"Terminer" = "Terminer";
+"Recommencer" = "Recommencer";
+"Cycle %d" = "Cycle %d";
+"%d cycles" = "%d cycles";
+"Commencer %@" = "Commencer %@";
+
+/* Session feedback */
+"Comment te sens-tu maintenant ?" = "Comment te sens-tu maintenant ?";
+"Apaisé·e" = "Apaisé·e";
+"Plus léger·e" = "Plus léger·e";
+"Pareil" = "Pareil";
+"Encore tendu·e" = "Encore tendu·e";
+
+/* Ambience picker */
+"Aucune" = "Aucune";
+"Aucune ambiance" = "Aucune ambiance";
+"Volume de l’ambiance" = "Volume de l’ambiance";
+
+/* Anti-stress button */
+"Anti-stress" = "Anti-stress";
+"J’ai besoin d’une pause" = "J’ai besoin d’une pause";
+"Dis ce que tu traverses, Quieto te propose la bonne séance." = "Dis ce que tu traverses, Quieto te propose la bonne séance.";
+"Choisis ce que tu traverses" = "Choisis ce que tu traverses";
+
+/* Gender */
+"Tu es…" = "Tu es…";
+"Pour que Quieto s’adresse à toi correctement." = "Pour que Quieto s’adresse à toi correctement.";
+"Une femme" = "Une femme";
+"Un homme" = "Un homme";
+"Genre" = "Genre";
+"Féminin" = "Féminin";
+"Masculin" = "Masculin";
+"Quieto s’adresse à toi au masculin ou au féminin, dans toute l’app." = "Quieto s’adresse à toi au masculin ou au féminin, dans toute l’app.";

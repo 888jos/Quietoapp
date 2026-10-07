@@ -4,7 +4,7 @@ import Foundation
 /// support, Apple Health, the paywall relaunch) are filtered by the view model.
 enum OnboardingStep: String, CaseIterable, Codable {
     // Acte 1 · Accroche
-    case splash, promise, offer, firstName
+    case splash, promise, offer, firstName, gender
     // Acte 2 · Comprendre
     case reasons, sinceWhen, hardestTime, sleep, stressBefore, stressSources, notAlone,
          experience, blockers, formats, minutes, moment, goal
@@ -22,6 +22,20 @@ enum OnboardingStep: String, CaseIterable, Codable {
     /// Screens without a back button.
     var isLocked: Bool {
         [.splash, .breathing, .building, .paywall, .relaunch, .welcome, .crisisSupport].contains(self)
+    }
+
+    /// The act (1–7) the screen belongs to, to read drop-off by part.
+    var act: Int {
+        switch self {
+        case .splash, .promise, .offer, .firstName, .gender: 1
+        case .reasons, .sinceWhen, .hardestTime, .sleep, .stressBefore, .stressSources, .notAlone,
+             .experience, .blockers, .formats, .minutes, .moment, .goal: 2
+        case .safety, .crisisSupport: 3
+        case .breathIntro, .breathing, .stressAfter, .breathResult, .louaneIntro, .louaneAsk, .louaneReply: 4
+        case .health, .reminders, .commitment, .account, .privacy: 5
+        case .building, .profileSummary, .plan, .projection, .included: 6
+        case .trialTimeline, .paywall, .relaunch, .welcome: 7
+        }
     }
 }
 
@@ -58,10 +72,17 @@ struct OnboardingAnswers: Codable, Equatable {
 
 enum OnboardingContent {
     static func question(for step: OnboardingStep, firstName: String) -> OnboardingQuestion? {
-        let name = firstName.isEmpty ? "" : ", \(firstName)"
         switch step {
+        case .gender:
+            // Quieto never writes « fatigué·e »: every text agrees with this answer.
+            return .init(title: "Tu es…", subtitle: "Pour que Quieto s’adresse à toi correctement.", options: [
+                .init(QuietoGender.feminine.rawValue, "Une femme", symbol: "person.fill"),
+                .init(QuietoGender.masculine.rawValue, "Un homme", symbol: "person.fill")
+            ], multiple: false)
         case .reasons:
-            return .init(title: "Qu’est-ce qui t’amène\(name) ?", subtitle: "Choisis tout ce qui te parle.", options: [
+            // The title with the first name is already localized; option labels stay French (server values).
+            let title = firstName.isEmpty ? "Qu’est-ce qui t’amène ?" : QuietoLocalization.format("Qu’est-ce qui t’amène, %@ ?", firstName)
+            return .init(title: title, subtitle: "Choisis tout ce qui te parle.", options: [
                 .init("stress", "Le stress au quotidien", symbol: "waveform.path.ecg"),
                 .init("sleep", "Le sommeil", symbol: "moon.stars"),
                 .init("thoughts", "Les pensées qui tournent", symbol: "tornado"),
@@ -211,6 +232,7 @@ enum OnboardingPlanBuilder {
         take(fitting, count: 7)
         take(catalog.sessions, count: 7)
 
+        // French on purpose: stored and sent to the server, localized when displayed.
         let title: String
         switch answers.single(.goal) ?? "" {
         case "sleep": title = "Retrouver le sommeil en 7 jours"
@@ -224,11 +246,21 @@ enum OnboardingPlanBuilder {
 }
 
 /// Mirrors the server's lexical safety net: a crisis sign in free text routes
-/// to the 3114 screen before anything else.
+/// to the crisis screen (local listening line) before anything else.
 enum OnboardingSafety {
     private static let patterns = [
         "suicid", "me tuer", "me foutre en l", "en finir", "plus envie de vivre", "envie de mourir", "veux mourir",
-        "me faire du mal", "me scarifier", "scarification", "automutil", "kill myself", "end my life", "want to die", "self harm"
+        "me faire du mal", "me scarifier", "scarification", "automutil",
+        // English
+        "kill myself", "end my life", "want to die", "self harm", "self-harm", "hurt myself",
+        // Spanish
+        "matarme", "quitarme la vida", "no quiero vivir", "quiero morir", "hacerme dano", "autolesion",
+        // German
+        "umbringen", "mir das leben nehmen", "nicht mehr leben", "will sterben", "selbstverletz", "mir weh tun",
+        // Japanese
+        "死にたい", "自殺", "消えたい", "自傷", "リストカット",
+        // Korean
+        "죽고 싶", "자살", "자해", "사라지고 싶"
     ]
 
     static func containsCrisisSignal(_ text: String) -> Bool {
@@ -242,15 +274,16 @@ enum OnboardingSafety {
 /// before subscribing, nothing is sent to the AI.
 enum OnboardingLouaneScript {
     static func intro(_ answers: OnboardingAnswers) -> [String] {
-        let name = answers.firstName.isEmpty ? "" : " \(answers.firstName)"
+        // Formatted bubbles are returned localized; plain keys are localized by `OnboardingBubbles`.
+        let hello = answers.firstName.isEmpty ? "Bonjour, moi c’est Louane." : QuietoLocalization.format("Bonjour %@, moi c’est Louane.", answers.firstName)
         let weight: String
         switch OnboardingPlanBuilder.pillars(for: answers).first {
-        case .sleep: weight = "Le soir, la tête continue de tourner alors que le corps voudrait s’arrêter."
-        case .stress: weight = "Ça pousse toute la journée, et ça ne redescend jamais vraiment."
-        case .thoughts: weight = "Les pensées partent dans tous les sens, et la journée file sans toi."
-        default: weight = "Tu passes souvent après tout le reste."
+        case .sleep: weight = "J’ai lu tes réponses. Le soir, la tête continue de tourner alors que le corps voudrait s’arrêter."
+        case .stress: weight = "J’ai lu tes réponses. Ça pousse toute la journée, et ça ne redescend jamais vraiment."
+        case .thoughts: weight = "J’ai lu tes réponses. Les pensées partent dans tous les sens, et la journée file sans toi."
+        default: weight = "J’ai lu tes réponses. Tu passes souvent après tout le reste."
         }
-        return ["Bonjour\(name), moi c’est Louane.", "J’ai lu tes réponses. \(weight)", "Je suis là pour en parler, quand tu veux. Pas de jugement, à ton rythme."]
+        return [hello, weight, "Je suis là pour en parler, quand tu veux. Pas de jugement, à ton rythme."]
     }
 
     static func reply(to text: String, answers: OnboardingAnswers, firstSession: QuietoSession?) -> [String] {
@@ -260,7 +293,7 @@ enum OnboardingLouaneScript {
             : "Merci de me l’avoir dit. Ce n’est pas rien de mettre des mots dessus."]
         bubbles.append("On va y aller doucement, un petit pas par jour.")
         if let firstSession {
-            bubbles.append("Pour commencer, je te propose « \(firstSession.title.quietoLocalized) », \(firstSession.durationMinutes) min. Elle sera ta première séance.")
+            bubbles.append(QuietoLocalization.format("Pour commencer, je te propose « %@ », %d min. Elle sera ta première séance.", firstSession.title.quietoLocalized, firstSession.durationMinutes))
         }
         return bubbles
     }

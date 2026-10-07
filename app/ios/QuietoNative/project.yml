@@ -10,10 +10,13 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     from: 2.55.3
+  Amplitude:
+    url: https://github.com/amplitude/Amplitude-Swift
+    from: 1.0.0
 settings:
   base:
     SWIFT_VERSION: 5.0
-    DEVELOPMENT_TEAM: NR772G2FPF
+    DEVELOPMENT_TEAM: S7988JL5XT
     CODE_SIGN_STYLE: Automatic
 targets:
   QuietoNative:
@@ -25,15 +28,16 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ITSAppUsesNonExemptEncryption: false
-        NSHealthShareUsageDescription: Quieto lit tes minutes de pleine conscience et ton sommeil pour adapter tes séances. Ces données restent sur ton iPhone.
+        NSHealthShareUsageDescription: Quieto lit tes minutes de pleine conscience et ton sommeil pour te les montrer dans ton profil. Ces données restent sur ton iPhone.
         NSHealthUpdateUsageDescription: Quieto enregistre tes séances en minutes de pleine conscience dans Apple Santé.
         UIRequiresFullScreen: true
         UIBackgroundModes:
           - audio
         UILaunchScreen: {}
-        SUPERWALL_API_KEY: REPLACE_WITH_SUPERWALL_PUBLIC_KEY
+        SUPERWALL_API_KEY: pk_7IWqvzXD45PMoNfZQsNXe
         SUPABASE_URL: REPLACE_WITH_SUPABASE_URL
         SUPABASE_PUBLISHABLE_KEY: REPLACE_WITH_SUPABASE_PUBLISHABLE_KEY
+        AMPLITUDE_API_KEY: ff5aa0fa4c60fb4e05386c581fe97da7
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
     sources:
@@ -42,7 +46,7 @@ targets:
         buildPhase: resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.quietoapp.app.native
+        PRODUCT_BUNDLE_IDENTIFIER: com.quietoapp.app
         MARKETING_VERSION: 1.0.0
         CURRENT_PROJECT_VERSION: 1
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -56,6 +60,8 @@ targets:
         product: SuperwallKit
       - package: Supabase
         product: Supabase
+      - package: Amplitude
+        product: AmplitudeSwift
     scheme:
       gatherCoverageData: true
       testTargets:

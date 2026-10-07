@@ -4,9 +4,50 @@
 > À mettre à jour à CHAQUE changement sur l'app, le backend ou l'analytics
 > (une ligne datée suffit). Le lire en début de session avant toute action.
 
-Dernière mise à jour : **28/09/2026**
+Dernière mise à jour : **07/10/2026**
 
 > 📁 **Depuis le 26/09/2026, tout Quieto vit dans UN dépôt : `~/Desktop/dev/Quieto`** (GitHub privé `Paul-Oll/Quieto`). Ce journal est `Quieto/docs/JOURNAL-QUIETO.md`. Dans les entrées d'avant le 26/09, lire `QuietoApp/…` = `Quieto/app/…`, `quieto-backend/…` = `Quieto/backend/…`, `cofonde-site/…` = `Quieto/sites/cofonde/…`, `quieto-entreprise-site/…` = `Quieto/sites/entreprise/…`, `quieto-logo/…` = `Quieto/logo/…`.
+
+## 🔒 07/10 — Sécurité (app native + Supabase), clé Superwall
+- **Clé publique Superwall** `pk_7IWq…` posée dans `project.yml` et `Info.plist` : l'app se connecte bien à Superwall. Le placement `quieto_hard_paywall` n'affiche encore rien : il faut configurer sa campagne et son paywall dans le dashboard.
+- **App iOS** :
+  - **Écran de crise** : il n'apparaît plus dans les analytics (ni son nom, ni le nombre d'écrans).
+  - **Question de sécurité** : la réponse n'est plus écrite sur le disque.
+  - **Crise écrite à Louane pendant l'onboarding** : plus de boucle après l'écran de crise.
+  - **Détection de crise** : elle couvre maintenant en/es/de/ja/ko.
+  - **Ligne d'écoute selon le pays** (`CrisisLine`) au lieu du 3114 partout.
+  - **Paywall** : il donne accès à la gestion de l'abonnement, à la suppression de compte et aux CGU/confidentialité (règles 3.1.2 et 5.1.1(v)).
+  - **Mémoire Louane** : la supprimer depuis le Profil efface aussi la copie envoyée à l'IA.
+  - **Hors ligne** : une erreur réseau ne remplace plus un compte Apple par un anonyme.
+  - **Suppression de compte** : elle redemande un code Apple pour révoquer Sign in with Apple.
+  - **Abonnement** : l'app écoute `Transaction.updates`, et l'accès donné par le serveur est mémorisé 3 jours.
+  - **Tests** : Superwall et Amplitude sont coupés pendant les tests.
+- **Supabase** : nouvelle migration `20261007100000_security_hardening.sql` et fonctions `subscription-sync`, `superwall-webhook`, `louane`, `account-data`, `_shared`.
+  - **Dashboard** : l'accès admin ne passe plus par un jeton Firebase.
+  - **Abonnements** : transfert de transactions encadré, sandbox refusée en prod, seuls les abonnements auto-renouvelables comptent.
+  - **Limites de débit** : sur Louane et sur `subscription-sync`.
+  - **Écritures client** : analytics et pratique bornés.
+  - **Droits** : revus.
+  - **Suppression de compte** : purge complète, avec RevenueCat, Amplitude et la révocation Apple en best-effort.
+  - **Rétention** : `pg_cron` quotidien.
+- **Rien n'est déployé ni commité.**
+- **Reste à faire** :
+  - Poser les variables d'env Supabase (voir la réponse du 07/10).
+  - Faire `db push`, puis déployer les fonctions.
+  - Purge Firestore et Superwall.
+  - Gérer le 429 de Louane côté app.
+
+## 🛠️ 06/10 — App native (branche `refactor/mvvm`) : audit, Profil réel, Santé, mini-lecteur
+- **Audit complet + planification des plans par objectif** : voir `docs/PLAN-ETAT-ET-PLANS-PAR-OBJECTIF-2026-10-06.md`. Décision du jour : 6 plans de 28 jours (pair, longs pour la rétention).
+- **Corrigé** :
+  - **Identifiant utilisateur** : il est maintenant envoyé à Supabase en minuscules (`UUID.quietoUserID`). Avant, il partait en majuscules et la RLS refusait en silence presque toutes les écritures et lectures.
+  - **Accueil** : il est construit à partir des vraies données de l'iPhone (programme, journal, prénom, étape réelle, date de dernière écoute) au lieu des données de démo « Léa ».
+  - **Profil** : il affiche les vraies données. Semaine lue dans le journal de pratique ; abonnement lu dans StoreKit (formule, prix, essai, renouvellement, résiliation, problème de paiement) ; statut réel des notifications ; volume des ambiances appliqué au lecteur ; accessibilité réellement appliquée ; confirmation avant de supprimer le compte.
+  - **Apple Santé** : statut réel, minutes de pleine conscience de la semaine, sommeil de la nuit (intervalles iPhone/montre fusionnés). Le texte d'autorisation ne promet plus d'« adapter les séances ».
+  - **Mini-lecteur** : bleu, plus étroit, avec une croix de fermeture. Lancer une séance ne coupe plus l'ambiance choisie.
+- **Traductions** : textes ajoutés en en/es/de/ja/ko.
+- **Tests** : 94/94 au vert.
+- **Non commité.**
 
 ## 📦 28/09 — Version 1.0.28+39 : buildée et envoyée aux deux stores
 - **La 1.0.27 (build 38) est publiée sur l'App Store** (confirmé par Paul le 28/09) → version passée à **1.0.28+39** (commit `c095d4c`, `pubspec.yaml`).

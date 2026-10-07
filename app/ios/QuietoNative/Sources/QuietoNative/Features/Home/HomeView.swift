@@ -2,15 +2,36 @@ import SwiftUI
 
 struct HomeView: View {
     @ObservedObject var model: HomeViewModel
+    /// Streak and badges; nil in previews.
+    var journey: AchievementsViewModel?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        NavigationStack {
+            page.toolbar(.hidden, for: .navigationBar)
+        }
+        .tint(QuietoColor.mint)
+    }
+
+    private var page: some View {
         ZStack(alignment: .bottom) {
-            QuietoColor.background.ignoresSafeArea()
+            QuietoBackground()
             ScrollView {
-                VStack(alignment: .leading, spacing: QuietoSpacing.lg) {
-                    HomeHeader(firstName: model.snapshot.firstName)
+                VStack(alignment: .leading, spacing: QuietoSpacing.xl) {
+                    HomeHeader(firstName: model.snapshot.firstName, journey: journey)
                     content
+                    #if DEBUG
+                    if let replay = model.onReplayOnboarding {
+                        Button(action: replay) {
+                            Label("Debug · Revoir l’onboarding", systemImage: "ladybug")
+                                .font(QuietoFont.sans(.callout, weight: .semibold))
+                                .foregroundStyle(QuietoColor.background)
+                                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                .background(Color.orange, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    #endif
                     // iOS 26's translucent tab bar floats over scroll content.
                     // Keep the last section fully readable above it.
                     Color.clear.frame(height: 128)
@@ -20,16 +41,17 @@ struct HomeView: View {
                 .padding(.top, QuietoSpacing.sm)
             }
             .refreshable { await model.refresh() }
+            .task { await model.refresh() }
             .scrollIndicators(.hidden)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 92) }
         .overlay(alignment: .top) {
             if let lastAction = model.lastAction {
                 Text(lastAction.quietoLocalized)
-                    .font(QuietoFont.sans(13, weight: .medium))
+                    .font(QuietoFont.sans(.subhead, weight: .medium))
                     .foregroundStyle(QuietoColor.background)
                     .padding(.horizontal, 14).padding(.vertical, 9)
-                    .background(QuietoColor.mint, in: Capsule())
+                    .background(QuietoColor.mintFill, in: Capsule())
                     .padding(.top, 8)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .onTapGesture { model.lastAction = nil }
@@ -46,20 +68,27 @@ struct HomeView: View {
             ErrorState(message: errorMessage.quietoLocalized) { Task { await model.refresh() } }
         } else {
             if model.snapshot.isOffline { OfflineBanner() }
-            NextSessionCard(session: model.snapshot.nextSession) { session in model.play(session, source: "home_next") }
-            if let program = model.snapshot.program {
-                ProgramSummary(program: program, onOpen: model.openProgram, onAdjust: model.adjustRhythm)
-            } else {
-                EmptyProgramCard(onCreate: model.openLouane)
-            }
-            ExpressSection { session in model.play(session, source: "home_express") }
-            CheckInSection(model: model)
+            TodayHero(
+                session: model.snapshot.nextSession,
+                program: model.snapshot.program,
+                step: pair(model.snapshot.nextStep, model.snapshot.program?.totalDays),
+                onPlay: { session in model.play(session, source: "home_next") },
+                onOpenProgram: model.openProgram
+            )
+            if model.snapshot.program == nil { EmptyProgramCard(onCreate: model.openLouane) }
+            AntiStressButton(model: model)
+            ExpressCarousel { session in model.play(session, source: "home_express") }
             LouaneCard(onOpen: model.openLouane)
             if let recent = model.snapshot.progress.lastListened {
-                RecentSessionCard(session: recent) { model.play(recent, source: "home_recent") }
+                RecentSessionCard(session: recent, listenedAt: model.snapshot.progress.lastListenedAt) { model.play(recent, source: "home_recent") }
             }
         }
     }
+}
+
+private func pair<A, B>(_ a: A?, _ b: B?) -> (A, B)? {
+    guard let a, let b else { return nil }
+    return (a, b)
 }
 
 #Preview("Accueil — données de démonstration") {
@@ -68,39 +97,55 @@ struct HomeView: View {
 
 private struct HomeHeader: View {
     let firstName: String?
+    let journey: AchievementsViewModel?
 
     private var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
-        switch hour {
-        case 5..<12: return "Bonjour".quietoLocalized
-        case 12..<18: return "Bon après-midi".quietoLocalized
-        default: return "Bonsoir".quietoLocalized
+        switch (hour, firstName) {
+        case (5..<12, let name?): return QuietoLocalization.format("Bonjour %@", name)
+        case (5..<12, nil): return "Bonjour".quietoLocalized
+        case (12..<18, let name?): return QuietoLocalization.format("Bon après-midi %@", name)
+        case (12..<18, nil): return "Bon après-midi".quietoLocalized
+        case (_, let name?): return QuietoLocalization.format("Bonsoir %@", name)
+        case (_, nil): return "Bonsoir".quietoLocalized
         }
     }
 
+    /// "Mercredi 7 octobre": only the first letter is capitalised.
+    private var today: String {
+        let text = Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(QuietoLocalization.locale))
+        return text.prefix(1).uppercased(with: QuietoLocalization.locale) + text.dropFirst()
+    }
+
     var body: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("quieto").font(QuietoFont.serif(28, weight: .bold)).foregroundStyle(QuietoColor.textPrimary)
-                Text("\(greeting)\(firstName.map { " \($0)" } ?? "")")
-                    .font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary)
-                Text("Une prochaine étape claire.")
-                    .font(QuietoFont.display).foregroundStyle(QuietoColor.textPrimary).fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(today)
+                        .font(QuietoFont.sans(.subhead, weight: .medium)).foregroundStyle(QuietoColor.textSecondary)
+                    Text(verbatim: greeting)
+                        .font(QuietoFont.display).foregroundStyle(QuietoColor.textPrimary)
+                        .lineLimit(1).minimumScaleFactor(0.7)
+                }
+                Spacer()
+                if let journey { HeaderStreak(journey: journey) }
             }
-            Spacer()
-            Button {} label: {
-                Image(systemName: "bell").font(.system(size: 20, weight: .light)).foregroundStyle(QuietoColor.textPrimary)
-                    .frame(width: 44, height: 44)
-            }
-            .accessibilityLabel("Notifications")
+            .accessibilityElement(children: .contain)
+            if let journey { WeekStrip(journey: journey) }
         }
     }
+}
+
+/// Observes the journey on its own so the header updates with the streak.
+private struct HeaderStreak: View {
+    @ObservedObject var journey: AchievementsViewModel
+    var body: some View { StreakChip(streak: journey.streak) { journey.present() } }
 }
 
 private struct OfflineBanner: View {
     var body: some View {
         Label("Hors ligne · tes données locales restent disponibles", systemImage: "wifi.slash")
-            .font(QuietoFont.sans(13, weight: .medium)).foregroundStyle(QuietoColor.textSecondary)
+            .font(QuietoFont.sans(.subhead, weight: .medium)).foregroundStyle(QuietoColor.textSecondary)
             .padding(.horizontal, 12).padding(.vertical, 9)
             .background(QuietoColor.surfaceRaised, in: Capsule())
     }
@@ -112,8 +157,8 @@ private struct ErrorState: View {
     var body: some View {
         QuietoCard {
             VStack(alignment: .leading, spacing: QuietoSpacing.sm) {
-                Label("Accueil indisponible", systemImage: "moon.zzz").font(QuietoFont.sans(16, weight: .semibold))
-                Text(message.quietoLocalized).font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
+                Label("Accueil indisponible", systemImage: "moon.zzz").font(QuietoFont.sans(.body, weight: .semibold))
+                Text(message.quietoLocalized).font(QuietoFont.sans(.callout)).foregroundStyle(QuietoColor.textSecondary)
                 QuietoOutlineButton(title: "Réessayer", systemImage: "arrow.clockwise", action: retry)
             }
         }

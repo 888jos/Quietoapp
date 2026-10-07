@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { adminClient, reply } from "../_shared/http.ts";
+import { adminClient, readBody, reply } from "../_shared/http.ts";
+import { appleClientSecret } from "../_shared/apple-signin.ts";
 
 // GET: export (RGPD art. 15/20). POST {action:"link-legacy"}: inherit the
 // Firebase account that used the same Apple identity. DELETE: erasure (art. 17),
@@ -25,6 +26,7 @@ Deno.serve(async (request: Request) => {
       "profiles", "user_preferences", "session_progress", "listening_events",
       "programs", "louane_conversations", "louane_messages", "louane_memory",
       "subscription_accounts", "subscription_events", "enterprise_access", "analytics_events",
+      "practice_entries",
     ];
     const exported: Record<string, unknown> = {};
     for (const table of tables) {
@@ -65,20 +67,144 @@ Deno.serve(async (request: Request) => {
     return reply(200, { linked: Boolean(legacy) });
   }
 
-  // DELETE. Subscription events have no foreign key: purge them explicitly.
-  const { error: eventsError } = await admin.from("subscription_events").delete().eq("user_id", userID);
-  if (eventsError) return reply(500, { error: "data_delete_failed" });
+  // DELETE. public.purge_user_data() runs in one transaction: subscription
+  // events (no foreign key, payload carries originalAppUserId), store
+  // subscriptions anonymised and detached (raw appAccountToken removed, so a
+  // later device claim can bind them again), rate-limit rows, then the profile,
+  // which cascades through every user-owned product table (practice_entries,
+  // analytics_events, listening_events, Louane, programs, enterprise seat…).
+  // Optional body {"apple_authorization_code": "..."}: a DELETE without a body
+  // (or with invalid JSON) still deletes the account.
+  let appleAuthorizationCode = "";
+  try {
+    const raw = await readBody(request, 16 * 1024);
+    const parsed = raw ? JSON.parse(raw) : null;
+    const code = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>).apple_authorization_code : null;
+    if (typeof code === "string" && code.length > 0 && code.length < 2048) appleAuthorizationCode = code;
+  } catch {
+    // No usable body: nothing to revoke at Apple.
+  }
+
+  const { error: purgeError } = await admin.rpc("purge_user_data", { p_user_id: userID });
+  if (purgeError) return reply(500, { error: "data_delete_failed" });
   if (firebaseUID) {
     const { error: legacyError } = await admin.rpc("purge_legacy_user", { p_firebase_uid: firebaseUID });
     if (legacyError) return reply(500, { error: "legacy_delete_failed" });
   }
-  // Cascades through every user-owned product table; store subscriptions are
-  // released (user_id set to null) so a later claim can bind them again.
-  const { error: profileError } = await admin.from("profiles").delete().eq("user_id", userID);
-  if (profileError) return reply(500, { error: "data_delete_failed" });
   const { error: authError } = await admin.auth.admin.deleteUser(userID);
   if (authError) return reply(500, { error: "auth_delete_failed", product_data_deleted: true });
+  // Third parties: best effort, never blocks the erasure (null = not configured).
+  const [revenuecat, amplitude, apple] = await Promise.all([
+    firebaseUID ? deleteRevenueCatSubscriber(firebaseUID) : Promise.resolve(null),
+    deleteAmplitudeUsers([userID, ...(firebaseUID ? [firebaseUID] : [])]),
+    appleAuthorizationCode ? revokeSignInWithApple(appleAuthorizationCode) : Promise.resolve(null),
+  ]);
   // The App Store subscription itself is managed by Apple; the app links to
   // the system subscription settings before deletion.
-  return reply(200, { ok: true, subscription_cancelled: false, legacy_firebase_uid: firebaseUID });
+  return reply(200, {
+    ok: true,
+    subscription_cancelled: false,
+    legacy_firebase_uid: firebaseUID,
+    third_parties: { revenuecat, amplitude, apple },
+  });
 });
+
+const thirdPartyTimeoutMs = 8_000;
+
+// Legacy Flutter subscribers (RevenueCat app_user_id = Firebase UID), same call
+// as the Firebase `supprimerDonnees` function. Secret key "sk_…" only.
+async function deleteRevenueCatSubscriber(appUserID: string): Promise<boolean | null> {
+  const key = Deno.env.get("REVENUECAT_SECRET_API_KEY") ?? "";
+  if (!key.startsWith("sk_")) return null;
+  try {
+    const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserID)}`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(thirdPartyTimeoutMs),
+    });
+    if (!response.ok && response.status !== 404) console.error("[account-data] RevenueCat HTTP", response.status);
+    return response.ok || response.status === 404;
+  } catch (error) {
+    console.error("[account-data] RevenueCat unreachable:", error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
+// Amplitude User Privacy API (deletion job, processed by Amplitude within
+// 30 days). EU data centre: AMPLITUDE_DELETION_URL =
+// https://analytics.eu.amplitude.com/api/2/deletions/users
+async function deleteAmplitudeUsers(userIDs: string[]): Promise<boolean | null> {
+  const apiKey = Deno.env.get("AMPLITUDE_API_KEY") ?? "";
+  const secretKey = Deno.env.get("AMPLITUDE_SECRET_KEY") ?? "";
+  if (!apiKey || !secretKey) return null;
+  const url = Deno.env.get("AMPLITUDE_DELETION_URL") ?? "https://amplitude.com/api/2/deletions/users";
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        authorization: `Basic ${btoa(`${apiKey}:${secretKey}`)}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ user_ids: userIDs, requester: "quieto-account-data", ignore_invalid_id: "True" }),
+      signal: AbortSignal.timeout(thirdPartyTimeoutMs),
+    });
+    if (!response.ok) console.error("[account-data] Amplitude HTTP", response.status);
+    return response.ok;
+  } catch (error) {
+    console.error("[account-data] Amplitude unreachable:", error instanceof Error ? error.message : error);
+    return false;
+  }
+}
+
+// Sign in with Apple (App Store Review Guideline 5.1.1(v)): exchange the fresh
+// authorization code sent by the app for a refresh token, then revoke it.
+// Needs APPLE_TEAM_ID, APPLE_KEY_ID, APPLE_PRIVATE_KEY (.p8 PEM) and
+// APPLE_CLIENT_ID (bundle id). Logs never contain the code nor a token.
+async function revokeSignInWithApple(authorizationCode: string): Promise<boolean | null> {
+  const teamID = Deno.env.get("APPLE_TEAM_ID") ?? "";
+  const keyID = Deno.env.get("APPLE_KEY_ID") ?? "";
+  const privateKey = Deno.env.get("APPLE_PRIVATE_KEY") ?? "";
+  const clientID = Deno.env.get("APPLE_CLIENT_ID") ?? "";
+  if (!teamID || !keyID || !privateKey || !clientID) return null;
+  try {
+    const clientSecret = await appleClientSecret(teamID, keyID, privateKey, clientID);
+    const tokenResponse = await fetch("https://appleid.apple.com/auth/token", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientID,
+        client_secret: clientSecret,
+        code: authorizationCode,
+        grant_type: "authorization_code",
+      }),
+      signal: AbortSignal.timeout(thirdPartyTimeoutMs),
+    });
+    if (!tokenResponse.ok) {
+      console.error("[account-data] Apple token exchange HTTP", tokenResponse.status);
+      return false;
+    }
+    const tokens = await tokenResponse.json() as { refresh_token?: unknown; access_token?: unknown };
+    const refreshToken = typeof tokens.refresh_token === "string" ? tokens.refresh_token : "";
+    const accessToken = typeof tokens.access_token === "string" ? tokens.access_token : "";
+    if (!refreshToken && !accessToken) {
+      console.error("[account-data] Apple token exchange returned no token");
+      return false;
+    }
+    const revokeResponse = await fetch("https://appleid.apple.com/auth/revoke", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: clientID,
+        client_secret: clientSecret,
+        token: refreshToken || accessToken,
+        token_type_hint: refreshToken ? "refresh_token" : "access_token",
+      }),
+      signal: AbortSignal.timeout(thirdPartyTimeoutMs),
+    });
+    if (!revokeResponse.ok) console.error("[account-data] Apple revoke HTTP", revokeResponse.status);
+    return revokeResponse.ok;
+  } catch (error) {
+    console.error("[account-data] Apple revocation failed:", error instanceof Error ? error.name : "unknown");
+    return false;
+  }
+}

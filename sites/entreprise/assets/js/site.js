@@ -4,12 +4,15 @@
 (function () {
   "use strict";
 
-  // Fonctions du backend (quieto-backend/functions/index.js).
-  var API = "https://us-central1-quieto-06.cloudfunctions.net/";
+  // Fonctions du backend : Supabase Edge Functions (supabase/functions,
+  // voir supabase/functions/ENTREPRISE.md). ⚠️ À REMPLACER avant la mise en
+  // ligne : <PROJET> = identifiant du projet Supabase (ex. abcdefghijklmnop).
+  // Ancienne adresse Firebase : https://us-central1-quieto-06.cloudfunctions.net/
+  var API = "https://<PROJET>.supabase.co/functions/v1/";
   var EMAIL = "quieto@cofonde.com";
 
   // ── Grille de prix : même grille que Headspace (« small business »), en € HT
-  //    par salarié et par an. ⚠️ Copie d'affichage : c'est GRILLE_ENTREPRISE
+  //    par salarié et par an. ⚠️ Copie d'affichage : c'est PRICE_GRID (supabase/functions/_shared/entreprise.ts)
   //    côté serveur qui fait foi pour le paiement. Mensuel = annuel ÷ 10.
   var GRILLE = [[800, 44.88], [600, 45.96], [450, 47.16], [350, 48.36],
     [250, 49.56], [150, 52.56], [50, 54.30], [10, 56.04]];
@@ -88,7 +91,7 @@
       commencer.disabled = true;
       etat.textContent = "Préparation du paiement…";
       var repli = "index.html?places=" + n + "&rythme=" + rythme + "#demo";
-      fetch(API + "paiementEntreprise", {
+      fetch(API + "enterprise-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ places: n, rythme: rythme }),
@@ -226,7 +229,7 @@
       var bouton = form.querySelector("button[type=submit]");
       bouton.disabled = true;
       afficherEtat("Envoi en cours…");
-      fetch(API + "demandeEntreprise", {
+      fetch(API + "enterprise-demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(donnees),
@@ -365,7 +368,7 @@
       blocCommande.dataset.message = c.message || "";
     };
     var lireCommande = function () {
-      fetch(API + "commandeEntreprise?session=" + encodeURIComponent(idSession))
+      fetch(API + "enterprise-order?session=" + encodeURIComponent(idSession))
         .then(function (r) { return r.json().then(function (j) { return { statut: r.status, j: j }; }); })
         .then(function (rep) {
           if (rep.statut === 200 && rep.j.pret) afficherCommande(rep.j);

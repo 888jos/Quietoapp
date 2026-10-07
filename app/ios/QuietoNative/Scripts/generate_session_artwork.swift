@@ -39,6 +39,16 @@ let sessionIDs = [
     "meditation_01", "meditation_02", "meditation_03", "meditation_04", "meditation_05", "meditation_06", "meditation_07", "meditation_08", "meditation_09", "meditation_10", "meditation_11", "meditation_12", "meditation_13", "meditation_14", "meditation_15", "meditation_16", "meditation_17"
 ]
 
+// `swift Scripts/generate_session_artwork.swift [--prefix ambience-] id1 id2 …` only draws
+// the given IDs (new sessions or sounds) and leaves the existing illustrations untouched.
+var arguments = Array(CommandLine.arguments.dropFirst())
+var prefix = "session-"
+if let index = arguments.firstIndex(of: "--prefix"), index + 1 < arguments.count {
+    prefix = arguments[index + 1]
+    arguments.removeSubrange(index...(index + 1))
+}
+let selectedIDs = arguments.isEmpty ? sessionIDs : arguments
+
 let bases = basePaths.compactMap { NSImage(contentsOf: root.appendingPathComponent($0)) }
 guard bases.count == basePaths.count else { fatalError("A base illustration is missing") }
 
@@ -46,7 +56,7 @@ func seed(_ value: String) -> UInt64 {
     value.utf8.reduce(1469598103934665603) { ($0 ^ UInt64($1)) &* 1099511628211 }
 }
 
-for (index, id) in sessionIDs.enumerated() {
+for (index, id) in selectedIDs.enumerated() {
     var value = seed(id)
     func next() -> CGFloat {
         value = value &* 6364136223846793005 &+ 1442695040888963407
@@ -93,7 +103,7 @@ for (index, id) in sessionIDs.enumerated() {
           let png = bitmap.representation(using: .png, properties: [.compressionFactor: 0.82]) else {
         fatalError("Unable to encode \(id)")
     }
-    try png.write(to: output.appendingPathComponent("session-\(id).png"), options: .atomic)
+    try png.write(to: output.appendingPathComponent("\(prefix)\(id).png"), options: .atomic)
 }
 
-print("Generated \(sessionIDs.count) unique session illustrations in \(output.path)")
+print("Generated \(selectedIDs.count) illustrations in \(output.path)")

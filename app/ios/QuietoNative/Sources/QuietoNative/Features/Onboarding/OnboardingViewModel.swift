@@ -3,12 +3,6 @@ import Foundation
 
 @MainActor
 final class OnboardingViewModel: ObservableObject {
-    static let completedKey = "quieto.onboarding.completedAt"
-    static let answersKey = "quieto.onboarding.answers"
-    static let stepKey = "quieto.onboarding.step"
-    static let planIDsKey = "quieto.onboarding.plan.ids"
-    static let planTitleKey = "quieto.onboarding.plan.title"
-
     @Published private(set) var isCompleted: Bool
     @Published private(set) var step: OnboardingStep
     @Published var answers: OnboardingAnswers { didSet { persistAnswers() } }
@@ -18,38 +12,70 @@ final class OnboardingViewModel: ObservableObject {
     @Published private(set) var isWorking = false
     @Published var message: String?
 
-    let subscriptions: QuietoSuperwallService
-    private let defaults: UserDefaults
+    private let preferences: QuietoPreferences
     private let catalog: SessionCatalog
+    private let subscriptions: SubscriptionServicing
+    private let auth: AuthServicing
+    private let account: AccountDataServicing
+    private let programs: ProgramRepository
+    private let health: HealthServicing
+    private let reminders: ReminderScheduling
+    private let analytics: QuietoAnalyticsProviding
+    private let louaneMemory: LouaneMemoryProviding
     private var history: [OnboardingStep] = []
     private var crisisFlagged = false
+    /// The crisis screen was opened by what the person wrote to Louane (not by
+    /// the safety question): leaving it must not lead back to Louane.
+    private var crisisFromLouane = false
+    private var stepEnteredAt = Date.now
     private var cancellables = Set<AnyCancellable>()
 
-    init(defaults: UserDefaults = .standard, catalog: SessionCatalog = SessionCatalog(), subscriptions: QuietoSuperwallService? = nil) {
-        self.defaults = defaults
+    init(preferences: QuietoPreferences, catalog: SessionCatalog, subscriptions: SubscriptionServicing, auth: AuthServicing, account: AccountDataServicing, programs: ProgramRepository, health: HealthServicing, reminders: ReminderScheduling, analytics: QuietoAnalyticsProviding, louaneMemory: LouaneMemoryProviding) {
+        self.preferences = preferences
         self.catalog = catalog
-        self.subscriptions = subscriptions ?? .shared
-        var completed = defaults.object(forKey: Self.completedKey) != nil
+        self.subscriptions = subscriptions
+        self.auth = auth
+        self.account = account
+        self.programs = programs
+        self.health = health
+        self.reminders = reminders
+        self.analytics = analytics
+        self.louaneMemory = louaneMemory
+        var completed = preferences.isOnboardingCompleted
         #if DEBUG
-        if ProcessInfo.processInfo.environment["QUIETO_FORCE_ONBOARDING"] == "1" { completed = false }
+        // Development builds skip the onboarding (Accueil has a button to replay it).
+        let environment = ProcessInfo.processInfo.environment
+        if environment["XCTestConfigurationFilePath"] == nil {
+            completed = environment["QUIETO_FORCE_ONBOARDING"] != "1"
+        }
         if let forced = ProcessInfo.processInfo.environment["QUIETO_ONBOARDING_STEP"], let value = OnboardingStep(rawValue: forced) {
-            defaults.set(value.rawValue, forKey: Self.stepKey)
+            preferences.onboardingStep = value.rawValue
         }
         #endif
         isCompleted = completed
-        answers = (defaults.data(forKey: Self.answersKey)).flatMap { try? JSONDecoder().decode(OnboardingAnswers.self, from: $0) } ?? OnboardingAnswers()
+        answers = preferences.onboardingAnswers ?? OnboardingAnswers()
         // Resuming after the app was killed: questions are kept, but the plan
         // is rebuilt and never resumed in the middle of a system prompt.
-        let saved = defaults.string(forKey: Self.stepKey).flatMap(OnboardingStep.init(rawValue:)) ?? .splash
+        let saved = preferences.onboardingStep.flatMap(OnboardingStep.init(rawValue:)) ?? .splash
         step = Self.resumeStep(for: saved)
         if [.profileSummary, .plan, .projection, .included, .trialTimeline, .paywall, .relaunch, .welcome].contains(step) {
             plan = OnboardingPlanBuilder.build(from: answers, catalog: catalog)
         }
-        self.subscriptions.$access
+        subscriptions.accessPublisher
             .removeDuplicates()
             .sink { [weak self] access in self?.accessChanged(access) }
             .store(in: &cancellables)
+        // `paywallNote` reads the subscription service directly.
+        subscriptions.willChange
+            .sink { [weak self] in self?.objectWillChange.send() }
+            .store(in: &cancellables)
+        if !completed { trackEntry() }
+        // Installs from before this rule may still hold the safety answer.
+        if preferences.onboardingAnswers?.choices[OnboardingStep.safety.rawValue] != nil { persistAnswers() }
     }
+
+    /// Configuration problem worth showing on the paywall step.
+    var paywallNote: String? { subscriptions.isConfigured ? nil : subscriptions.lastMessage }
 
     private static func resumeStep(for step: OnboardingStep) -> OnboardingStep {
         switch step {
@@ -66,9 +92,9 @@ final class OnboardingViewModel: ObservableObject {
         OnboardingStep.allCases.filter { step in
             switch step {
             case .crisisSupport: return crisisFlagged || self.step == .crisisSupport
-            case .health: return QuietoHealthService.shared.isAvailable
+            case .health: return health.isAvailable
             case .relaunch: return answers.relaunchShown || self.step == .relaunch
-            case .account: return QuietoSupabaseService.shared.client != nil
+            case .account: return auth.isConfigured
             default: return true
             }
         }
@@ -79,6 +105,24 @@ final class OnboardingViewModel: ObservableObject {
         guard let index = steps.firstIndex(of: step) else { return 0 }
         return Double(index + 1) / Double(steps.count)
     }
+
+    #if DEBUG
+    /// Debug button on Accueil: shows the onboarding again from the first screen.
+    func replayForDebug() {
+        history = []
+        preferences.onboardingStep = nil
+        step = .splash
+        isCompleted = false
+    }
+
+    /// Floating debug button: straight to Accueil, without analytics or sync.
+    func skipForDebug() {
+        guard !isCompleted else { return }
+        preferences.markOnboardingCompleted()
+        isCompleted = true
+        onFinish?(nil)
+    }
+    #endif
 
     var canGoBack: Bool { !step.isLocked && !history.isEmpty }
 
@@ -94,22 +138,70 @@ final class OnboardingViewModel: ObservableObject {
 
     func back() {
         guard canGoBack, let previous = history.popLast() else { return }
-        setStep(previous, record: false)
+        setStep(previous, direction: "back")
     }
 
     private func go(to target: OnboardingStep) {
         history.append(step)
-        setStep(target, record: true)
+        setStep(target, direction: "forward")
     }
 
-    private func setStep(_ target: OnboardingStep, record: Bool) {
+    private func setStep(_ target: OnboardingStep, direction: String) {
+        let previous = step
+        let seconds = closeCurrentStep()
         step = target
-        defaults.set(target.rawValue, forKey: Self.stepKey)
-        if record {
-            var properties = ["step": target.rawValue]
-            if let index = visibleSteps.firstIndex(of: target) { properties["index"] = String(index + 1) }
-            Task { await QuietoSupabaseService.shared.track("onboarding_step", properties: properties) }
+        preferences.onboardingStep = target.rawValue
+        var properties = stepProperties(target)
+        properties["direction"] = direction
+        properties["previous_step"] = Self.analyticsName(previous)
+        properties["previous_step_seconds"] = String(seconds)
+        analytics.track("onboarding_step", properties: properties)
+    }
+
+    // MARK: Analytics
+
+    /// A screen left open longer than this means the person walked away: the
+    /// rest is not counted as time spent on the onboarding.
+    private static let maxActiveSecondsPerStep: Double = 300
+
+    /// First screen of this launch: a new onboarding or one resumed after the
+    /// app was killed. Every screen, the first included, is one `onboarding_step`.
+    private func trackEntry() {
+        stepEnteredAt = .now
+        let isNew = preferences.onboardingStartedAt == nil
+        if isNew {
+            preferences.onboardingStartedAt = .now
+            analytics.track("onboarding_started", properties: [:])
         }
+        var properties = stepProperties(step)
+        properties["direction"] = isNew ? "start" : "resume"
+        analytics.track("onboarding_step", properties: properties)
+    }
+
+    /// The crisis screen is reported as the safety question it belongs to,
+    /// and is never counted in `index`/`total`: neither its name nor the number
+    /// of screens may reveal how the person answered.
+    private static func analyticsName(_ step: OnboardingStep) -> String {
+        step == .crisisSupport ? OnboardingStep.safety.rawValue : step.rawValue
+    }
+
+    private func stepProperties(_ target: OnboardingStep) -> [String: String] {
+        let reported = target == .crisisSupport ? OnboardingStep.safety : target
+        var properties = ["step": reported.rawValue, "act": String(reported.act)]
+        let steps = visibleSteps.filter { $0 != .crisisSupport }
+        if let index = steps.firstIndex(of: reported) {
+            properties["index"] = String(index + 1)
+            properties["total"] = String(steps.count)
+        }
+        return properties
+    }
+
+    /// Seconds spent on the screen being left, added to the onboarding's active time.
+    private func closeCurrentStep() -> Int {
+        let seconds = max(0, Date.now.timeIntervalSince(stepEnteredAt))
+        stepEnteredAt = .now
+        preferences.onboardingActiveSeconds += min(seconds, Self.maxActiveSecondsPerStep)
+        return Int(seconds.rounded())
     }
 
     // MARK: Answers
@@ -122,6 +214,10 @@ final class OnboardingViewModel: ObservableObject {
             return
         }
         answers.choices[step.rawValue] = [option.id]
+        if step == .gender, let gender = QuietoGender(rawValue: option.id) {
+            // Applies right away, so the next screens already agree.
+            QuietoGender.set(gender)
+        }
         if step == .moment {
             let reminder = OnboardingContent.defaultReminder(for: option.id)
             answers.reminderHour = reminder.hour
@@ -129,7 +225,7 @@ final class OnboardingViewModel: ObservableObject {
         }
         if step == .safety {
             crisisFlagged = option.id != "no"
-            Task { await QuietoSupabaseService.shared.track("onboarding_safety_answered", properties: [:]) }
+            analytics.track("onboarding_safety_answered", properties: [:])
         }
         // Single choice moves on by itself, after the selection is visible.
         Task { @MainActor in
@@ -148,14 +244,16 @@ final class OnboardingViewModel: ObservableObject {
         let text = String(louaneDraft.trimmingCharacters(in: .whitespacesAndNewlines).prefix(600))
         if OnboardingSafety.containsCrisisSignal(text) {
             crisisFlagged = true
+            crisisFromLouane = true
+            louaneDraft = ""
             go(to: .crisisSupport)
             return
         }
         if !text.isEmpty {
-            // Kept on this iPhone only, in Louane's protected memory.
-            let memory = LouaneMemoryStore()
+            // Louane's memory is protected on this iPhone and sent with the
+            // conversations once subscribed; the profile lets the person edit it.
             let line = "À l’inscription, elle a écrit : « \(text) »"
-            memory.update(memory.text.isEmpty ? line : memory.text + "\n" + line)
+            louaneMemory.update(louaneMemory.text.isEmpty ? line : louaneMemory.text + "\n" + line)
         }
         let firstSession = OnboardingPlanBuilder.build(from: answers, catalog: catalog).sessions.first
         louaneReply = OnboardingLouaneScript.reply(to: text, answers: answers, firstSession: firstSession)
@@ -163,7 +261,13 @@ final class OnboardingViewModel: ObservableObject {
     }
 
     func continueAfterCrisis() {
-        go(to: .breathIntro)
+        guard crisisFromLouane else { go(to: .breathIntro); return }
+        // Coming from Louane: no scripted reply to that message, move on to
+        // what follows the conversation instead of asking again.
+        crisisFromLouane = false
+        let steps = visibleSteps
+        let next = steps.firstIndex(of: .louaneReply).flatMap { steps.indices.contains($0 + 1) ? steps[$0 + 1] : nil } ?? .welcome
+        go(to: next)
     }
 
     // MARK: Permissions
@@ -171,7 +275,7 @@ final class OnboardingViewModel: ObservableObject {
     func requestHealth() {
         isWorking = true
         Task {
-            answers.healthAuthorized = await QuietoHealthService.shared.requestAuthorization()
+            answers.healthAuthorized = await health.requestAuthorization()
             isWorking = false
             next()
         }
@@ -180,14 +284,11 @@ final class OnboardingViewModel: ObservableObject {
     func requestReminders() {
         isWorking = true
         Task {
-            let granted = await QuietoReminderScheduler.requestAuthorization()
+            let granted = await reminders.requestAuthorization()
             answers.remindersAuthorized = granted
             if granted {
-                QuietoReminderScheduler.schedule(hour: answers.reminderHour, minute: answers.reminderMinute, weekdays: Array(1...7), firstName: answers.firstName)
-                defaults.set(true, forKey: "quieto.profile.remindersEnabled")
-                defaults.set(answers.reminderHour, forKey: "quieto.profile.reminderHour")
-                defaults.set(answers.reminderMinute, forKey: "quieto.profile.reminderMinute")
-                defaults.set(Array(1...7), forKey: "quieto.profile.reminderDays")
+                reminders.schedule(hour: answers.reminderHour, minute: answers.reminderMinute, weekdays: Array(1...7), firstName: answers.firstName)
+                preferences.reminder = ReminderSettings(isEnabled: true, hour: answers.reminderHour, minute: answers.reminderMinute, weekdays: Set(1...7))
             }
             isWorking = false
             next()
@@ -199,10 +300,12 @@ final class OnboardingViewModel: ObservableObject {
         Task {
             defer { isWorking = false }
             do {
-                try await QuietoSupabaseService.shared.signInWithApple()
+                try await auth.signInWithApple()
+                analytics.track("onboarding_account_linked", properties: [:])
                 next()
             } catch {
                 message = error.localizedDescription
+                analytics.track("onboarding_account_failed", properties: [:])
             }
         }
     }
@@ -213,9 +316,9 @@ final class OnboardingViewModel: ObservableObject {
     func buildPlan() {
         let built = OnboardingPlanBuilder.build(from: answers, catalog: catalog)
         plan = built
-        defaults.set(built.sessions.map(\.id), forKey: Self.planIDsKey)
-        defaults.set(built.title, forKey: Self.planTitleKey)
-        if !answers.firstName.isEmpty { defaults.set(answers.firstName, forKey: "quieto.profile.firstName") }
+        preferences.onboardingPlanIDs = built.sessions.map(\.id)
+        preferences.onboardingPlanTitle = built.title
+        if !answers.firstName.isEmpty { preferences.firstName = answers.firstName }
         subscriptions.setAttributes([
             "firstName": answers.firstName.isEmpty ? nil : answers.firstName,
             "goal": answers.single(.goal),
@@ -247,6 +350,10 @@ final class OnboardingViewModel: ObservableObject {
         }
     }
 
+    func scheduleTrialEndingReminder() async {
+        await reminders.scheduleTrialEndingReminder(trialDays: OnboardingLinks.trialDays)
+    }
+
     func restore() {
         subscriptions.restorePurchases()
         message = subscriptions.lastMessage ?? "Restauration en cours…"
@@ -273,23 +380,22 @@ final class OnboardingViewModel: ObservableObject {
 
     func finish(playFirstSession: Bool) {
         guard !isCompleted else { return }
-        defaults.set(Date().timeIntervalSince1970, forKey: Self.completedKey)
-        defaults.removeObject(forKey: Self.stepKey)
+        trackCompletion(playFirstSession: playFirstSession)
+        preferences.markOnboardingCompleted()
         isCompleted = true
         let snapshot = answers
         let currentPlan = plan
-        Task { await Self.synchronise(answers: snapshot, plan: currentPlan) }
+        Task { await synchronise(answers: snapshot, plan: currentPlan) }
         onFinish?(playFirstSession ? currentPlan?.sessions.first : nil)
     }
 
     /// Sends the questionnaire, preferences and programme to Supabase. Best
     /// effort: everything also lives on the device.
-    private static func synchronise(answers: OnboardingAnswers, plan: OnboardingPlanBuilder.Plan?) async {
-        let backend = QuietoSupabaseService.shared
-        guard backend.client != nil else { return }
-        if !answers.firstName.isEmpty { try? await backend.updateProfile(firstName: answers.firstName) }
-        try? await backend.saveOnboarding(answers: answers)
-        try? await backend.savePreferences(QuietoRemotePreferences(
+    private func synchronise(answers: OnboardingAnswers, plan: OnboardingPlanBuilder.Plan?) async {
+        guard auth.isConfigured else { return }
+        if !answers.firstName.isEmpty { try? await auth.updateProfile(firstName: answers.firstName) }
+        try? await account.saveOnboarding(answers: answers)
+        try? await account.savePreferences(QuietoRemotePreferences(
             reminderEnabled: answers.remindersAuthorized,
             reminderDays: Array(1...7),
             reminderHour: answers.reminderHour,
@@ -299,26 +405,48 @@ final class OnboardingViewModel: ObservableObject {
             reduceMotion: false,
             largerText: false
         ))
-        if let plan, (try? await backend.loadActiveProgram()) == nil {
-            _ = try? await backend.createProgram(title: plan.title, sessionIDs: plan.sessions.map(\.id), rhythm: "Soutenu")
+        if let plan, (try? await programs.loadActiveProgram(catalog: catalog)) == nil {
+            _ = try? await programs.createProgram(title: plan.title, sessionIDs: plan.sessions.map(\.id), rhythm: "Soutenu")
         }
-        await backend.track("onboarding_completed", properties: [
+    }
+
+    /// Sent before the network sync so a slow or missing backend never loses it.
+    /// Only practical answers leave the device: reasons, stress, sleep and the
+    /// safety question stay out of analytics.
+    private func trackCompletion(playFirstSession: Bool) {
+        let lastStepSeconds = closeCurrentStep()
+        let startedAt = preferences.onboardingStartedAt
+        var properties = [
             "goal": answers.single(.goal) ?? "",
             "minutes": answers.single(.minutes) ?? "",
             "experience": answers.single(.experience) ?? "",
+            "moment": answers.single(.moment) ?? "",
             "health": answers.healthAuthorized ? "1" : "0",
-            "reminders": answers.remindersAuthorized ? "1" : "0"
-        ])
+            "reminders": answers.remindersAuthorized ? "1" : "0",
+            "subscribed": subscriptions.access == .subscribed ? "1" : "0",
+            "first_session": playFirstSession ? "1" : "0",
+            "last_step": Self.analyticsName(step),
+            "last_step_seconds": String(lastStepSeconds),
+            "active_seconds": String(Int(preferences.onboardingActiveSeconds.rounded()))
+        ]
+        if let startedAt { properties["duration_seconds"] = String(Int(Date.now.timeIntervalSince(startedAt).rounded())) }
+        analytics.track("onboarding_completed", properties: properties)
+        analytics.setUserProperties([
+            "onboarding_completed": "1",
+            "goal": properties["goal"] ?? "",
+            "minutes_per_day": properties["minutes"] ?? "",
+            "experience": properties["experience"] ?? "",
+            "moment": properties["moment"] ?? "",
+            "health_connected": properties["health"] ?? "0",
+            "reminders_enabled": properties["reminders"] ?? "0"
+        ].filter { !$0.value.isEmpty })
     }
 
+    /// The answer to the safety question is never written to disk (UserDefaults
+    /// end up in iCloud backups): it only lives in memory during the onboarding.
     private func persistAnswers() {
-        if let data = try? JSONEncoder().encode(answers) { defaults.set(data, forKey: Self.answersKey) }
-    }
-
-    /// Profile sent to Louane once subscribed (see LouaneServices).
-    nonisolated static func storedServerProfile(defaults: UserDefaults = .standard) -> [String: String] {
-        guard let data = defaults.data(forKey: answersKey),
-              let answers = try? JSONDecoder().decode(OnboardingAnswers.self, from: data) else { return [:] }
-        return answers.serverProfile
+        var stored = answers
+        stored.choices.removeValue(forKey: OnboardingStep.safety.rawValue)
+        preferences.onboardingAnswers = stored
     }
 }

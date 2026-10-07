@@ -34,7 +34,7 @@
   </header>
 
   <!-- Page de retour après le paiement Stripe. Stripe ajoute ?session_id=cs_… :
-       site.js demande alors le code de la commande (fonction commandeEntreprise)
+       site.js demande alors le code de la commande (Edge Function Supabase enterprise-order)
        et l'affiche tout de suite, avec le message à transférer. Sans ça (ou le
        temps que le code arrive), la page renvoie à l'e-mail. -->
   <main>
@@ -97,6 +97,6 @@
     </section>
   </main>
 
-  <script src="assets/js/site.js?v=17"></script>
+  <script src="assets/js/site.js?v=18"></script>
 </body>
 </html>

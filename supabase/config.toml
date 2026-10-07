@@ -17,3 +17,20 @@ verify_jwt = false
 # Svix-signed webhook (SUPERWALL_WEBHOOK_SECRET); no Supabase JWT.
 [functions.superwall-webhook]
 verify_jwt = false
+
+# Quieto Entreprise (B2B), called by the public site (no Supabase JWT) or by
+# Stripe (Stripe-Signature, STRIPE_WEBHOOK_SECRET). See functions/ENTREPRISE.md.
+[functions.enterprise-demo]
+verify_jwt = false
+
+[functions.enterprise-checkout]
+verify_jwt = false
+
+[functions.enterprise-order]
+verify_jwt = false
+
+[functions.enterprise-invoice]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false

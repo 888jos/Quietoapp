@@ -4,175 +4,174 @@ protocol QuietoSessionCatalogProviding {
     var sessions: [QuietoSession] { get }
 }
 
+/// The catalogue validated on 6 October 2026: every guided session has its own
+/// written script (`Narration/scripts/fr`, see `Narration/CATALOGUE.md`), every
+/// breathing exercise its own rhythm. Each entry is filed under one category
+/// (the context of life) and one goal (what the person is looking for).
 struct SessionCatalog: QuietoSessionCatalogProviding {
-    let sessions: [QuietoSession] = Self.build()
+    /// Rebuilt when the language changes: the recorded narrations exist per language.
+    var sessions: [QuietoSession] {
+        let code = QuietoLocalization.languageCode
+        Self.lock.lock(); defer { Self.lock.unlock() }
+        if let cached = Self.cache, cached.code == code { return cached.sessions }
+        let built = Self.build()
+        Self.cache = (code, built)
+        return built
+    }
+    private static let lock = NSLock()
+    nonisolated(unsafe) private static var cache: (code: String, sessions: [QuietoSession])?
 
     private static func build() -> [QuietoSession] {
         [
-            // Express
-            make("express_1", "Avant un appel difficile", 1, "Un ancrage rapide pour arriver centré et calme à ton prochain appel.", "express-avant-un-appel-difficile.mp3", "express", false, .thoughts, .anchoring),
-            make("express_2", "Transports bondés", 2, "Trouve ton calme intérieur même au milieu de la foule.", "express-transports-bondes.mp3", "express", false, .thoughts, .anchoring),
-            make("express_3", "Petit déjeuner", 2, "Une minute de gratitude pour bien commencer ta journée.", "express-petit-dejeuner.mp3", "express", false, .emotions, .meditation),
-            make("express_4", "Juste avant de dormir", 3, "Relâche les tensions de la journée pour mieux t'endormir.", "express-juste-avant-de-dormir.mp3", "express", false, .sleep, .relaxation),
-            make("express_5", "Coup de stress au boulot", 2, "Quand la pression monte, reprends le contrôle en 90 secondes.", "express-coup-de-stress-au-boulot.mp3", "express", true, .stress, .anchoring),
-            make("express_6", "Après une dispute", 2, "Reconnecte-toi à toi-même quand l'émotion a pris le dessus.", "express-apres-une-dispute.mp3", "express", true, .emotions, .anchoring),
-            make("express_7", "Réveil en panique", 2, "Calme ton cœur quand tu te réveilles avec l'angoisse au ventre.", "express-reveil-en-panique.mp3", "express", true, .stress, .breathing),
-            make("express_8", "Avant une présentation", 2, "Calme le trac avant de prendre la parole en public ou en examen.", "express-avant-une-presentation.mp3", "express", true, .stress, .anchoring),
+            // Méditations guidées : un script écrit par séance (Narration/scripts/fr).
+            make("decouverte_1", "Ma première méditation", 5, "Les bases, pour celles et ceux qui n’ont jamais médité.", .discovery, .relax, .meditation, detail: "Cinq minutes pour apprendre les bases : t’installer, choisir ton souffle comme point d’appui et y revenir sans reproche chaque fois que l’esprit s’échappe. Aucun prérequis."),
+            make("discover_counting", "Compter les respirations", 6, "Un exercice simple pour stabiliser l’attention.", .discovery, .focus, .meditation, detail: "Tu comptes chaque expiration de un à dix, puis tu recommences. Perdre le compte n’est pas un échec : c’est le signal pour reprendre à un, et c’est tout l’exercice."),
+            make("decouverte_3", "Le moment présent", 6, "Revenir ici et maintenant grâce aux cinq sens.", .discovery, .calm, .anchoring, detail: "Les yeux ouverts, tu nommes cinq choses que tu vois, quatre que tu touches, trois que tu entends, deux que tu sens et une que tu goûtes, pour revenir ici et maintenant."),
+            make("decouverte_2", "Observer sans juger", 7, "Remarquer ce qui passe dans l’esprit sans s’y accrocher.", .discovery, .perspective, .meditation, detail: "Chaque fois qu’une distraction t’éloigne du souffle, tu la nommes d’un mot léger, « pensée », « son » ou « sensation », puis tu reviens. Une façon simple de prendre du recul."),
+            make("discover_body_scan", "Premier scan corporel", 8, "Parcourir le corps des pieds à la tête, sans rien changer.", .discovery, .relax, .relaxation, detail: "Un parcours lent du corps, des orteils au sommet du crâne, zone par zone. Tu observes ce qui est là, chaleur, tension ou presque rien, sans chercher à changer quoi que ce soit."),
+            make("discover_rain", "Accueillir le désagréable", 8, "Apprendre à faire face à une petite gêne avec douceur.", .discovery, .emotion, .meditation, detail: "Avec une petite gêne du jour, tu pratiques quatre gestes : reconnaître ce qui est là, l’accepter, explorer où ça se loge dans le corps, puis t’offrir un peu de douceur."),
+            make("discover_open_sitting", "S’asseoir avec moins de guidage", 10, "Un premier pas vers la méditation en autonomie.", .discovery, .focus, .meditation, detail: "Une courte introduction, puis surtout du silence : tu gardes ton point d’appui et la voix t’invite simplement à revenir toutes les deux minutes. Un premier pas vers l’autonomie."),
+            make("express_1", "Avant un appel difficile", 2, "Arriver centré et calme à ton prochain appel.", .work, .calm, .anchoring, detail: "Deux minutes avant un appel redouté : les pieds bien au sol, quelques respirations longues, et le rappel que tu as toujours le droit de marquer une pause avant de répondre."),
+            make("express_8", "Avant une présentation", 3, "Transformer le trac en énergie avant de prendre la parole.", .work, .calm, .anchoring, detail: "Ton cœur s’accélère avant de prendre la parole ? Tu accueilles le trac comme une préparation du corps, tu t’ancres dans le sol et tu sais quoi faire en cas de blanc : respirer."),
+            make("express_5", "Coup de stress au bureau", 2, "Redescendre en deux minutes quand la pression monte.", .work, .calm, .anchoring, detail: "Quand la pression monte d’un coup, tu fais deux ou trois soupirs (double inspiration, longue expiration), puis tu choisis une seule chose qui dépend de toi dans la minute qui vient."),
+            make("between_calls", "Entre deux appels", 2, "Laisser une conversation se terminer avant la suivante.", .work, .relax, .meditation, detail: "Entre deux appels ou deux visios, tu laisses le premier échange se terminer : regard loin de l’écran, épaules relâchées, souffle long et une intention claire pour le suivant."),
+            make("new_focus_reset", "Une chose à la fois", 6, "Rassembler ton attention avant de reprendre une tâche précise.", .work, .focus, .meditation, detail: "Quand ton attention saute d’une tâche à l’autre, tu en choisis une seule, tu visualises son tout premier geste concret, puis tu resserres ton attention sur le souffle."),
+            make("meditation_06", "Le fil de l’attention", 12, "Entraîner une attention stable, retour après retour.", .work, .focus, .meditation, detail: "Douze minutes pour entraîner ton attention : un seul point d’appui, l’air au bord des narines, et des retours répétés, avec une voix qui se fait de plus en plus discrète."),
+            make("creative_block", "Faire de la place aux idées", 8, "Relâcher la pression de produire pour laisser venir les idées.", .work, .perspective, .meditation, detail: "Face à une page blanche, tu lâches la pression de produire. Tu laisses venir sons, pensées et images sans les trier, pour retrouver un terrain plus souple où les idées peuvent naître."),
+            make("decision_pause", "Avant de décider", 7, "Écouter ce que le corps dit de chaque option.", .work, .perspective, .meditation, detail: "Tu imagines chaque option comme si elle était déjà choisie et tu observes la réaction de ton corps. Puis tu te demandes ce qui compte vraiment, pour décider avec une information de plus."),
+            make("afternoon_fog", "Le coup de barre de l’après-midi", 6, "Réveiller le corps et l’attention sans café.", .work, .energy, .relaxation, detail: "Les yeux ouverts, sur ta chaise : posture redressée, respirations toniques, étirements assis et regard au loin pour réveiller le corps et l’attention quand le coup de barre arrive."),
+            make("meditation_09", "Détendre le visage", 5, "Relâcher le front, les yeux et la mâchoire crispés par les écrans.", .work, .relax, .relaxation, detail: "Le front, les yeux, les joues, la mâchoire, la langue puis la nuque : tu relâches une à une les zones du visage que les heures d’écran ont crispées sans que tu le remarques."),
+            make("after_work", "Fermer la journée de travail", 8, "Un rituel pour que le travail reste au travail.", .work, .relax, .meditation, detail: "Tu reconnais trois choses faites aujourd’hui, tu reportes à demain celle qui risque de te suivre, puis tu choisis un geste de fermeture pour que le travail reste au travail."),
+            make("work_impostor", "Le sentiment d’imposture", 9, "Répondre au doute avec des faits et un peu de douceur.", .work, .kindness, .selfCompassion, detail: "Tu écoutes la voix du doute sans lui obéir, tu lui opposes des faits concrets tirés de ton travail, puis tu te parles comme tu parlerais à un collègue que tu apprécies."),
+            make("work_after_criticism", "Après une critique", 8, "Garder ce qui est utile, laisser retomber ce qui blesse.", .work, .emotion, .meditation, detail: "Tu laisses retomber la piqûre dans le corps, puis tu tries la critique en deux tas : ce qui t’est utile, que tu gardes, et ce qui blesse sans rien t’apprendre, que tu laisses là."),
+            make("express_6", "Après une dispute", 2, "Retrouver ton calme quand l’émotion a pris le dessus.", .relationships, .emotion, .meditation, detail: "Juste après une dispute : une main sur la poitrine, l’autre sur le ventre, un souffle lent, et le droit de ne pas répondre tout de suite. La conversation pourra reprendre plus tard."),
+            make("new_after_conflict", "Après les mots trop forts", 9, "Comprendre ce qui s’est joué avant de répondre.", .relationships, .emotion, .meditation, detail: "Sans rejouer la scène, tu nommes l’émotion qui reste, tu cherches le besoin qu’elle cache, puis tu prépares la phrase que tu voudras vraiment dire, plus tard et au calme."),
+            make("rel_before_hard_talk", "Avant une conversation difficile", 7, "Arriver posé et clair à un échange délicat.", .relationships, .calm, .anchoring, detail: "Avant un échange délicat, tu t’ancres dans tes appuis et tu choisis une intention. Puis tu répètes en imagination le moment où l’autre hausse le ton, pour y garder ton calme."),
+            make("emotion_5", "Bienveillance envers les autres", 10, "Cultiver la bienveillance, de toi jusqu’aux autres.", .relationships, .kindness, .selfCompassion, detail: "Une méditation metta : tu adresses des souhaits de bienveillance à toi-même, à un proche, à une personne neutre, à quelqu’un avec qui c’est difficile, puis à tous les êtres."),
+            make("rel_deep_listening", "Écouter vraiment", 6, "S’entraîner à écouter sans préparer sa réponse.", .relationships, .focus, .meditation, detail: "Tu t’entraînes à écouter sans préparer ta réponse : d’abord les sons autour de toi, puis une personne qui te confie un souci, dans une conversation imaginée."),
+            make("rel_worry_for_someone", "Quand on s’inquiète pour un proche", 8, "Prendre soin de ton inquiétude sans t’y perdre.", .relationships, .calm, .selfCompassion, detail: "Tu fais de la place à ton inquiétude dans le corps, tu distingues ce qui dépend de toi de ce qui n’en dépend pas, puis tu envoies un souhait bienveillant à ton proche."),
+            make("rel_letting_go_grudge", "Lâcher une rancune", 10, "Desserrer ce que la rancune te coûte, à ton rythme.", .relationships, .perspective, .selfCompassion, detail: "Sans rien excuser ni t’obliger à pardonner, tu regardes ce que cette rancune te coûte, puis tu desserres un peu le poing, juste d’un millimètre, à ton rythme."),
+            make("rel_gratitude_someone", "Merci à quelqu’un", 5, "Ressentir la gratitude envers une personne précise.", .relationships, .energy, .selfCompassion, detail: "Tu choisis une personne qui t’a fait du bien, tu te rappelles un geste précis, puis tu laisses la gratitude se déployer dans ton corps avant de lui dire merci en silence."),
+            make("lonely_evening", "Quand la maison est silencieuse", 10, "Une présence douce quand la solitude se fait sentir.", .relationships, .emotion, .meditation, detail: "Quand la solitude se fait sentir le soir, tu l’accueilles avec une main posée sur toi, tu te rappelles que d’autres la vivent au même instant et tu apprends à te tenir compagnie."),
+            make("meditation_05", "Une place pour l’émotion", 9, "Localiser une émotion dans le corps et la laisser exister.", .innerSelf, .emotion, .meditation, detail: "Tu cherches où l’émotion se loge dans le corps, tu observes sa taille et sa température, tu la nommes, puis tu respires autour d’elle pour lui faire de la place sans la chasser."),
+            make("emotion_3", "Quand l’anxiété monte", 10, "Faire redescendre l’anxiété par le corps et le souffle.", .innerSelf, .calm, .meditation, detail: "D’abord le corps, puis le souffle, puis les pensées : tu repères les signes physiques de l’anxiété, tu allonges l’expiration et tu sépares les pensées anxieuses des faits."),
+            make("emotion_4", "Peur et courage", 7, "Avancer avec la peur plutôt qu’attendre qu’elle parte.", .innerSelf, .emotion, .meditation, detail: "Tu accueilles la peur là où elle se loge, tu retrouves ce qui compte assez pour avancer quand même, puis tu visualises ton tout premier pas, avec la peur à tes côtés."),
+            make("emo_sadness", "Faire de la place à la tristesse", 9, "Laisser la tristesse exister sans chercher à aller mieux tout de suite.", .innerSelf, .emotion, .meditation, detail: "Pas besoin d’aller mieux tout de suite : tu laisses la tristesse exister et tu t’offres un geste réconfortant, une main sur le cœur ou les bras serrés autour de toi."),
+            make("emo_anger", "Quand la colère monte", 6, "Laisser redescendre la colère avant d’agir.", .innerSelf, .emotion, .relaxation, detail: "Tu contractes puis relâches poings, épaules et mâchoire, puis tu refroidis la colère par de longues expirations, pour choisir ta réponse plus tard, à tête reposée."),
+            make("meditation_10", "La météo intérieure", 6, "Observer ton état du moment comme une météo qui passe.", .innerSelf, .perspective, .visualization, detail: "Tu décris ton état du moment comme une météo, ciel gris, orage ou éclaircie, puis tu te rappelles que tu es le ciel immense où elle passe, et non l’orage lui-même."),
+            make("new_thoughts_on_clouds", "Les pensées comme des nuages", 8, "Regarder passer les pensées sans devoir les suivre.", .innerSelf, .perspective, .meditation, detail: "Dans une prairie imaginaire, tu poses chaque pensée sur un nuage et tu la regardes passer, sans la retenir ni la repousser. Et quand l’une t’emporte, tu redescends dans l’herbe."),
+            make("afternoon_reframe", "Prendre de la hauteur", 10, "Prendre du recul sur ce qui occupe trop de place.", .innerSelf, .perspective, .visualization, detail: "Comme une caméra qui s’élève, tu prends de la hauteur : la pièce, la ville, le pays, puis la Terre entière. Tu reviens ensuite vers ton problème pour le voir à sa vraie taille."),
+            make("meditation_08", "Laisser être", 15, "Accueillir tout ce qui se présente, sans rien retenir.", .innerSelf, .perspective, .meditation, detail: "Quinze minutes sans point d’appui fixe, avec de longs silences : sons, sensations, pensées et émotions sont accueillis à mesure qu’ils apparaissent, puis laissés repartir."),
+            make("emo_uncertainty", "Quand tout est incertain", 9, "Habiter l’attente sans inventer la réponse.", .innerSelf, .calm, .meditation, detail: "Pendant une attente, tu reconnais chaque scénario comme une simple hypothèse, tu te répètes « je ne sais pas encore » et tu reviens, mains ouvertes, à ce qui est connu maintenant."),
+            make("emotion_1", "Apprendre à s’aimer", 10, "Trois étapes pour te parler avec plus de douceur.", .innerSelf, .kindness, .selfCompassion, detail: "La pause d’autocompassion en trois étapes : reconnaître que c’est un moment difficile, te rappeler que d’autres le vivent aussi, puis t’offrir de la douceur, une main sur le cœur."),
+            make("emo_inner_critic", "Quand je suis dur·e avec moi-même", 8, "Répondre à la critique intérieure comme à un ami.", .innerSelf, .kindness, .selfCompassion, detail: "Tu écoutes ce que dit ta voix critique et le ton qu’elle prend, puis tu lui réponds avec les mots et la chaleur que tu aurais pour un ami proche qui a fait la même erreur."),
+            make("new_safe_place", "Un lieu suffisamment sûr", 10, "Construire un refuge intérieur où reprendre ton souffle.", .innerSelf, .calm, .visualization, detail: "Tu construis par les cinq sens un lieu intérieur où te sentir en sécurité, puis tu l’associes à un geste et à un mot pour pouvoir y revenir dès que tu en as besoin."),
+            make("small_joy", "Remarquer le bon", 5, "Savourer un moment agréable quelques secondes de plus.", .innerSelf, .energy, .meditation, detail: "Tu repères une sensation agréable, même minuscule, et tu la laisses durer vingt secondes de plus que d’habitude, sans chercher à la retenir. Puis tu en savoures une deuxième."),
+            make("express_2", "Transports bondés", 3, "Trouver ton calme même au milieu de la foule.", .daily, .calm, .anchoring, detail: "Au milieu de la foule, le regard baissé : tu sens tes appuis, tu écoutes les sons sans chercher à comprendre et tu ralentis ton expiration. Personne ne le remarquera."),
+            make("commute_home", "Le trajet vers soi", 10, "Faire du trajet un vrai passage vers ta soirée.", .daily, .relax, .anchoring, detail: "Les yeux ouverts pendant tout le trajet, tu prends les sons comme point d’appui et tu laisses la journée de travail derrière toi, pour arriver chez toi la tête plus légère."),
+            make("doorstep_pause", "Sur le seuil", 3, "Arriver vraiment chez toi avant de passer la porte.", .daily, .relax, .meditation, detail: "Devant ta porte, avant de tourner la clé : deux longues expirations, un regard sur ce que tu ramènes ce soir, et le choix de la façon dont tu veux entrer chez toi."),
+            make("new_walking_pause", "Marcher en présence", 8, "Méditer en marchant, pas après pas.", .daily, .focus, .anchoring, detail: "Une méditation en marchant, à faire aussi dehors : le talon, la plante puis les orteils à chaque pas, le balancement des bras et un rythme de pas accordé au souffle."),
+            make("new_sensory_shelter", "Un refuge sensoriel", 7, "Réduire la surcharge quand tout est trop bruyant.", .daily, .calm, .anchoring, detail: "Quand tout est trop fort, tu réduis le monde à presque rien : un seul point à regarder, un seul son, une seule sensation dans les mains, et une expiration qui s’allonge."),
+            make("blue_hour", "L’heure bleue", 8, "Regarder la journée ralentir, les yeux ouverts.", .daily, .relax, .anchoring, detail: "Devant une fenêtre, les yeux ouverts : un regard large, les couleurs du ciel qui changent, les lumières qui s’allument. Ta journée ralentit au rythme de la nuit qui vient."),
+            make("friday_release", "La semaine peut se terminer", 7, "Reconnaître ta semaine et la laisser derrière toi.", .daily, .relax, .meditation, detail: "Pour refermer la semaine : ce qui a été fait, ce qui a été difficile, puis ce que tu poses sur ton bureau pour lundi. Le travail est rangé, le week-end peut commencer."),
+            make("sunday_reset", "Le dimanche soir", 8, "Apaiser la boule du dimanche soir.", .daily, .calm, .meditation, detail: "Tu accueilles la boule du dimanche soir là où elle se loge, tu reviens à la soirée qui est encore là, puis tu choisis un seul premier pas pour lundi matin."),
+            make("daybreak_stillness", "Le calme avant les messages", 5, "Commencer la journée avant de regarder ton téléphone.", .morning, .perspective, .meditation, detail: "Avant de regarder ton téléphone : trois respirations, un tour de ton corps tel qu’il est ce matin, puis un mot choisi comme intention pour toute la journée."),
+            make("morning_wake_body", "Réveiller le corps", 6, "Sortir du sommeil en douceur, en bougeant.", .morning, .energy, .relaxation, detail: "Encore sous la couette, tu réveilles le corps morceau par morceau : mains, pieds, nuque, un grand étirement, puis quelques respirations plus toniques avant de te lever."),
+            make("express_3", "Petit déjeuner", 3, "Une minute de gratitude pour bien commencer la journée.", .morning, .energy, .selfCompassion, detail: "Avant ta première bouchée, tu poses ton téléphone et tu trouves trois raisons de dire merci. Puis tu manges lentement, en prenant le temps de vraiment sentir le goût."),
+            make("new_soft_reset", "Épuisé·e dès le réveil", 6, "Trouver un rythme réaliste quand l’énergie manque.", .morning, .energy, .meditation, detail: "Peu d’énergie dès le réveil ? Tu évalues honnêtement ton énergie, tu gardes l’essentiel de ta journée, tu choisis un rythme réaliste et tu trouves un petit élan pour démarrer."),
+            make("morning_kind_start", "Commencer avec douceur", 7, "Aborder une journée chargée avec une exigence plus juste.", .morning, .kindness, .selfCompassion, detail: "Pour une journée chargée, tu tries ce qui est vraiment nécessaire et ce qui peut attendre, puis tu prépares une phrase douce à te dire au moment le plus difficile."),
+            make("express_7", "Réveil en panique", 2, "Calmer l’angoisse qui serre le ventre au réveil.", .morning, .calm, .anchoring, detail: "Quand l’angoisse serre le ventre au réveil : les yeux ouverts sur un point de la pièce, des expirations longues, et le rappel que la journée n’a pas encore commencé."),
+            make("actualite_1", "Quand le monde brûle", 8, "Trouver ta juste place face aux nouvelles du monde.", .screens, .perspective, .meditation, detail: "Face aux nouvelles du monde, tu reconnais l’impuissance, tu distingues ce qui dépend de toi de ce qui t’échappe, puis tu choisis un geste concret à ta portée cette semaine."),
+            make("actualite_2", "La guerre en bruit de fond", 9, "Rester sensible sans absorber toute la violence du monde.", .screens, .emotion, .selfCompassion, detail: "Sans aucune image, tu accueilles la peur et la peine liées à la guerre, tu envoies un souhait de paix, puis tu apprends à rester sensible sans absorber toute la violence du monde."),
+            make("actualite_3", "L’envie de scroller", 4, "Laisser passer l’envie de prendre ton téléphone.", .screens, .focus, .meditation, detail: "Tu observes l’envie de prendre ton téléphone comme une vague : elle monte, atteint un sommet, puis redescend toute seule. Ensuite, tu choisis librement ce que tu veux en faire."),
+            make("actualite_5", "Après le scroll", 6, "Décompresser après trop d’informations.", .screens, .calm, .meditation, detail: "Après trop d’infos, tu poses l’écran, tu nommes ce que tu ressens en un mot, puis tu reviens à la pièce par les sons, les contacts et les odeurs qui t’entourent."),
+            make("meditation_16", "Le repos des yeux", 4, "Offrir une vraie pause à tes yeux après les écrans.", .screens, .relax, .relaxation, detail: "Des paumes chaudes posées sur les yeux fermés, puis un regard qui alterne entre le lointain et le proche : quatre minutes pour offrir une vraie pause à tes yeux après l’écran."),
+            make("screen_off", "Éteindre les écrans", 7, "Passer des écrans au sommeil en douceur.", .screens, .sleep, .meditation, detail: "Tu poses le téléphone hors de portée, tu baisses la lumière et tu te glisses au lit. Puis tu laisses la journée s’éloigner un peu plus à chaque expiration, jusqu’au sommeil."),
+            make("express_4", "Juste avant de dormir", 4, "Relâcher les tensions de la journée pour t’endormir.", .night, .sleep, .relaxation, detail: "Au lit, tu relâches ton corps des pieds jusqu’aux yeux, puis tu comptes tes respirations lentement. Si tu perds le compte, tu recommences, sans chercher à réussir."),
+            make("new_body_scan_sleep", "Le corps devient lourd", 15, "Un scan corporel lent pour glisser dans le sommeil.", .night, .sleep, .relaxation, detail: "Un scan corporel très lent, des pieds au sommet du crâne : chaque zone devient lourde et chaude, tandis que la voix s’espace pour te laisser glisser dans le sommeil."),
+            make("sleep_2", "Visualisation apaisante", 15, "Une plage au crépuscule, décrite lentement jusqu’au sommeil.", .night, .sleep, .visualization, detail: "Une plage au crépuscule, décrite lentement par tous les sens : le sable tiède, le bruit des vagues, l’odeur du sel, puis les premières étoiles, jusqu’à l’endormissement."),
+            make("sleep_4", "Entre deux mondes", 12, "Compter à rebours jusqu’à oublier les chiffres.", .night, .sleep, .meditation, detail: "À chaque expiration, tu comptes à rebours à partir de cent, comme on descend un escalier vers une pièce calme. Perdre le compte est le but : les chiffres finissent par s’effacer."),
+            make("sleep_3", "Vider la tête", 10, "Ranger tes soucis pour demain et t’endormir l’esprit léger.", .night, .sleep, .meditation, detail: "Tu écris chaque souci sur un petit papier imaginaire et tu le ranges dans une boîte pour demain. Une fois le couvercle fermé, une respiration lente t’accompagne vers le sommeil."),
+            make("sleep_cognitive_shuffle", "Les pensées qui tournent au lit", 10, "Couper la rumination avec des images sans lien entre elles.", .night, .sleep, .meditation, detail: "Pour chaque lettre d’un mot, tu imagines des objets sans lien entre eux : sapin, soucoupe, abricot… Ces images décousues coupent la rumination et ressemblent à l’endormissement."),
+            make("sleep_5", "Fatigué·e mais pas sommeil", 12, "Arrêter d’essayer de dormir pour enfin te reposer.", .night, .sleep, .relaxation, detail: "Le sommeil ne vient pas ? Tu arrêtes d’essayer de dormir pour simplement te reposer dans le noir. Sans enjeu, le corps se détend, et si le sommeil passe, il est le bienvenu."),
+            make("sleep_1", "Déposer la journée", 12, "Rembobiner ta journée et la laisser derrière toi.", .night, .sleep, .meditation, detail: "Tu rembobines ta journée à l’envers, du coucher jusqu’au réveil, scène par scène et sans juger. Puis tu la poses sur une étagère pour laisser venir la nuit."),
+            make("middle_of_night", "Réveil nocturne", 10, "Te rendormir sans regarder l’heure.", .night, .sleep, .meditation, detail: "Au milieu de la nuit, sans regarder l’heure : une voix très basse, aucune consigne à suivre, seulement la chaleur et le poids du corps pour te laisser retomber dans le sommeil."),
+            make("night_watch", "Veille paisible", 20, "Te reposer vraiment, même quand le sommeil ne vient pas.", .night, .sleep, .relaxation, detail: "Vingt minutes pour les nuits difficiles : tu ne cherches plus le sommeil mais le repos, qui récupère déjà une part de la fatigue. Le corps se pose, les pensées peuvent attendre."),
+            make("night_sky", "Sous le ciel immobile", 15, "Une histoire lente pour accompagner l’endormissement.", .night, .sleep, .visualization, detail: "Une histoire lente et sans surprise : une marche de nuit dans la campagne, sous un ciel étoilé immobile, jusqu’à une cabane au bord d’un étang. De quoi glisser vers le sommeil."),
+            make("stress_3", "Relâche", 12, "Contracter puis relâcher chaque muscle, des pieds au visage.", .body, .relax, .relaxation, detail: "La relaxation musculaire progressive : tu contractes chaque groupe de muscles pendant cinq secondes, des pieds jusqu’au visage, puis tu relâches d’un coup pour sentir la différence."),
+            make("new_nidra_pause", "Repos profond sans dormir", 20, "Un yoga nidra pour récupérer en profondeur.", .body, .relax, .relaxation, detail: "Un yoga nidra de vingt minutes, à pratiquer sur le dos : une intention (sankalpa), un voyage de l’attention dans tout le corps, des sensations opposées, puis un retour en douceur."),
+            make("stress_5", "Le scan corporel complet", 10, "Une attention précise à chaque zone du corps.", .body, .relax, .relaxation, detail: "Un scan corporel de jour, sur une chaise pour rester alerte : température, contact, mouvement… Tu observes chaque zone du corps avec précision, comme à la loupe."),
+            make("gentle_recovery", "Récupérer sans culpabiliser", 10, "Te donner la permission de te reposer.", .body, .kindness, .relaxation, detail: "Fatigue, maladie ou convalescence : tu écoutes la voix qui te pousse à en faire plus, puis tu te donnes la permission de ne rien faire, pendant que ton corps récupère."),
+            make("meditation_15", "Présence dans les mains", 5, "Te rassurer par la chaleur de tes propres mains.", .body, .calm, .relaxation, detail: "Tu frottes tes mains pour les réchauffer, puis tu les poses sur ta poitrine ou là où c’est réconfortant. Un geste simple et rassurant, toujours à portée de main."),
+            make("body_tension", "Faire de la place à une tension", 9, "Explorer une tension avec curiosité, sans lutter.", .body, .relax, .meditation, detail: "Tu explores une tension ou une douleur avec curiosité plutôt qu’en luttant : ses bords, sa taille, sa qualité, puis tu respires autour. Cette pratique ne remplace pas un avis médical."),
+            make("body_mindful_stretch", "Étirements conscients", 8, "Des étirements doux, au rythme du souffle.", .body, .energy, .relaxation, detail: "Des étirements doux, assis ou debout, accordés au souffle : bras, épaules, nuque, flancs, torsion et ouverture de la poitrine. Faisables au bureau, sans jamais forcer."),
 
-            // Découverte
-            make("decouverte_1", "Ma première méditation", 6, "Une introduction douce pour ceux qui n'ont jamais médité.", "01-decouverte-premiere-meditation.mp3", "decouverte", false, .thoughts, .meditation),
-            make("decouverte_2", "Observer sans juger", 7, "Apprends à accueillir tes pensées sans t'y attacher.", "02-decouverte-observer-sans-juger.mp3", "decouverte", false, .thoughts, .meditation),
-            make("decouverte_3", "Le moment présent", 6, "Entraîne-toi à revenir ici et maintenant, encore et encore.", "03-decouverte-moment-present.mp3", "decouverte", false, .thoughts, .anchoring),
-
-            // Actualité & surcharge mentale
-            make("actualite_1", "Quand le monde brûle", 7, "Déconnecte ton esprit du bruit informationnel.", "23-actualite-quand-le-monde-brule.mp3", "actualite", false, .thoughts, .meditation),
-            make("actualite_2", "La guerre en bruit de fond", 8, "Trouve la sérénité malgré un monde en constante évolution.", "24-actualite-la-guerre-en-bruit-de-fond.mp3", "actualite", true, .thoughts, .meditation),
-            make("actualite_3", "Débrancher quand tout crie", 8, "Une pause consciente loin des écrans et des titres.", "25-actualite-debrancher-quand-tout-crie.mp3", "actualite", false, .thoughts, .anchoring),
-            make("actualite_4", "Recul sur l'actualité", 13, "Apprends à poser ton téléphone avec légèreté.", "26-actualite-recul-sur-lactualite.mp3", "actualite", true, .thoughts, .meditation),
-            make("actualite_5", "Pause info", 7, "Prends de la hauteur sur les événements du monde.", "27-actualite-pause-info.mp3", "actualite", true, .thoughts, .meditation),
-
-            // Stress & anxiété
-            make("stress_1", "Quand le stress prend le dessus", 7, "Une séance pour revenir à toi quand la pression monte.", "08-stress-quand-le-stress-prend-le-dessus.mp3", "stress", false, .stress, .breathing),
-            make("stress_2", "Respiration 4-7-8", 5, "Parcours ton corps pour relâcher les tensions.", "09-stress-respiration-4-7-8.mp3", "stress", true, .stress, .breathing),
-            make("stress_3", "Relâche", 9, "Contracte et relâche chaque groupe musculaire.", "10-stress-relache.mp3", "stress", false, .stress, .relaxation),
-            make("stress_4", "Ancrage", 6, "Reviens à toi grâce à une technique d'ancrage simple.", "11-stress-ancrage.mp3", "stress", false, .stress, .anchoring),
-            make("stress_5", "Le voyageur qui s'arrête", 12, "Dissous les tensions mentales et retrouve un état de calme.", "12-stress-le-voyageur-qui-sarrete.mp3", "stress", true, .stress, .relaxation),
-
-            // Sommeil
-            make("sleep_1", "Détente du soir", 13, "Prépare ton corps et ton esprit au repos.", "13-sommeil-detente-du-soir.mp3", "sleep", false, .sleep, .relaxation),
-            make("sleep_2", "Visualisation apaisante", 7, "Voyage mental dans un lieu calme et sécurisant.", "14-sommeil-visualisation-apaisante.mp3", "sleep", false, .sleep, .visualization),
-            make("sleep_3", "Rituel pré-sommeil", 7, "Un rituel simple pour quitter doucement la journée.", "15-sommeil-rituel-pre-sommeil.mp3", "sleep", false, .sleep, .relaxation),
-            make("sleep_4", "Entre deux mondes", 7, "Laisse les pensées ralentir avant la nuit.", "16-sommeil-entre-deux-mondes.mp3", "sleep", false, .sleep, .visualization),
-            make("sleep_5", "Plongée dans le silence", 6, "Une pause silencieuse pour accompagner le coucher.", "17-sommeil-plongee-dans-le-silence.mp3", "sleep", true, .sleep, .meditation),
-
-            // Respiration
-            make("breathing_1", "Cohérence cardiaque", 4, "Une respiration guidée pour retrouver un rythme régulier.", "04-respiration-coherence-cardiaque.mp3", "breathing", false, .stress, .breathing),
-            make("breathing_2", "Respiration alternée", 5, "Explore une respiration lente et attentive.", "05-respiration-respiration-alternee.mp3", "breathing", false, .stress, .breathing),
-            make("breathing_3", "Souffle apaisant", 8, "Un temps pour ralentir et écouter ton souffle.", "06-respiration-souffle-apaisant.mp3", "breathing", false, .stress, .breathing),
-            make("breathing_4", "Expansion thoracique", 9, "Redonne de l'espace à ta respiration.", "07-respiration-expansion-thoracique.mp3", "breathing", false, .stress, .breathing),
-
-            // Émotions
-            make("emotion_1", "Apprendre à s'aimer", 8, "Accueille-toi avec davantage de douceur.", "18-emotion-apprendre-a-saimer.mp3", "emotion", false, .emotions, .selfCompassion),
-            make("emotion_2", "Joie et énergie", 9, "Reconnecte-toi à ce qui te fait du bien.", "19-emotion-joie-et-energie.mp3", "emotion", false, .emotions, .meditation),
-            make("emotion_3", "De l'anxiété au sourire", 14, "Observe ton ressenti avec douceur et curiosité.", "20-emotion-de-lanxiete-au-sourire.mp3", "emotion", false, .emotions, .meditation),
-            make("emotion_4", "Peur et courage", 7, "Fais une place à ce qui est là, sans te brusquer.", "21-emotion-peur-et-courage.mp3", "emotion", false, .emotions, .selfCompassion),
-            make("emotion_5", "L'amour", 8, "Un moment de bienveillance envers toi et les autres.", "22-emotion-lamour.mp3", "emotion", false, .emotions, .selfCompassion),
-
-            // Nouvelles pratiques — fatigue, concentration et récupération
-            make("new_body_scan_sleep", "Le corps devient lourd", 10, "Un scan corporel progressif pour laisser la journée se déposer avant le sommeil.", "", "sleep", false, .sleep, .relaxation),
-            make("new_nidra_pause", "Repos profond sans dormir", 12, "Une relaxation inspirée du yoga nidra pour récupérer sans obligation de t’endormir.", "", "recovery", true, .sleep, .relaxation),
-            make("new_soft_reset", "Redémarrage en douceur", 5, "Une pause assise pour retrouver un peu d’énergie sans forcer.", "", "recovery", false, .emotions, .anchoring),
-            make("new_thoughts_on_clouds", "Les pensées comme des nuages", 8, "Observer le passage des pensées sans devoir les suivre ni les repousser.", "", "thoughts", false, .thoughts, .visualization),
-            make("new_sensory_shelter", "Un refuge sensoriel", 7, "Réduire la surcharge en revenant à quelques sensations simples et prévisibles.", "", "stress", true, .stress, .anchoring),
-            make("new_focus_reset", "Une chose à la fois", 6, "Rassembler ton attention avant de reprendre une tâche précise.", "", "focus", false, .thoughts, .meditation),
-            make("new_after_conflict", "Après les mots trop forts", 9, "Accueillir ce qui reste après un conflit avant de répondre ou de décider.", "", "emotion", true, .emotions, .selfCompassion),
-            make("new_box_breathing", "Respiration carrée", 4, "Un cycle régulier en quatre temps, à raccourcir dès que nécessaire.", "", "breathing", false, .stress, .breathing),
-            make("new_long_exhale", "L’expiration longue", 3, "Allonger doucement l’expiration pour ralentir le rythme sans retenir le souffle.", "", "breathing", false, .stress, .breathing),
-            make("new_walking_pause", "Marcher en présence", 8, "Une méditation en mouvement centrée sur les appuis et le rythme des pas.", "", "movement", true, .thoughts, .anchoring),
-            make("new_morning_window", "Ouvrir la matinée", 6, "Commencer la journée par les sensations plutôt que par les notifications.", "", "morning", false, .emotions, .meditation),
-            make("new_commute_boundary", "La frontière du trajet", 7, "Créer une transition claire entre le travail, le trajet et le retour chez soi.", "", "transition", true, .thoughts, .visualization),
-            make("new_safe_place", "Un lieu suffisamment sûr", 9, "Construire une image intérieure stable et réaliste où reprendre son souffle.", "", "stress", true, .emotions, .visualization)
-            , make("breathing_5", "Souffle en escalier", 5, "Une respiration en vagues douces pour retrouver de l’espace.", "", "breathing", false, .stress, .breathing)
-
-            // Méditations par moment de la journée — toutes vocales et distinctes.
-            , make("daybreak_stillness", "Le calme avant les messages", 7, "Commencer sans donner toute ta matinée aux notifications.", "", "morning", false, .thoughts, .meditation)
-            , make("daybreak_grounding", "Pieds au sol", 5, "Sentir les appuis avant de choisir la première chose à faire.", "", "morning", false, .stress, .anchoring)
-            , make("morning_breathing_space", "L’espace entre deux tâches", 8, "Faire une vraie transition avant de passer à la suite.", "", "morning", false, .thoughts, .meditation)
-            , make("morning_kind_start", "Commencer avec douceur", 10, "Entrer dans la journée avec une exigence plus juste.", "", "morning", true, .emotions, .selfCompassion)
-            , make("late_morning_focus", "Revenir à l’essentiel", 6, "Rassembler l’attention sur une seule action présente.", "", "morning", false, .thoughts, .meditation)
-            , make("lunch_reset", "La pause du déjeuner", 5, "Quitter l’écran quelques instants et retrouver les sensations.", "", "day", false, .emotions, .anchoring)
-            , make("after_lunch_energy", "Énergie tranquille", 8, "Réveiller l’attention sans accélérer le rythme.", "", "day", true, .stress, .meditation)
-            , make("afternoon_fog", "Quand l’après-midi ralentit", 9, "Accueillir la fatigue et repartir sans se brusquer.", "", "day", false, .thoughts, .relaxation)
-            , make("afternoon_reframe", "Changer de perspective", 12, "Prendre du recul sur une situation qui occupe trop de place.", "", "day", true, .thoughts, .visualization)
-            , make("before_meeting", "Avant de retrouver les autres", 4, "Arriver à une réunion avec une attention plus disponible.", "", "transition", false, .stress, .anchoring)
-            , make("between_calls", "Entre deux appels", 3, "Laisser une conversation se terminer avant la suivante.", "", "transition", false, .emotions, .meditation)
-            , make("after_work", "Fermer la journée de travail", 9, "Créer une frontière douce entre obligations et temps personnel.", "", "transition", false, .thoughts, .visualization)
-            , make("commute_home", "Le trajet vers soi", 11, "Transformer le trajet en passage plutôt qu’en liste de tâches.", "", "transition", true, .thoughts, .meditation)
-            , make("doorstep_pause", "Sur le seuil", 4, "Prendre une respiration avant d’entrer chez soi.", "", "transition", false, .stress, .anchoring)
-            , make("evening_unwind", "Déposer la journée", 10, "Faire descendre progressivement le bruit de la journée.", "", "evening", false, .sleep, .relaxation)
-            , make("evening_release", "Laisser partir le contrôle", 13, "Desserrer l’envie de tout résoudre ce soir.", "", "evening", true, .thoughts, .meditation)
-            , make("blue_hour", "L’heure bleue", 8, "Habiter un moment de transition sans avoir à le remplir.", "", "evening", false, .emotions, .visualization)
-            , make("after_dinner", "Après le repas", 6, "Revenir au corps dans le calme qui suit la journée.", "", "evening", false, .sleep, .anchoring)
-            , make("screen_off", "Éteindre les écrans", 7, "Accompagner le passage du dehors vers un rythme plus lent.", "", "evening", true, .sleep, .relaxation)
-            , make("night_watch", "Veille paisible", 15, "Rester présent quand le sommeil ne vient pas tout de suite.", "", "night", false, .sleep, .meditation)
-            , make("middle_of_night", "Réveil nocturne", 8, "Retrouver un appui sans forcer le retour au sommeil.", "", "night", false, .sleep, .anchoring)
-            , make("night_sky", "Sous le ciel immobile", 12, "Laisser les pensées s’éloigner comme des lumières au loin.", "", "night", true, .sleep, .visualization)
-            , make("sunday_reset", "Recommencer doucement", 10, "Accueillir le début d’un nouveau cycle sans anticiper toute la semaine.", "", "weekly", false, .emotions, .selfCompassion)
-            , make("monday_arrival", "Entrer dans lundi", 7, "Faire de la place avant que la semaine ne s’accélère.", "", "weekly", false, .stress, .meditation)
-            , make("friday_release", "La semaine peut se terminer", 9, "Reconnaître ce qui a été fait et relâcher le reste.", "", "weekly", false, .thoughts, .relaxation)
-            , make("lonely_evening", "Quand la maison est silencieuse", 11, "Créer une présence intérieure accueillante dans le calme.", "", "evening", true, .emotions, .selfCompassion)
-            , make("decision_pause", "Avant de décider", 6, "Observer les options sans répondre dans l’urgence.", "", "stress", false, .thoughts, .meditation)
-            , make("creative_block", "Faire de la place aux idées", 8, "Débloquer l’attention en relâchant la pression de produire.", "", "focus", false, .thoughts, .visualization)
-            , make("gentle_recovery", "Récupérer sans culpabiliser", 14, "Offrir au corps une vraie pause quand l’énergie est basse.", "", "recovery", true, .sleep, .relaxation)
-            , make("small_joy", "Remarquer le bon", 5, "Retrouver une sensation agréable sans devoir la retenir.", "", "day", false, .emotions, .meditation)
-            , make("meditation_01", "Une minute de ciel", 4, "Ouvrir l’attention à l’espace autour de toi.", "", "anytime", false, .thoughts, .meditation)
-            , make("meditation_02", "Le son le plus proche", 6, "S’appuyer sur l’écoute pour ralentir les pensées.", "", "anytime", false, .thoughts, .meditation)
-            , make("meditation_03", "Respirer avec la lumière", 8, "Laisser une sensation claire guider la pause.", "", "morning", false, .emotions, .meditation)
-            , make("meditation_04", "Le banc tranquille", 10, "S’asseoir intérieurement sans avoir à avancer.", "", "day", true, .stress, .meditation)
-            , make("meditation_05", "Une place pour l’émotion", 9, "Reconnaître le ressenti sans le laisser décider de tout.", "", "anytime", false, .emotions, .meditation)
-            , make("meditation_06", "Le fil de l’attention", 12, "Revenir à un point d’appui après chaque distraction.", "", "focus", false, .thoughts, .meditation)
-            , make("meditation_07", "Pause au bord de l’eau", 7, "Accompagner les changements sans chercher à les retenir.", "", "day", true, .thoughts, .meditation)
-            , make("meditation_08", "Laisser être", 14, "Faire moins de place à la lutte et plus à l’observation.", "", "anytime", true, .emotions, .meditation)
-            , make("meditation_09", "Retour au visage", 5, "Détendre le front et la mâchoire avant de reprendre.", "", "stress", false, .stress, .meditation)
-            , make("meditation_10", "La météo intérieure", 8, "Observer les variations du moment avec curiosité.", "", "anytime", false, .emotions, .meditation)
-            , make("meditation_11", "Une pause dans le bruit", 11, "Créer un espace stable au milieu des sollicitations.", "", "day", true, .stress, .meditation)
-            , make("meditation_12", "Le soir en trois gestes", 6, "Marquer la fin de la journée par quelques gestes simples.", "", "evening", false, .sleep, .meditation)
-            , make("meditation_13", "Baisser le volume", 10, "Réduire l’intensité sans avoir à tout couper.", "", "stress", false, .thoughts, .meditation)
-            , make("meditation_14", "Regarder passer", 15, "Laisser les pensées passer sans leur construire une histoire.", "", "anytime", true, .thoughts, .meditation)
-            , make("meditation_15", "Présence dans les mains", 7, "Retrouver le corps par le contact et la chaleur.", "", "anytime", false, .emotions, .meditation)
-            , make("meditation_16", "Le repos des yeux", 5, "Offrir une pause douce au regard après les écrans.", "", "evening", false, .sleep, .meditation)
-            , make("meditation_17", "Finir sans conclure", 9, "Terminer une journée sans devoir lui donner une réponse parfaite.", "", "evening", true, .thoughts, .meditation)
+            // Respiration : aucune narration, une courbe guide le souffle.
+            breath("breathing_1", "Cohérence cardiaque", 5, "Six respirations par minute pour retrouver un rythme régulier.", .innerSelf, .calm, .coherence, detail: "Six respirations par minute, guidées par une courbe : le rythme le plus étudié pour aider à apaiser le système nerveux. Tu peux le pratiquer jusqu’à trois fois par jour."),
+            breath("breath_sigh", "Soupir physiologique", 1, "Le moyen le plus rapide de redescendre.", .work, .calm, .sigh, detail: "Deux inspirations par le nez, la seconde plus courte pour remplir le haut des poumons, puis une longue expiration par la bouche. Le moyen le plus rapide de redescendre."),
+            breath("new_long_exhale", "Expiration longue", 3, "Allonger l’expiration pour ralentir en douceur.", .daily, .relax, .longExhale, detail: "Une expiration plus longue que l’inspiration ralentit le rythme sans retenir le souffle. La façon la plus simple de commencer, une main posée sur le ventre."),
+            breath("new_box_breathing", "Respiration carrée", 4, "Quatre temps égaux pour stabiliser l’attention.", .work, .focus, .box, detail: "La respiration carrée : inspirer, retenir, expirer, retenir, en quatre temps égaux, poumons pleins puis poumons vides. Un rythme stable pour rassembler ton attention."),
+            breath("breath_triangle", "Respiration triangle", 3, "Une version plus simple de la respiration carrée.", .discovery, .focus, .triangle, detail: "Inspirer, retenir, expirer : trois temps égaux, avec une seule rétention, poumons pleins. Une version plus simple de la respiration carrée pour stabiliser ton attention."),
+            breath("stress_2", "4-7-8", 1, "Quatre cycles pour préparer le sommeil.", .night, .sleep, .fourSevenEight, detail: "La respiration 4-7-8 : tu inspires pendant quatre secondes, tu retiens ton souffle sept secondes, puis tu expires sur huit. Quatre cycles suffisent, puis le souffle redevient libre."),
+            breath("breath_sleep_descent", "Descente vers le sommeil", 10, "Un rythme qui ralentit tout seul jusqu’au sommeil.", .night, .sleep, .sleepDescent, detail: "Un rythme qui ralentit tout seul : au fil de l’exercice, l’expiration passe de quatre à huit secondes, pour t’accompagner doucement jusqu’au sommeil."),
+            breath("breathing_3", "Pause en bas", 5, "Un court repos poumons vides pour une détente profonde.", .body, .relax, .lowPause, detail: "Après chaque expiration, tu marques un court repos poumons vides avant d’inspirer à nouveau. Une pause toute simple qui invite le corps à une détente plus profonde."),
+            breath("breathing_2", "Respiration alternée", 5, "Alterner les narines pour clarifier l’esprit.", .work, .focus, .alternate, detail: "Bouche une narine avec le pouce, l’autre avec l’annulaire, et suis la narine indiquée à l’écran : inspire à gauche, expire à droite, inspire à droite, expire à gauche."),
+            breath("breathing_5", "Inspiration en escalier", 3, "Inspirer en trois marches, expirer d’un trait.", .innerSelf, .calm, .staircase, detail: "L’inspiration monte en trois petites marches, puis l’expiration descend d’un seul trait. Un rythme en escalier, facile à suivre, pour retrouver peu à peu ton calme."),
+            breath("breathing_4", "Souffle tonique", 2, "Une inspiration plus longue pour réveiller le corps.", .morning, .energy, .energizing, detail: "Une inspiration plus longue que l’expiration pour réveiller le corps et l’esprit quand l’énergie manque. À éviter en cas d’anxiété ou si ce rythme te met mal à l’aise."),
+            breath("breath_cooling", "Souffle rafraîchissant", 3, "Refroidir la colère en inspirant par la bouche.", .relationships, .emotion, .cooling, detail: "Inspire par la bouche, la langue roulée en tube ou à travers les dents serrées, puis expire lentement par le nez. L’air frais aide à faire retomber la colère."),
+            breath("breath_counting", "Compter les souffles", 5, "Compter tes expirations de un à dix, à ton rythme.", .discovery, .focus, .counting, detail: "Compte chaque expiration de un à dix, puis recommence. Si tu perds le compte, reviens simplement à un : c’est justement ce retour qui entraîne ton attention.")
         ]
     }
 
-    private static func make(_ id: String, _ title: String, _ duration: Int, _ intention: String, _ audio: String, _ category: String, _ premium: Bool, _ pillar: QuietoPillar, _ practice: QuietoPracticeType) -> QuietoSession {
+    private static func make(_ id: String, _ title: String, _ minutes: Int, _ intention: String, _ category: QuietoCategory, _ goal: QuietoGoal, _ practice: QuietoPracticeType, detail: String) -> QuietoSession {
+        session(id, title, minutes, intention, category, goal, practice, pattern: nil, detail: detail)
+    }
+
+    private static func breath(_ id: String, _ title: String, _ minutes: Int, _ intention: String, _ category: QuietoCategory, _ goal: QuietoGoal, _ pattern: QuietoBreathingPattern, detail: String) -> QuietoSession {
+        session(id, title, minutes, intention, category, goal, .breathing, pattern: pattern, detail: detail)
+    }
+
+    private static func session(_ id: String, _ title: String, _ minutes: Int, _ intention: String, _ category: QuietoCategory, _ goal: QuietoGoal, _ practice: QuietoPracticeType, pattern: QuietoBreathingPattern?, detail: String) -> QuietoSession {
         let situations = QuietoSituation.allCases.filter { $0.sessionIDs.contains(id) }
-        let contextualThemes = Set(situations.flatMap(\.themes))
-        let pillarTheme: QuietoTheme = switch pillar {
-        case .sleep: .sleep
-        case .stress: .stress
-        case .thoughts: .focus
-        case .emotions: .emotions
-        }
-        let themes = Array(contextualThemes.union([pillarTheme])).sorted { $0.rawValue < $1.rawValue }
-        let searchTerms = [title, category, pillar.rawValue, practice.rawValue, intention]
+        let themes = Array(Set(situations.flatMap(\.themes)).union([goal.theme])).sorted { $0.rawValue < $1.rawValue }
+        let searchTerms = [title, category.rawValue, goal.rawValue, practice.rawValue, intention, detail]
             + themes.map(\.rawValue)
             + situations.flatMap { [$0.rawValue, $0.subtitle] }
+        // A written script replaces the generic template; its generated narration
+        // gives the audio path and the real duration.
+        let narration = pattern == nil ? NarrationCatalog.entries[id] : nil
+        let seconds = narration?.durationSeconds ?? narration?.targetSeconds
         return QuietoSession(
             id: id,
             title: title,
-            durationMinutes: duration,
+            durationMinutes: seconds.map { max(1, Int((Double($0) / 60).rounded())) } ?? minutes,
             subtitle: practice.rawValue,
             imageName: "session-\(id).png",
-            isPremium: premium,
-            audioFile: audio,
-            categoryID: category,
-            pillar: pillar,
+            isPremium: false,
+            audioFile: narration?.audioPath ?? "",
+            categoryID: String(describing: category),
+            category: category,
+            goal: goal,
+            pillar: goal.pillar,
             practiceType: practice,
             intention: intention,
             keywords: searchTerms,
             themes: themes,
             situations: situations,
-            longDescription: detail(for: id, title: title, duration: duration, intention: intention, practice: practice),
-            breathingPattern: pattern(for: id, practice: practice)
+            longDescription: longDescription(detail: detail, minutes: minutes, pattern: pattern),
+            summary: detail,
+            transcript: narration?.transcript,
+            breathingPattern: pattern
         )
     }
 
-    private static func pattern(for id: String, practice: QuietoPracticeType) -> QuietoBreathingPattern? {
-        guard practice == .breathing else { return nil }
-        if id.contains("4-7") || id == "breathing_2" { return .fourSevenEight }
-        if id.contains("box") { return .box }
-        if id.contains("long") { return .longExhale }
-        return id == "breathing_5" ? .box : .coherence
-    }
-
-    private static func detail(for id: String, title: String, duration: Int, intention: String, practice: QuietoPracticeType) -> String {
-        if practice == .breathing {
-            return "Cet exercice de \(duration) minutes se pratique sans narration. Un point suit une courbe : la montée accompagne l’inspiration, le plateau indique une pause éventuelle et la descente guide l’expiration. \(intention) Le rythme peut être interrompu ou adapté à tout moment ; il ne faut jamais forcer ni retenir le souffle si cela devient inconfortable."
+    private static func longDescription(detail: String, minutes: Int, pattern: QuietoBreathingPattern?) -> String {
+        guard let pattern else {
+            return "\(detail) Une séance guidée, avec des temps de silence pour pratiquer vraiment. Tu peux t’arrêter ou ouvrir les yeux à tout moment."
         }
-        if id == "sleep_4" {
-            return "Entre deux mondes accompagne précisément le passage entre l’éveil et le sommeil. La séance commence par les points de contact du corps, ralentit le souffle sans imposer de compte, puis utilise une visualisation très simple pour laisser les pensées perdre leur urgence. Tu peux l’écouter au lit : la fin ne demande aucune action et laisse une plage de silence pour continuer à t’endormir."
+        if pattern == .counting {
+            return "\(detail) Aucun rythme n’est imposé : touche l’écran à chaque expiration. Si tu perds le compte, recommence à un."
         }
-        return "Cette séance de \(duration) minutes utilise la \(practice.rawValue.lowercased()) pour répondre à une situation concrète : \(intention.lowercased()) Elle alterne des consignes courtes et des silences afin de te laisser pratiquer réellement. Aucune sensation particulière n’est attendue ; l’objectif est seulement de créer un peu plus de choix dans la suite de ta journée."
+        return "\(detail) La courbe monte quand tu inspires, reste plate quand tu retiens et descend quand tu expires. Ne force jamais : si le rythme devient inconfortable, reviens à ton souffle naturel."
     }
 }

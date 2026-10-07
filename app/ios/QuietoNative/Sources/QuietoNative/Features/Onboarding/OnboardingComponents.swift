@@ -4,8 +4,6 @@ import SwiftUI
 enum OnboardingLinks {
     static let terms = URL(string: "https://cofonde.com/quieto-cgu")!
     static let privacy = URL(string: "https://cofonde.com/quieto-confidentialite")!
-    static let crisisLine = URL(string: "tel:3114")!
-    static let emergency = URL(string: "tel:112")!
     /// Must match the free trial configured in App Store Connect.
     static let trialDays = 7
 }
@@ -16,9 +14,9 @@ struct OnboardingTitle: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(title.quietoLocalized).font(QuietoFont.serif(31, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
+            Text(title.quietoLocalized).font(QuietoFont.heading(.display, weight: .semibold)).fixedSize(horizontal: false, vertical: true)
             if let subtitle {
-                Text(subtitle.quietoLocalized).font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary).fixedSize(horizontal: false, vertical: true)
+                Text(subtitle.quietoLocalized).font(QuietoFont.sans(.body)).foregroundStyle(QuietoColor.textSecondary).fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -31,13 +29,9 @@ struct OnboardingPrimaryButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Text(title.quietoLocalized).font(QuietoFont.sans(17, weight: .semibold)).foregroundStyle(QuietoColor.background)
-                .frame(maxWidth: .infinity).frame(minHeight: 54)
-                .background(QuietoColor.mint.opacity(enabled ? 1 : 0.35), in: Capsule())
-        }
-        .buttonStyle(.plain)
-        .disabled(!enabled)
+        QuietoPrimaryButton(title: title, systemImage: nil, action: action)
+            .disabled(!enabled)
+            .opacity(enabled ? 1 : 0.4)
     }
 }
 
@@ -47,7 +41,7 @@ struct OnboardingSecondaryButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title.quietoLocalized).font(QuietoFont.sans(15, weight: .medium)).foregroundStyle(QuietoColor.textSecondary)
+            Text(title.quietoLocalized).font(QuietoFont.sans(.callout, weight: .medium)).foregroundStyle(QuietoColor.textSecondary)
                 .frame(maxWidth: .infinity).frame(minHeight: QuietoMetrics.minimumTapTarget)
         }
         .buttonStyle(.plain)
@@ -66,7 +60,7 @@ struct OnboardingOptionRow: View {
                 if let symbol = option.symbol {
                     Image(systemName: symbol).font(.system(size: 18)).frame(width: 26).foregroundStyle(selected ? QuietoColor.background : QuietoColor.mint)
                 }
-                Text(option.label.quietoLocalized).font(QuietoFont.sans(16, weight: .medium)).multilineTextAlignment(.leading)
+                Text(option.label.quietoLocalized).font(QuietoFont.sans(.body, weight: .medium)).multilineTextAlignment(.leading)
                 Spacer()
                 if multiple {
                     Image(systemName: selected ? "checkmark.circle.fill" : "circle").font(.system(size: 20))
@@ -74,8 +68,8 @@ struct OnboardingOptionRow: View {
             }
             .foregroundStyle(selected ? QuietoColor.background : QuietoColor.textPrimary)
             .padding(.horizontal, 18).frame(minHeight: 58)
-            .background(selected ? QuietoColor.mint : QuietoColor.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay { RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(selected ? Color.clear : QuietoColor.divider) }
+            .background(selected ? QuietoColor.mint : QuietoColor.surface, in: RoundedRectangle(cornerRadius: QuietoRadius.card, style: .continuous))
+            .overlay { RoundedRectangle(cornerRadius: QuietoRadius.card, style: .continuous).stroke(selected ? Color.clear : QuietoColor.divider) }
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -97,7 +91,7 @@ struct OnboardingProgressBar: View {
         .animation(.easeInOut(duration: 0.35), value: value)
         .accessibilityElement()
         .accessibilityLabel("Progression")
-        .accessibilityValue("\(Int(value * 100)) %")
+        .accessibilityValue(value.formatted(.percent.precision(.fractionLength(0)).locale(QuietoLocalization.locale)))
     }
 }
 
@@ -116,10 +110,10 @@ struct OnboardingScale: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            Text("\(Int(value.rounded()))").font(QuietoFont.serif(72, weight: .semibold)).contentTransition(.numericText())
-            Text(caption.quietoLocalized).font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary)
+            Text(verbatim: "\(Int(value.rounded()))").font(QuietoFont.heading(.numeral, weight: .semibold)).contentTransition(.numericText())
+            Text(caption.quietoLocalized).font(QuietoFont.sans(.body)).foregroundStyle(QuietoColor.textSecondary)
             Slider(value: $value, in: 0...10, step: 1).tint(QuietoColor.mint)
-            HStack { Text("Calme"); Spacer(); Text("Très stressé·e") }.font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
+            HStack { Text("Calme"); Spacer(); Text("Très stressé·e") }.font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
         }
         .animation(.easeOut(duration: 0.15), value: value)
     }
@@ -148,9 +142,9 @@ struct OnboardingBreathingCircle: View {
                 Circle().fill(QuietoColor.mint.opacity(0.35))
                     .frame(width: 260, height: 260)
                     .scaleEffect(reduceMotion ? 0.75 : (expanded ? 1 : 0.45))
-                Text((inhaling ? "Inspire" : "Expire").quietoLocalized).font(QuietoFont.serif(30, weight: .semibold))
+                Text((inhaling ? "Inspire" : "Expire").quietoLocalized).font(QuietoFont.heading(.title, weight: .semibold))
             }
-            Text(String(format: "%d s", remaining)).font(QuietoFont.sans(15)).foregroundStyle(QuietoColor.textSecondary).monospacedDigit()
+            Text(QuietoLocalization.format("%d s", remaining)).font(QuietoFont.sans(.callout)).foregroundStyle(QuietoColor.textSecondary).monospacedDigit()
         }
         .onAppear(perform: start)
         .onDisappear { timer?.invalidate() }
@@ -193,11 +187,11 @@ struct OnboardingHoldButton: View {
             GeometryReader { proxy in
                 Capsule().fill(QuietoColor.mint).frame(width: proxy.size.width * progress)
             }
-            Text((done ? "C’est noté ✓" : title).quietoLocalized).font(QuietoFont.sans(17, weight: .semibold))
+            Text((done ? "C’est noté ✓" : title).quietoLocalized).font(QuietoFont.sans(.body, weight: .semibold))
                 .foregroundStyle(progress > 0.5 ? QuietoColor.background : QuietoColor.textPrimary)
                 .frame(maxWidth: .infinity)
         }
-        .frame(height: 58)
+        .frame(height: QuietoMetrics.controlHeight)
         .clipShape(Capsule())
         .onLongPressGesture(minimumDuration: 1.4, maximumDistance: 40) {
             done = true
@@ -224,8 +218,8 @@ struct OnboardingBubbles: View {
             ForEach(Array(bubbles.prefix(visible).enumerated()), id: \.offset) { _, text in
                 HStack(alignment: .top, spacing: 8) {
                     LouaneMark(size: 24)
-                    Text(text.quietoLocalized).font(QuietoFont.sans(16)).padding(13)
-                        .background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 16))
+                    Text(text.quietoLocalized).font(QuietoFont.sans(.body)).padding(13)
+                        .quietoSurface(cornerRadius: QuietoRadius.card)
                     Spacer(minLength: 30)
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -263,7 +257,7 @@ struct OnboardingProjectionChart: View {
         .chartXScale(domain: -0.15...4.15)
         .chartXAxis {
             AxisMarks(values: [0, 1, 2, 3, 4]) { value in
-                AxisValueLabel { Text(value.as(Int.self).map { $0 == 0 ? "Auj." : "S\($0)" } ?? "").foregroundStyle(QuietoColor.textSecondary) }
+                AxisValueLabel { Text(value.as(Int.self).map { $0 == 0 ? "Auj.".quietoLocalized : QuietoLocalization.format("S%d", $0) } ?? "").foregroundStyle(QuietoColor.textSecondary) }
             }
         }
         .chartYAxis(.hidden)
@@ -278,17 +272,17 @@ struct OnboardingSessionRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            QuietoAssetImage(session.imageName, contentMode: .fill).frame(width: 64, height: 52).clipShape(RoundedRectangle(cornerRadius: 10))
+            QuietoAssetImage(session.imageName, contentMode: .fill).frame(width: 64, height: 52).clipShape(RoundedRectangle(cornerRadius: QuietoRadius.small))
             VStack(alignment: .leading, spacing: 3) {
-                Text(String(format: "Jour %d".quietoLocalized, day)).font(QuietoFont.sans(12, weight: .semibold)).foregroundStyle(QuietoColor.mint)
-                Text(session.title.quietoLocalized).font(QuietoFont.serif(19, weight: .semibold)).lineLimit(1)
-                Text("\(session.durationMinutes) min · \(session.practiceType.rawValue.quietoLocalized)").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+                Text(QuietoLocalization.format("Jour %d", day)).font(QuietoFont.sans(.caption, weight: .semibold)).foregroundStyle(QuietoColor.mint)
+                Text(session.title.quietoLocalized).font(QuietoFont.heading(.card, weight: .semibold)).lineLimit(1)
+                Text(QuietoLocalization.format("%d min · %@", session.durationMinutes, session.practiceType.rawValue.quietoLocalized)).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
             }
             Spacer()
             Image(systemName: day == 1 ? "play.circle.fill" : "lock.fill").foregroundStyle(day == 1 ? QuietoColor.mint : QuietoColor.textSecondary)
         }
         .padding(10)
-        .background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 14))
+        .quietoSurface(cornerRadius: QuietoRadius.card)
     }
 }
 
@@ -298,6 +292,6 @@ struct OnboardingLegalLinks: View {
             Link("Conditions", destination: OnboardingLinks.terms)
             Link("Confidentialité", destination: OnboardingLinks.privacy)
         }
-        .font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+        .font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
     }
 }

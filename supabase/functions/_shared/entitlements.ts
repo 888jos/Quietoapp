@@ -54,7 +54,8 @@ export function superwallState(data: Record<string, unknown>, envelopeTimestamp?
       willRenew = true;
       break;
     case "non_renewing_purchase":
-      status = "active";
+      // Only auto-renewable subscriptions unlock Premium.
+      status = "inactive";
       willRenew = false;
       break;
     case "cancellation":
@@ -143,12 +144,74 @@ export function revenueCatState(event: Record<string, unknown>): StoreState | nu
   };
 }
 
-export function appleState(transaction: AppleTransaction, now = Date.now()): StoreState {
-  const lifetime = transaction.type === "Non-Consumable";
+export interface ProductPolicy {
+  /** QUIETO_PREMIUM_PRODUCT_IDS: when non-empty, only these product ids grant access. */
+  premiumProductIDs?: ReadonlySet<string>;
+}
+
+/** Comma-separated env list (QUIETO_SANDBOX_USER_IDS, QUIETO_PREMIUM_PRODUCT_IDS). */
+export function idList(value: string | null | undefined, lowercase = false): Set<string> {
+  return new Set(
+    String(value ?? "").split(",").map((entry) => entry.trim()).filter(Boolean)
+      .map((entry) => lowercase ? entry.toLowerCase() : entry),
+  );
+}
+
+export function productAllowed(productID: unknown, policy: ProductPolicy = {}): boolean {
+  const allowed = policy.premiumProductIDs;
+  if (!allowed || allowed.size === 0) return true;
+  return typeof productID === "string" && allowed.has(productID);
+}
+
+/** Apple JWS says "Production"/"Sandbox", Superwall and RevenueCat "PRODUCTION"/"SANDBOX". */
+export function isProductionEnvironment(environment: unknown): boolean {
+  return typeof environment === "string" && environment.trim().toUpperCase() === "PRODUCTION";
+}
+
+/**
+ * Sandbox / TestFlight / Xcode purchases cost nothing: they only grant access
+ * to the accounts listed in QUIETO_SANDBOX_USER_IDS (testers in production).
+ */
+export function environmentGrantsAccess(
+  environment: unknown,
+  userID: string | null,
+  sandboxUserIDs: ReadonlySet<string>,
+): boolean {
+  if (isProductionEnvironment(environment)) return true;
+  return userID !== null && sandboxUserIDs.has(userID.toLowerCase());
+}
+
+/**
+ * Why a (Svix-verified) Superwall event must be recorded without granting
+ * anything, or null when it can be applied. Sandbox events never grant from
+ * the webhook: testers get access through their own device claim
+ * (subscription-sync), which checks QUIETO_SANDBOX_USER_IDS.
+ */
+export function superwallIgnoreReason(
+  data: Record<string, unknown>,
+  options: { bundleID?: string } & ProductPolicy = {},
+): string | null {
+  if (options.bundleID && data.bundleId && data.bundleId !== options.bundleID) return "other_bundle";
+  if (typeof data.environment === "string" && data.environment && !isProductionEnvironment(data.environment)) {
+    return "sandbox_event";
+  }
+  const productID = String(data.name ?? "").toLowerCase() === "product_change"
+    ? data.newProductId ?? data.productId
+    : data.productId;
+  if (!productAllowed(productID, options)) return "product_not_allowed";
+  return null;
+}
+
+export function appleState(transaction: AppleTransaction, now = Date.now(), policy: ProductPolicy = {}): StoreState {
+  // Only auto-renewable subscriptions (optionally from the allow-list) unlock
+  // Premium. Any other product of the bundle (consumable, non-consumable,
+  // non-renewing) is recorded as inactive instead of a lifetime access.
+  const grantsAccess = transaction.type === "Auto-Renewable Subscription" &&
+    productAllowed(transaction.productId, policy);
   const expiresAt = Number(transaction.expiresDate ?? 0);
   let status: StoreState["status"];
   if (transaction.revocationDate) status = "revoked";
-  else if (lifetime) status = "promotional";
+  else if (!grantsAccess) status = "inactive";
   else if (expiresAt > now) status = transaction.offerDiscountType === "FREE_TRIAL" ? "trial" : "active";
   else status = "expired";
 
@@ -159,11 +222,23 @@ export function appleState(transaction: AppleTransaction, now = Date.now()): Sto
     store: "APP_STORE",
     environment: transaction.environment ? transaction.environment.toUpperCase() : null,
     period_type: transaction.offerDiscountType === "FREE_TRIAL" ? "TRIAL" : null,
-    expires_at: lifetime ? null : isoOrNull(transaction.expiresDate),
+    expires_at: isoOrNull(transaction.expiresDate),
     revoked_at: isoOrNull(transaction.revocationDate),
     will_renew: null,
     event_at: new Date(transaction.signedDate).toISOString(),
   };
+}
+
+/**
+ * Device claim (subscription-sync only). public.apply_store_subscription()
+ * moves a transaction owned by another account only when appAccountToken is
+ * the claimant's id, or when the JWS was signed less than 10 minutes ago and
+ * the transaction has not moved in the last 24 hours (see the migration
+ * 20261007100000_security_hardening.sql).
+ */
+export interface DeviceClaim {
+  appAccountToken: string | null;
+  signedAt: string;
 }
 
 export function applyArguments(
@@ -172,6 +247,7 @@ export function applyArguments(
   transfer: boolean,
   source: "superwall" | "app_store" | "revenuecat",
   raw: unknown,
+  claim?: DeviceClaim,
 ) {
   return {
     p_original_transaction_id: state.original_transaction_id,
@@ -188,5 +264,12 @@ export function applyArguments(
     p_will_renew: state.will_renew,
     p_event_at: state.event_at,
     p_raw: raw ?? {},
+    // Only sent with a claim, so webhooks keep the 14 named arguments.
+    ...(claim
+      ? {
+        p_app_account_token: claim.appAccountToken ? claim.appAccountToken.trim().toLowerCase() : null,
+        p_signed_at: claim.signedAt,
+      }
+      : {}),
   };
 }

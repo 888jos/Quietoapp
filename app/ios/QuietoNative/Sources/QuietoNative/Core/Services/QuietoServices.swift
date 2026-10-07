@@ -1,7 +1,10 @@
 import Foundation
 
 protocol QuietoHomeProviding {
+    /// Re-reads the programme from the account, then builds the home.
     func loadHome() async throws -> QuietoHomeSnapshot
+    /// What the iPhone knows right now, without network.
+    @MainActor func localSnapshot() -> QuietoHomeSnapshot
 }
 
 protocol QuietoPlaybackProviding {
@@ -23,6 +26,12 @@ protocol QuietoAIProviding {
 
 protocol QuietoAnalyticsProviding {
     func track(_ event: String, properties: [String: String])
+    /// Traits kept on the person (goal, subscription…), used to segment events.
+    func setUserProperties(_ properties: [String: String])
+}
+
+extension QuietoAnalyticsProviding {
+    func setUserProperties(_ properties: [String: String]) {}
 }
 
 struct QuietoServices {
@@ -42,62 +51,102 @@ struct QuietoServices {
         analytics: PreviewAnalyticsService()
     )
 
-    @MainActor
-    static func native(audioPlayer: QuietoAudioPlayer) -> QuietoServices {
-        QuietoServices(
-            home: NativeHomeService(),
-            playback: NativePlaybackService(audioPlayer: audioPlayer),
-            program: NativeProgramService(),
-            subscription: NativeSubscriptionService(),
-            ai: NativeAIService(),
-            analytics: NativeAnalyticsService()
+}
+
+/// The home of the person: their programme, their journal, their name.
+/// Built from data on the iPhone, so it is the same online and offline.
+@MainActor
+final class LocalHomeService: QuietoHomeProviding {
+    private let program: ProgramViewModel
+    private let journal: PracticeJournal
+    private let preferences: QuietoPreferences
+    private let catalog: SessionCatalog
+
+    init(program: ProgramViewModel, journal: PracticeJournal, preferences: QuietoPreferences, catalog: SessionCatalog) {
+        self.program = program
+        self.journal = journal
+        self.preferences = preferences
+        self.catalog = catalog
+    }
+
+    func loadHome() async throws -> QuietoHomeSnapshot {
+        await program.load()
+        return localSnapshot()
+    }
+
+    func localSnapshot() -> QuietoHomeSnapshot {
+        let sessionsByID = Dictionary(catalog.sessions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let listened = journal.entries.filter { $0.kind == .meditation || $0.kind == .breathing }
+        let completed = Set(listened.map(\.contentID)).union(program.completedIDs)
+        let last = listened.last.flatMap { entry in sessionsByID[entry.contentID].map { (session: $0, date: entry.date) } }
+
+        var programSnapshot: QuietoProgram?
+        var next: QuietoSession?
+        var nextStep: Int?
+        if program.hasProgram, !program.sessions.isEmpty {
+            let sessions = program.sessions
+            let nextIndex = sessions.firstIndex { !program.completedIDs.contains($0.id) }
+            next = nextIndex.map { sessions[$0] }
+            nextStep = nextIndex.map { $0 + 1 }
+            let done = Set(sessions.indices.filter { program.completedIDs.contains(sessions[$0].id) }.map { $0 + 1 })
+            programSnapshot = QuietoProgram(title: program.title, completedDays: done, totalDays: sessions.count, currentSession: next, isFinished: nextIndex == nil)
+        }
+        // Outside a programme (or once it is finished): the first session not heard yet.
+        let nextSession = next ?? catalog.sessions.first { !completed.contains($0.id) } ?? catalog.sessions.first
+        return QuietoHomeSnapshot(
+            firstName: preferences.firstName.isEmpty ? nil : preferences.firstName,
+            nextSession: nextSession,
+            program: programSnapshot,
+            progress: QuietoProgress(completedSessionIDs: completed, lastListened: last?.session, lastListenedAt: last?.date),
+            nextStep: nextStep
         )
     }
 }
 
-struct NativeHomeService: QuietoHomeProviding {
-    func loadHome() async throws -> QuietoHomeSnapshot {
-        do { return try await QuietoSupabaseService.shared.loadHome() }
-        catch {
-            var cached = QuietoHomeSnapshot.preview
-            cached.firstName = UserDefaults.standard.string(forKey: "quieto.profile.firstName")
-            cached.isOffline = true
-            cached.errorMessage = nil
-            return cached
-        }
-    }
-}
-
 struct NativeProgramService: QuietoProgramProviding {
-    func adjustRhythm() {
-        UserDefaults.standard.set(true, forKey: "quieto.program.adjustmentRequested")
-    }
+    let preferences: QuietoPreferences
+    func adjustRhythm() { preferences.programAdjustmentRequested = true }
 }
 
 @MainActor struct NativeSubscriptionService: QuietoSubscriptionProviding {
-    var isPremium: Bool { QuietoSuperwallService.shared.hasActiveEntitlement }
+    let subscriptions: SubscriptionServicing
+    var isPremium: Bool { subscriptions.hasActiveEntitlement }
 }
 
 struct NativeAIService: QuietoAIProviding { func openLouane() {} }
 
+/// Every event goes to Amplitude (dashboards) and to Supabase
+/// `analytics_events` (raw copy the product owns).
 struct NativeAnalyticsService: QuietoAnalyticsProviding {
+    let backend: QuietoSupabaseService
+    let amplitude: QuietoAmplitude
     func track(_ event: String, properties: [String: String]) {
-        Task { await QuietoSupabaseService.shared.track(event, properties: properties) }
+        amplitude.track(event, properties: properties)
+        Task { await backend.track(event, properties: properties) }
+    }
+    func setUserProperties(_ properties: [String: String]) {
+        amplitude.setUserProperties(properties)
     }
 }
 
+/// Plays a session from its downloaded copy when there is one.
 @MainActor
 final class NativePlaybackService: QuietoPlaybackProviding {
     private let audioPlayer: QuietoAudioPlayer
-    init(audioPlayer: QuietoAudioPlayer) { self.audioPlayer = audioPlayer }
+    private let downloads: QuietoDownloadManaging
+    init(audioPlayer: QuietoAudioPlayer, downloads: QuietoDownloadManaging) {
+        self.audioPlayer = audioPlayer
+        self.downloads = downloads
+    }
     func play(_ session: QuietoSession) {
-        audioPlayer.play(session, localURL: QuietoDownloadStore.shared.localURL(for: session))
+        audioPlayer.play(session, localURL: downloads.localURL(for: session))
     }
     func playAmbience(_ ambience: QuietoAmbience) { audioPlayer.playAmbience(ambience) }
 }
 
 struct PreviewHomeService: QuietoHomeProviding {
     func loadHome() async throws -> QuietoHomeSnapshot { .preview }
+    func localSnapshot() -> QuietoHomeSnapshot { .preview }
 }
 
 struct PreviewPlaybackService: QuietoPlaybackProviding {
@@ -130,95 +179,5 @@ struct PreviewAnalyticsService: QuietoAnalyticsProviding {
         #if DEBUG
         print("[Quieto Preview] \(event) \(properties)")
         #endif
-    }
-}
-
-@MainActor
-final class HomeViewModel: ObservableObject {
-    @Published private(set) var snapshot: QuietoHomeSnapshot
-    @Published var selectedTab: QuietoTab = .home
-    @Published var feeling: CheckInFeeling?
-    @Published var need: CheckInNeed?
-    @Published private(set) var isRefreshing = false
-    @Published var lastAction: String?
-
-    let services: QuietoServices
-
-    init(snapshot: QuietoHomeSnapshot = .preview, services: QuietoServices = .preview) {
-        self.snapshot = snapshot
-        self.services = services
-    }
-
-    func refresh() async {
-        guard !isRefreshing else { return }
-        isRefreshing = true
-        defer { isRefreshing = false }
-        do {
-            snapshot = try await services.home.loadHome()
-        } catch {
-            snapshot.errorMessage = "Impossible de charger ton accueil."
-        }
-    }
-
-    func play(_ session: QuietoSession, source: String) {
-        services.playback.play(session)
-        services.analytics.track("session_played", properties: ["session": session.id, "source": source])
-        lastAction = String(format: "Lecture de « %@ »".quietoLocalized, session.title.quietoLocalized)
-    }
-
-    func sessions(for need: QuietoNeed) -> [QuietoSession] {
-        let catalog = SessionCatalog().sessions
-        return need.sessionIDs.compactMap { id in catalog.first { $0.id == id } }
-    }
-
-    func ambiences(for need: QuietoNeed) -> [QuietoAmbience] {
-        need.ambienceIDs.compactMap { id in QuietoAmbience.all.first { $0.id == id } }
-    }
-
-    func sessions(for situation: QuietoSituation) -> [QuietoSession] {
-        let catalog = SessionCatalog().sessions
-        return situation.sessionIDs.compactMap { id in catalog.first { $0.id == id } }
-    }
-
-    func ambiences(for situation: QuietoSituation) -> [QuietoAmbience] {
-        let ids: [String]
-        if situation.themes.contains(.sleep) { ids = ["pink-noise", "rain", "ocean"] }
-        else if situation.themes.contains(.energy) { ids = ["forest", "river"] }
-        else if situation.themes.contains(.work) || situation.themes.contains(.focus) { ids = ["white-noise", "river"] }
-        else if situation.themes.contains(.relationships) || situation.themes.contains(.solitude) { ids = ["campfire", "ocean"] }
-        else if situation.themes.contains(.digital) { ids = ["forest", "rain"] }
-        else { ids = ["forest", "ocean"] }
-        return ids.compactMap { id in QuietoAmbience.all.first { $0.id == id } }
-    }
-
-    func play(_ ambience: QuietoAmbience, source: String) {
-        services.playback.playAmbience(ambience)
-        services.analytics.track("ambience_played", properties: ["ambience": ambience.id, "source": source])
-        lastAction = String(format: "Ambiance « %@ »".quietoLocalized, ambience.title.quietoLocalized)
-    }
-
-    func openProgram() {
-        selectedTab = .programme
-        services.analytics.track("program_opened", properties: [:])
-    }
-
-    func adjustRhythm() {
-        services.program.adjustRhythm()
-        services.analytics.track("program_rhythm_adjusted", properties: [:])
-        lastAction = "Ton rythme sera ajusté."
-    }
-
-    func openLouane() {
-        selectedTab = .louane
-        services.ai.openLouane()
-        services.analytics.track("louane_opened", properties: ["source": "home"])
-    }
-
-    var recommendation: QuietoSession? {
-        guard feeling != nil || need != nil else { return nil }
-        if need == .sleep || feeling == .tired {
-            return QuietoHomeSnapshot.preview.progress.lastListened
-        }
-        return QuietoHomeSnapshot.preview.nextSession
     }
 }

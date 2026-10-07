@@ -18,6 +18,10 @@ protocol AuthServicing: AnyObject {
     func signOutToAnonymous() async throws
     func resetAfterAccountDeletion() async
     func updateProfile(firstName: String) async throws
+    /// Asks Apple again for a one-time authorization code, which the server
+    /// needs to revoke Sign in with Apple when the account is deleted.
+    /// Nil when the account is not linked to Apple.
+    func appleAuthorizationCodeForDeletion() async throws -> String?
 }
 
 @MainActor
@@ -27,13 +31,13 @@ protocol AccountDataServicing: AnyObject {
     func savePreferences(_ preferences: QuietoRemotePreferences) async throws
     func saveOnboarding(answers: OnboardingAnswers) async throws
     func invokeAccountData(method: String) async throws -> Data
+    func deleteAccount(appleAuthorizationCode: String?) async throws
 }
 
 // MARK: Content
 
 @MainActor
 protocol ProgramRepository: AnyObject {
-    func loadHome(catalog: SessionCatalog) async throws -> QuietoHomeSnapshot
     func loadActiveProgram(catalog: SessionCatalog) async throws -> QuietoRemoteProgram?
     func createProgram(title: String, sessionIDs: [String], rhythm: String) async throws -> UUID
     func updateProgramRhythm(programID: UUID, rhythm: String) async throws
@@ -43,6 +47,14 @@ protocol ProgramRepository: AnyObject {
 protocol SessionProgressSyncing: AnyObject {
     func setFavorite(sessionID: String, favorite: Bool) async throws
     func recordCompletion(sessionID: String, listenedSeconds: Int) async throws
+}
+
+/// The practice journal of the account, so badges and the streak survive a
+/// reinstall or a change of iPhone. Uploads are idempotent (entry ids).
+@MainActor
+protocol PracticeSyncing: AnyObject {
+    func uploadPractice(_ entries: [PracticeEntry]) async throws
+    func fetchPractice() async throws -> [PracticeEntry]
 }
 
 @MainActor
@@ -78,6 +90,8 @@ protocol SubscriptionServicing: AnyObject {
     func syncWithServer()
     func syncNow() async
     func showManageSubscriptions() async throws
+    /// The subscription as Apple sees it on this device (plan, price, dates).
+    func subscriptionDetails() async -> QuietoSubscriptionDetails
 }
 
 extension SubscriptionServicing {
@@ -91,18 +105,68 @@ protocol SubscriptionServerSyncing: AnyObject {
     func syncSubscriptions(signedTransactions: [String]) async throws -> Bool
 }
 
+// MARK: Enterprise
+
+/// Free access offered by an employer (Quieto Entreprise), activated with the company code.
+@MainActor
+protocol EnterpriseAccessServicing: AnyObject {
+    var isConfigured: Bool { get }
+    /// Name of the company behind the code, without taking a seat.
+    func preview(code: String) async throws -> String
+    /// Takes a seat; the server then grants Premium until the end of the paid period.
+    func activate(code: String) async throws -> String
+}
+
+enum EnterpriseAccessError: LocalizedError, Equatable {
+    /// Refused by the server, with the sentence to show (unknown code, company full…).
+    case refused(String)
+    /// An anonymous account would lose the access with the phone.
+    case needsAppleAccount(String)
+    case unavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .refused(let message), .needsAppleAccount(let message): message
+        case .unavailable: "Impossible de vérifier le code pour le moment. Réessaie dans un instant.".quietoLocalized
+        }
+    }
+}
+
 // MARK: Device
 
 @MainActor
 protocol HealthServicing: AnyObject {
     var isAvailable: Bool { get }
+    /// Quieto may write mindful minutes (the only status Apple discloses).
+    var isConnected: Bool { get }
+    /// The permission sheet was already shown once.
+    func wasAsked() async -> Bool
     func requestAuthorization() async -> Bool
     func recordMindfulSession(seconds: Int, endingAt end: Date)
+    func summary(now: Date, calendar: Calendar) async -> QuietoHealthSummary
+}
+
+/// What the profile shows from Apple Health. Stays on the device.
+struct QuietoHealthSummary: Equatable {
+    var mindfulMinutesThisWeek = 0
+    var quietoMinutesThisWeek = 0
+    /// Nil when Health has no sleep for last night (or reading was refused).
+    var lastNightSleepMinutes: Int?
 }
 
 protocol ReminderScheduling {
     func requestAuthorization() async -> Bool
+    /// The system notification permission, without asking for it.
+    func authorizationStatus() async -> QuietoNotificationStatus
     func schedule(hour: Int, minute: Int, weekdays: [Int], firstName: String)
     func scheduleTrialEndingReminder(trialDays: Int) async
+    /// Replaces the text of the pending trial reminder, keeping its date.
+    func refreshTrialEndingReminder(body: String) async
     func removeAll()
+}
+
+enum QuietoNotificationStatus: Equatable {
+    case notDetermined
+    case allowed
+    case denied
 }

@@ -1,9 +1,10 @@
 import AVFoundation
+import CryptoKit
 import Foundation
 
 enum QuietoSpeechRenderError: LocalizedError {
     case unavailable
-    var errorDescription: String? { "La voix Apple n’est pas disponible pour le moment." }
+    var errorDescription: String? { "La voix Apple n’est pas disponible pour le moment.".quietoLocalized }
 }
 
 /// Renders Apple's on-device speech synthesis to a seekable local CAF file.
@@ -41,7 +42,9 @@ final class QuietoSpeechRenderer {
         let folder = try FileManager.default.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
             .appendingPathComponent("QuietoNarrations-\(Self.cacheVersion)-\(QuietoLocalization.languageCode)", isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = folder.appendingPathComponent("\(session.id).caf")
+        // Keyed on the text too: a rewritten script must never replay the old cached render.
+        let textHash = SHA256.hash(data: Data(session.localizedTranscript.utf8)).prefix(6).map { String(format: "%02x", $0) }.joined()
+        let url = folder.appendingPathComponent("\(session.id)-\(textHash).caf")
         if FileManager.default.fileExists(atPath: url.path), Self.isAudibleAudioFile(at: url) { return url }
         try? FileManager.default.removeItem(at: url)
 

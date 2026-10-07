@@ -3,13 +3,12 @@ import UIKit
 
 struct OnboardingView: View {
     @ObservedObject var model: OnboardingViewModel
-    @ObservedObject private var subscriptions = QuietoSuperwallService.shared
     @Environment(\.openURL) private var openURL
     @FocusState private var focused: Bool
 
     var body: some View {
         ZStack {
-            QuietoColor.background.ignoresSafeArea()
+            QuietoBackground()
             VStack(spacing: 0) {
                 if showsHeader { header }
                 content
@@ -44,10 +43,10 @@ struct OnboardingView: View {
     private func page<Body: View, Footer: View>(@ViewBuilder body: () -> Body, @ViewBuilder footer: () -> Footer) -> some View {
         VStack(spacing: 0) {
             ScrollView {
-                body().padding(.horizontal, 22).padding(.top, 28).padding(.bottom, 24)
+                body().padding(.horizontal, QuietoSpacing.lg).padding(.top, 28).padding(.bottom, 24)
             }
             .scrollBounceBehavior(.basedOnSize)
-            VStack(spacing: 6) { footer() }.padding(.horizontal, 22).padding(.bottom, 12)
+            VStack(spacing: 6) { footer() }.padding(.horizontal, QuietoSpacing.lg).padding(.bottom, 12)
         }
     }
 
@@ -123,8 +122,8 @@ struct OnboardingView: View {
             Circle().fill(QuietoColor.mint.opacity(0.25)).frame(width: 120, height: 120)
                 .overlay(Circle().stroke(QuietoColor.mint.opacity(0.6), lineWidth: 1))
                 .phaseAnimator([0.85, 1.05]) { view, scale in view.scaleEffect(scale) } animation: { _ in .easeInOut(duration: 2) }
-            Text("quieto").font(QuietoFont.serif(44, weight: .semibold))
-            Text("Respire. On s’occupe du reste.").font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary)
+            Text("quieto").font(QuietoFont.heading(.hero, weight: .semibold))
+            Text("Respire. On s’occupe du reste.").font(QuietoFont.sans(.body)).foregroundStyle(QuietoColor.textSecondary)
             Spacer()
         }
         .task {
@@ -146,8 +145,8 @@ struct OnboardingView: View {
                     HStack(alignment: .top, spacing: 14) {
                         Image(systemName: item.0).font(.system(size: 20)).foregroundStyle(QuietoColor.mint).frame(width: 30)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(item.1.quietoLocalized).font(QuietoFont.sans(17, weight: .semibold))
-                            Text(item.2.quietoLocalized).font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
+                            Text(item.1.quietoLocalized).font(QuietoFont.sans(.body, weight: .semibold))
+                            Text(item.2.quietoLocalized).font(QuietoFont.sans(.callout)).foregroundStyle(QuietoColor.textSecondary)
                         }
                     }
                 }
@@ -160,9 +159,9 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 28) {
                 OnboardingTitle(title: "Comment veux-tu qu’on t’appelle ?", subtitle: "Ton prénom, ou un surnom. C’est facultatif.")
                 TextField("", text: $model.answers.firstName, prompt: Text("Ton prénom").foregroundStyle(QuietoColor.textSecondary))
-                    .font(QuietoFont.serif(28, weight: .semibold)).textContentType(.givenName).submitLabel(.continue)
+                    .font(QuietoFont.heading(.title, weight: .semibold)).textContentType(.givenName).submitLabel(.continue)
                     .focused($focused).onSubmit(model.next)
-                    .padding(16).background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 16))
+                    .padding(16).quietoSurface(cornerRadius: QuietoRadius.card)
             }
         } footer: {
             OnboardingPrimaryButton(title: model.answers.firstName.trimmingCharacters(in: .whitespaces).isEmpty ? "Passer" : "Continuer") {
@@ -191,7 +190,7 @@ struct OnboardingView: View {
                     }
                     if step == .safety {
                         Text("Ta réponse reste sur ton iPhone. Elle sert seulement à t’orienter vers la bonne aide si besoin.")
-                            .font(QuietoFont.sans(13)).foregroundStyle(QuietoColor.textSecondary)
+                            .font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
                     }
                 }
             } footer: {
@@ -207,15 +206,14 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 22) {
                 Image(systemName: "heart.text.square").font(.system(size: 44, weight: .light)).foregroundStyle(QuietoColor.mint)
                 OnboardingTitle(title: "Merci de l’avoir dit. Tu n’as pas à porter ça seul·e.", subtitle: "Des personnes formées peuvent t’écouter maintenant, gratuitement, 24h/24.")
-                Button { openURL(OnboardingLinks.crisisLine) } label: {
-                    HStack { Image(systemName: "phone.fill"); Text("Appeler le 3114").font(QuietoFont.sans(18, weight: .semibold)) }
-                        .foregroundStyle(QuietoColor.background).frame(maxWidth: .infinity).frame(minHeight: 56)
-                        .background(QuietoColor.mint, in: Capsule())
+                QuietoPrimaryButton(title: QuietoLocalization.format("Appeler le %@", CrisisLine.current.primaryNumber), systemImage: "phone.fill") {
+                    openURL(CrisisLine.current.primaryURL)
                 }
-                .buttonStyle(.plain)
-                Text("3114 : numéro national de prévention du suicide. En cas de danger immédiat, appelle le 112.")
-                    .font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
-                Button("Appeler le 112") { openURL(OnboardingLinks.emergency) }.font(QuietoFont.sans(15, weight: .semibold)).foregroundStyle(QuietoColor.mint)
+                Text(CrisisLine.current.explanation)
+                    .font(QuietoFont.sans(.callout)).foregroundStyle(QuietoColor.textSecondary)
+                if CrisisLine.current.hotline != nil {
+                    Button(QuietoLocalization.format("Appeler le %@", CrisisLine.current.emergency)) { openURL(CrisisLine.current.emergencyURL) }.font(QuietoFont.sans(.callout, weight: .semibold)).foregroundStyle(QuietoColor.mint)
+                }
             }
         } footer: {
             OnboardingSecondaryButton(title: "Continuer vers Quieto", action: model.continueAfterCrisis)
@@ -234,7 +232,7 @@ struct OnboardingView: View {
     private var breathResult: some View {
         let drop = model.stressDrop
         return info(
-            drop > 0 ? String(format: "−%d point%@ en une minute.".quietoLocalized, drop, drop > 1 ? "s" : "") : "Une minute, et c’est un début.",
+            drop == 1 ? "−1 point en une minute." : drop > 1 ? QuietoLocalization.format("−%d points en une minute.", drop) : "Une minute, et c’est un début.",
             drop > 0 ? "C’est ce que fait une respiration lente : elle envoie au corps le signal qu’il peut relâcher. Imagine quelques minutes par jour." : "Le calme vient avec la pratique. Quelques minutes par jour suffisent à sentir la différence.",
             symbol: "chart.line.downtrend.xyaxis"
         )
@@ -243,7 +241,7 @@ struct OnboardingView: View {
     private var louaneIntro: some View {
         page {
             VStack(alignment: .leading, spacing: 20) {
-                HStack(spacing: 10) { LouaneMark(size: 34); Text("Louane").font(QuietoFont.sans(20, weight: .semibold)) }
+                HStack(spacing: 10) { LouaneMark(size: 34); Text("Louane").font(QuietoFont.sans(.body, weight: .semibold)) }
                 OnboardingBubbles(bubbles: OnboardingLouaneScript.intro(model.answers))
             }
         } footer: { OnboardingPrimaryButton(title: "Lui répondre", action: model.next) }
@@ -255,8 +253,8 @@ struct OnboardingView: View {
                 OnboardingBubbles(bubbles: ["Qu’est-ce qui te pèse le plus en ce moment ?"])
                 TextField("", text: $model.louaneDraft, prompt: Text("Écris librement…").foregroundStyle(QuietoColor.textSecondary), axis: .vertical)
                     .lineLimit(3...6).focused($focused)
-                    .font(QuietoFont.sans(16)).padding(14).background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 16))
-                Text("Une IA, pas un professionnel de santé.").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+                    .font(QuietoFont.sans(.body)).padding(14).quietoSurface(cornerRadius: QuietoRadius.card)
+                Text("Une IA, pas un professionnel de santé.").font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
             }
         } footer: {
             OnboardingPrimaryButton(title: model.louaneDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Passer" : "Envoyer") {
@@ -269,7 +267,7 @@ struct OnboardingView: View {
     private var louaneReply: some View {
         page {
             VStack(alignment: .leading, spacing: 20) {
-                HStack(spacing: 10) { LouaneMark(size: 34); Text("Louane").font(QuietoFont.sans(20, weight: .semibold)) }
+                HStack(spacing: 10) { LouaneMark(size: 34); Text("Louane").font(QuietoFont.sans(.body, weight: .semibold)) }
                 OnboardingBubbles(bubbles: model.louaneReply.isEmpty ? OnboardingLouaneScript.reply(to: "", answers: model.answers, firstSession: nil) : model.louaneReply)
             }
         } footer: { OnboardingPrimaryButton(title: "Continuer", action: model.next) }
@@ -278,7 +276,7 @@ struct OnboardingView: View {
     private var health: some View {
         page {
             VStack(alignment: .leading, spacing: 24) {
-                Image(systemName: "heart.fill").font(.system(size: 44)).foregroundStyle(.pink)
+                Image(systemName: "heart.fill").font(.system(size: 44)).foregroundStyle(QuietoColor.coral)
                 OnboardingTitle(title: "Relier Apple Santé ?", subtitle: "Quieto enregistre tes séances en minutes de pleine conscience, et peut tenir compte de ton sommeil. Ces données restent sur ton iPhone.")
             }
             .padding(.top, 40)
@@ -310,11 +308,11 @@ struct OnboardingView: View {
     }
 
     private var commitment: some View {
-        let minutes = OnboardingContent.label(.minutes, model.answers.single(.minutes)) ?? "5 minutes"
+        let minutes = Int(model.answers.single(.minutes) ?? "5") ?? 5
         return page {
             VStack(alignment: .leading, spacing: 24) {
                 Image(systemName: "hand.raised").font(.system(size: 44, weight: .light)).foregroundStyle(QuietoColor.mint)
-                OnboardingTitle(title: "Un engagement envers toi.", subtitle: String(format: "Pendant 7 jours, je prends %@ pour moi. Rien de plus, rien de moins.".quietoLocalized, minutes.lowercased()))
+                OnboardingTitle(title: "Un engagement envers toi.", subtitle: QuietoLocalization.format("Pendant 7 jours, je prends %d minutes pour moi. Rien de plus, rien de moins.", minutes))
             }
             .padding(.top, 40)
         } footer: {
@@ -334,7 +332,7 @@ struct OnboardingView: View {
             .padding(.top, 40)
         } footer: {
             Button(action: model.signInWithApple) {
-                HStack { Image(systemName: "apple.logo"); Text(model.isWorking ? "Connexion…" : "Continuer avec Apple").font(QuietoFont.sans(17, weight: .semibold)) }
+                HStack { Image(systemName: "apple.logo"); Text((model.isWorking ? "Connexion…" : "Continuer avec Apple").quietoLocalized).font(QuietoFont.sans(.body, weight: .semibold)) }
                     .foregroundStyle(.black).frame(maxWidth: .infinity).frame(minHeight: 54).background(.white, in: Capsule())
             }
             .buttonStyle(.plain).disabled(model.isWorking)
@@ -346,7 +344,7 @@ struct OnboardingView: View {
         VStack(spacing: 28) {
             Spacer()
             ProgressView().controlSize(.large).tint(QuietoColor.mint)
-            Text("Je prépare ton programme…").font(QuietoFont.serif(28, weight: .semibold))
+            Text("Je prépare ton programme…").font(QuietoFont.heading(.title, weight: .semibold))
             OnboardingBuildingChecklist()
             Spacer()
         }
@@ -364,14 +362,14 @@ struct OnboardingView: View {
         ]
         return page {
             VStack(alignment: .leading, spacing: 22) {
-                OnboardingTitle(title: answers.firstName.isEmpty ? "Ton profil" : String(format: "Ton profil, %@".quietoLocalized, answers.firstName))
+                OnboardingTitle(title: answers.firstName.isEmpty ? "Ton profil" : QuietoLocalization.format("Ton profil, %@", answers.firstName))
                 ForEach(rows, id: \.0) { row in
                     HStack(spacing: 14) {
                         Image(systemName: row.0).foregroundStyle(QuietoColor.mint).frame(width: 28)
-                        Text(row.1.quietoLocalized).font(QuietoFont.sans(16, weight: .medium))
+                        Text(row.1.quietoLocalized).font(QuietoFont.sans(.body, weight: .medium))
                         Spacer()
                     }
-                    .padding(16).background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 14))
+                    .padding(16).quietoSurface(cornerRadius: QuietoRadius.card)
                 }
             }
         } footer: { OnboardingPrimaryButton(title: "Voir mon programme", action: model.next) }
@@ -393,8 +391,8 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 22) {
                 OnboardingTitle(title: "Là où tu peux aller", subtitle: "Avec une pratique régulière, le stress a tendance à baisser au fil des semaines.")
                 OnboardingProjectionChart(start: model.answers.stressBefore)
-                    .padding(16).background(QuietoColor.surface, in: RoundedRectangle(cornerRadius: 16))
-                Text("Courbe illustrative, pas une promesse. Chaque parcours est différent.").font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+                    .padding(16).quietoSurface(cornerRadius: QuietoRadius.card)
+                Text("Courbe illustrative, pas une promesse. Chaque parcours est différent.").font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
             }
         } footer: { OnboardingPrimaryButton(title: "Continuer", action: model.next) }
     }
@@ -406,7 +404,7 @@ struct OnboardingView: View {
                 ForEach(["Toutes les séances guidées et respirations", "Louane, jour et nuit", "Ton programme personnalisé", "Les séances hors ligne", "De nouvelles séances régulièrement"], id: \.self) { item in
                     HStack(spacing: 12) {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(QuietoColor.mint)
-                        Text(item.quietoLocalized).font(QuietoFont.sans(16))
+                        Text(item.quietoLocalized).font(QuietoFont.sans(.body))
                     }
                 }
             }
@@ -417,23 +415,23 @@ struct OnboardingView: View {
         let reminderDay = max(1, OnboardingLinks.trialDays - 2)
         let items: [(String, String, String)] = [
             ("lock.open.fill", "Aujourd’hui", "Accès complet à Quieto. Ta première séance t’attend."),
-            ("bell.fill", String(format: "Jour %d".quietoLocalized, reminderDay), "On te prévient que ton essai se termine bientôt."),
-            ("star.fill", String(format: "Jour %d".quietoLocalized, OnboardingLinks.trialDays), "Ton abonnement démarre. Résiliable à tout moment, en deux taps, avant cette date.")
+            ("bell.fill", QuietoLocalization.format("Jour %d", reminderDay), "On te prévient que ton essai se termine bientôt."),
+            ("star.fill", QuietoLocalization.format("Jour %d", OnboardingLinks.trialDays), "Ton abonnement démarre. Résiliable à tout moment, en deux taps, avant cette date.")
         ]
         return page {
             VStack(alignment: .leading, spacing: 26) {
-                OnboardingTitle(title: String(format: "%d jours pour essayer, sans engagement".quietoLocalized, OnboardingLinks.trialDays))
+                OnboardingTitle(title: QuietoLocalization.format("%d jours pour essayer, sans engagement", OnboardingLinks.trialDays))
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                         HStack(alignment: .top, spacing: 16) {
                             VStack(spacing: 0) {
                                 Image(systemName: item.0).font(.system(size: 15)).foregroundStyle(QuietoColor.background)
-                                    .frame(width: 34, height: 34).background(QuietoColor.mint, in: Circle())
+                                    .frame(width: QuietoMetrics.playSmall, height: QuietoMetrics.playSmall).background(QuietoColor.mintFill, in: Circle())
                                 if index < items.count - 1 { Rectangle().fill(QuietoColor.mint.opacity(0.4)).frame(width: 3, height: 46) }
                             }
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(item.1.quietoLocalized).font(QuietoFont.sans(17, weight: .semibold))
-                                Text(item.2.quietoLocalized).font(QuietoFont.sans(14)).foregroundStyle(QuietoColor.textSecondary)
+                                Text(item.1.quietoLocalized).font(QuietoFont.sans(.body, weight: .semibold))
+                                Text(item.2.quietoLocalized).font(QuietoFont.sans(.callout)).foregroundStyle(QuietoColor.textSecondary)
                             }
                         }
                     }
@@ -446,20 +444,20 @@ struct OnboardingView: View {
         page {
             VStack(alignment: .leading, spacing: 22) {
                 OnboardingTitle(
-                    title: relaunch ? "Ton programme t’attend." : (model.answers.firstName.isEmpty ? "Ton programme est prêt." : String(format: "%@, ton programme est prêt.".quietoLocalized, model.answers.firstName)),
+                    title: relaunch ? "Ton programme t’attend." : (model.answers.firstName.isEmpty ? "Ton programme est prêt." : QuietoLocalization.format("%@, ton programme est prêt.", model.answers.firstName)),
                     subtitle: relaunch
-                        ? String(format: "%@ : 7 séances choisies pour toi, Louane et toutes les respirations. Essaie gratuitement, tu peux arrêter quand tu veux.".quietoLocalized, model.plan?.title ?? "Ton programme")
-                        : String(format: "Commence ton essai gratuit de %d jours pour tout débloquer.".quietoLocalized, OnboardingLinks.trialDays)
+                        ? QuietoLocalization.format("%@ : 7 séances choisies pour toi, Louane et toutes les respirations. Essaie gratuitement, tu peux arrêter quand tu veux.", (model.plan?.title ?? "Ton programme").quietoLocalized)
+                        : QuietoLocalization.format("Commence ton essai gratuit de %d jours pour tout débloquer.", OnboardingLinks.trialDays)
                 )
                 if let first = model.plan?.sessions.first { OnboardingSessionRow(day: 1, session: first) }
-                if let note = subscriptions.lastMessage, !subscriptions.isConfigured {
-                    Text(note.quietoLocalized).font(QuietoFont.sans(12)).foregroundStyle(QuietoColor.textSecondary)
+                if let note = model.paywallNote {
+                    Text(note.quietoLocalized).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
                 }
             }
         } footer: {
             OnboardingPrimaryButton(title: "Commencer mon essai gratuit", action: model.presentPaywall)
             OnboardingSecondaryButton(title: "Restaurer mes achats", action: model.restore)
-            Text("Besoin d’aide tout de suite ? Le 3114 répond 24h/24, gratuitement.").font(QuietoFont.sans(11)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center)
+            Text(CrisisLine.current.helpLine).font(QuietoFont.sans(.overline)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center)
             OnboardingLegalLinks()
         }
         .onAppear { if !relaunch { model.presentPaywall() } }
@@ -469,14 +467,14 @@ struct OnboardingView: View {
         VStack(spacing: 22) {
             Spacer()
             Image(systemName: "sparkles").font(.system(size: 46, weight: .light)).foregroundStyle(QuietoColor.mint)
-            Text(model.answers.firstName.isEmpty ? "Bienvenue dans Quieto." : String(format: "Bienvenue, %@.".quietoLocalized, model.answers.firstName))
-                .font(QuietoFont.serif(34, weight: .semibold)).multilineTextAlignment(.center)
-            Text("Ta première séance t’attend. Installe-toi, on commence doucement.").font(QuietoFont.sans(16)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center)
+            Text(model.answers.firstName.isEmpty ? "Bienvenue dans Quieto.".quietoLocalized : QuietoLocalization.format("Bienvenue, %@.", model.answers.firstName))
+                .font(QuietoFont.heading(.display, weight: .semibold)).multilineTextAlignment(.center)
+            Text("Ta première séance t’attend. Installe-toi, on commence doucement.").font(QuietoFont.sans(.body)).foregroundStyle(QuietoColor.textSecondary).multilineTextAlignment(.center)
             Spacer()
             OnboardingPrimaryButton(title: "Commencer ma première séance") { model.finish(playFirstSession: true) }
             OnboardingSecondaryButton(title: "Découvrir l’app") { model.finish(playFirstSession: false) }
         }
-        .padding(.horizontal, 22).padding(.bottom, 12)
+        .padding(.horizontal, QuietoSpacing.lg).padding(.bottom, 12)
         .task { await model.scheduleTrialEndingReminder() }
     }
 }
@@ -490,7 +488,7 @@ private struct OnboardingBuildingChecklist: View {
             ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                 HStack(spacing: 12) {
                     Image(systemName: index < done ? "checkmark.circle.fill" : "circle").foregroundStyle(index < done ? QuietoColor.mint : QuietoColor.textSecondary)
-                    Text(item.quietoLocalized).font(QuietoFont.sans(16)).foregroundStyle(index < done ? QuietoColor.textPrimary : QuietoColor.textSecondary)
+                    Text(item.quietoLocalized).font(QuietoFont.sans(.body)).foregroundStyle(index < done ? QuietoColor.textPrimary : QuietoColor.textSecondary)
                 }
             }
         }

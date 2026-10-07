@@ -54,8 +54,8 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
         session.getAllTasks { tasks in
             DispatchQueue.main.async {
                 for task in tasks where task.state == .running {
-                    guard let id = task.taskDescription else { continue }
-                    self.progress[id] = task.progress.fractionCompleted
+                    guard let description = task.taskDescription else { continue }
+                    self.progress[Self.sessionID(from: description)] = task.progress.fractionCompleted
                 }
             }
         }
@@ -73,13 +73,27 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
     func isDownloaded(_ session: QuietoSession) -> Bool { downloadedIDs.contains(session.id) && localURL(for: session) != nil }
 
     func localURL(for session: QuietoSession) -> URL? {
-        let url = fileURL(for: session.id)
+        let url = directory.appendingPathComponent(Self.fileName(for: session))
         return fileManager.fileExists(atPath: url.path) ? url : nil
     }
 
-    private func fileURL(for sessionID: String) -> URL {
-        directory.appendingPathComponent("\(sessionID).mp3")
+    /// `<id>.<extension of the published file>`: legacy tracks are MP3, generated
+    /// narrations M4A. Also used as the download task description.
+    private static func fileName(for session: QuietoSession) -> String {
+        let ext = (session.audioFile as NSString).pathExtension
+        return "\(session.id).\(ext.isEmpty ? "mp3" : ext.lowercased())"
     }
+
+    /// Task descriptions written before narrations existed hold the bare session ID.
+    private static func fileName(fromDescription description: String) -> String {
+        (description as NSString).pathExtension.isEmpty ? "\(description).mp3" : description
+    }
+
+    private static func sessionID(from description: String) -> String {
+        (fileName(fromDescription: description) as NSString).deletingPathExtension
+    }
+
+    private static let audioExtensions: Set<String> = ["mp3", "m4a"]
 
     @discardableResult
     func start(_ session: QuietoSession) -> Bool {
@@ -93,11 +107,11 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
                 guard let self else { return }
                 guard let url else {
                     self.progress[session.id] = nil
-                    self.lastError = "Téléchargement impossible pour le moment."
+                    self.lastError = "Téléchargement impossible pour le moment.".quietoLocalized
                     return
                 }
                 let task = self.session.downloadTask(with: url)
-                task.taskDescription = session.id
+                task.taskDescription = Self.fileName(for: session)
                 task.resume()
             }
         }
@@ -106,13 +120,15 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
 
     func cancel(_ session: QuietoSession) {
         self.session.getAllTasks { tasks in
-            tasks.filter { $0.taskDescription == session.id }.forEach { $0.cancel() }
+            tasks.filter { $0.taskDescription.map(Self.sessionID(from:)) == session.id }.forEach { $0.cancel() }
         }
         progress[session.id] = nil
     }
 
     func delete(_ session: QuietoSession) {
-        try? fileManager.removeItem(at: fileURL(for: session.id))
+        for ext in Self.audioExtensions {
+            try? fileManager.removeItem(at: directory.appendingPathComponent("\(session.id).\(ext)"))
+        }
         refreshIndex()
     }
 
@@ -127,7 +143,7 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
 
     private func refreshIndex() {
         let files = (try? fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.fileSizeKey])) ?? []
-        downloadedIDs = Set(files.filter { $0.pathExtension == "mp3" }.map { $0.deletingPathExtension().lastPathComponent })
+        downloadedIDs = Set(files.filter { Self.audioExtensions.contains($0.pathExtension) }.map { $0.deletingPathExtension().lastPathComponent })
         occupiedBytes = files.reduce(0) { total, file in
             guard let size = try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize else { return total }
             return total + Int64(size)
@@ -137,20 +153,21 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
     // MARK: URLSessionDownloadDelegate (main queue)
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didWriteData bytesWritten: Int64, totalBytesWritten: Int64, totalBytesExpectedToWrite: Int64) {
-        guard let id = downloadTask.taskDescription, totalBytesExpectedToWrite > 0 else { return }
-        progress[id] = min(0.99, Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
+        guard let description = downloadTask.taskDescription, totalBytesExpectedToWrite > 0 else { return }
+        progress[Self.sessionID(from: description)] = min(0.99, Double(totalBytesWritten) / Double(totalBytesExpectedToWrite))
     }
 
     func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
-        guard let id = downloadTask.taskDescription else { return }
+        guard let description = downloadTask.taskDescription else { return }
+        let id = Self.sessionID(from: description)
         // A 403/404 body is JSON, not audio: never store it as a session.
         let status = (downloadTask.response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else {
             progress[id] = nil
-            lastError = status == 400 || status == 403 ? "Ton abonnement doit être actif pour télécharger." : "Téléchargement impossible pour le moment."
+            lastError = status == 400 || status == 403 ? "Ton abonnement doit être actif pour télécharger.".quietoLocalized : "Téléchargement impossible pour le moment.".quietoLocalized
             return
         }
-        let destination = fileURL(for: id)
+        let destination = directory.appendingPathComponent(Self.fileName(fromDescription: description))
         do {
             if fileManager.fileExists(atPath: destination.path) {
                 _ = try fileManager.replaceItemAt(destination, withItemAt: location)
@@ -160,15 +177,15 @@ final class QuietoDownloadStore: NSObject, ObservableObject, QuietoDownloadManag
             progress[id] = nil
         } catch {
             progress[id] = nil
-            lastError = "Le fichier n’a pas pu être enregistré."
+            lastError = "Le fichier n’a pas pu être enregistré.".quietoLocalized
         }
         refreshIndex()
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        guard let id = task.taskDescription, let error else { return }
-        progress[id] = nil
-        if (error as? URLError)?.code != .cancelled { lastError = "Téléchargement interrompu." }
+        guard let description = task.taskDescription, let error else { return }
+        progress[Self.sessionID(from: description)] = nil
+        if (error as? URLError)?.code != .cancelled { lastError = "Téléchargement interrompu.".quietoLocalized }
     }
 
     func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {

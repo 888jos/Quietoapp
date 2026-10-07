@@ -34,19 +34,55 @@ final class QuietoSuperwallService: ObservableObject {
     private var superwallActive: Bool?
     private var deviceActive: Bool?
     private var serverPremium = false
+    private var updatesTask: Task<Void, Never>?
+    private let defaults: UserDefaults
     private var identifiedUserID: String?
     private var cancellables = Set<AnyCancellable>()
     private var syncTask: Task<Void, Never>?
     private var bypass = false
     private let server: SubscriptionServerSyncing?
 
-    init(server: SubscriptionServerSyncing?) {
+    /// Paywall and purchase events from Superwall, renamed for Quieto's analytics.
+    var onAnalyticsEvent: ((String, [String: String]) -> Void)?
+
+    init(server: SubscriptionServerSyncing?, defaults: UserDefaults = .standard) {
         self.server = server
+        self.defaults = defaults
+    }
+
+    // MARK: Server access cache
+
+    /// An access granted by the server only (company plan, Android purchase)
+    /// is remembered for a few days, so a cold start without network does not
+    /// lock a paying person out. Audio and Louane stay checked by the server.
+    private static let serverPremiumKey = "quieto.subscription.serverPremium"
+    private static let serverPremiumGrace: TimeInterval = 3 * 86_400
+
+    private func cachedServerPremium(for userID: String) -> Bool {
+        guard let cached = defaults.dictionary(forKey: Self.serverPremiumKey),
+              cached["user"] as? String == userID,
+              let until = cached["until"] as? Double else { return false }
+        return Date(timeIntervalSince1970: until) > .now
+    }
+
+    private func rememberServerPremium(_ value: Bool) {
+        guard value, let identifiedUserID else {
+            defaults.removeObject(forKey: Self.serverPremiumKey)
+            return
+        }
+        defaults.set(["user": identifiedUserID, "until": Date.now.addingTimeInterval(Self.serverPremiumGrace).timeIntervalSince1970], forKey: Self.serverPremiumKey)
     }
 
     func configure() {
         #if DEBUG
-        if ProcessInfo.processInfo.environment["QUIETO_SKIP_PAYWALL"] == "1" {
+        // Unit tests run inside the app: never reach Superwall or StoreKit from them.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            access = .locked
+            return
+        }
+        // Development builds open straight into the app. QUIETO_REAL_PAYWALL=1 in
+        // the scheme tests the real paywall; Release builds always use it.
+        if ProcessInfo.processInfo.environment["QUIETO_REAL_PAYWALL"] != "1" {
             bypass = true
             access = .subscribed
             return
@@ -55,13 +91,15 @@ final class QuietoSuperwallService: ObservableObject {
         guard let key = Bundle.main.object(forInfoDictionaryKey: "SUPERWALL_API_KEY") as? String,
               !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               !key.hasPrefix("REPLACE_") else {
-            lastMessage = "Ajoute la clé publique Superwall dans la configuration de la cible."
+            lastMessage = "Ajoute la clé publique Superwall dans la configuration de la cible.".quietoLocalized
             superwallActive = false
+            listenForTransactionUpdates()
             syncWithServer()
             return
         }
         #if canImport(SuperwallKit)
         Superwall.configure(apiKey: key)
+        Superwall.shared.delegate = self
         isConfigured = true
         Superwall.shared.$subscriptionStatus
             .receive(on: DispatchQueue.main)
@@ -71,6 +109,7 @@ final class QuietoSuperwallService: ObservableObject {
         #else
         superwallActive = false
         #endif
+        listenForTransactionUpdates()
         syncWithServer()
     }
 
@@ -80,7 +119,7 @@ final class QuietoSuperwallService: ObservableObject {
     func identify(userID: String) {
         guard identifiedUserID != userID else { return }
         identifiedUserID = userID
-        serverPremium = false
+        serverPremium = cachedServerPremium(for: userID)
         #if canImport(SuperwallKit)
         if isConfigured { Superwall.shared.identify(userId: userID) }
         #endif
@@ -91,6 +130,7 @@ final class QuietoSuperwallService: ObservableObject {
     func reset() {
         identifiedUserID = nil
         serverPremium = false
+        rememberServerPremium(false)
         #if canImport(SuperwallKit)
         if isConfigured { Superwall.shared.reset() }
         #endif
@@ -99,7 +139,7 @@ final class QuietoSuperwallService: ObservableObject {
 
     func presentPaywall() {
         guard isConfigured else {
-            lastMessage = lastMessage ?? "Superwall n’est pas configuré pour cette cible."
+            lastMessage = lastMessage ?? "Superwall n’est pas configuré pour cette cible.".quietoLocalized
             return
         }
         #if canImport(SuperwallKit)
@@ -113,7 +153,7 @@ final class QuietoSuperwallService: ObservableObject {
     /// runs when the person closes it without buying.
     func presentOnboardingPaywall(onDeclined: @escaping () -> Void) {
         guard isConfigured else {
-            lastMessage = lastMessage ?? "Superwall n’est pas configuré pour cette cible."
+            lastMessage = lastMessage ?? "Superwall n’est pas configuré pour cette cible.".quietoLocalized
             return
         }
         #if canImport(SuperwallKit)
@@ -124,7 +164,7 @@ final class QuietoSuperwallService: ObservableObject {
             }
         }
         handler.onError { error in
-            Task { @MainActor in self.lastMessage = "Le paywall n’a pas pu s’afficher. Réessaie dans un instant." }
+            Task { @MainActor in self.lastMessage = "Le paywall n’a pas pu s’afficher. Réessaie dans un instant.".quietoLocalized }
         }
         Superwall.shared.register(placement: Self.onboardingPlacement, handler: handler) { [weak self] in
             self?.syncWithServer()
@@ -141,7 +181,7 @@ final class QuietoSuperwallService: ObservableObject {
 
     func restorePurchases() {
         guard isConfigured else {
-            lastMessage = "Superwall n’est pas configuré pour cette cible."
+            lastMessage = "Superwall n’est pas configuré pour cette cible.".quietoLocalized
             return
         }
         #if canImport(SuperwallKit)
@@ -149,9 +189,9 @@ final class QuietoSuperwallService: ObservableObject {
             let result = await Superwall.shared.restorePurchases()
             switch result {
             case .restored:
-                lastMessage = "Achats restaurés."
+                lastMessage = "Achats restaurés.".quietoLocalized
             case .failed:
-                lastMessage = "Impossible de restaurer les achats."
+                lastMessage = "Impossible de restaurer les achats.".quietoLocalized
             }
             await syncNow()
         }
@@ -173,11 +213,23 @@ final class QuietoSuperwallService: ObservableObject {
         guard identifiedUserID != nil, let server, server.isConfigured else { return }
         do {
             serverPremium = try await server.syncSubscriptions(signedTransactions: snapshot.signedTransactions)
+            rememberServerPremium(serverPremium)
         } catch {
             // Keep the previous server answer: offline must not lock a paying user.
         }
         guard !Task.isCancelled else { return }
         refresh()
+    }
+
+    /// Renewals, expiries, refunds and purchases made elsewhere (Family
+    /// Sharing, another device) arrive here while the app is open.
+    private func listenForTransactionUpdates() {
+        guard updatesTask == nil else { return }
+        updatesTask = Task { [weak self] in
+            for await _ in Transaction.updates {
+                await self?.syncNow()
+            }
+        }
     }
 
     /// Apple's own subscription management sheet.
@@ -188,6 +240,80 @@ final class QuietoSuperwallService: ObservableObject {
             throw QuietoSubscriptionError.noActiveScene
         }
         try await AppStore.showManageSubscriptions(in: scene)
+    }
+
+    func subscriptionDetails() async -> QuietoSubscriptionDetails {
+        guard let transaction = await Self.latestSubscriptionTransaction() else {
+            return serverPremium || bypass ? QuietoSubscriptionDetails(status: .grantedByServer) : .none
+        }
+        let product = try? await StoreKit.Product.products(for: [transaction.productID]).first
+        var details = QuietoSubscriptionDetails(
+            status: .expired,
+            planName: product?.displayName,
+            price: product.flatMap(Self.priceLabel),
+            date: transaction.expirationDate
+        )
+        let isTrial = transaction.offerType == .introductory
+        let statuses = (try? await product?.subscription?.status) ?? []
+        let status = statuses.first { candidate in
+            guard case .verified(let current) = candidate.transaction else { return false }
+            return current.originalID == transaction.originalID
+        } ?? statuses.first
+        if let status {
+            let renewal: StoreKit.Product.SubscriptionInfo.RenewalInfo? = {
+                if case .verified(let info) = status.renewalInfo { return info }
+                return nil
+            }()
+            switch status.state {
+            case .subscribed:
+                if renewal?.willAutoRenew == false { details.status = .cancelled }
+                else { details.status = isTrial ? .trial : .active }
+                if details.status == .active, let next = renewal?.renewalDate { details.date = next }
+            case .inGracePeriod:
+                details.status = .gracePeriod
+                details.date = renewal?.gracePeriodExpirationDate ?? details.date
+            case .inBillingRetryPeriod:
+                details.status = .billingRetry
+            default:
+                details.status = .expired
+            }
+        } else if transaction.revocationDate == nil, (transaction.expirationDate ?? .distantFuture) > .now {
+            // Offline: Apple's renewal status is unknown, the transaction is not.
+            details.status = isTrial ? .trial : .active
+        }
+        if !details.hasAccess, serverPremium || bypass {
+            return QuietoSubscriptionDetails(status: .grantedByServer)
+        }
+        return details
+    }
+
+    /// The most recent auto-renewable subscription of this Apple ID, current
+    /// first, otherwise the last one that ended.
+    private static func latestSubscriptionTransaction() async -> Transaction? {
+        func newest(_ sequence: Transaction.Transactions) async -> Transaction? {
+            var latest: Transaction?
+            for await result in sequence {
+                guard case .verified(let transaction) = result, transaction.productType == .autoRenewable else { continue }
+                if (transaction.expirationDate ?? .distantPast) > (latest?.expirationDate ?? .distantPast) { latest = transaction }
+            }
+            return latest
+        }
+        if let current = await newest(Transaction.currentEntitlements) { return current }
+        return await newest(Transaction.all)
+    }
+
+    private static func priceLabel(_ product: StoreKit.Product) -> String? {
+        guard let period = product.subscription?.subscriptionPeriod else { return product.displayPrice }
+        let unit: String
+        switch (period.unit, period.value) {
+        case (.year, 1): unit = "an".quietoLocalized
+        case (.month, 1): unit = "mois".quietoLocalized
+        case (.week, 1): unit = "semaine".quietoLocalized
+        case (.month, let value): unit = String(format: "%d mois".quietoLocalized, value)
+        case (.day, let value): unit = String(format: "%d jours".quietoLocalized, value)
+        default: return product.displayPrice
+        }
+        return "\(product.displayPrice) / \(unit)"
     }
 
     #if canImport(SuperwallKit)
@@ -236,6 +362,38 @@ final class QuietoSuperwallService: ObservableObject {
         return StoreSnapshot(signedTransactions: Array(signed.prefix(20)), isActive: active)
     }
 }
+
+#if canImport(SuperwallKit)
+extension QuietoSuperwallService: SuperwallDelegate {
+    /// Client-side funnel only. Renewals, cancellations and revenue happen on
+    /// Apple's servers: they reach Amplitude through Superwall's own
+    /// integration, not from the app.
+    func handleSuperwallEvent(withInfo eventInfo: SuperwallEventInfo) {
+        let mapped: (name: String, paywall: PaywallInfo, product: StoreProduct?)
+        switch eventInfo.event {
+        case .paywallOpen(let paywall): mapped = ("paywall_viewed", paywall, nil)
+        case .paywallClose(let paywall): mapped = ("paywall_closed", paywall, nil)
+        case .paywallDecline(let paywall): mapped = ("paywall_declined", paywall, nil)
+        case .transactionStart(let product, let paywall): mapped = ("purchase_started", paywall, product)
+        case .transactionAbandon(let product, let paywall): mapped = ("purchase_abandoned", paywall, product)
+        case .transactionFail(_, let paywall): mapped = ("purchase_failed", paywall, nil)
+        case .transactionComplete(_, let product, _, let paywall): mapped = ("purchase_completed", paywall, product)
+        case .freeTrialStart(let product, let paywall): mapped = ("trial_started", paywall, product)
+        case .subscriptionStart(let product, let paywall): mapped = ("subscription_started", paywall, product)
+        case .transactionRestore(_, let paywall): mapped = ("purchase_restored", paywall, nil)
+        default: return
+        }
+        var properties = ["paywall": mapped.paywall.identifier]
+        if let placement = mapped.paywall.presentedByPlacementWithName { properties["placement"] = placement }
+        if let product = mapped.product {
+            properties["product"] = product.productIdentifier
+            properties["price"] = "\(product.price)"
+            if let currency = product.currencyCode { properties["currency"] = currency }
+        }
+        onAnalyticsEvent?(mapped.name, properties)
+    }
+}
+#endif
 
 extension QuietoSuperwallService: SubscriptionServicing {
     var accessPublisher: AnyPublisher<QuietoAccessState, Never> { $access.eraseToAnyPublisher() }

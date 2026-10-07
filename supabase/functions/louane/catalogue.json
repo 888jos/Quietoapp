@@ -1,0 +1,904 @@
+{
+  "source": "app/ios/QuietoNative/Sources/QuietoNative/Core/Models/SessionCatalog.swift",
+  "seances": [
+    {
+      "id": "decouverte_1",
+      "titre": "Ma première méditation",
+      "but": "Les bases, pour celles et ceux qui n’ont jamais médité.",
+      "duree_min": 5,
+      "categorie": "discovery",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "discover_counting",
+      "titre": "Compter les respirations",
+      "but": "Un exercice simple pour stabiliser l’attention.",
+      "duree_min": 6,
+      "categorie": "discovery",
+      "objectif": "Se concentrer",
+      "type": "meditation"
+    },
+    {
+      "id": "decouverte_3",
+      "titre": "Le moment présent",
+      "but": "Revenir ici et maintenant grâce aux cinq sens.",
+      "duree_min": 6,
+      "categorie": "discovery",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "decouverte_2",
+      "titre": "Observer sans juger",
+      "but": "Remarquer ce qui passe dans l’esprit sans s’y accrocher.",
+      "duree_min": 7,
+      "categorie": "discovery",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "discover_body_scan",
+      "titre": "Premier scan corporel",
+      "but": "Parcourir le corps des pieds à la tête, sans rien changer.",
+      "duree_min": 8,
+      "categorie": "discovery",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "discover_rain",
+      "titre": "Accueillir le désagréable",
+      "but": "Apprendre à faire face à une petite gêne avec douceur.",
+      "duree_min": 8,
+      "categorie": "discovery",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "discover_open_sitting",
+      "titre": "S’asseoir avec moins de guidage",
+      "but": "Un premier pas vers la méditation en autonomie.",
+      "duree_min": 10,
+      "categorie": "discovery",
+      "objectif": "Se concentrer",
+      "type": "meditation"
+    },
+    {
+      "id": "express_1",
+      "titre": "Avant un appel difficile",
+      "but": "Arriver centré et calme à ton prochain appel.",
+      "duree_min": 2,
+      "categorie": "work",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "express_8",
+      "titre": "Avant une présentation",
+      "but": "Transformer le trac en énergie avant de prendre la parole.",
+      "duree_min": 3,
+      "categorie": "work",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "express_5",
+      "titre": "Coup de stress au bureau",
+      "but": "Redescendre en deux minutes quand la pression monte.",
+      "duree_min": 2,
+      "categorie": "work",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "between_calls",
+      "titre": "Entre deux appels",
+      "but": "Laisser une conversation se terminer avant la suivante.",
+      "duree_min": 2,
+      "categorie": "work",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "new_focus_reset",
+      "titre": "Une chose à la fois",
+      "but": "Rassembler ton attention avant de reprendre une tâche précise.",
+      "duree_min": 6,
+      "categorie": "work",
+      "objectif": "Se concentrer",
+      "type": "meditation"
+    },
+    {
+      "id": "meditation_06",
+      "titre": "Le fil de l’attention",
+      "but": "Entraîner une attention stable, retour après retour.",
+      "duree_min": 12,
+      "categorie": "work",
+      "objectif": "Se concentrer",
+      "type": "meditation"
+    },
+    {
+      "id": "creative_block",
+      "titre": "Faire de la place aux idées",
+      "but": "Relâcher la pression de produire pour laisser venir les idées.",
+      "duree_min": 8,
+      "categorie": "work",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "decision_pause",
+      "titre": "Avant de décider",
+      "but": "Écouter ce que le corps dit de chaque option.",
+      "duree_min": 7,
+      "categorie": "work",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "afternoon_fog",
+      "titre": "Le coup de barre de l’après-midi",
+      "but": "Réveiller le corps et l’attention sans café.",
+      "duree_min": 6,
+      "categorie": "work",
+      "objectif": "Retrouver de l’énergie",
+      "type": "meditation"
+    },
+    {
+      "id": "meditation_09",
+      "titre": "Détendre le visage",
+      "but": "Relâcher le front, les yeux et la mâchoire crispés par les écrans.",
+      "duree_min": 5,
+      "categorie": "work",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "after_work",
+      "titre": "Fermer la journée de travail",
+      "but": "Un rituel pour que le travail reste au travail.",
+      "duree_min": 8,
+      "categorie": "work",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "work_impostor",
+      "titre": "Le sentiment d’imposture",
+      "but": "Répondre au doute avec des faits et un peu de douceur.",
+      "duree_min": 9,
+      "categorie": "work",
+      "objectif": "Bienveillance envers soi",
+      "type": "meditation"
+    },
+    {
+      "id": "work_after_criticism",
+      "titre": "Après une critique",
+      "but": "Garder ce qui est utile, laisser retomber ce qui blesse.",
+      "duree_min": 8,
+      "categorie": "work",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "express_6",
+      "titre": "Après une dispute",
+      "but": "Retrouver ton calme quand l’émotion a pris le dessus.",
+      "duree_min": 2,
+      "categorie": "relationships",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "new_after_conflict",
+      "titre": "Après les mots trop forts",
+      "but": "Comprendre ce qui s’est joué avant de répondre.",
+      "duree_min": 9,
+      "categorie": "relationships",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "rel_before_hard_talk",
+      "titre": "Avant une conversation difficile",
+      "but": "Arriver posé et clair à un échange délicat.",
+      "duree_min": 7,
+      "categorie": "relationships",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "emotion_5",
+      "titre": "Bienveillance envers les autres",
+      "but": "Cultiver la bienveillance, de toi jusqu’aux autres.",
+      "duree_min": 10,
+      "categorie": "relationships",
+      "objectif": "Bienveillance envers soi",
+      "type": "meditation"
+    },
+    {
+      "id": "rel_deep_listening",
+      "titre": "Écouter vraiment",
+      "but": "S’entraîner à écouter sans préparer sa réponse.",
+      "duree_min": 6,
+      "categorie": "relationships",
+      "objectif": "Se concentrer",
+      "type": "meditation"
+    },
+    {
+      "id": "rel_worry_for_someone",
+      "titre": "Quand on s’inquiète pour un proche",
+      "but": "Prendre soin de ton inquiétude sans t’y perdre.",
+      "duree_min": 8,
+      "categorie": "relationships",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "rel_letting_go_grudge",
+      "titre": "Lâcher une rancune",
+      "but": "Desserrer ce que la rancune te coûte, à ton rythme.",
+      "duree_min": 10,
+      "categorie": "relationships",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "rel_gratitude_someone",
+      "titre": "Merci à quelqu’un",
+      "but": "Ressentir la gratitude envers une personne précise.",
+      "duree_min": 5,
+      "categorie": "relationships",
+      "objectif": "Retrouver de l’énergie",
+      "type": "meditation"
+    },
+    {
+      "id": "lonely_evening",
+      "titre": "Quand la maison est silencieuse",
+      "but": "Une présence douce quand la solitude se fait sentir.",
+      "duree_min": 10,
+      "categorie": "relationships",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "meditation_05",
+      "titre": "Une place pour l’émotion",
+      "but": "Localiser une émotion dans le corps et la laisser exister.",
+      "duree_min": 9,
+      "categorie": "innerSelf",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "emotion_3",
+      "titre": "Quand l’anxiété monte",
+      "but": "Faire redescendre l’anxiété par le corps et le souffle.",
+      "duree_min": 10,
+      "categorie": "innerSelf",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "emotion_4",
+      "titre": "Peur et courage",
+      "but": "Avancer avec la peur plutôt qu’attendre qu’elle parte.",
+      "duree_min": 7,
+      "categorie": "innerSelf",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "emo_sadness",
+      "titre": "Faire de la place à la tristesse",
+      "but": "Laisser la tristesse exister sans chercher à aller mieux tout de suite.",
+      "duree_min": 9,
+      "categorie": "innerSelf",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "emo_anger",
+      "titre": "Quand la colère monte",
+      "but": "Laisser redescendre la colère avant d’agir.",
+      "duree_min": 6,
+      "categorie": "innerSelf",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "meditation_10",
+      "titre": "La météo intérieure",
+      "but": "Observer ton état du moment comme une météo qui passe.",
+      "duree_min": 6,
+      "categorie": "innerSelf",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "new_thoughts_on_clouds",
+      "titre": "Les pensées comme des nuages",
+      "but": "Regarder passer les pensées sans devoir les suivre.",
+      "duree_min": 8,
+      "categorie": "innerSelf",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "afternoon_reframe",
+      "titre": "Prendre de la hauteur",
+      "but": "Prendre du recul sur ce qui occupe trop de place.",
+      "duree_min": 10,
+      "categorie": "innerSelf",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "meditation_08",
+      "titre": "Laisser être",
+      "but": "Accueillir tout ce qui se présente, sans rien retenir.",
+      "duree_min": 15,
+      "categorie": "innerSelf",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "emo_uncertainty",
+      "titre": "Quand tout est incertain",
+      "but": "Habiter l’attente sans inventer la réponse.",
+      "duree_min": 9,
+      "categorie": "innerSelf",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "emotion_1",
+      "titre": "Apprendre à s’aimer",
+      "but": "Trois étapes pour te parler avec plus de douceur.",
+      "duree_min": 10,
+      "categorie": "innerSelf",
+      "objectif": "Bienveillance envers soi",
+      "type": "meditation"
+    },
+    {
+      "id": "emo_inner_critic",
+      "titre": "Quand je suis dur·e avec moi-même",
+      "but": "Répondre à la critique intérieure comme à un ami.",
+      "duree_min": 8,
+      "categorie": "innerSelf",
+      "objectif": "Bienveillance envers soi",
+      "type": "meditation"
+    },
+    {
+      "id": "new_safe_place",
+      "titre": "Un lieu suffisamment sûr",
+      "but": "Construire un refuge intérieur où reprendre ton souffle.",
+      "duree_min": 10,
+      "categorie": "innerSelf",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "small_joy",
+      "titre": "Remarquer le bon",
+      "but": "Savourer un moment agréable quelques secondes de plus.",
+      "duree_min": 5,
+      "categorie": "innerSelf",
+      "objectif": "Retrouver de l’énergie",
+      "type": "meditation"
+    },
+    {
+      "id": "express_2",
+      "titre": "Transports bondés",
+      "but": "Trouver ton calme même au milieu de la foule.",
+      "duree_min": 3,
+      "categorie": "daily",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "commute_home",
+      "titre": "Le trajet vers soi",
+      "but": "Faire du trajet un vrai passage vers ta soirée.",
+      "duree_min": 10,
+      "categorie": "daily",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "doorstep_pause",
+      "titre": "Sur le seuil",
+      "but": "Arriver vraiment chez toi avant de passer la porte.",
+      "duree_min": 3,
+      "categorie": "daily",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "new_walking_pause",
+      "titre": "Marcher en présence",
+      "but": "Méditer en marchant, pas après pas.",
+      "duree_min": 8,
+      "categorie": "daily",
+      "objectif": "Se concentrer",
+      "type": "meditation"
+    },
+    {
+      "id": "new_sensory_shelter",
+      "titre": "Un refuge sensoriel",
+      "but": "Réduire la surcharge quand tout est trop bruyant.",
+      "duree_min": 7,
+      "categorie": "daily",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "blue_hour",
+      "titre": "L’heure bleue",
+      "but": "Regarder la journée ralentir, les yeux ouverts.",
+      "duree_min": 8,
+      "categorie": "daily",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "friday_release",
+      "titre": "La semaine peut se terminer",
+      "but": "Reconnaître ta semaine et la laisser derrière toi.",
+      "duree_min": 7,
+      "categorie": "daily",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "sunday_reset",
+      "titre": "Le dimanche soir",
+      "but": "Apaiser la boule du dimanche soir.",
+      "duree_min": 8,
+      "categorie": "daily",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "daybreak_stillness",
+      "titre": "Le calme avant les messages",
+      "but": "Commencer la journée avant de regarder ton téléphone.",
+      "duree_min": 5,
+      "categorie": "morning",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "morning_wake_body",
+      "titre": "Réveiller le corps",
+      "but": "Sortir du sommeil en douceur, en bougeant.",
+      "duree_min": 6,
+      "categorie": "morning",
+      "objectif": "Retrouver de l’énergie",
+      "type": "meditation"
+    },
+    {
+      "id": "express_3",
+      "titre": "Petit déjeuner",
+      "but": "Une minute de gratitude pour bien commencer la journée.",
+      "duree_min": 3,
+      "categorie": "morning",
+      "objectif": "Retrouver de l’énergie",
+      "type": "meditation"
+    },
+    {
+      "id": "new_soft_reset",
+      "titre": "Épuisé·e dès le réveil",
+      "but": "Trouver un rythme réaliste quand l’énergie manque.",
+      "duree_min": 6,
+      "categorie": "morning",
+      "objectif": "Retrouver de l’énergie",
+      "type": "meditation"
+    },
+    {
+      "id": "morning_kind_start",
+      "titre": "Commencer avec douceur",
+      "but": "Aborder une journée chargée avec une exigence plus juste.",
+      "duree_min": 7,
+      "categorie": "morning",
+      "objectif": "Bienveillance envers soi",
+      "type": "meditation"
+    },
+    {
+      "id": "express_7",
+      "titre": "Réveil en panique",
+      "but": "Calmer l’angoisse qui serre le ventre au réveil.",
+      "duree_min": 2,
+      "categorie": "morning",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "actualite_1",
+      "titre": "Quand le monde brûle",
+      "but": "Trouver ta juste place face aux nouvelles du monde.",
+      "duree_min": 8,
+      "categorie": "screens",
+      "objectif": "Prendre du recul",
+      "type": "meditation"
+    },
+    {
+      "id": "actualite_2",
+      "titre": "La guerre en bruit de fond",
+      "but": "Rester sensible sans absorber toute la violence du monde.",
+      "duree_min": 9,
+      "categorie": "screens",
+      "objectif": "Accueillir une émotion",
+      "type": "meditation"
+    },
+    {
+      "id": "actualite_3",
+      "titre": "L’envie de scroller",
+      "but": "Laisser passer l’envie de prendre ton téléphone.",
+      "duree_min": 4,
+      "categorie": "screens",
+      "objectif": "Se concentrer",
+      "type": "meditation"
+    },
+    {
+      "id": "actualite_5",
+      "titre": "Après le scroll",
+      "but": "Décompresser après trop d’informations.",
+      "duree_min": 6,
+      "categorie": "screens",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "meditation_16",
+      "titre": "Le repos des yeux",
+      "but": "Offrir une vraie pause à tes yeux après les écrans.",
+      "duree_min": 4,
+      "categorie": "screens",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "screen_off",
+      "titre": "Éteindre les écrans",
+      "but": "Passer des écrans au sommeil en douceur.",
+      "duree_min": 7,
+      "categorie": "screens",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "express_4",
+      "titre": "Juste avant de dormir",
+      "but": "Relâcher les tensions de la journée pour t’endormir.",
+      "duree_min": 4,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "new_body_scan_sleep",
+      "titre": "Le corps devient lourd",
+      "but": "Un scan corporel lent pour glisser dans le sommeil.",
+      "duree_min": 15,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "sleep_2",
+      "titre": "Visualisation apaisante",
+      "but": "Une plage au crépuscule, décrite lentement jusqu’au sommeil.",
+      "duree_min": 15,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "sleep_4",
+      "titre": "Entre deux mondes",
+      "but": "Compter à rebours jusqu’à oublier les chiffres.",
+      "duree_min": 12,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "sleep_3",
+      "titre": "Vider la tête",
+      "but": "Ranger tes soucis pour demain et t’endormir l’esprit léger.",
+      "duree_min": 10,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "sleep_cognitive_shuffle",
+      "titre": "Les pensées qui tournent au lit",
+      "but": "Couper la rumination avec des images sans lien entre elles.",
+      "duree_min": 10,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "sleep_5",
+      "titre": "Fatigué·e mais pas sommeil",
+      "but": "Arrêter d’essayer de dormir pour enfin te reposer.",
+      "duree_min": 12,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "sleep_1",
+      "titre": "Déposer la journée",
+      "but": "Rembobiner ta journée et la laisser derrière toi.",
+      "duree_min": 12,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "middle_of_night",
+      "titre": "Réveil nocturne",
+      "but": "Te rendormir sans regarder l’heure.",
+      "duree_min": 10,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "night_watch",
+      "titre": "Veille paisible",
+      "but": "Te reposer vraiment, même quand le sommeil ne vient pas.",
+      "duree_min": 20,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "night_sky",
+      "titre": "Sous le ciel immobile",
+      "but": "Une histoire lente pour accompagner l’endormissement.",
+      "duree_min": 15,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "meditation"
+    },
+    {
+      "id": "stress_3",
+      "titre": "Relâche",
+      "but": "Contracter puis relâcher chaque muscle, des pieds au visage.",
+      "duree_min": 12,
+      "categorie": "body",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "new_nidra_pause",
+      "titre": "Repos profond sans dormir",
+      "but": "Un yoga nidra pour récupérer en profondeur.",
+      "duree_min": 20,
+      "categorie": "body",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "stress_5",
+      "titre": "Le scan corporel complet",
+      "but": "Une attention précise à chaque zone du corps.",
+      "duree_min": 10,
+      "categorie": "body",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "gentle_recovery",
+      "titre": "Récupérer sans culpabiliser",
+      "but": "Te donner la permission de te reposer.",
+      "duree_min": 10,
+      "categorie": "body",
+      "objectif": "Bienveillance envers soi",
+      "type": "meditation"
+    },
+    {
+      "id": "meditation_15",
+      "titre": "Présence dans les mains",
+      "but": "Te rassurer par la chaleur de tes propres mains.",
+      "duree_min": 5,
+      "categorie": "body",
+      "objectif": "Calmer le stress",
+      "type": "meditation"
+    },
+    {
+      "id": "body_tension",
+      "titre": "Faire de la place à une tension",
+      "but": "Explorer une tension avec curiosité, sans lutter.",
+      "duree_min": 9,
+      "categorie": "body",
+      "objectif": "Se relaxer",
+      "type": "meditation"
+    },
+    {
+      "id": "body_mindful_stretch",
+      "titre": "Étirements conscients",
+      "but": "Des étirements doux, au rythme du souffle.",
+      "duree_min": 8,
+      "categorie": "body",
+      "objectif": "Retrouver de l’énergie",
+      "type": "meditation"
+    },
+    {
+      "id": "breathing_1",
+      "titre": "Cohérence cardiaque",
+      "but": "Six respirations par minute pour retrouver un rythme régulier.",
+      "duree_min": 5,
+      "categorie": "innerSelf",
+      "objectif": "Calmer le stress",
+      "type": "respiration"
+    },
+    {
+      "id": "breath_sigh",
+      "titre": "Soupir physiologique",
+      "but": "Le moyen le plus rapide de redescendre.",
+      "duree_min": 1,
+      "categorie": "work",
+      "objectif": "Calmer le stress",
+      "type": "respiration"
+    },
+    {
+      "id": "new_long_exhale",
+      "titre": "Expiration longue",
+      "but": "Allonger l’expiration pour ralentir en douceur.",
+      "duree_min": 3,
+      "categorie": "daily",
+      "objectif": "Se relaxer",
+      "type": "respiration"
+    },
+    {
+      "id": "new_box_breathing",
+      "titre": "Respiration carrée",
+      "but": "Quatre temps égaux pour stabiliser l’attention.",
+      "duree_min": 4,
+      "categorie": "work",
+      "objectif": "Se concentrer",
+      "type": "respiration"
+    },
+    {
+      "id": "breath_triangle",
+      "titre": "Respiration triangle",
+      "but": "Une version plus simple de la respiration carrée.",
+      "duree_min": 3,
+      "categorie": "discovery",
+      "objectif": "Se concentrer",
+      "type": "respiration"
+    },
+    {
+      "id": "stress_2",
+      "titre": "4-7-8",
+      "but": "Quatre cycles pour préparer le sommeil.",
+      "duree_min": 1,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "respiration"
+    },
+    {
+      "id": "breath_sleep_descent",
+      "titre": "Descente vers le sommeil",
+      "but": "Un rythme qui ralentit tout seul jusqu’au sommeil.",
+      "duree_min": 10,
+      "categorie": "night",
+      "objectif": "S’endormir",
+      "type": "respiration"
+    },
+    {
+      "id": "breathing_3",
+      "titre": "Pause en bas",
+      "but": "Un court repos poumons vides pour une détente profonde.",
+      "duree_min": 5,
+      "categorie": "body",
+      "objectif": "Se relaxer",
+      "type": "respiration"
+    },
+    {
+      "id": "breathing_2",
+      "titre": "Respiration alternée",
+      "but": "Alterner les narines pour clarifier l’esprit.",
+      "duree_min": 5,
+      "categorie": "work",
+      "objectif": "Se concentrer",
+      "type": "respiration"
+    },
+    {
+      "id": "breathing_5",
+      "titre": "Inspiration en escalier",
+      "but": "Inspirer en trois marches, expirer d’un trait.",
+      "duree_min": 3,
+      "categorie": "innerSelf",
+      "objectif": "Calmer le stress",
+      "type": "respiration"
+    },
+    {
+      "id": "breathing_4",
+      "titre": "Souffle tonique",
+      "but": "Une inspiration plus longue pour réveiller le corps.",
+      "duree_min": 2,
+      "categorie": "morning",
+      "objectif": "Retrouver de l’énergie",
+      "type": "respiration"
+    },
+    {
+      "id": "breath_cooling",
+      "titre": "Souffle rafraîchissant",
+      "but": "Refroidir la colère en inspirant par la bouche.",
+      "duree_min": 3,
+      "categorie": "relationships",
+      "objectif": "Accueillir une émotion",
+      "type": "respiration"
+    },
+    {
+      "id": "breath_counting",
+      "titre": "Compter les souffles",
+      "but": "Compter tes expirations de un à dix, à ton rythme.",
+      "duree_min": 5,
+      "categorie": "discovery",
+      "objectif": "Se concentrer",
+      "type": "respiration"
+    }
+  ],
+  "sons_source": "QuietoAmbience.catalog (QuietoModels.swift), seulement les sons inclus dans Resources/Ambiences",
+  "sons": [
+    {
+      "id": "rain",
+      "titre": "Pluie sur la fenêtre",
+      "but": "Pluie régulière, sans tonnerre : masque les bruits, aide à s'endormir ou à se poser."
+    },
+    {
+      "id": "distant-storm",
+      "titre": "Orage lointain",
+      "but": "Pluie et tonnerre rare : enveloppant, pour celles qui aiment les nuits d'orage."
+    },
+    {
+      "id": "ocean",
+      "titre": "Océan",
+      "but": "Vagues lentes : un rythme qui invite à ralentir le souffle."
+    },
+    {
+      "id": "river",
+      "titre": "Rivière",
+      "but": "Courant et clapotis : fond vivant et doux, pour se détendre ou lire."
+    },
+    {
+      "id": "forest",
+      "titre": "Forêt au matin",
+      "but": "Oiseaux et air calme : réveil doux, pause nature au travail."
+    },
+    {
+      "id": "wind",
+      "titre": "Vent dans les arbres",
+      "but": "Rafales lentes dans les feuilles : apaisant, sans rythme marqué."
+    },
+    {
+      "id": "campfire",
+      "titre": "Feu de cheminée",
+      "but": "Crépitements doux : cocon, soirée, sentiment de sécurité."
+    },
+    {
+      "id": "white-noise",
+      "titre": "Bruit blanc",
+      "but": "Masque fortement les bruits alentour : concentration, open space, voisins bruyants."
+    },
+    {
+      "id": "pink-noise",
+      "titre": "Bruit rose",
+      "but": "Plus doux que le blanc : concentration longue ou sommeil léger."
+    },
+    {
+      "id": "brown-noise",
+      "titre": "Bruit brun",
+      "but": "Grave et enveloppant : pensées qui tournent, sommeil, acouphènes légers."
+    }
+  ]
+}

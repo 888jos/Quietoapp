@@ -70,6 +70,9 @@ final class QuietoSupabaseService: NSObject, ObservableObject {
     var onIdentityEvent: ((QuietoIdentityEvent) -> Void)?
 
     private(set) var client: SupabaseClient?
+    /// Analytics events tracked before the first session exists (the start of
+    /// the onboarding), sent once `apply(session:)` has created the profile.
+    var pendingAnalyticsEvents: [QuietoAnalyticsEvent] = []
     private let preferences: QuietoPreferences
     private var rawNonce: String?
     private var continuation: CheckedContinuation<ASAuthorizationAppleIDCredential, Error>?
@@ -91,14 +94,30 @@ final class QuietoSupabaseService: NSObject, ObservableObject {
         do {
             let session = try await client.auth.session
             await apply(session: session)
+        } catch let error where Self.isNetworkFailure(error) {
+            // Offline while the token needed a refresh: keep the stored identity
+            // (an Apple account must never be swapped for a new anonymous one
+            // because of a bad connection). The SDK refreshes it once online.
+            if let stored = client.auth.currentSession {
+                await apply(session: stored)
+            } else {
+                state = .failed(message: "Connexion impossible pour le moment.".quietoLocalized)
+            }
         } catch {
+            // No session at all, or one the server rejected for good.
             do {
                 let session = try await client.auth.signInAnonymously()
                 await apply(session: session)
             } catch {
-                state = .failed(message: "Impossible d’ouvrir une session sécurisée.")
+                state = .failed(message: "Impossible d’ouvrir une session sécurisée.".quietoLocalized)
             }
         }
+    }
+
+    private static func isNetworkFailure(_ error: Error) -> Bool {
+        if error is URLError { return true }
+        let nsError = error as NSError
+        return nsError.domain == NSURLErrorDomain
     }
 
     func signInWithApple() async throws {
@@ -135,6 +154,13 @@ final class QuietoSupabaseService: NSObject, ObservableObject {
         }
     }
 
+    func appleAuthorizationCodeForDeletion() async throws -> String? {
+        guard let client, let user = try? await client.auth.session.user,
+              user.identities?.contains(where: { $0.provider == "apple" }) == true else { return nil }
+        let credential = try await requestAppleCredential(hashedNonce: Self.sha256(Self.randomNonce()))
+        return credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+    }
+
     func signOutToAnonymous() async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
         try await client.auth.signOut()
@@ -160,7 +186,7 @@ final class QuietoSupabaseService: NSObject, ObservableObject {
         let clean = String(firstName.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
         // Only cosmetic columns: `firebase_uid` and `is_anonymous` are server-owned.
         let value = SupabaseProfileWrite(
-            userID: session.user.id.uuidString,
+            userID: session.user.id.quietoUserID,
             firstName: clean.isEmpty ? nil : clean,
             locale: Self.supportedLocale
         )
@@ -181,12 +207,11 @@ final class QuietoSupabaseService: NSObject, ObservableObject {
     }
 
     private static var supportedLocale: String {
-        let code = Locale.current.language.languageCode?.identifier ?? "fr"
-        return ["fr", "en", "es", "de", "ja", "ko"].contains(code) ? code : "fr"
+        QuietoLocalization.languageCode
     }
 
     private func apply(session: Session) async {
-        let id = session.user.id.uuidString
+        let id = session.user.id.quietoUserID
         onIdentityEvent?(.identified(userID: id))
         state = session.user.isAnonymous
             ? .anonymous(userID: id)
@@ -205,6 +230,7 @@ final class QuietoSupabaseService: NSObject, ObservableObject {
         } catch {
             // Auth remains usable if profile synchronisation is temporarily offline.
         }
+        await flushPendingAnalytics()
     }
 
     private func requestAppleCredential(hashedNonce: String) async throws -> ASAuthorizationAppleIDCredential {
@@ -276,9 +302,16 @@ enum QuietoBackendError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .notConfigured: "Supabase n’est pas encore configuré."
-        case .missingAppleToken: "Apple n’a pas fourni de jeton d’identité valide."
-        case .requestRejected: "Le serveur a refusé cette opération. Réessaie plus tard."
+        case .notConfigured: "Supabase n’est pas encore configuré.".quietoLocalized
+        case .missingAppleToken: "Apple n’a pas fourni de jeton d’identité valide.".quietoLocalized
+        case .requestRejected: "Le serveur a refusé cette opération. Réessaie plus tard.".quietoLocalized
         }
     }
+}
+
+extension UUID {
+    /// The account id as Postgres and the JWT `sub` claim write it. Swift's
+    /// `uuidString` is upper-case, and every `user_id` column is text compared
+    /// with `auth.jwt()->>'sub'` by the row level security policies.
+    var quietoUserID: String { uuidString.lowercased() }
 }

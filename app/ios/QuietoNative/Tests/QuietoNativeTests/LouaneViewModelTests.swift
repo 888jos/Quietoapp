@@ -4,7 +4,7 @@ import XCTest
 final class LouaneViewModelTests: XCTestCase {
     @MainActor
     func testRecommendationOnlyResolvesKnownCatalogueSession() {
-        let model = LouaneViewModel(audioPlayer: QuietoAudioPlayer())
+        let model = makeLouaneViewModel()
         let known = LouaneRecommendation(id: "sleep_1", sessionID: "sleep_1", reason: "Une pause douce.")
         let unknown = LouaneRecommendation(id: "unknown", sessionID: "unknown", reason: "")
         XCTAssertNotNil(model.session(for: known))
@@ -20,7 +20,7 @@ final class LouaneViewModelTests: XCTestCase {
 
     @MainActor
     func testUnknownStructuredRecommendationIsRejected() async {
-        let model = LouaneViewModel(backend: InvalidRecommendationBackend(), audioPlayer: QuietoAudioPlayer())
+        let model = makeLouaneViewModel(backend: InvalidRecommendationBackend())
         model.draft = "Une pause"
         model.send()
         try? await Task.sleep(nanoseconds: 80_000_000)
@@ -32,7 +32,7 @@ final class LouaneViewModelTests: XCTestCase {
 extension LouaneViewModelTests {
     @MainActor
     func testStoppingAResponseIsNotAnErrorAndDropsTheLateReply() async {
-        let model = LouaneViewModel(backend: SlowBackend(), audioPlayer: QuietoAudioPlayer())
+        let model = makeLouaneViewModel(backend: SlowBackend())
         model.draft = "Bonjour"
         model.send()
         model.cancelResponse()
@@ -44,7 +44,7 @@ extension LouaneViewModelTests {
 
     @MainActor
     func testMissingSubscriptionIsALimitNotARetryableFailure() async {
-        let model = LouaneViewModel(backend: FailingBackend(error: LouaneServiceError.premiumRequired), audioPlayer: QuietoAudioPlayer())
+        let model = makeLouaneViewModel(backend: FailingBackend(error: LouaneServiceError.premiumRequired))
         model.draft = "Bonjour"
         model.send()
         try? await Task.sleep(nanoseconds: 80_000_000)
@@ -59,7 +59,7 @@ extension LouaneViewModelTests {
     @MainActor
     func testHistorySentToLouaneDoesNotRepeatTheCurrentMessage() async {
         let backend = RecordingBackend()
-        let model = LouaneViewModel(backend: backend, audioPlayer: QuietoAudioPlayer())
+        let model = makeLouaneViewModel(backend: backend)
         model.draft = "Premier"
         model.send()
         try? await Task.sleep(nanoseconds: 80_000_000)
@@ -95,5 +95,73 @@ private actor RecordingBackend: LouaneBackendProviding {
 private struct InvalidRecommendationBackend: LouaneBackendProviding {
     func send(message: String, history: [LouaneMessage], temporary: Bool) async throws -> LouaneBackendReply {
         LouaneBackendReply(text: "Voici une réponse valide sans carte inventée.", recommendation: .init(id: "missing", sessionID: "missing", reason: ""))
+    }
+}
+
+// MARK: - Sounds, launch cards and context sent to Louane
+
+final class LouaneLaunchTests: XCTestCase {
+    @MainActor
+    func testMeditationWithSoundPlaysBothAndDropsUnknownSound() async {
+        let playback = FakePlayback()
+        let model = makeLouaneViewModel(backend: FixedReplyBackend(recommendation: .init(id: "x", sessionID: "sleep_1", ambienceID: "rain", reason: "Pour dormir")), playback: playback)
+        model.draft = "Je n’arrive pas à dormir"
+        model.send()
+        try? await Task.sleep(nanoseconds: 80_000_000)
+        let rec = try? XCTUnwrap(model.messages.last?.recommendation)
+        XCTAssertEqual(rec?.sessionID, "sleep_1")
+        XCTAssertEqual(rec?.ambienceID, "rain")
+        XCTAssertEqual(rec?.reason, "Pour dormir")
+        if let rec { model.play(rec) }
+        XCTAssertEqual(playback.played, ["sleep_1"])
+        XCTAssertEqual(playback.playedAmbiences, ["rain"])
+
+        let soundOnly = makeLouaneViewModel(backend: FixedReplyBackend(recommendation: .init(id: "y", sessionID: "missing", ambienceID: "cafe")))
+        soundOnly.draft = "Un son"
+        soundOnly.send()
+        try? await Task.sleep(nanoseconds: 80_000_000)
+        XCTAssertNil(soundOnly.messages.last?.recommendation, "Ni la séance inconnue ni le son non inclus ne doivent rester.")
+    }
+
+    func testParseReadsSessionSoundAndReason() throws {
+        let body = Data(#"{"result":{"bulles":["Installe-toi"],"securite":false,"seance":{"id":"sleep_1","raison":"Pour que le sommeil vienne"},"son":{"id":"rain","raison":""}}}"#.utf8)
+        let reply = try URLSessionLouaneBackend.parse(body, temporary: false)
+        XCTAssertEqual(reply.text, "Installe-toi")
+        XCTAssertEqual(reply.recommendation?.sessionID, "sleep_1")
+        XCTAssertEqual(reply.recommendation?.ambienceID, "rain")
+        XCTAssertEqual(reply.recommendation?.reason, "Pour que le sommeil vienne")
+
+        let soundOnly = try URLSessionLouaneBackend.parse(Data(#"{"result":{"bulles":["Voilà"],"seance":null,"son":{"id":"ocean","raison":"Pour ralentir"}}}"#.utf8), temporary: false)
+        XCTAssertNil(soundOnly.recommendation?.sessionID)
+        XCTAssertEqual(soundOnly.recommendation?.reason, "Pour ralentir")
+
+        XCTAssertThrowsError(try URLSessionLouaneBackend.parse(Data(#"{"result":{"bulles":[],"paywall":true}}"#.utf8), temporary: false)) {
+            XCTAssertEqual($0 as? LouaneServiceError, .premiumRequired)
+        }
+    }
+
+    func testContextListsRecentListensAndProgrammeProgress() {
+        let calendar = Calendar(identifier: .gregorian)
+        let now = Date(timeIntervalSince1970: 1_790_000_000)
+        let events = [
+            ActivityEvent(sessionID: "decouverte_1", seconds: 300, date: now.addingTimeInterval(-3 * 86_400)),
+            ActivityEvent(sessionID: "sleep_1", seconds: 600, date: now.addingTimeInterval(-86_400)),
+            ActivityEvent(sessionID: "sleep_1", seconds: 600, date: now.addingTimeInterval(-60))
+        ]
+        let context = LouaneClientContext.make(events: events, programmeTitle: "Mieux dormir", programmeIDs: ["decouverte_1", "breathing_1", "sleep_1"], hasProgram: true, now: now, calendar: calendar)
+        XCTAssertEqual(context.listens.first, .init(sessionID: "sleep_1", count: 2, daysAgo: 0))
+        XCTAssertEqual(context.listens.last?.daysAgo, 3)
+        XCTAssertEqual(context.programme?.step, 3)
+        XCTAssertEqual(context.programme?.nextSessionID, "breathing_1")
+        XCTAssertEqual(context.programme?.doneToday, true)
+        XCTAssertEqual(context.programme?.isActive, true)
+        XCTAssertNil(LouaneClientContext.make(events: [], programmeTitle: "", programmeIDs: [], hasProgram: false, now: now, calendar: calendar).programme)
+    }
+}
+
+private struct FixedReplyBackend: LouaneBackendProviding {
+    let recommendation: LouaneRecommendation
+    func send(message: String, history: [LouaneMessage], temporary: Bool) async throws -> LouaneBackendReply {
+        LouaneBackendReply(text: "Je te la lance.", recommendation: recommendation)
     }
 }

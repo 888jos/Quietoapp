@@ -1,0 +1,108 @@
+{
+  "_comment": "Sources des ambiances : sources/<id>.<ext>, puis build_ambiences.py. start/length/crossfade en secondes ; boucles de 30 s pour garder l'app légère.",
+  "rain": {
+    "url": "https://pixabay.com/ (juliush, heavy-rain-nature-sounds-8186)",
+    "author": "juliush",
+    "license": "Pixabay Content License",
+    "start": 0,
+    "length": 30,
+    "crossfade": 3
+  },
+  "rain-tent": {
+    "url": "https://freesound.org/people/Petrosilia/sounds/592997/",
+    "author": "Petrosilia",
+    "license": "CC0",
+    "start": 60,
+    "length": 300
+  },
+  "distant-storm": {
+    "url": "https://pixabay.com/ (u_7hpxkdroz2, storm-461601)",
+    "author": "u_7hpxkdroz2",
+    "license": "Pixabay Content License",
+    "start": 10,
+    "length": 30
+  },
+  "ocean": {
+    "url": "https://pixabay.com/ (mori_sound, fx-sea-526567)",
+    "author": "mori_sound",
+    "license": "Pixabay Content License",
+    "start": 0,
+    "length": 30,
+    "crossfade": 2
+  },
+  "river": {
+    "url": "https://pixabay.com/ (nils_vega, river-sounds-547976)",
+    "author": "nils_vega",
+    "license": "Pixabay Content License",
+    "start": 30,
+    "length": 30
+  },
+  "forest": {
+    "url": "https://pixabay.com/ (sspsurvival, bird-voices-7716)",
+    "author": "sspsurvival",
+    "license": "Pixabay Content License",
+    "start": 20,
+    "length": 30
+  },
+  "night": {
+    "url": "https://freesound.org/people/rgbrobot/sounds/207449/",
+    "author": "rgbrobot",
+    "license": "CC0",
+    "start": 30,
+    "length": 300
+  },
+  "wind": {
+    "url": "https://pixabay.com/ (soundreality, wind-blowing-457954)",
+    "author": "soundreality",
+    "license": "Pixabay Content License",
+    "start": 5,
+    "length": 30,
+    "crossfade": 3
+  },
+  "campfire": {
+    "url": "https://pixabay.com/ (dragon-studio, campfire-in-the-woods-467491)",
+    "author": "dragon-studio",
+    "license": "Pixabay Content License",
+    "start": 10,
+    "length": 30
+  },
+  "cafe": {
+    "url": "https://freesound.org/people/Matias44/sounds/173920/",
+    "author": "Matias44",
+    "license": "CC0",
+    "start": 0,
+    "length": 190,
+    "note": "Écouter : aucune voix ne doit être compréhensible."
+  },
+  "night-train": {
+    "url": "https://freesound.org/people/pblzr/sounds/785398/",
+    "author": "pblzr",
+    "license": "CC0",
+    "start": 30,
+    "length": 300,
+    "note": "Écouter : couper toute annonce."
+  },
+  "fan": {
+    "url": "https://freesound.org/people/peqdavid5/sounds/478643/",
+    "author": "peqdavid5",
+    "license": "CC0",
+    "start": 5,
+    "length": 170
+  },
+  "singing-bowls": {
+    "url": "https://freesound.org/people/RutgerMuller/sounds/365416/",
+    "author": "RutgerMuller",
+    "license": "CC0",
+    "start": 0,
+    "length": 300
+  },
+  "white-noise": {
+    "generated": "white"
+  },
+  "pink-noise": {
+    "generated": "pink"
+  },
+  "brown-noise": {
+    "generated": "brown"
+  }
+}

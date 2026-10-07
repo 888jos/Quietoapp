@@ -12,6 +12,7 @@ final class QuietoPreferences {
         static let ambientMusic = "quieto.profile.ambientMusic"
         static let reduceMotion = "quieto.profile.reduceMotion"
         static let largerText = "quieto.profile.largerText"
+        static let ambienceVolume = "quieto.profile.ambienceVolume"
         static let programRhythm = "quieto.program.rhythm"
         static let programAdjustmentRequested = "quieto.program.adjustmentRequested"
         static let favorites = "quieto.native.session.favorites"
@@ -22,6 +23,8 @@ final class QuietoPreferences {
         static let onboardingStep = "quieto.onboarding.step"
         static let onboardingPlanIDs = "quieto.onboarding.plan.ids"
         static let onboardingPlanTitle = "quieto.onboarding.plan.title"
+        static let onboardingStartedAt = "quieto.onboarding.startedAt"
+        static let onboardingActiveSeconds = "quieto.onboarding.activeSeconds"
         static func playbackPosition(_ sessionID: String) -> String { "quieto.native.audio.position.\(sessionID)" }
     }
 
@@ -59,6 +62,13 @@ final class QuietoPreferences {
         get { defaults.bool(forKey: Key.ambientMusic) }
         set { defaults.set(newValue, forKey: Key.ambientMusic) }
     }
+
+    /// Volume of background sounds, 0...1.
+    var ambienceVolume: Double {
+        get { defaults.object(forKey: Key.ambienceVolume) as? Double ?? QuietoPreferences.defaultAmbienceVolume }
+        set { defaults.set(min(1, max(0, newValue)), forKey: Key.ambienceVolume) }
+    }
+    static let defaultAmbienceVolume = 0.28
 
     var reduceMotion: Bool {
         get { defaults.bool(forKey: Key.reduceMotion) }
@@ -117,6 +127,20 @@ final class QuietoPreferences {
     func markOnboardingCompleted(at date: Date = .now) {
         defaults.set(date.timeIntervalSince1970, forKey: Key.onboardingCompletedAt)
         defaults.removeObject(forKey: Key.onboardingStep)
+        defaults.removeObject(forKey: Key.onboardingStartedAt)
+        defaults.removeObject(forKey: Key.onboardingActiveSeconds)
+    }
+
+    /// First onboarding screen shown on this install (survives the app being killed).
+    var onboardingStartedAt: Date? {
+        get { defaults.object(forKey: Key.onboardingStartedAt).flatMap { $0 as? Double }.map(Date.init(timeIntervalSince1970:)) }
+        set { defaults.set(newValue?.timeIntervalSince1970, forKey: Key.onboardingStartedAt) }
+    }
+
+    /// Time actually spent on onboarding screens, across launches.
+    var onboardingActiveSeconds: Double {
+        get { defaults.double(forKey: Key.onboardingActiveSeconds) }
+        set { defaults.set(newValue, forKey: Key.onboardingActiveSeconds) }
     }
 
     var onboardingStep: String? {

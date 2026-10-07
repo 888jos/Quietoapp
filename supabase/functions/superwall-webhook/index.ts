@@ -3,7 +3,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { adminClient, readBody, reply } from "../_shared/http.ts";
 import { verifySvixSignature } from "../_shared/svix.ts";
-import { applyArguments, superwallState, supabaseUserID } from "../_shared/entitlements.ts";
+import {
+  applyArguments, idList, superwallIgnoreReason, superwallState, supabaseUserID,
+} from "../_shared/entitlements.ts";
 
 Deno.serve(async (request: Request) => {
   if (request.method !== "POST") return reply(405, { error: "method_not_allowed" });
@@ -29,6 +31,12 @@ Deno.serve(async (request: Request) => {
   if (bundleID && data.bundleId && data.bundleId !== bundleID) {
     return reply(200, { ok: true, ignored: "other_bundle" });
   }
+  // Sandbox (TestFlight, StoreKit testing) and products outside
+  // QUIETO_PREMIUM_PRODUCT_IDS are recorded below but never grant access.
+  const ignoreReason = superwallIgnoreReason(data, {
+    bundleID,
+    premiumProductIDs: idList(Deno.env.get("QUIETO_PREMIUM_PRODUCT_IDS")),
+  });
 
   const { error: insertError } = await admin.from("subscription_events").upsert({
     source: "superwall",
@@ -44,6 +52,11 @@ Deno.serve(async (request: Request) => {
     .select("id, processed_at").eq("source", "superwall").eq("source_event_id", eventID).single();
   if (readError || !stored) return reply(500, { error: "event_read_failed" });
   if (stored.processed_at) return reply(200, { ok: true, duplicate: true });
+
+  if (ignoreReason) {
+    await admin.from("subscription_events").update({ processed_at: new Date().toISOString(), processing_error: ignoreReason }).eq("id", stored.id);
+    return reply(200, { ok: true, ignored: ignoreReason });
+  }
 
   const state = superwallState(data, payload.timestamp);
   if (!state) {

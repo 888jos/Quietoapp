@@ -27,7 +27,7 @@ Les snapshots sont en NDJSON et accompagnés d’un manifeste SHA-256. Le script
 
 ## Fonctions natives et bascule contrôlée
 
-Les fonctions `supabase/functions/account-data` et `supabase/functions/louane-proxy` sont prévues pour les opérations qui ne doivent jamais être exécutées avec une clé publique. Elles exigent `SUPABASE_SECRET_KEY` côté Edge Function. `louane-proxy` vérifie le JWT Supabase, puis appelle la Cloud Function Firebase historique avec `QUIETO_FIREBASE_PROXY_SECRET`; le même secret doit être déclaré comme `SUPABASE_PROXY_SECRET` dans Firebase Functions. Cette passerelle conserve les prompts, quotas, veilleur et règles de sécurité existants pendant la migration.
+Les fonctions `supabase/functions/account-data` et `supabase/functions/louane` sont prévues pour les opérations qui ne doivent jamais être exécutées avec une clé publique. Elles exigent `SUPABASE_SECRET_KEY` côté Edge Function. `louane` (qui remplace l'ancienne passerelle `louane-proxy`) vérifie le JWT Supabase et l'abonnement, puis fait tourner Louane elle-même (prompts, Veilleur, 3114, quotas portés de la Cloud Function Firebase, appels OpenAI avec `OPENAI_API_KEY`) : l'app native ne dépend plus de Firebase. La Cloud Function Firebase `louane` reste en ligne pour l'app Flutter. Détails : `supabase/functions/louane/README.md`.
 
 Le bucket privé `session-audio` et ses politiques sont créés par `20261005170300_native_client_support.sql`. Les pistes gratuites peuvent être lues sans abonnement; les pistes premium nécessitent une ligne d’entitlement serveur valide. L’app ne reçoit qu’une URL signée temporaire et ne la considère jamais comme un fichier téléchargé avant son stockage local.
 
@@ -102,7 +102,7 @@ Toutes les écritures passent par `public.apply_store_subscription()`, réservé
 
    ```sh
    supabase db push
-   supabase functions deploy subscription-sync superwall-webhook revenuecat-webhook louane-proxy account-data
+   supabase functions deploy subscription-sync superwall-webhook revenuecat-webhook louane account-data
    ```
 
    Le `firebase deploy` des fonctions doit être fait en même temps que les nouvelles fonctions Supabase, car le pont transmet maintenant le statut premium.

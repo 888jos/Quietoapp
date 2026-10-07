@@ -1,2 +1,7 @@
 .DS_Store
 backend/migration/node_modules/
+
+# Dépendances et builds locaux
+node_modules/
+dashboard/dist/
+.claude/settings.local.json

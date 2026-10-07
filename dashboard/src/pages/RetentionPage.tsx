@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CohortTable } from "../components/CohortTable";
+import { PlanRetention } from "../components/PlanRetention";
 import { StatTile } from "../components/StatTile";
 import { source } from "../lib/api";
 import { formatNumber, formatPercent } from "../lib/format";
@@ -10,6 +11,7 @@ export function RetentionPage() {
   const [weeks, setWeeks] = useState(8);
   const retention = useData(() => source.retention(weeks), [weeks]);
   const r = retention.data;
+  const plans = useData(() => source.plans(), []);
 
   return (
     <>
@@ -35,6 +37,10 @@ export function RetentionPage() {
           </Section>
         </>
       )}
+      <Section title="Rétention par plan" note="Plans par objectif commencés depuis leur lancement : part qui a fait 7 puis 14 étapes, et part abandonnée pour un autre plan. Passer la souris sur une barre donne les effectifs.">
+        <Status loadable={plans} />
+        {plans.data && <PlanRetention rows={plans.data} />}
+      </Section>
     </>
   );
 }

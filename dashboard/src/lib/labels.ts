@@ -66,3 +66,14 @@ export const KIND_LABELS: Record<string, string> = {
   sound: "Sons d’ambiance",
   check_in: "Check-ins",
 };
+
+// Goal plans: `QuietoPlanID` (app/ios/QuietoNative/Sources/QuietoNative/Core/Models/QuietoPlan.swift).
+export const PLAN_LABELS: Record<string, string> = {
+  sleep: "Mieux dormir",
+  anxiety: "Apaiser l’anxiété",
+  stress: "Souffler face au stress",
+  mind: "Apaiser le mental",
+  self: "Être bien avec soi",
+  relationships: "Des relations plus apaisées",
+};
+export const planLabel = (id: string) => PLAN_LABELS[id] ?? id;

@@ -1,4 +1,4 @@
-import type { DailyRow, DataSource, Onboarding, Overview, Range, Retention, Usage } from "./api";
+import type { DailyRow, DataSource, Onboarding, Overview, PlanFunnelRow, Range, Retention, Usage } from "./api";
 import { ONBOARDING_STEPS } from "./labels";
 
 // Generated data with the same shapes as the SQL functions, used when no
@@ -111,6 +111,22 @@ function retention(weeks: number): Retention {
   };
 }
 
+function plans(): PlanFunnelRow[] {
+  const rows: [string, number, number, number, number][] = [
+    // plan, active, abandoned, share reaching week 2, share reaching week 3
+    ["sleep", 410, 96, 0.58, 0.39],
+    ["stress", 352, 88, 0.55, 0.36],
+    ["anxiety", 298, 81, 0.49, 0.3],
+    ["mind", 187, 52, 0.52, 0.33],
+    ["self", 141, 37, 0.5, 0.31],
+    ["relationships", 76, 24, 0.44, 0.26],
+  ];
+  return rows.flatMap(([plan_id, active, abandoned, w2, w3]) => [
+    { plan_id, status: "active", programs: active, avg_completed_days: Math.round(w2 * 160) / 10, reached_week_2: Math.round(active * w2), reached_week_3: Math.round(active * w3) },
+    { plan_id, status: "abandoned", programs: abandoned, avg_completed_days: 3.4, reached_week_2: Math.round(abandoned * 0.2), reached_week_3: Math.round(abandoned * 0.06) },
+  ]);
+}
+
 function usage(range: Range): Usage {
   const scale = days(range) / 30;
   const s = (n: number) => Math.round(n * scale);
@@ -155,5 +171,6 @@ export const demoSource: DataSource = {
   daily: (range) => later(daily(range)),
   onboarding: (range) => later(onboarding(range)),
   retention: (weeks) => later(retention(weeks)),
+  plans: () => later(plans()),
   usage: (range) => later(usage(range)),
 };

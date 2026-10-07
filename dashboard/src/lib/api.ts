@@ -64,6 +64,16 @@ export type Retention = {
   day_n: { day: number; eligible: number; retained: number }[];
 };
 
+/** One row of private.plan_funnel: a goal plan and a status (active, abandoned…). */
+export type PlanFunnelRow = {
+  plan_id: string;
+  status: string;
+  programs: number;
+  avg_completed_days: number | null;
+  reached_week_2: number;
+  reached_week_3: number;
+};
+
 export type Usage = {
   by_kind: { kind: string; entries: number; users: number; minutes: number }[];
   top_content: { content: string; title?: string | null; kind: string; entries: number; users: number }[];
@@ -78,6 +88,7 @@ export interface DataSource {
   daily(range: Range): Promise<DailyRow[]>;
   onboarding(range: Range): Promise<Onboarding>;
   retention(weeks: number): Promise<Retention>;
+  plans(): Promise<PlanFunnelRow[]>;
   usage(range: Range): Promise<Usage>;
 }
 
@@ -104,6 +115,7 @@ function supabaseSource(client: SupabaseClient): DataSource {
     daily: (range) => rpc(client, "dashboard_daily", { ...span(range), p_tz: "Europe/Paris" }),
     onboarding: (range) => rpc(client, "dashboard_onboarding", span(range)),
     retention: (weeks) => rpc(client, "dashboard_retention", { p_weeks: weeks, p_tz: "Europe/Paris" }),
+    plans: () => rpc(client, "dashboard_plans", {}),
     usage: (range) => rpc(client, "dashboard_usage", span(range)),
   };
 }

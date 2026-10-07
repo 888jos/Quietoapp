@@ -13,6 +13,13 @@ Dernière mise à jour : **07/10/2026**
 - **Rappels pilotés par le rythme** : avec un plan en cours, les rappels tombent lundi-mercredi-vendredi (Doux), en semaine (Régulier) ou tous les jours (Soutenu), à l'heure du profil, pas avant que l'étape suivante soit ouverte. Ce sont des notifications ponctuelles sur 28 jours qui citent l'étape du jour (« Camille, ton étape du jour t'attend : … (5 min) »). Elles sont replanifiées à chaque changement du plan (`PlanReminderPlanner`, partagé par le Programme et le Profil). Sans plan, ou plan terminé, on revient aux jours choisis dans le Profil.
 - **Jours « situation »** : selon « Qu'est-ce qui pèse le plus ? » (travail, études, couple, famille, argent, santé, actualité), `PlanSituations` remplace des séances principales des semaines 2-3 (jours 12 et 19 pour une réponse ; 12, 16 et 19 pour plusieurs, une réponse après l'autre dans l'ordre de la question). Une séance déjà dans le plan est sautée. Le choix est figé au démarrage du plan (`QuietoPlanState.situations`), gardé même en version courte, et retrouvé depuis `program_steps` sur un nouvel iPhone. Libellé de l'étape : « Pour ce qui pèse en ce moment ».
 - **Louane, consigne par plan** (`supabase/functions/louane/prompts.ts`) : `CONSIGNES_PLAN` donne une consigne par plan (sommeil sans promesse de mieux dormir, anxiété sans diagnostic et sécurité d'abord, etc.), plus une phrase par phase (Découverte, Comprendre, Pratiquer, Ancrer). L'app envoie désormais `parcours.plan`, `parcours.etapes` et `parcours.phase`. Un ancien build est reconnu par `parcours.titre` (titre français) ; sa phase est déduite de `parcours.jour`. Corrigé au passage : « étape N sur 7 » devient « sur 20/27/28 », et la fin de plan ne parle plus de « cette semaine ». 23 tests Deno. **À déployer** : `supabase functions deploy louane`.
+- **Dashboard, rétention par plan** (onglet Rétention) : nouvelle fonction admin `public.dashboard_plans()` (migration `20261007180000_dashboard_plans.sql`) qui lit `private.plan_funnel`. Le tableau donne, par plan, les plans commencés, la part à 7 et à 14 étapes faites, la moyenne d'étapes faites et la part abandonnée pour un autre plan. Données de démo comprises.
+- **Corrigé en passant** : `app/ios/.gitignore` contenait `profile`, qui ignorait aussi `Features/Profile` (macOS ne distingue pas la casse). Le profil natif n'avait jamais été commité. La règle est maintenant `/profile`.
+- **Tests** : 149/149 XCTest, 23/23 Deno.
+- **Reste à faire** :
+  - **Déploiement** : `supabase db push` (migrations `20261007120000` et `20261007180000`), puis `supabase functions deploy louane`.
+  - **« Plan terminé »** n'est pas encore mesurable côté serveur : l'app ne passe jamais `programs.status` à `completed`. À ajouter pour compléter le graphique.
+  - **Contenu** : scripts « études » et « argent » (aujourd'hui, des séances génériques servent pour ces réponses).
 
 ## 🗺️ 07/10 (après-midi) — Plans par objectif + points ouverts de l'audit
 - **Commits** (branche `refactor/mvvm`) :
@@ -50,12 +57,7 @@ Dernière mise à jour : **07/10/2026**
 - **Tests** : 134/134 au vert. Traductions en/es/de/ja/ko ajoutées.
 - **Reste à faire** :
   - **Déploiement** : `db push` (avec la nouvelle migration).
-  - **Plans** :
-    - bilan stress J0/J14/J28 ;
-    - rappels pilotés par le rythme ;
-    - jours « situation » selon `stressSources` ;
-    - consigne Louane par plan côté serveur ;
-    - graphique `plan_funnel` dans le dashboard.
+  - ~~**Plans** : bilan stress, rappels par rythme, jours « situation », consigne Louane par plan, graphique `plan_funnel`~~ : faits le 07/10 au soir (section ci-dessus).
   - **Contenu** : 25 à 30 scripts, d'abord Anxiété et Relations, puis leur audio.
 
 ## 🔒 07/10 — Sécurité (app native + Supabase), clé Superwall

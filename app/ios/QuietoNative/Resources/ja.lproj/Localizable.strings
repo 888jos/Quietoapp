@@ -1009,3 +1009,15 @@
 "4 semaines pour avancer à ton rythme. Rythme : %@." = "自分のペースで進む4週間。リズム：%@。";
 "%@ : 4 semaines pensées pour toi, Louane et toutes les respirations. Essaie gratuitement, tu peux arrêter quand tu veux." = "%@：あなたのための4週間、Louane、すべての呼吸法。無料で試せて、いつでもやめられます。";
 "Étape %d · %@" = "ステップ%d・%@";
+
+/* Plan stress check-in */
+"Au départ" = "開始時";
+"À la fin" = "終了時";
+"Tu es à mi-parcours" = "折り返し地点です";
+"Dernier jour du plan" = "プラン最終日";
+"Ton stress au fil du plan" = "プラン中のストレスの変化";
+"Ta réponse reste sur cet iPhone." = "回答はこのiPhoneにのみ保存されます。";
+"1 point de moins qu’au départ." = "開始時より1ポイント低くなりました。";
+"%d points de moins qu’au départ." = "開始時より%dポイント低くなりました。";
+"Le même niveau qu’au départ. Chaque plan avance à son rythme." = "開始時と同じレベルです。どのプランにもそれぞれのペースがあります。";
+"Un peu plus qu’au départ. Louane peut t’aider à faire le point." = "開始時より少し高めです。Louaneと一緒に振り返ってみましょう。";

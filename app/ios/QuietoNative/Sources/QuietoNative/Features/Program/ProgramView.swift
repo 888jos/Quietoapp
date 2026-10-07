@@ -26,6 +26,10 @@ struct ProgramView: View {
                             if let error = model.loadError {
                                 Label(error.quietoLocalized, systemImage: "wifi.slash").font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
                             }
+                            if let checkpoint = model.dueStressCheckpoint {
+                                StressCheckCard(checkpoint: checkpoint, onSave: model.recordStress)
+                                    .id(checkpoint)
+                            }
                             todayCard
                         }
                         separator
@@ -149,12 +153,36 @@ struct ProgramView: View {
                 case .finished:
                     Label("Plan terminé", systemImage: "checkmark.seal.fill")
                         .font(QuietoFont.sans(.callout, weight: .semibold)).foregroundStyle(QuietoColor.mint)
+                    if model.stressProgression.count > 1 { stressProgression }
                     Text("Continue avec un autre plan, ou refais celui-ci à ton rythme.")
                         .font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
                     QuietoPrimaryButton(title: "Choisir mon prochain plan", systemImage: "map") { model.isPlanPickerPresented = true }
                 case nil:
                     EmptyView()
                 }
+            }
+        }
+    }
+
+    /// The stress check-ins of the plan, side by side, and what changed.
+    private var stressProgression: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Ton stress au fil du plan").font(QuietoFont.sans(.callout, weight: .semibold))
+            HStack(alignment: .bottom, spacing: 12) {
+                ForEach(model.stressProgression, id: \.checkpoint) { item in
+                    VStack(spacing: 6) {
+                        Text(verbatim: "\(item.level)").font(QuietoFont.sans(.callout, weight: .semibold))
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(item.checkpoint == .end ? AnyShapeStyle(QuietoColor.mintFill) : AnyShapeStyle(QuietoColor.surfaceRaised))
+                            .frame(height: CGFloat(max(item.level, 1)) * 8)
+                        Text(item.checkpoint.label.quietoLocalized).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            if let summary = model.stressSummary {
+                Text(summary).font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
             }
         }
     }
@@ -316,6 +344,29 @@ struct PlanPickerList: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(plan.id == current)
+            }
+        }
+    }
+}
+
+/// The 0-10 slider of the onboarding, asked again on day 0, day 14 and the
+/// last day of the plan. The answer stays on the iPhone.
+struct StressCheckCard: View {
+    let checkpoint: StressCheckpoint
+    let onSave: (Int) -> Void
+    @State private var value: Double = 5
+
+    var body: some View {
+        QuietoCard {
+            VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(checkpoint.title.quietoLocalized).font(QuietoFont.sans(.caption, weight: .semibold)).foregroundStyle(QuietoColor.mint).textCase(.uppercase)
+                    Text("Ton niveau de stress cette semaine ?".quietoLocalized).font(QuietoFont.heading(.card, weight: .semibold))
+                    Text("De 0 (calme) à 10 (au maximum).".quietoLocalized).font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
+                }
+                OnboardingScale(value: $value)
+                QuietoPrimaryButton(title: "Enregistrer", systemImage: "checkmark") { onSave(Int(value.rounded())) }
+                Text("Ta réponse reste sur cet iPhone.").font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
             }
         }
     }

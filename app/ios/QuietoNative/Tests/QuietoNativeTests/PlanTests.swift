@@ -127,4 +127,54 @@ final class PlanTests: XCTestCase {
         let decoded = try JSONDecoder().decode(QuietoPlanState.self, from: JSONEncoder().encode(value))
         XCTAssertEqual(decoded, value)
     }
+
+    // MARK: Stress check-in
+
+    func testStressCheckInsComeOnDayZeroDayFourteenAndTheEnd() {
+        var value = state(rhythm: .sustained)
+        XCTAssertEqual(PlanSchedule(state: value, catalog: catalog, now: date(1), calendar: calendar).dueStressCheckpoint, .start)
+        value.setStressLevel(7, at: .start)
+        XCTAssertNil(PlanSchedule(state: value, catalog: catalog, now: date(1), calendar: calendar).dueStressCheckpoint)
+
+        value.completions = Dictionary(uniqueKeysWithValues: (1...13).map { ($0, date(1)) })
+        XCTAssertNil(PlanSchedule(state: value, catalog: catalog, now: date(20), calendar: calendar).dueStressCheckpoint)
+        value.completions[14] = date(1)
+        XCTAssertEqual(PlanSchedule(state: value, catalog: catalog, now: date(20), calendar: calendar).dueStressCheckpoint, .middle)
+        value.setStressLevel(5, at: .middle)
+        XCTAssertNil(PlanSchedule(state: value, catalog: catalog, now: date(20), calendar: calendar).dueStressCheckpoint)
+
+        value.completions = Dictionary(uniqueKeysWithValues: (1...28).map { ($0, date(1)) })
+        let finished = PlanSchedule(state: value, catalog: catalog, now: date(30), calendar: calendar)
+        XCTAssertEqual(finished.dueStressCheckpoint, .end)
+        value.setStressLevel(12, at: .end)
+        let answered = PlanSchedule(state: value, catalog: catalog, now: date(30), calendar: calendar)
+        XCTAssertNil(answered.dueStressCheckpoint)
+        XCTAssertEqual(answered.stressProgression.map(\.level), [7, 5, 10], "Le curseur va de 0 à 10.")
+    }
+
+    func testDayFourteenOfThePlanSkipsTheDiscoveryWeek() {
+        var value = state(rhythm: .sustained, discovery: true)
+        value.setStressLevel(6, at: .start)
+        value.completions = Dictionary(uniqueKeysWithValues: (1...14).map { ($0, date(1)) })
+        XCTAssertNil(PlanSchedule(state: value, catalog: catalog, now: date(20), calendar: calendar).dueStressCheckpoint, "Jour 7 du plan seulement.")
+        value.completions[21] = date(1)
+        XCTAssertEqual(PlanSchedule(state: value, catalog: catalog, now: date(20), calendar: calendar).dueStressCheckpoint, .middle)
+    }
+
+    func testOnboardingSliderIsDayZero() {
+        var answers = OnboardingAnswers()
+        answers.stressBefore = 8
+        let plan = OnboardingPlanBuilder.build(from: answers, now: date(1))
+        XCTAssertEqual(plan.state.stressLevel(at: .start), 8)
+        XCTAssertNil(PlanSchedule(state: plan.state, catalog: catalog, now: date(1), calendar: calendar).dueStressCheckpoint)
+    }
+
+    func testStressLevelsSurviveStorageAndOlderStatesStillDecode() throws {
+        var value = state()
+        value.setStressLevel(4, at: .start)
+        XCTAssertEqual(try JSONDecoder().decode(QuietoPlanState.self, from: JSONEncoder().encode(value)), value)
+        let legacy = try JSONSerialization.jsonObject(with: JSONEncoder().encode(state())) as! [String: Any]
+        let decoded = try JSONDecoder().decode(QuietoPlanState.self, from: JSONSerialization.data(withJSONObject: legacy.filter { $0.key != "stressLevels" }))
+        XCTAssertNil(decoded.stressLevels)
+    }
 }

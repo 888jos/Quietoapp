@@ -212,13 +212,15 @@ enum OnboardingPlanBuilder {
 
     static func build(from answers: OnboardingAnswers, catalog: SessionCatalog = SessionCatalog(), choosing chosen: QuietoPlanID? = nil, now: Date = .now) -> Plan {
         let recommendation = PlanRecommender.recommend(answers)
-        let state = QuietoPlanState(
+        var state = QuietoPlanState(
             planID: chosen ?? recommendation.plan,
             startedAt: now,
             rhythm: recommendation.rhythm,
             prefersShort: recommendation.prefersShort,
             includesDiscovery: recommendation.includesDiscovery
         )
+        // Day 0 of the stress check-in: the slider of the onboarding.
+        state.setStressLevel(Int(answers.stressBefore.rounded()), at: .start)
         let schedule = PlanSchedule(state: state, catalog: catalog.sessions, now: now)
         return Plan(recommendation: recommendation, state: state, firstSteps: Array(schedule.steps.prefix(7)))
     }

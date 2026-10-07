@@ -1009,3 +1009,15 @@
 "4 semaines pour avancer à ton rythme. Rythme : %@." = "내 속도로 나아가는 4주. 리듬: %@.";
 "%@ : 4 semaines pensées pour toi, Louane et toutes les respirations. Essaie gratuitement, tu peux arrêter quand tu veux." = "%@: 나를 위한 4주, Louane, 모든 호흡법. 무료로 체험하고 언제든 그만둘 수 있어요.";
 "Étape %d · %@" = "%d단계 · %@";
+
+/* Plan stress check-in */
+"Au départ" = "시작할 때";
+"À la fin" = "마칠 때";
+"Tu es à mi-parcours" = "절반까지 왔어요";
+"Dernier jour du plan" = "플랜의 마지막 날";
+"Ton stress au fil du plan" = "플랜 동안의 스트레스";
+"Ta réponse reste sur cet iPhone." = "답변은 이 iPhone에만 남아요.";
+"1 point de moins qu’au départ." = "시작할 때보다 1점 낮아졌어요.";
+"%d points de moins qu’au départ." = "시작할 때보다 %d점 낮아졌어요.";
+"Le même niveau qu’au départ. Chaque plan avance à son rythme." = "시작할 때와 같은 수준이에요. 모든 플랜은 저마다의 속도로 나아가요.";
+"Un peu plus qu’au départ. Louane peut t’aider à faire le point." = "시작할 때보다 조금 높아요. Louane이 돌아보는 걸 도와줄 수 있어요.";

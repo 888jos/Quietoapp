@@ -92,6 +92,42 @@ final class InjectedViewModelTests: XCTestCase {
         XCTAssertTrue(analytics.events.contains("plan_day_completed"))
     }
 
+    func testStressCheckInStaysOnTheIPhone() async {
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        preferences.planState = QuietoPlanState(planID: .stress, startedAt: .now, rhythm: .regular, prefersShort: false, includesDiscovery: false)
+        let backend = FakeBackend()
+        let analytics = FakeAnalytics()
+        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: backend, completions: Empty().eraseToAnyPublisher(), analytics: analytics)
+        XCTAssertEqual(model.dueStressCheckpoint, .start)
+
+        model.recordStress(7)
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(preferences.planState?.stressLevel(at: .start), 7)
+        XCTAssertNil(model.dueStressCheckpoint)
+        XCTAssertTrue(analytics.events.isEmpty, "Le niveau de stress n’est jamais envoyé à Amplitude.")
+        XCTAssertFalse(analytics.properties.contains { $0.values.contains("7") })
+        XCTAssertTrue(backend.startedPlans.isEmpty)
+    }
+
+    func testEndOfPlanSummarisesTheStressCheckIns() {
+        QuietoLocalization.setLanguage(.fr)
+        defer { QuietoLocalization.setLanguage(nil) }
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        var state = QuietoPlanState(planID: .stress, startedAt: .now, rhythm: .sustained, prefersShort: false, includesDiscovery: false)
+        state.completions = Dictionary(uniqueKeysWithValues: (1...28).map { ($0, Date.now.addingTimeInterval(-86_400)) })
+        state.setStressLevel(8, at: .start)
+        preferences.planState = state
+        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: nil, completions: Empty().eraseToAnyPublisher())
+        XCTAssertEqual(model.dueStressCheckpoint, .end)
+        XCTAssertNil(model.stressSummary)
+
+        model.recordStress(5)
+
+        XCTAssertEqual(model.stressProgression.map(\.checkpoint), [.start, .end])
+        XCTAssertEqual(model.stressSummary, "3 points de moins qu’au départ.")
+    }
+
     func testChangingPlanStartsAtDayOneAndIsTracked() async {
         let preferences = QuietoPreferences(defaults: makeTestDefaults())
         var state = QuietoPlanState(planID: .sleep, startedAt: .now, rhythm: .gentle, prefersShort: true, includesDiscovery: false)

@@ -221,6 +221,31 @@ final class ProgramViewModel: ObservableObject {
         save(current)
     }
 
+    // MARK: Stress check-in
+
+    /// Day 0, day 14 and the end of the plan: the onboarding slider comes back.
+    var dueStressCheckpoint: StressCheckpoint? { schedule?.dueStressCheckpoint }
+    var stressProgression: [(checkpoint: StressCheckpoint, level: Int)] { schedule?.stressProgression ?? [] }
+
+    /// Kept in the plan on this iPhone only: the value never reaches analytics
+    /// nor the server (the plan sent to Supabase has no stress column).
+    func recordStress(_ value: Int) {
+        guard var current = state, let checkpoint = dueStressCheckpoint else { return }
+        current.setStressLevel(value, at: checkpoint)
+        save(current)
+    }
+
+    /// « 3 points de moins qu’au début », once the plan is over.
+    var stressSummary: String? {
+        guard let start = state?.stressLevel(at: .start), let end = state?.stressLevel(at: .end) else { return nil }
+        switch start - end {
+        case 1: return "1 point de moins qu’au départ.".quietoLocalized
+        case let drop where drop > 1: return QuietoLocalization.format("%d points de moins qu’au départ.", drop)
+        case 0: return "Le même niveau qu’au départ. Chaque plan avance à son rythme.".quietoLocalized
+        default: return "Un peu plus qu’au départ. Louane peut t’aider à faire le point.".quietoLocalized
+        }
+    }
+
     /// Where the person is in the plan, for Louane.
     var louaneProgramme: LouaneClientContext.Programme? {
         guard let state, let schedule else { return nil }

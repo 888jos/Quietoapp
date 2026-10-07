@@ -8,6 +8,9 @@ Dernière mise à jour : **07/10/2026**
 
 > 📁 **Depuis le 26/09/2026, tout Quieto vit dans UN dépôt : `~/Desktop/dev/Quieto`** (GitHub privé `Paul-Oll/Quieto`). Ce journal est `Quieto/docs/JOURNAL-QUIETO.md`. Dans les entrées d'avant le 26/09, lire `QuietoApp/…` = `Quieto/app/…`, `quieto-backend/…` = `Quieto/backend/…`, `cofonde-site/…` = `Quieto/sites/cofonde/…`, `quieto-entreprise-site/…` = `Quieto/sites/entreprise/…`, `quieto-logo/…` = `Quieto/logo/…`.
 
+## 🧭 07/10 (soir) — Fin des plans par objectif
+- **Bilan stress** : le curseur 0-10 de l'onboarding revient au jour 0, après le jour 14 du plan (semaine Découverte non comptée) et le dernier jour. Le jour 0 reprend `stressBefore` quand le plan vient de l'onboarding. Les valeurs vivent dans `QuietoPlanState.stressLevels`, sur l'iPhone seulement : ni Amplitude ni Supabase. En fin de plan, l'onglet Programme montre la progression (« 3 points de moins qu'au départ »).
+
 ## 🗺️ 07/10 (après-midi) — Plans par objectif + points ouverts de l'audit
 - **Commits** (branche `refactor/mvvm`) :
   - `76dc03e` : tout le refactor MVVM et la sécurité, enfin commités.

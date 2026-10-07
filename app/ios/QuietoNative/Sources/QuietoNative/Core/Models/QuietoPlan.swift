@@ -250,6 +250,9 @@ struct QuietoPlanState: Codable, Equatable {
     /// Completed day numbers and when.
     var completions: [Int: Date] = [:]
     var remoteID: UUID?
+    /// The 0-10 stress slider of the onboarding, asked again during the plan.
+    /// Stays on the iPhone: never sent to analytics nor to the server.
+    var stressLevels: [StressCheckpoint: Int]?
 
     init(planID: QuietoPlanID, startedAt: Date, rhythm: ProgramRhythm, prefersShort: Bool, includesDiscovery: Bool) {
         self.planID = planID
@@ -261,6 +264,39 @@ struct QuietoPlanState: Codable, Equatable {
     }
 
     var plan: QuietoPlan { PlanCatalog.plan(planID) }
+
+    /// Days of the discovery week before day 1 of the plan.
+    var discoveryOffset: Int { includesDiscovery ? PlanCatalog.discoveryWeek.count : 0 }
+
+    func stressLevel(at checkpoint: StressCheckpoint) -> Int? { stressLevels?[checkpoint] }
+
+    mutating func setStressLevel(_ value: Int, at checkpoint: StressCheckpoint) {
+        stressLevels = (stressLevels ?? [:]).merging([checkpoint: min(10, max(0, value))]) { $1 }
+    }
+}
+
+/// Day 0, day 14 and the last day of the plan: the stress slider comes back.
+enum StressCheckpoint: String, Codable, CaseIterable {
+    case start, middle, end
+
+    /// Plan day (discovery week left out) after which the middle check-in is asked.
+    static let middleDay = 14
+
+    var label: String {
+        switch self {
+        case .start: "Au départ"
+        case .middle: "Mi-parcours"
+        case .end: "À la fin"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .start: "Avant de commencer"
+        case .middle: "Tu es à mi-parcours"
+        case .end: "Dernier jour du plan"
+        }
+    }
 }
 
 /// What the plan looks like today. Pure: built from the state and the date.
@@ -342,6 +378,23 @@ struct PlanSchedule: Equatable {
 
     var completedCount: Int { steps.filter(\.isCompleted).count }
     var isFinished: Bool { today == .finished }
+
+    /// The stress check-in to ask now, if any: before the first step, once
+    /// day 14 of the plan is done, and when the plan is finished. The first one
+    /// is dropped once a step is done; the middle one waits until the end.
+    var dueStressCheckpoint: StressCheckpoint? {
+        let offset = state.discoveryOffset
+        let reachedMiddle = state.completions.keys.contains { $0 - offset >= StressCheckpoint.middleDay }
+        if isFinished { return state.stressLevel(at: .end) == nil ? .end : nil }
+        if state.completions.isEmpty { return state.stressLevel(at: .start) == nil ? .start : nil }
+        if reachedMiddle { return state.stressLevel(at: .middle) == nil ? .middle : nil }
+        return nil
+    }
+
+    /// The check-ins answered so far, in order, for the end of the plan.
+    var stressProgression: [(checkpoint: StressCheckpoint, level: Int)] {
+        StressCheckpoint.allCases.compactMap { checkpoint in state.stressLevel(at: checkpoint).map { (checkpoint, $0) } }
+    }
 
     /// 1-based position of the current step among the counted steps.
     var currentStepNumber: Int? {

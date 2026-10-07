@@ -1009,3 +1009,15 @@
 "4 semaines pour avancer à ton rythme. Rythme : %@." = "4 Wochen, um in deinem Tempo voranzukommen. Rhythmus: %@.";
 "%@ : 4 semaines pensées pour toi, Louane et toutes les respirations. Essaie gratuitement, tu peux arrêter quand tu veux." = "%@: 4 Wochen, für dich gestaltet, Louane und alle Atemübungen. Teste kostenlos, du kannst jederzeit aufhören.";
 "Étape %d · %@" = "Schritt %d · %@";
+
+/* Plan stress check-in */
+"Au départ" = "Zu Beginn";
+"À la fin" = "Am Ende";
+"Tu es à mi-parcours" = "Du hast die Hälfte geschafft";
+"Dernier jour du plan" = "Letzter Tag des Plans";
+"Ton stress au fil du plan" = "Dein Stress im Verlauf des Plans";
+"Ta réponse reste sur cet iPhone." = "Deine Antwort bleibt auf diesem iPhone.";
+"1 point de moins qu’au départ." = "1 Punkt weniger als zu Beginn.";
+"%d points de moins qu’au départ." = "%d Punkte weniger als zu Beginn.";
+"Le même niveau qu’au départ. Chaque plan avance à son rythme." = "Gleiches Niveau wie zu Beginn. Jeder Plan hat sein eigenes Tempo.";
+"Un peu plus qu’au départ. Louane peut t’aider à faire le point." = "Etwas höher als zu Beginn. Louane kann dir helfen, Bilanz zu ziehen.";

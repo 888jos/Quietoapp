@@ -1021,3 +1021,9 @@
 "%d points de moins qu’au départ." = "%d Punkte weniger als zu Beginn.";
 "Le même niveau qu’au départ. Chaque plan avance à son rythme." = "Gleiches Niveau wie zu Beginn. Jeder Plan hat sein eigenes Tempo.";
 "Un peu plus qu’au départ. Louane peut t’aider à faire le point." = "Etwas höher als zu Beginn. Louane kann dir helfen, Bilanz zu ziehen.";
+
+/* Plan reminders */
+"Ton étape du jour t’attend : %@ (%d min)." = "Dein Schritt für heute wartet: %@ (%d Min.).";
+"%@, ton étape du jour t’attend : %@ (%d min)." = "%@, dein Schritt für heute wartet: %@ (%d Min.).";
+"Ton plan fixe les jours : rythme %@ (%@)." = "Dein Plan legt die Tage fest: Rhythmus %@ (%@).";
+"Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "Jede Erinnerung nennt den heutigen Schritt deines Plans, zur Uhrzeit deiner aktuellen Zeitzone.";

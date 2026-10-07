@@ -229,6 +229,16 @@ enum ProgramRhythm: String, CaseIterable, Identifiable, Codable {
     var localizedName: String { rawValue.quietoLocalized }
     var localizedDetail: String { detail.quietoLocalized }
 
+    /// Days of the reminders (1 = Sunday, as `Calendar`): Monday, Wednesday
+    /// and Friday for « Doux », weekdays for « Régulier », every day for « Soutenu ».
+    var reminderWeekdays: Set<Int> {
+        switch self {
+        case .gentle: [2, 4, 6]
+        case .regular: [2, 3, 4, 5, 6]
+        case .sustained: Set(1...7)
+        }
+    }
+
     /// Free days are part of the path only every day; otherwise they stay
     /// optional and are left out of the count.
     var includesFreeDays: Bool { self == .sustained }
@@ -416,5 +426,80 @@ struct PlanSchedule: Equatable {
     func step(completedBy sessionID: String) -> Step? {
         guard case .available(let step) = today, step.session.id == sessionID || step.day.sessionID == sessionID else { return nil }
         return step
+    }
+}
+
+// MARK: - Reminders
+
+/// A one-off reminder: with a plan, each one names the step of the day.
+struct PlannedReminder: Equatable {
+    let date: Date
+    let body: String
+}
+
+/// Pure: the reminders of the coming weeks, on the days of the rhythm, from
+/// the day the next step opens. They all name the next step: a step is only
+/// done in the app, and each completion schedules them again.
+enum PlanReminders {
+    /// Well under the 64 pending notifications iOS keeps per app.
+    static let horizonDays = 28
+
+    static func make(schedule: PlanSchedule, hour: Int, minute: Int, firstName: String, now: Date, calendar: Calendar = .autoupdatingCurrent) -> [PlannedReminder] {
+        guard let next = schedule.nextStep else { return [] }
+        let opens: Date = {
+            if case .locked(_, let opensOn) = schedule.today { return opensOn }
+            return now
+        }()
+        let weekdays = schedule.state.rhythm.reminderWeekdays
+        let body = body(for: next.session, firstName: firstName)
+        let today = calendar.startOfDay(for: now)
+        return (0..<horizonDays).compactMap { offset in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: today),
+                  weekdays.contains(calendar.component(.weekday, from: day)),
+                  let date = calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day),
+                  date > now, date >= opens else { return nil }
+            return PlannedReminder(date: date, body: body)
+        }
+    }
+
+    static func body(for session: QuietoSession, firstName: String) -> String {
+        let title = session.title.quietoLocalized
+        return firstName.isEmpty
+            ? QuietoLocalization.format("Ton étape du jour t’attend : %@ (%d min).", title, session.durationMinutes)
+            : QuietoLocalization.format("%@, ton étape du jour t’attend : %@ (%d min).", firstName, title, session.durationMinutes)
+    }
+}
+
+/// Schedules the daily reminders: with a plan in progress, on the days of its
+/// rhythm and naming the step of the day; otherwise on the days chosen in the
+/// profile. Shared by the Programme tab and the profile.
+struct PlanReminderPlanner {
+    let scheduler: ReminderScheduling
+    let preferences: QuietoPreferences
+    let catalog: SessionCatalog
+    var now: () -> Date = Date.init
+    var calendar: Calendar = .autoupdatingCurrent
+
+    /// The rhythm that sets the reminder days, while a plan is in progress.
+    var activeRhythm: ProgramRhythm? {
+        guard let state = preferences.planState,
+              !PlanSchedule(state: state, catalog: catalog.sessions, now: now(), calendar: calendar).isFinished else { return nil }
+        return state.rhythm
+    }
+
+    /// `settings` and `firstName` default to the saved ones; the profile passes
+    /// the values being edited. Does nothing when reminders are off.
+    func refresh(settings: ReminderSettings? = nil, firstName: String? = nil) {
+        let settings = settings ?? preferences.reminder
+        guard settings.isEnabled else { return }
+        let name = firstName ?? preferences.firstName
+        if let state = preferences.planState {
+            let schedule = PlanSchedule(state: state, catalog: catalog.sessions, now: now(), calendar: calendar)
+            if !schedule.isFinished {
+                scheduler.schedule(PlanReminders.make(schedule: schedule, hour: settings.hour, minute: settings.minute, firstName: name, now: now(), calendar: calendar))
+                return
+            }
+        }
+        scheduler.schedule(hour: settings.hour, minute: settings.minute, weekdays: settings.weekdays.sorted(), firstName: name)
     }
 }

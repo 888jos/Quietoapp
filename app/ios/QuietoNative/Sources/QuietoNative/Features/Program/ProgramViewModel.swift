@@ -21,15 +21,18 @@ final class ProgramViewModel: ObservableObject {
     /// Nil when the backend is not configured: the plan stays local.
     private let repository: ProgramRepository?
     private let analytics: QuietoAnalyticsProviding
+    /// Names the step of the day in the reminders; nil in previews and tests.
+    private let reminders: PlanReminderPlanner?
     private let now: () -> Date
     private var cancellables = Set<AnyCancellable>()
 
-    init(catalog: SessionCatalog, preferences: QuietoPreferences, activity: ActivityStore, repository: ProgramRepository?, completions: AnyPublisher<String, Never>, analytics: QuietoAnalyticsProviding = PreviewAnalyticsService(), now: @escaping () -> Date = Date.init) {
+    init(catalog: SessionCatalog, preferences: QuietoPreferences, activity: ActivityStore, repository: ProgramRepository?, completions: AnyPublisher<String, Never>, analytics: QuietoAnalyticsProviding = PreviewAnalyticsService(), reminders: PlanReminderPlanner? = nil, now: @escaping () -> Date = Date.init) {
         self.preferences = preferences
         self.activity = activity
         self.catalog = catalog
         self.repository = repository
         self.analytics = analytics
+        self.reminders = reminders
         self.now = now
         state = preferences.planState
         rebuild()
@@ -86,6 +89,8 @@ final class ProgramViewModel: ObservableObject {
         state = newState
         preferences.planState = newState
         rebuild()
+        // A new step, rhythm or session: the reminders name the step of the day.
+        reminders?.refresh()
     }
 
     // MARK: Choosing a plan

@@ -75,6 +75,8 @@ final class AppContainer {
 
     private var remoteRepository: QuietoSupabaseService? { backend.isConfigured ? backend : nil }
 
+    private var reminderPlanner: PlanReminderPlanner { PlanReminderPlanner(scheduler: reminders, preferences: preferences, catalog: catalog) }
+
     // MARK: ViewModels (one per screen, kept for the app's lifetime)
 
     lazy var root = RootViewModel(subscriptions: subscriptions, audioPlayer: audioPlayer, achievements: achievements)
@@ -133,7 +135,8 @@ final class AppContainer {
         activity: activity,
         repository: remoteRepository,
         completions: playbackTracker.completions.eraseToAnyPublisher(),
-        analytics: analytics
+        analytics: analytics,
+        reminders: reminderPlanner
     )
 
     lazy var louane = LouaneViewModel(
@@ -158,6 +161,7 @@ final class AppContainer {
         louaneMemory: louaneMemory,
         subscriptions: subscriptions,
         reminders: reminders,
+        reminderPlanner: reminderPlanner,
         health: health,
         localData: LocalDataWiper(preferences: preferences, downloads: downloads, louaneMemory: louaneMemory) { [achievements, weak self] in
             achievements.reloadAfterWipe()

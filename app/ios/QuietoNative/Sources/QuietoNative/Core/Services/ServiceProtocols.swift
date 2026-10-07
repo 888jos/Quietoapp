@@ -162,6 +162,8 @@ protocol ReminderScheduling {
     /// The system notification permission, without asking for it.
     func authorizationStatus() async -> QuietoNotificationStatus
     func schedule(hour: Int, minute: Int, weekdays: [Int], firstName: String)
+    /// Replaces every daily reminder by these one-off ones (a plan in progress).
+    func schedule(_ reminders: [PlannedReminder])
     func scheduleTrialEndingReminder(trialDays: Int) async
     /// Replaces the text of the pending trial reminder, keeping its date.
     func refreshTrialEndingReminder(body: String) async

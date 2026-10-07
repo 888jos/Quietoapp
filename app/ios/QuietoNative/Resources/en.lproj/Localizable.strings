@@ -1021,3 +1021,9 @@
 "%d points de moins qu’au départ." = "%d points lower than at the start.";
 "Le même niveau qu’au départ. Chaque plan avance à son rythme." = "The same level as at the start. Every plan moves at its own pace.";
 "Un peu plus qu’au départ. Louane peut t’aider à faire le point." = "A little higher than at the start. Louane can help you take stock.";
+
+/* Plan reminders */
+"Ton étape du jour t’attend : %@ (%d min)." = "Today’s step is waiting for you: %@ (%d min).";
+"%@, ton étape du jour t’attend : %@ (%d min)." = "%@, today’s step is waiting for you: %@ (%d min).";
+"Ton plan fixe les jours : rythme %@ (%@)." = "Your plan sets the days: %@ rhythm (%@).";
+"Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "Each reminder names today’s step in your plan, at the time of your current time zone.";

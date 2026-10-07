@@ -146,6 +146,25 @@ struct QuietoReminderScheduler: ReminderScheduling {
         }
     }
 
+    func schedule(_ reminders: [PlannedReminder]) {
+        let center = UNUserNotificationCenter.current()
+        removeAll()
+        let calendar = Calendar.autoupdatingCurrent
+        for (index, reminder) in reminders.prefix(Self.maxPlanReminders).enumerated() {
+            let content = UNMutableNotificationContent()
+            content.title = "Quieto"
+            content.body = reminder.body
+            content.sound = .default
+            var components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: reminder.date)
+            components.calendar = calendar
+            components.timeZone = .autoupdatingCurrent
+            center.add(UNNotificationRequest(identifier: "\(Self.identifierPrefix).plan.\(index)", content: content, trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
+        }
+    }
+
+    /// Room left for the trial reminder under the 64 pending requests of iOS.
+    static let maxPlanReminders = PlanReminders.horizonDays
+
     /// The trial timeline promises a reminder two days before the trial ends.
     func scheduleTrialEndingReminder(trialDays: Int) async {
         var trialStart: Date?
@@ -181,6 +200,7 @@ struct QuietoReminderScheduler: ReminderScheduling {
 
     func removeAll() {
         let identifiers = [Self.identifierPrefix] + (1...7).map { "\(Self.identifierPrefix).\($0)" }
+            + (0..<Self.maxPlanReminders).map { "\(Self.identifierPrefix).plan.\($0)" }
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 }

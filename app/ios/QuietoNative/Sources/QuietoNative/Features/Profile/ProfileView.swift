@@ -249,28 +249,36 @@ struct ProfileDestinationView: View {
                 Toggle("Activer les rappels", isOn: Binding(get: { model.remindersEnabled }, set: { value in Task { await model.setReminders(value) } }))
                 if model.remindersEnabled {
                     DatePicker("Heure", selection: reminderTime, displayedComponents: .hourAndMinute)
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Jours").font(QuietoFont.sans(.callout, weight: .semibold))
-                        HStack(spacing: 7) {
-                            ForEach(orderedWeekdays, id: \.self) { weekday in
-                                Button {
-                                    model.toggleReminderDay(weekday)
-                                } label: {
-                                    Text(shortWeekday(weekday))
-                                        .font(QuietoFont.sans(.caption, weight: .semibold))
-                                        .frame(maxWidth: .infinity, minHeight: 34)
-                                        .foregroundStyle(model.selectedReminderDays.contains(weekday) ? QuietoColor.background : QuietoColor.textPrimary)
-                                        .background(model.selectedReminderDays.contains(weekday) ? QuietoColor.mint : QuietoColor.surfaceRaised, in: Circle())
+                    if let rhythm = model.planRhythm {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Jours").font(QuietoFont.sans(.callout, weight: .semibold))
+                            Text(QuietoLocalization.format("Ton plan fixe les jours : rythme %@ (%@).", rhythm.localizedName, rhythm.localizedDetail))
+                                .font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Jours").font(QuietoFont.sans(.callout, weight: .semibold))
+                            HStack(spacing: 7) {
+                                ForEach(orderedWeekdays, id: \.self) { weekday in
+                                    Button {
+                                        model.toggleReminderDay(weekday)
+                                    } label: {
+                                        Text(shortWeekday(weekday))
+                                            .font(QuietoFont.sans(.caption, weight: .semibold))
+                                            .frame(maxWidth: .infinity, minHeight: 34)
+                                            .foregroundStyle(model.selectedReminderDays.contains(weekday) ? QuietoColor.background : QuietoColor.textPrimary)
+                                            .background(model.selectedReminderDays.contains(weekday) ? QuietoColor.mint : QuietoColor.surfaceRaised, in: Circle())
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityLabel(fullWeekday(weekday))
+                                    .accessibilityAddTraits(model.selectedReminderDays.contains(weekday) ? .isSelected : [])
                                 }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel(fullWeekday(weekday))
-                                .accessibilityAddTraits(model.selectedReminderDays.contains(weekday) ? .isSelected : [])
                             }
                         }
                     }
                 }
             } footer: {
-                Text("Un rappel par jour choisi, à l’heure de ton fuseau horaire actuel.")
+                Text((model.planRhythm == nil ? "Un rappel par jour choisi, à l’heure de ton fuseau horaire actuel." : "Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel.").quietoLocalized)
             }.listRowBackground(QuietoColor.surface)
         }
     }

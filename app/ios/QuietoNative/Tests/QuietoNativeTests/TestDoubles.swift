@@ -142,7 +142,9 @@ final class FakeReminders: ReminderScheduling {
     private(set) var removeCount = 0
     func requestAuthorization() async -> Bool { grants }
     func authorizationStatus() async -> QuietoNotificationStatus { grants ? .allowed : .denied }
-    func schedule(hour: Int, minute: Int, weekdays: [Int], firstName: String) { scheduled.append((hour, minute, weekdays)) }
+    func schedule(hour: Int, minute: Int, weekdays: [Int], firstName: String) { scheduled.append((hour, minute, weekdays)); planReminders = [] }
+    private(set) var planReminders: [PlannedReminder] = []
+    func schedule(_ reminders: [PlannedReminder]) { planReminders = reminders }
     private(set) var trialReminderBodies: [String] = []
     func scheduleTrialEndingReminder(trialDays: Int) async {}
     func refreshTrialEndingReminder(body: String) async { trialReminderBodies.append(body) }

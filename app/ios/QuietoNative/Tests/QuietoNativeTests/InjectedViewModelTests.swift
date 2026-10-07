@@ -92,6 +92,22 @@ final class InjectedViewModelTests: XCTestCase {
         XCTAssertTrue(analytics.events.contains("plan_day_completed"))
     }
 
+    func testCompletingAStepSchedulesRemindersForTheNextOne() {
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        preferences.reminder = ReminderSettings(isEnabled: true, hour: 20, minute: 0, weekdays: Set(1...7))
+        preferences.planState = QuietoPlanState(planID: .sleep, startedAt: .now, rhythm: .sustained, prefersShort: false, includesDiscovery: false)
+        let scheduler = FakeReminders()
+        let planner = PlanReminderPlanner(scheduler: scheduler, preferences: preferences, catalog: SessionCatalog())
+        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: nil, completions: Empty().eraseToAnyPublisher(), reminders: planner)
+
+        model.sessionCompleted("screen_off")
+
+        let next = try! XCTUnwrap(SessionCatalog().sessions.first { $0.id == "express_4" })
+        XCTAssertFalse(scheduler.planReminders.isEmpty)
+        XCTAssertTrue(scheduler.planReminders.allSatisfy { $0.body.contains(next.title.quietoLocalized) })
+        XCTAssertTrue(scheduler.planReminders.allSatisfy { !Calendar.current.isDateInToday($0.date) }, "L’étape du jour est faite.")
+    }
+
     func testStressCheckInStaysOnTheIPhone() async {
         let preferences = QuietoPreferences(defaults: makeTestDefaults())
         preferences.planState = QuietoPlanState(planID: .stress, startedAt: .now, rhythm: .regular, prefersShort: false, includesDiscovery: false)

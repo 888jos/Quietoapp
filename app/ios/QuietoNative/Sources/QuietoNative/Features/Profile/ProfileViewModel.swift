@@ -38,11 +38,13 @@ final class ProfileViewModel: ObservableObject {
     private let louaneMemory: LouaneMemoryProviding
     private let subscriptions: SubscriptionServicing
     private let reminders: ReminderScheduling
+    /// With a plan in progress, the reminders follow its rhythm and name the step of the day.
+    private let reminderPlanner: PlanReminderPlanner?
     private let health: HealthServicing
     private let localData: LocalDataWiper
     private var cancellables = Set<AnyCancellable>()
 
-    init(preferences: QuietoPreferences, auth: AuthServicing, account: AccountDataServicing, louane: LouaneRepository, louaneMemory: LouaneMemoryProviding, subscriptions: SubscriptionServicing, reminders: ReminderScheduling, health: HealthServicing, localData: LocalDataWiper) {
+    init(preferences: QuietoPreferences, auth: AuthServicing, account: AccountDataServicing, louane: LouaneRepository, louaneMemory: LouaneMemoryProviding, subscriptions: SubscriptionServicing, reminders: ReminderScheduling, reminderPlanner: PlanReminderPlanner? = nil, health: HealthServicing, localData: LocalDataWiper) {
         self.preferences = preferences
         self.auth = auth
         self.account = account
@@ -50,6 +52,7 @@ final class ProfileViewModel: ObservableObject {
         self.louaneMemory = louaneMemory
         self.subscriptions = subscriptions
         self.reminders = reminders
+        self.reminderPlanner = reminderPlanner
         self.health = health
         self.localData = localData
         firstName = preferences.firstName
@@ -122,6 +125,7 @@ final class ProfileViewModel: ObservableObject {
         guard remindersEnabled else { return "Désactivés".quietoLocalized }
         if notificationStatus == .denied { return "Bloqués dans Réglages".quietoLocalized }
         let time = String(format: "%02d:%02d", reminderHour, reminderMinute)
+        if let planRhythm { return "\(time) · \(planRhythm.localizedName)" }
         return selectedReminderDays.count == 7 ? time : "\(time) · \(String(format: "%d j/sem.".quietoLocalized, selectedReminderDays.count))"
     }
 
@@ -239,8 +243,14 @@ final class ProfileViewModel: ObservableObject {
     }
 
     func scheduleReminder() {
-        reminders.schedule(hour: reminderHour, minute: reminderMinute, weekdays: selectedReminderDays.sorted(), firstName: firstName)
+        guard let reminderPlanner else {
+            return reminders.schedule(hour: reminderHour, minute: reminderMinute, weekdays: selectedReminderDays.sorted(), firstName: firstName)
+        }
+        reminderPlanner.refresh(settings: ReminderSettings(isEnabled: true, hour: reminderHour, minute: reminderMinute, weekdays: selectedReminderDays), firstName: firstName)
     }
+
+    /// While a plan is in progress its rhythm sets the reminder days.
+    var planRhythm: ProgramRhythm? { reminderPlanner?.activeRhythm }
 
     func saveAccessibility() {
         syncPreferences()

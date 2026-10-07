@@ -1021,3 +1021,9 @@
 "%d points de moins qu’au départ." = "開始時より%dポイント低くなりました。";
 "Le même niveau qu’au départ. Chaque plan avance à son rythme." = "開始時と同じレベルです。どのプランにもそれぞれのペースがあります。";
 "Un peu plus qu’au départ. Louane peut t’aider à faire le point." = "開始時より少し高めです。Louaneと一緒に振り返ってみましょう。";
+
+/* Plan reminders */
+"Ton étape du jour t’attend : %@ (%d min)." = "今日のステップが待っています：%@（%d分）";
+"%@, ton étape du jour t’attend : %@ (%d min)." = "%@さん、今日のステップが待っています：%@（%d分）";
+"Ton plan fixe les jours : rythme %@ (%@)." = "日はプランで決まります：%@ペース（%@）";
+"Chaque rappel cite l’étape du jour de ton plan, à l’heure de ton fuseau horaire actuel." = "リマインダーには、現在のタイムゾーンの時刻でプランの今日のステップが表示されます。";

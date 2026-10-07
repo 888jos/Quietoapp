@@ -10,6 +10,7 @@ Dernière mise à jour : **07/10/2026**
 
 ## 🧭 07/10 (soir) — Fin des plans par objectif
 - **Bilan stress** : le curseur 0-10 de l'onboarding revient au jour 0, après le jour 14 du plan (semaine Découverte non comptée) et le dernier jour. Le jour 0 reprend `stressBefore` quand le plan vient de l'onboarding. Les valeurs vivent dans `QuietoPlanState.stressLevels`, sur l'iPhone seulement : ni Amplitude ni Supabase. En fin de plan, l'onglet Programme montre la progression (« 3 points de moins qu'au départ »).
+- **Rappels pilotés par le rythme** : avec un plan en cours, les rappels tombent lundi-mercredi-vendredi (Doux), en semaine (Régulier) ou tous les jours (Soutenu), à l'heure du profil, pas avant que l'étape suivante soit ouverte. Ce sont des notifications ponctuelles sur 28 jours qui citent l'étape du jour (« Camille, ton étape du jour t'attend : … (5 min) »). Elles sont replanifiées à chaque changement du plan (`PlanReminderPlanner`, partagé par le Programme et le Profil). Sans plan, ou plan terminé, on revient aux jours choisis dans le Profil.
 
 ## 🗺️ 07/10 (après-midi) — Plans par objectif + points ouverts de l'audit
 - **Commits** (branche `refactor/mvvm`) :

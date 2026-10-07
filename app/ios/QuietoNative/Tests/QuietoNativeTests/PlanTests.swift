@@ -177,4 +177,60 @@ final class PlanTests: XCTestCase {
         let decoded = try JSONDecoder().decode(QuietoPlanState.self, from: JSONSerialization.data(withJSONObject: legacy.filter { $0.key != "stressLevels" }))
         XCTAssertNil(decoded.stressLevels)
     }
+
+    // MARK: Reminders
+
+    func testRhythmSetsTheReminderDays() {
+        func weekdays(_ rhythm: ProgramRhythm) -> Set<Int> {
+            let schedule = PlanSchedule(state: state(rhythm: rhythm), catalog: catalog, now: date(1, hour: 8), calendar: calendar)
+            let reminders = PlanReminders.make(schedule: schedule, hour: 20, minute: 0, firstName: "", now: date(1, hour: 8), calendar: calendar)
+            XCTAssertTrue(reminders.allSatisfy { calendar.component(.hour, from: $0.date) == 20 })
+            return Set(reminders.map { calendar.component(.weekday, from: $0.date) })
+        }
+        XCTAssertEqual(weekdays(.gentle), [2, 4, 6], "Doux : lundi, mercredi, vendredi.")
+        XCTAssertEqual(weekdays(.regular), [2, 3, 4, 5, 6], "Régulier : en semaine.")
+        XCTAssertEqual(weekdays(.sustained), Set(1...7), "Soutenu : tous les jours.")
+    }
+
+    func testRemindersNameTheStepOfTheDayAndWaitUntilItOpens() {
+        QuietoLocalization.setLanguage(.fr)
+        defer { QuietoLocalization.setLanguage(nil) }
+        // Thursday 1 October: day 1 done in the morning, day 2 opens on Friday.
+        let done = state(rhythm: .sustained, completions: [1: date(1, hour: 8)])
+        let schedule = PlanSchedule(state: done, catalog: catalog, now: date(1, hour: 9), calendar: calendar)
+        let reminders = PlanReminders.make(schedule: schedule, hour: 20, minute: 30, firstName: "Camille", now: date(1, hour: 9), calendar: calendar)
+        XCTAssertEqual(reminders.first?.date, calendar.date(from: DateComponents(year: 2026, month: 10, day: 2, hour: 20, minute: 30)))
+        XCTAssertEqual(reminders.count, PlanReminders.horizonDays - 1)
+        let next = try! XCTUnwrap(schedule.nextStep?.session)
+        XCTAssertEqual(reminders.first?.body, "Camille, ton étape du jour t’attend : \(next.title) (\(next.durationMinutes) min).")
+
+        // The time of today is past: the first reminder is tomorrow.
+        let late = PlanReminders.make(schedule: PlanSchedule(state: state(), catalog: catalog, now: date(1, hour: 21), calendar: calendar), hour: 20, minute: 0, firstName: "", now: date(1, hour: 21), calendar: calendar)
+        XCTAssertEqual(late.first.map { calendar.component(.day, from: $0.date) }, 2)
+        XCTAssertTrue(late.first?.body.hasPrefix("Ton étape du jour t’attend : ") ?? false)
+
+        let all = Dictionary(uniqueKeysWithValues: (1...28).map { ($0, date(1)) })
+        XCTAssertTrue(PlanReminders.make(schedule: PlanSchedule(state: state(completions: all), catalog: catalog, now: date(2), calendar: calendar), hour: 20, minute: 0, firstName: "", now: date(2), calendar: calendar).isEmpty)
+    }
+
+    func testPlannerFollowsThePlanThenTheProfileDays() {
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        preferences.reminder = ReminderSettings(isEnabled: true, hour: 21, minute: 0, weekdays: [1, 7])
+        let scheduler = FakeReminders()
+        let planner = PlanReminderPlanner(scheduler: scheduler, preferences: preferences, catalog: SessionCatalog(), now: { self.date(1, hour: 8) }, calendar: calendar)
+
+        planner.refresh()
+        XCTAssertEqual(scheduler.scheduled.last?.weekdays, [1, 7], "Sans plan : les jours du profil.")
+        XCTAssertNil(planner.activeRhythm)
+
+        preferences.planState = state(rhythm: .gentle)
+        planner.refresh()
+        XCTAssertEqual(Set(scheduler.planReminders.map { calendar.component(.weekday, from: $0.date) }), [2, 4, 6])
+        XCTAssertEqual(planner.activeRhythm, .gentle)
+
+        preferences.reminder.isEnabled = false
+        let count = scheduler.scheduled.count
+        planner.refresh()
+        XCTAssertEqual(scheduler.scheduled.count, count, "Rappels coupés : rien n’est planifié.")
+    }
 }

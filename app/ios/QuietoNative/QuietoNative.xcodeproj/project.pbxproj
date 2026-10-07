@@ -131,6 +131,7 @@
 		6BE2980BCF6939CA523A09FF /* quick-kindness.png in Resources */ = {isa = PBXBuildFile; fileRef = FA9A86092DF4E1C2B37C5267 /* quick-kindness.png */; };
 		6DA2EDC187EACB469020DA6E /* PracticeJournal.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB910DDA097CF9FDD44C72A /* PracticeJournal.swift */; };
 		6EB02E3F45E0407E5759775A /* need-quickReset.png in Resources */ = {isa = PBXBuildFile; fileRef = FCE1886802DFACD09A0BCB1C /* need-quickReset.png */; };
+		7043C6EA73E8CD5290CE4653 /* PlanTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 708332999173243DB77BB997 /* PlanTests.swift */; };
 		71F792616DDB7C2941192CFB /* ambience-fan.png in Resources */ = {isa = PBXBuildFile; fileRef = 021E9EA9052274AFB6367DEE /* ambience-fan.png */; };
 		7292ED1856AEF8A36F75AD57 /* OnboardingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F66BF70B2D358B658E8AA6 /* OnboardingTests.swift */; };
 		730C6C052BB4862D02A55661 /* WeekStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FDAABDA4EF061F2474700AA /* WeekStrip.swift */; };
@@ -212,6 +213,7 @@
 		BA8210F28E9BB9D809FB9EC8 /* ambience-distant-storm.png in Resources */ = {isa = PBXBuildFile; fileRef = 217943385545067765B514CD /* ambience-distant-storm.png */; };
 		BAB8D5896CC3A0CBF969937D /* badge-sound_100.png in Resources */ = {isa = PBXBuildFile; fileRef = D8B2A982C751B88256E1D34A /* badge-sound_100.png */; };
 		BBCD97A3D0E873FD913BCB76 /* ambience-cafe.png in Resources */ = {isa = PBXBuildFile; fileRef = EFD4712C8F2B99FF56E9BBAA /* ambience-cafe.png */; };
+		BE98B6634163583DD3953D9F /* QuietoPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 564E0B5BBC5D6C7714033832 /* QuietoPlan.swift */; };
 		BFAC1C02DDF12D9F88122CEA /* session-new_walking_pause.png in Resources */ = {isa = PBXBuildFile; fileRef = BE4DB21658EB00E908249445 /* session-new_walking_pause.png */; };
 		BFEC96C8BAAC9FF6DE07C4E7 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53298EA52213C469A53779CF /* AppContainer.swift */; };
 		C018B76EC6786327C0A75A7E /* session-discover_open_sitting.png in Resources */ = {isa = PBXBuildFile; fileRef = E945BB2AEE3F577153F848C0 /* session-discover_open_sitting.png */; };
@@ -414,6 +416,7 @@
 		53E5D0BC04C558B8931CADA4 /* session-decision_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-decision_pause.png"; sourceTree = "<group>"; };
 		53F7CF2B687836E7C313CA73 /* session-meditation_16.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-meditation_16.png"; sourceTree = "<group>"; };
 		54D0A9E2DAB07288CBA11CDB /* badge-minutes_300.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "badge-minutes_300.png"; sourceTree = "<group>"; };
+		564E0B5BBC5D6C7714033832 /* QuietoPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuietoPlan.swift; sourceTree = "<group>"; };
 		57C182E275C97E6CF729841C /* session-new_nidra_pause.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-new_nidra_pause.png"; sourceTree = "<group>"; };
 		57D71DA54C5393861540C7A6 /* ambience-rain.m4a */ = {isa = PBXFileReference; path = "ambience-rain.m4a"; sourceTree = "<group>"; };
 		59734C8735541ADAF5841B8D /* session-discover_rain.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-discover_rain.png"; sourceTree = "<group>"; };
@@ -441,6 +444,7 @@
 		6EBB167BC44A0B65EA115BAD /* session-new_safe_place.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-new_safe_place.png"; sourceTree = "<group>"; };
 		6EC30562344DC5DD8E368E22 /* quick-perspective.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "quick-perspective.png"; sourceTree = "<group>"; };
 		6ECF09BCF546BAA8827611F7 /* ambience-distant-storm.m4a */ = {isa = PBXFileReference; path = "ambience-distant-storm.m4a"; sourceTree = "<group>"; };
+		708332999173243DB77BB997 /* PlanTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanTests.swift; sourceTree = "<group>"; };
 		70DB5C87526730B3072451FC /* session-express_4.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-express_4.png"; sourceTree = "<group>"; };
 		715ABB7DB45F9FDAB920F784 /* session-sleep_3.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "session-sleep_3.png"; sourceTree = "<group>"; };
 		72491D0917E9B4FD36F4F9CB /* moment-self-emotions.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "moment-self-emotions.png"; sourceTree = "<group>"; };
@@ -666,6 +670,7 @@
 				5DD2A56DCF5FB315454CF9DF /* LouaneModels.swift */,
 				DC2131D23CBF939D93D73122 /* NarrationCatalog.swift */,
 				DB05C5D3998B3CA1A7755BC3 /* QuietoModels.swift */,
+				564E0B5BBC5D6C7714033832 /* QuietoPlan.swift */,
 				6D5E22FC8FC366CF2E216574 /* SessionCatalog.swift */,
 				1D1530678DBAEB22F06409FF /* SessionRecommender.swift */,
 			);
@@ -1181,6 +1186,7 @@
 				2209D3570530EFAA3C2B4E9E /* LocalizationTests.swift */,
 				41954CB70F2CF940C971C0E8 /* LouaneViewModelTests.swift */,
 				F2F66BF70B2D358B658E8AA6 /* OnboardingTests.swift */,
+				708332999173243DB77BB997 /* PlanTests.swift */,
 				DE6664CA9CE0F2E7A410BE60 /* SessionsViewModelTests.swift */,
 				E4F862B4C7C0D9FD7DD551AB /* TestDoubles.swift */,
 			);
@@ -1539,6 +1545,7 @@
 				78202059C086691B725C71C5 /* QuietoModels.swift in Sources */,
 				EFE974C04B692C73FD83A756 /* QuietoNativeApp.swift in Sources */,
 				5FA16694361AFFEEF460C1BC /* QuietoPermissions.swift in Sources */,
+				BE98B6634163583DD3953D9F /* QuietoPlan.swift in Sources */,
 				AA8E846748F671AC80CBF77D /* QuietoPracticeSync.swift in Sources */,
 				47FDD09D55B713AE1ADEEF73 /* QuietoPreferences.swift in Sources */,
 				5E393B6F62AE521F1BE6453A /* QuietoServices.swift in Sources */,
@@ -1573,6 +1580,7 @@
 				B9964E36394E59AC942AB85B /* LocalizationTests.swift in Sources */,
 				6428668C0F6EB93779124CBF /* LouaneViewModelTests.swift in Sources */,
 				7292ED1856AEF8A36F75AD57 /* OnboardingTests.swift in Sources */,
+				7043C6EA73E8CD5290CE4653 /* PlanTests.swift in Sources */,
 				D5B4A96373880E830BDD344F /* SessionsViewModelTests.swift in Sources */,
 				412452561BEF8E008A764411 /* TestDoubles.swift in Sources */,
 			);

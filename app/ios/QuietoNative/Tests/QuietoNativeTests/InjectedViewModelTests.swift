@@ -72,29 +72,69 @@ final class InjectedViewModelTests: XCTestCase {
 
     // MARK: Programme
 
-    func testProgrammeUsesTheOnboardingPlanAndRefreshesAfterACompletedSession() {
-        let defaults = makeTestDefaults()
-        let preferences = QuietoPreferences(defaults: defaults)
-        preferences.onboardingPlanIDs = ["sleep_1", "meditation_05"]
-        preferences.onboardingPlanTitle = "Retrouver le sommeil"
-        let activity = ActivityStore(defaults: defaults)
+    func testProgrammeMovesOnlyWithTheStepOfTheDay() {
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        preferences.planState = QuietoPlanState(planID: .sleep, startedAt: .now, rhythm: .sustained, prefersShort: false, includesDiscovery: false)
         let completions = PassthroughSubject<String, Never>()
-        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: activity, repository: nil, completions: completions.eraseToAnyPublisher())
-        XCTAssertEqual(model.title, "Retrouver le sommeil")
-        XCTAssertEqual(model.sessions.map(\.id), ["sleep_1", "meditation_05"])
-        XCTAssertEqual(model.nextSession?.id, "sleep_1")
+        let analytics = FakeAnalytics()
+        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: nil, completions: completions.eraseToAnyPublisher(), analytics: analytics)
+        XCTAssertEqual(model.title, "Mieux dormir")
+        XCTAssertEqual(model.nextSession?.id, "screen_off")
 
-        activity.record(sessionID: "sleep_1", seconds: 300)
-        model.refreshLocalProgress()
+        model.sessionCompleted("sleep_2")
+        XCTAssertEqual(model.completedCount, 0, "Une autre séance ne fait pas avancer le plan.")
 
+        model.sessionCompleted("screen_off")
         XCTAssertEqual(model.completedCount, 1)
-        XCTAssertEqual(model.nextSession?.id, "meditation_05")
+        XCTAssertEqual(preferences.planState?.completions.keys.sorted(), [1])
+        guard case .locked(let next, _) = model.today else { return XCTFail("L’étape suivante s’ouvre demain.") }
+        XCTAssertEqual(next.session.id, "express_4")
+        XCTAssertTrue(analytics.events.contains("plan_day_completed"))
+    }
+
+    func testChangingPlanStartsAtDayOneAndIsTracked() async {
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        var state = QuietoPlanState(planID: .sleep, startedAt: .now, rhythm: .gentle, prefersShort: true, includesDiscovery: false)
+        state.completions = [1: .now]
+        preferences.planState = state
+        let backend = FakeBackend()
+        let analytics = FakeAnalytics()
+        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: backend, completions: Empty().eraseToAnyPublisher(), analytics: analytics)
+
+        model.start(.mind, source: "test")
+        try? await Task.sleep(nanoseconds: 50_000_000)
+
+        XCTAssertEqual(preferences.planState?.planID, .mind)
+        XCTAssertEqual(preferences.planState?.completions, [:])
+        XCTAssertEqual(preferences.planState?.rhythm, .gentle, "Le rythme choisi est gardé.")
+        XCTAssertEqual(model.completedCount, 0)
+        XCTAssertEqual(analytics.events.last.map { $0 }, "plan_switched")
+        XCTAssertEqual(backend.startedPlans.map(\.planID), [.mind])
+        XCTAssertNotNil(preferences.planState?.remoteID)
+    }
+
+    func testPlanIsRestoredFromTheAccountOnANewIPhone() async {
+        let backend = FakeBackend()
+        var remote = QuietoPlanState(planID: .anxiety, startedAt: .now, rhythm: .regular, prefersShort: false, includesDiscovery: false)
+        remote.completions = [1: .now.addingTimeInterval(-86_400)]
+        remote.remoteID = UUID()
+        backend.remoteProgram = QuietoRemoteProgram(id: remote.remoteID!, title: "Apaiser l’anxiété", sessions: [], completedSessionIDs: [], rhythm: "Régulier", plan: remote)
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: backend, completions: Empty().eraseToAnyPublisher())
+
+        await model.load()
+
+        XCTAssertEqual(model.state?.planID, .anxiety)
+        XCTAssertEqual(model.completedCount, 1)
+        XCTAssertEqual(preferences.planState?.remoteID, remote.remoteID)
     }
 
     func testProgrammeStaysAvailableOfflineWhenTheServerFails() async {
         let backend = FakeBackend()
         backend.programError = URLError(.notConnectedToInternet)
-        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: QuietoPreferences(defaults: makeTestDefaults()), activity: ActivityStore(defaults: makeTestDefaults()), repository: backend, completions: Empty().eraseToAnyPublisher())
+        let preferences = QuietoPreferences(defaults: makeTestDefaults())
+        preferences.planState = QuietoPlanState(planID: .stress, startedAt: .now, rhythm: .regular, prefersShort: false, includesDiscovery: false)
+        let model = ProgramViewModel(catalog: SessionCatalog(), preferences: preferences, activity: ActivityStore(defaults: makeTestDefaults()), repository: backend, completions: Empty().eraseToAnyPublisher())
 
         await model.load()
 

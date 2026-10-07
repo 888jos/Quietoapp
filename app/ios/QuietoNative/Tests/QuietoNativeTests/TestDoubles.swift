@@ -86,8 +86,17 @@ final class FakeBackend: AccountDataServicing, ProgramRepository, SessionProgres
         if let programError { throw programError }
         return remoteProgram
     }
-    func createProgram(title: String, sessionIDs: [String], rhythm: String) async throws -> UUID { UUID() }
+    private(set) var startedPlans: [QuietoPlanState] = []
+    private(set) var completedSteps: [(day: Int, next: Int?)] = []
+    func startPlan(_ state: QuietoPlanState, days: [QuietoPlanDay], title: String) async throws -> UUID {
+        if let programError { throw programError }
+        startedPlans.append(state)
+        return UUID()
+    }
     func updateProgramRhythm(programID: UUID, rhythm: String) async throws {}
+    func completePlanStep(programID: UUID, dayNumber: Int, completedAt: Date, nextDayNumber: Int?, nextAvailableOn: Date?) async throws {
+        completedSteps.append((dayNumber, nextDayNumber))
+    }
 
     func setFavorite(sessionID: String, favorite: Bool) async throws { favorites.append((sessionID, favorite)) }
     func recordCompletion(sessionID: String, listenedSeconds: Int) async throws { completions.append((sessionID, listenedSeconds)) }
@@ -235,7 +244,6 @@ func makeOnboardingViewModel(
         subscriptions: subscriptions ?? FakeSubscriptions(),
         auth: auth ?? FakeAuth(),
         account: backend,
-        programs: backend,
         health: health ?? FakeHealth(),
         reminders: reminders,
         analytics: analytics,

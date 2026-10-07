@@ -21,6 +21,9 @@ final class AchievementCenter: ObservableObject {
 
     /// Session ids of the current programme, read at each evaluation.
     var programSessionIDs: () -> [String] = { [] }
+    /// Steps done in the goal plan and how many it has: a plan repeats some
+    /// sessions, so its progress is not the share of its sessions heard.
+    var programProgress: (() -> (completed: Int, total: Int)?)?
     /// Streak and badge figures for paywall and campaign targeting.
     var onAttributesChanged: (([String: Any?]) -> Void)?
 
@@ -118,13 +121,17 @@ final class AchievementCenter: ObservableObject {
     }
 
     private func evaluate(announce: Bool) {
-        let stats = PracticeStats.make(
+        var stats = PracticeStats.make(
             entries: journal.entries,
             catalog: catalog,
             programSessionIDs: programSessionIDs(),
             now: now(),
             calendar: calendar
         )
+        if let progress = programProgress?() {
+            stats.programCompleted = progress.completed
+            stats.programTotal = progress.total
+        }
         var unlocked = unlockedBadges
         let new = AchievementEngine.newlyMet(stats: stats, unlocked: unlocked)
         if !new.isEmpty {

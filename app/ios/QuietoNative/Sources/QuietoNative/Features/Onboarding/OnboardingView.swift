@@ -375,15 +375,53 @@ struct OnboardingView: View {
         } footer: { OnboardingPrimaryButton(title: "Voir mon programme", action: model.next) }
     }
 
+    /// The plan reveal: the recommended plan, why, its first week, and two
+    /// other plans for « Ce n’est pas tout à fait ça ? ».
     private var planView: some View {
         page {
             VStack(alignment: .leading, spacing: 16) {
-                OnboardingTitle(title: model.plan?.title ?? "Ton programme", subtitle: "Une séance par jour, choisie pour toi.")
-                ForEach(Array((model.plan?.sessions ?? []).enumerated()), id: \.element.id) { index, session in
-                    OnboardingSessionRow(day: index + 1, session: session)
+                if let plan = model.plan {
+                    Text((plan.isRecommended ? "Ton plan recommandé" : "Le plan que tu as choisi").quietoLocalized)
+                        .font(QuietoFont.sans(.caption, weight: .semibold)).foregroundStyle(QuietoColor.mint).textCase(.uppercase)
+                    OnboardingTitle(title: plan.title, subtitle: plan.promise)
+                    if plan.isRecommended, let reason = OnboardingPlanBuilder.reason(for: plan.planID, answers: model.answers) {
+                        Label(QuietoLocalization.format("Parce que tu as dit « %@ ».", reason.quietoLocalized), systemImage: "quote.opening")
+                            .font(QuietoFont.sans(.callout)).foregroundStyle(QuietoColor.textSecondary)
+                    }
+                    Text(planSummary(plan)).font(QuietoFont.sans(.subhead)).foregroundStyle(QuietoColor.textSecondary)
+                    ForEach(Array(plan.firstSteps.enumerated()), id: \.element.id) { index, step in
+                        OnboardingSessionRow(day: index + 1, session: step.session, isFirst: index == 0)
+                    }
+                    if model.showsPlanAlternatives {
+                        ForEach(plan.alternatives) { id in
+                            let alternative = PlanCatalog.plan(id)
+                            Button { model.choosePlan(id) } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: alternative.symbol).foregroundStyle(QuietoColor.mint).frame(width: 28)
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(alternative.title.quietoLocalized).font(QuietoFont.sans(.body, weight: .semibold)).foregroundStyle(QuietoColor.textPrimary)
+                                        Text(alternative.promise.quietoLocalized).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right").foregroundStyle(QuietoColor.textSecondary)
+                                }
+                                .padding(14).quietoSurface(cornerRadius: QuietoRadius.card)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    } else {
+                        Button("Ce n’est pas tout à fait ça ?") { model.showsPlanAlternatives = true }
+                            .font(QuietoFont.sans(.callout, weight: .medium)).foregroundStyle(QuietoColor.mint)
+                    }
                 }
             }
         } footer: { OnboardingPrimaryButton(title: "Continuer", action: model.next) }
+    }
+
+    private func planSummary(_ plan: OnboardingPlanBuilder.Plan) -> String {
+        plan.state.includesDiscovery
+            ? QuietoLocalization.format("4 semaines, précédées d’une semaine pour découvrir les bases. Rythme : %@.", plan.state.rhythm.localizedName.lowercased(with: QuietoLocalization.locale))
+            : QuietoLocalization.format("4 semaines pour avancer à ton rythme. Rythme : %@.", plan.state.rhythm.localizedName.lowercased(with: QuietoLocalization.locale))
     }
 
     private var projection: some View {
@@ -446,10 +484,10 @@ struct OnboardingView: View {
                 OnboardingTitle(
                     title: relaunch ? "Ton programme t’attend." : (model.answers.firstName.isEmpty ? "Ton programme est prêt." : QuietoLocalization.format("%@, ton programme est prêt.", model.answers.firstName)),
                     subtitle: relaunch
-                        ? QuietoLocalization.format("%@ : 7 séances choisies pour toi, Louane et toutes les respirations. Essaie gratuitement, tu peux arrêter quand tu veux.", (model.plan?.title ?? "Ton programme").quietoLocalized)
+                        ? QuietoLocalization.format("%@ : 4 semaines pensées pour toi, Louane et toutes les respirations. Essaie gratuitement, tu peux arrêter quand tu veux.", (model.plan?.title ?? "Ton programme").quietoLocalized)
                         : QuietoLocalization.format("Commence ton essai gratuit de %d jours pour tout débloquer.", OnboardingLinks.trialDays)
                 )
-                if let first = model.plan?.sessions.first { OnboardingSessionRow(day: 1, session: first) }
+                if let first = model.plan?.firstSteps.first { OnboardingSessionRow(day: 1, session: first.session, isFirst: true) }
                 if let note = model.paywallNote {
                     Text(note.quietoLocalized).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
                 }

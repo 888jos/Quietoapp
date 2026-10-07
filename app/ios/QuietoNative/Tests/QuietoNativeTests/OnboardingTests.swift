@@ -8,32 +8,53 @@ final class OnboardingTests: XCTestCase {
         return value
     }
 
-    func testPlanAlwaysHasSevenDistinctCatalogueSessions() {
-        let catalog = SessionCatalog()
-        let combinations: [[OnboardingStep: [String]]] = [
-            [:],
-            [.reasons: ["sleep"], .goal: ["sleep"], .minutes: ["2"], .experience: ["never"]],
-            [.reasons: ["stress", "anxiety"], .goal: ["anxiety"], .minutes: ["15"], .formats: ["breathing"]],
-            [.reasons: ["focus"], .goal: ["focus"], .minutes: ["5"], .experience: ["regular"]]
-        ]
-        for choices in combinations {
-            let plan = OnboardingPlanBuilder.build(from: answers(choices), catalog: catalog)
-            XCTAssertEqual(plan.sessions.count, 7, "\(choices)")
-            XCTAssertEqual(Set(plan.sessions.map(\.id)).count, 7, "\(choices)")
-            XCTAssertTrue(plan.sessions.allSatisfy { session in catalog.sessions.contains { $0.id == session.id } })
+    func testEveryGoalLeadsToItsPlan() {
+        let expected: [String: QuietoPlanID] = ["sleep": .sleep, "anxiety": .anxiety, "calm": .stress, "focus": .mind, "self": .selfKindness, "relationships": .relationships]
+        for (goal, plan) in expected {
+            // Other answers pull elsewhere: the goal (+5) still wins.
+            let value = answers([.goal: [goal], .reasons: ["sleep", "stress"], .stressSources: ["couple"]])
+            XCTAssertEqual(PlanRecommender.recommend(value).plan, plan, goal)
         }
     }
 
-    func testBeginnerStartsGentleAndShortTimeKeepsSessionsShort() {
-        let plan = OnboardingPlanBuilder.build(from: answers([.experience: ["never"], .minutes: ["2"], .reasons: ["stress"]]))
-        XCTAssertEqual(plan.sessions.first?.id, "decouverte_1")
-        XCTAssertTrue(plan.sessions.dropFirst().filter { $0.durationMinutes <= 6 }.count >= 4)
+    func testRecommendationIsStableAndOffersTwoOtherPlans() {
+        let value = answers([.reasons: ["thoughts", "emotions"]])
+        let first = PlanRecommender.recommend(value)
+        for _ in 0..<20 { XCTAssertEqual(PlanRecommender.recommend(value), first) }
+        XCTAssertEqual(first.plan, .mind, "Égalité mental / soi : l’ordre fixe départage.")
+        XCTAssertEqual(first.alternatives, [.selfKindness, .sleep])
+        XCTAssertEqual(PlanRecommender.recommend(answers([:])).plan, .sleep)
     }
 
-    func testSleepGoalBuildsASleepProgramme() {
-        let plan = OnboardingPlanBuilder.build(from: answers([.reasons: ["sleep"], .goal: ["sleep"], .minutes: ["10"], .experience: ["regular"]]))
-        XCTAssertTrue(plan.title.contains("sommeil"))
-        XCTAssertGreaterThanOrEqual(plan.sessions.filter { $0.pillar == .sleep }.count, 3)
+    func testAnswersPersonaliseThePlan() {
+        let beginner = OnboardingPlanBuilder.build(from: answers([.goal: ["calm"], .experience: ["never"], .minutes: ["2"], .blockers: ["time"]]))
+        XCTAssertEqual(beginner.planID, .stress)
+        XCTAssertTrue(beginner.state.includesDiscovery)
+        XCTAssertEqual(beginner.sessions.first?.id, "decouverte_1")
+        XCTAssertEqual(beginner.state.rhythm, .gentle)
+        XCTAssertTrue(beginner.state.prefersShort)
+
+        let regular = OnboardingPlanBuilder.build(from: answers([.goal: ["sleep"], .experience: ["regular"], .minutes: ["15"]]))
+        XCTAssertFalse(regular.state.includesDiscovery)
+        XCTAssertFalse(regular.state.prefersShort)
+        XCTAssertEqual(regular.sessions.count, 7)
+        XCTAssertTrue(regular.title.contains("dormir"))
+    }
+
+    func testSafetyAnswerNeverChangesThePlan() {
+        var withSafety = answers([.goal: ["anxiety"], .reasons: ["anxiety"]])
+        let without = PlanRecommender.recommend(withSafety)
+        withSafety.choices[OnboardingStep.safety.rawValue] = ["yes"]
+        XCTAssertEqual(PlanRecommender.recommend(withSafety), without)
+    }
+
+    func testPickingAnAlternativeKeepsTheRecommendation() {
+        let value = answers([.goal: ["sleep"]])
+        let plan = OnboardingPlanBuilder.build(from: value, choosing: .relationships)
+        XCTAssertEqual(plan.planID, .relationships)
+        XCTAssertFalse(plan.isRecommended)
+        XCTAssertEqual(plan.alternatives.first, .sleep)
+        XCTAssertEqual(OnboardingPlanBuilder.reason(for: .sleep, answers: value), "Mieux dormir")
     }
 
     func testCrisisWordsAreDetectedWithoutAccentsOrCase() {

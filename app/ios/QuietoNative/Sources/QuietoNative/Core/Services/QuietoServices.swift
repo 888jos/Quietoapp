@@ -83,13 +83,14 @@ final class LocalHomeService: QuietoHomeProviding {
         var programSnapshot: QuietoProgram?
         var next: QuietoSession?
         var nextStep: Int?
-        if program.hasProgram, !program.sessions.isEmpty {
-            let sessions = program.sessions
-            let nextIndex = sessions.firstIndex { !program.completedIDs.contains($0.id) }
-            next = nextIndex.map { sessions[$0] }
-            nextStep = nextIndex.map { $0 + 1 }
-            let done = Set(sessions.indices.filter { program.completedIDs.contains(sessions[$0].id) }.map { $0 + 1 })
-            programSnapshot = QuietoProgram(title: program.title, completedDays: done, totalDays: sessions.count, currentSession: next, isFinished: nextIndex == nil)
+        if program.hasProgram, !program.steps.isEmpty {
+            let steps = program.steps
+            next = program.nextSession
+            nextStep = program.currentStepNumber
+            let done = Set(steps.indices.filter { steps[$0].isCompleted }.map { $0 + 1 })
+            var opensOn: Date?
+            if case .locked(_, let date) = program.today { opensOn = date }
+            programSnapshot = QuietoProgram(title: program.title, completedDays: done, totalDays: steps.count, currentSession: next, isFinished: program.isFinished, opensOn: opensOn)
         }
         // Outside a programme (or once it is finished): the first session not heard yet.
         let nextSession = next ?? catalog.sessions.first { !completed.contains($0.id) } ?? catalog.sessions.first

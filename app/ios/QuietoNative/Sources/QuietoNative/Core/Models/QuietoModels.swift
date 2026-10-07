@@ -761,6 +761,8 @@ struct QuietoProgram {
     let totalDays: Int
     let currentSession: QuietoSession?
     let isFinished: Bool
+    /// Today's step is done: the next one opens on this date.
+    var opensOn: Date? = nil
 }
 
 struct QuietoProgress {

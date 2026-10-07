@@ -107,6 +107,13 @@ struct LouaneClientContext: Equatable {
 
     static let empty = LouaneClientContext()
 
+    /// With the goal plan, which knows its own day and what is done.
+    static func make(events: [ActivityEvent], programme: Programme?, now: Date = .now, calendar: Calendar = .current) -> LouaneClientContext {
+        var context = make(events: events, programmeTitle: "", programmeIDs: [], hasProgram: false, now: now, calendar: calendar)
+        context.programme = programme
+        return context
+    }
+
     /// Most recent sessions first, at most 20 (the server bound).
     static func make(events: [ActivityEvent], programmeTitle: String, programmeIDs: [String], hasProgram: Bool, now: Date = .now, calendar: Calendar = .current) -> LouaneClientContext {
         let today = calendar.startOfDay(for: now)

@@ -39,8 +39,11 @@ protocol AccountDataServicing: AnyObject {
 @MainActor
 protocol ProgramRepository: AnyObject {
     func loadActiveProgram(catalog: SessionCatalog) async throws -> QuietoRemoteProgram?
-    func createProgram(title: String, sessionIDs: [String], rhythm: String) async throws -> UUID
+    /// Abandons the active programme, if any, then writes this plan.
+    func startPlan(_ state: QuietoPlanState, days: [QuietoPlanDay], title: String) async throws -> UUID
     func updateProgramRhythm(programID: UUID, rhythm: String) async throws
+    /// `nextDayNumber` nil: the plan is finished.
+    func completePlanStep(programID: UUID, dayNumber: Int, completedAt: Date, nextDayNumber: Int?, nextAvailableOn: Date?) async throws
 }
 
 @MainActor

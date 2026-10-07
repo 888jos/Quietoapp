@@ -17,7 +17,6 @@ final class OnboardingViewModel: ObservableObject {
     private let subscriptions: SubscriptionServicing
     private let auth: AuthServicing
     private let account: AccountDataServicing
-    private let programs: ProgramRepository
     private let health: HealthServicing
     private let reminders: ReminderScheduling
     private let analytics: QuietoAnalyticsProviding
@@ -30,13 +29,16 @@ final class OnboardingViewModel: ObservableObject {
     private var stepEnteredAt = Date.now
     private var cancellables = Set<AnyCancellable>()
 
-    init(preferences: QuietoPreferences, catalog: SessionCatalog, subscriptions: SubscriptionServicing, auth: AuthServicing, account: AccountDataServicing, programs: ProgramRepository, health: HealthServicing, reminders: ReminderScheduling, analytics: QuietoAnalyticsProviding, louaneMemory: LouaneMemoryProviding) {
+    /// Receives the plan when the onboarding ends (the Programme tab adopts it).
+    var onPlanChosen: ((QuietoPlanState) -> Void)?
+    @Published var showsPlanAlternatives = false
+
+    init(preferences: QuietoPreferences, catalog: SessionCatalog, subscriptions: SubscriptionServicing, auth: AuthServicing, account: AccountDataServicing, health: HealthServicing, reminders: ReminderScheduling, analytics: QuietoAnalyticsProviding, louaneMemory: LouaneMemoryProviding) {
         self.preferences = preferences
         self.catalog = catalog
         self.subscriptions = subscriptions
         self.auth = auth
         self.account = account
-        self.programs = programs
         self.health = health
         self.reminders = reminders
         self.analytics = analytics
@@ -316,20 +318,42 @@ final class OnboardingViewModel: ObservableObject {
     func buildPlan() {
         let built = OnboardingPlanBuilder.build(from: answers, catalog: catalog)
         plan = built
-        preferences.onboardingPlanIDs = built.sessions.map(\.id)
-        preferences.onboardingPlanTitle = built.title
+        showsPlanAlternatives = false
         if !answers.firstName.isEmpty { preferences.firstName = answers.firstName }
-        subscriptions.setAttributes([
-            "firstName": answers.firstName.isEmpty ? nil : answers.firstName,
-            "goal": answers.single(.goal),
-            "minutes": answers.single(.minutes),
-            "planTitle": built.title
+        analytics.track("plan_recommended", properties: [
+            "plan": built.planID.rawValue,
+            "alternatives": built.recommendation.alternatives.map(\.rawValue).joined(separator: ","),
+            "discovery": built.state.includesDiscovery ? "1" : "0",
+            "short": built.state.prefersShort ? "1" : "0",
+            "rhythm": built.state.rhythm.rawValue
         ])
+        publishPlanAttributes(built)
         Task {
             // The animation is part of the experience: at least ~4 s.
             try? await Task.sleep(nanoseconds: 4_200_000_000)
             if step == .building { next() }
         }
+    }
+
+    /// « Ce n’est pas tout à fait ça ? »: the person picks another plan.
+    func choosePlan(_ planID: QuietoPlanID) {
+        guard plan?.planID != planID else { showsPlanAlternatives = false; return }
+        let chosen = OnboardingPlanBuilder.build(from: answers, catalog: catalog, choosing: planID)
+        plan = chosen
+        showsPlanAlternatives = false
+        analytics.track("plan_alternative_picked", properties: ["plan": planID.rawValue, "recommended": chosen.recommendation.plan.rawValue])
+        publishPlanAttributes(chosen)
+    }
+
+    /// The paywall adapts to the plan (Superwall attribute `plan_id`).
+    private func publishPlanAttributes(_ plan: OnboardingPlanBuilder.Plan) {
+        subscriptions.setAttributes([
+            "firstName": answers.firstName.isEmpty ? nil : answers.firstName,
+            "goal": answers.single(.goal),
+            "minutes": answers.single(.minutes),
+            "planTitle": plan.title,
+            "plan_id": plan.planID.rawValue
+        ])
     }
 
     var stressDrop: Int {
@@ -385,13 +409,20 @@ final class OnboardingViewModel: ObservableObject {
         isCompleted = true
         let snapshot = answers
         let currentPlan = plan
-        Task { await synchronise(answers: snapshot, plan: currentPlan) }
+        if let currentPlan {
+            analytics.track("plan_chosen", properties: ["plan": currentPlan.planID.rawValue, "recommended": currentPlan.isRecommended ? "1" : "0"])
+            // Day 1 starts now, not when the plan screen was shown.
+            var state = currentPlan.state
+            state.startedAt = .now
+            onPlanChosen?(state)
+        }
+        Task { await synchronise(answers: snapshot) }
         onFinish?(playFirstSession ? currentPlan?.sessions.first : nil)
     }
 
-    /// Sends the questionnaire, preferences and programme to Supabase. Best
-    /// effort: everything also lives on the device.
-    private func synchronise(answers: OnboardingAnswers, plan: OnboardingPlanBuilder.Plan?) async {
+    /// Sends the questionnaire and preferences to Supabase (the plan is sent
+    /// by the Programme tab). Best effort: everything also lives on the device.
+    private func synchronise(answers: OnboardingAnswers) async {
         guard auth.isConfigured else { return }
         if !answers.firstName.isEmpty { try? await auth.updateProfile(firstName: answers.firstName) }
         try? await account.saveOnboarding(answers: answers)
@@ -405,9 +436,6 @@ final class OnboardingViewModel: ObservableObject {
             reduceMotion: false,
             largerText: false
         ))
-        if let plan, (try? await programs.loadActiveProgram(catalog: catalog)) == nil {
-            _ = try? await programs.createProgram(title: plan.title, sessionIDs: plan.sessions.map(\.id), rhythm: "Soutenu")
-        }
     }
 
     /// Sent before the network sync so a slow or missing backend never loses it.
@@ -418,6 +446,7 @@ final class OnboardingViewModel: ObservableObject {
         let startedAt = preferences.onboardingStartedAt
         var properties = [
             "goal": answers.single(.goal) ?? "",
+            "plan": plan?.planID.rawValue ?? "",
             "minutes": answers.single(.minutes) ?? "",
             "experience": answers.single(.experience) ?? "",
             "moment": answers.single(.moment) ?? "",

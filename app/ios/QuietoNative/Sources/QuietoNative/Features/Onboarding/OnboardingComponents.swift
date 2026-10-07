@@ -269,6 +269,7 @@ struct OnboardingProjectionChart: View {
 struct OnboardingSessionRow: View {
     let day: Int
     let session: QuietoSession
+    var isFirst = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -279,7 +280,7 @@ struct OnboardingSessionRow: View {
                 Text(QuietoLocalization.format("%d min · %@", session.durationMinutes, session.practiceType.rawValue.quietoLocalized)).font(QuietoFont.sans(.caption)).foregroundStyle(QuietoColor.textSecondary)
             }
             Spacer()
-            Image(systemName: day == 1 ? "play.circle.fill" : "lock.fill").foregroundStyle(day == 1 ? QuietoColor.mint : QuietoColor.textSecondary)
+            Image(systemName: isFirst ? "play.circle.fill" : "lock.fill").foregroundStyle(isFirst ? QuietoColor.mint : QuietoColor.textSecondary)
         }
         .padding(10)
         .quietoSurface(cornerRadius: QuietoRadius.card)

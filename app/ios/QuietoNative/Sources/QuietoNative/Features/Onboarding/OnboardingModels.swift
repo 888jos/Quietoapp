@@ -147,10 +147,15 @@ enum OnboardingContent {
                 .init("bedtime", "Au coucher", symbol: "bed.double")
             ], multiple: false)
         case .goal:
-            return .init(title: "Dans 30 jours, tu aimerais…", subtitle: nil, options: [
-                .init("sleep", "Mieux dormir"), .init("calm", "Me sentir plus calme"),
-                .init("anxiety", "Moins de moments d’angoisse"), .init("focus", "Mieux me concentrer"),
-                .init("habit", "Avoir pris l’habitude de souffler")
+            // One answer per goal plan (`PlanRecommender.plan(forGoal:)`); « calm »
+            // and « focus » keep their ids for the analytics history.
+            return .init(title: "Dans 30 jours, tu aimerais…", subtitle: "Ton plan de 4 semaines partira de là.", options: [
+                .init("sleep", "Mieux dormir", symbol: "moon.stars"),
+                .init("anxiety", "Moins de moments d’angoisse", symbol: "heart.circle"),
+                .init("calm", "Mieux gérer le stress", symbol: "wind"),
+                .init("focus", "Avoir l’esprit plus clair", symbol: "sparkles"),
+                .init("self", "Être plus en paix avec moi-même", symbol: "leaf"),
+                .init("relationships", "Des relations plus apaisées", symbol: "person.2")
             ], multiple: false)
         case .safety:
             return .init(title: "Une question importante", subtitle: "En ce moment, t’arrive-t-il d’avoir des pensées de te faire du mal ?", options: [
@@ -176,72 +181,61 @@ enum OnboardingContent {
     }
 }
 
-/// Builds the 7-day programme from the answers, using only catalogue sessions.
+/// Turns the answers into a goal plan (`PlanRecommender`), or the plan the
+/// person picked among the alternatives.
 enum OnboardingPlanBuilder {
     struct Plan: Equatable {
-        let title: String
-        let sessions: [QuietoSession]
+        let recommendation: PlanRecommender.Recommendation
+        let state: QuietoPlanState
+        /// The first week of steps, shown on the plan screen.
+        let firstSteps: [PlanSchedule.Step]
+        var sessions: [QuietoSession] { firstSteps.map(\.session) }
+        var planID: QuietoPlanID { state.planID }
+        var title: String { state.plan.title }
+        var promise: String { state.plan.promise }
+        var isRecommended: Bool { planID == recommendation.plan }
+        /// The other plans offered, the recommended one first when it was not chosen.
+        var alternatives: [QuietoPlanID] {
+            ([recommendation.plan] + recommendation.alternatives).filter { $0 != planID }.prefix(2).map { $0 }
+        }
     }
 
+    /// Kept for Louane's first words: the strongest need, as a pillar.
     static func pillars(for answers: OnboardingAnswers) -> [QuietoPillar] {
-        var weights: [QuietoPillar: Int] = [:]
-        let add = { (pillar: QuietoPillar, weight: Int) in weights[pillar, default: 0] += weight }
-        for reason in answers.multiple(.reasons) {
-            switch reason {
-            case "sleep": add(.sleep, 3)
-            case "stress", "anxiety": add(.stress, 3)
-            case "thoughts", "focus": add(.thoughts, 3)
-            case "emotions", "self": add(.emotions, 3)
-            default: break
-            }
+        switch PlanRecommender.recommend(answers).plan {
+        case .sleep: [.sleep, .stress]
+        case .anxiety, .stress: [.stress, .thoughts]
+        case .mind: [.thoughts, .stress]
+        case .selfKindness, .relationships: [.emotions, .stress]
         }
-        switch answers.single(.goal) {
-        case "sleep": add(.sleep, 4)
-        case "calm", "anxiety": add(.stress, 4)
-        case "focus": add(.thoughts, 4)
-        default: break
-        }
-        if answers.multiple(.sleep).contains(where: { $0 != "fine" }) { add(.sleep, 1) }
-        let ranked = weights.sorted { $0.value > $1.value }.map(\.key)
-        return ranked.isEmpty ? [.stress, .thoughts] : ranked
     }
 
-    static func build(from answers: OnboardingAnswers, catalog: SessionCatalog = SessionCatalog()) -> Plan {
-        let minutes = Int(answers.single(.minutes) ?? "5") ?? 5
-        let maxDuration = minutes >= 15 ? 30 : minutes + 4
-        let pillars = pillars(for: answers)
-        let wantsBreathing = answers.multiple(.formats).contains("breathing")
-        let beginner = ["never", "tried"].contains(answers.single(.experience) ?? "never")
+    static func build(from answers: OnboardingAnswers, catalog: SessionCatalog = SessionCatalog(), choosing chosen: QuietoPlanID? = nil, now: Date = .now) -> Plan {
+        let recommendation = PlanRecommender.recommend(answers)
+        let state = QuietoPlanState(
+            planID: chosen ?? recommendation.plan,
+            startedAt: now,
+            rhythm: recommendation.rhythm,
+            prefersShort: recommendation.prefersShort,
+            includesDiscovery: recommendation.includesDiscovery
+        )
+        let schedule = PlanSchedule(state: state, catalog: catalog.sessions, now: now)
+        return Plan(recommendation: recommendation, state: state, firstSteps: Array(schedule.steps.prefix(7)))
+    }
 
-        var picked: [QuietoSession] = []
-        func take(_ candidates: [QuietoSession], count: Int) {
-            var added = 0
-            for session in candidates where picked.count < 7 && added < count && !picked.contains(where: { $0.id == session.id }) {
-                picked.append(session)
-                added += 1
-            }
+    /// « Parce que tu as dit… »: the answer that weighs most for this plan.
+    static func reason(for planID: QuietoPlanID, answers: OnboardingAnswers) -> String? {
+        if PlanRecommender.plan(forGoal: answers.single(.goal)) == planID, let goal = OnboardingContent.label(.goal, answers.single(.goal)) {
+            return goal
         }
-        let fitting = catalog.sessions.filter { $0.durationMinutes <= maxDuration }
-        // Day 1 is always short and gentle.
-        if beginner, let first = catalog.sessions.first(where: { $0.id == "decouverte_1" }) { picked.append(first) }
-        else if let first = fitting.filter({ $0.pillar == pillars.first }).min(by: { $0.durationMinutes < $1.durationMinutes }) { picked.append(first) }
-        if wantsBreathing { take(fitting.filter { $0.practiceType == .breathing }, count: 2) }
-        for (index, pillar) in pillars.enumerated() {
-            take(fitting.filter { $0.pillar == pillar && $0.practiceType != .breathing }, count: index == 0 ? 4 : 2)
+        let reasons: [String: QuietoPlanID] = ["sleep": .sleep, "anxiety": .anxiety, "stress": .stress, "thoughts": .mind, "focus": .mind, "emotions": .selfKindness, "self": .selfKindness]
+        if let reason = answers.multiple(.reasons).first(where: { reasons[$0] == planID }) {
+            return OnboardingContent.question(for: .reasons, firstName: "")?.options.first { $0.id == reason }?.label
         }
-        take(fitting, count: 7)
-        take(catalog.sessions, count: 7)
-
-        // French on purpose: stored and sent to the server, localized when displayed.
-        let title: String
-        switch answers.single(.goal) ?? "" {
-        case "sleep": title = "Retrouver le sommeil en 7 jours"
-        case "anxiety": title = "Apaiser l’angoisse en 7 jours"
-        case "focus": title = "Retrouver le calme pour se concentrer"
-        case "habit": title = "7 jours pour prendre l’habitude"
-        default: title = "7 jours pour retrouver ton calme"
+        if planID == .relationships, let source = answers.multiple(.stressSources).first(where: { ["couple", "family"].contains($0) }) {
+            return OnboardingContent.question(for: .stressSources, firstName: "")?.options.first { $0.id == source }?.label
         }
-        return Plan(title: title, sessions: Array(picked.prefix(7)))
+        return nil
     }
 }
 

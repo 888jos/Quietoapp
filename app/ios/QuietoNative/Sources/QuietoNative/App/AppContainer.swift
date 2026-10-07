@@ -65,6 +65,10 @@ final class AppContainer {
             playbackTracker.ambienceListened(ambience, seconds: seconds)
         }
         achievements.programSessionIDs = { [weak self] in self?.program.sessions.map(\.id) ?? [] }
+        achievements.programProgress = { [weak self] in
+            guard let program = self?.program, program.hasProgram else { return nil }
+            return (program.completedCount, program.totalCount)
+        }
         achievements.onAttributesChanged = { [subscriptions] in subscriptions.setAttributes($0) }
         achievements.start(legacyActivity: activity.events)
     }
@@ -128,17 +132,13 @@ final class AppContainer {
         preferences: preferences,
         activity: activity,
         repository: remoteRepository,
-        completions: playbackTracker.completions.eraseToAnyPublisher()
+        completions: playbackTracker.completions.eraseToAnyPublisher(),
+        analytics: analytics
     )
 
     lazy var louane = LouaneViewModel(
         backend: URLSessionLouaneBackend(backend: backend, preferences: preferences, memory: louaneMemory) { [unowned self] in
-            LouaneClientContext.make(
-                events: activity.events,
-                programmeTitle: program.title,
-                programmeIDs: program.sessions.map(\.id),
-                hasProgram: program.hasProgram
-            )
+            LouaneClientContext.make(events: activity.events, programme: program.louaneProgramme)
         },
         memory: louaneMemory,
         repository: remoteRepository,
@@ -159,8 +159,9 @@ final class AppContainer {
         subscriptions: subscriptions,
         reminders: reminders,
         health: health,
-        localData: LocalDataWiper(preferences: preferences, downloads: downloads, louaneMemory: louaneMemory) { [achievements] in
+        localData: LocalDataWiper(preferences: preferences, downloads: downloads, louaneMemory: louaneMemory) { [achievements, weak self] in
             achievements.reloadAfterWipe()
+            self?.program.reset()
         }
         )
         model.onAmbienceVolumeChanged = { [audioPlayer] volume in audioPlayer.ambienceVolume = volume }
@@ -174,12 +175,12 @@ final class AppContainer {
             subscriptions: subscriptions,
             auth: backend,
             account: backend,
-            programs: backend,
             health: health,
             reminders: reminders,
             analytics: analytics,
             louaneMemory: louaneMemory
         )
+        model.onPlanChosen = { [weak self] state in self?.program.adopt(state) }
         model.setFinishHandler { [weak self] session in
             guard let self else { return }
             home.selectedTab = .home

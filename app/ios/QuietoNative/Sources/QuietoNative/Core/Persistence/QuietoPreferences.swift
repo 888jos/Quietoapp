@@ -21,10 +21,9 @@ final class QuietoPreferences {
         static let onboardingCompletedAt = "quieto.onboarding.completedAt"
         static let onboardingAnswers = "quieto.onboarding.answers"
         static let onboardingStep = "quieto.onboarding.step"
-        static let onboardingPlanIDs = "quieto.onboarding.plan.ids"
-        static let onboardingPlanTitle = "quieto.onboarding.plan.title"
         static let onboardingStartedAt = "quieto.onboarding.startedAt"
         static let onboardingActiveSeconds = "quieto.onboarding.activeSeconds"
+        static let planState = "quieto.plan.state"
         static func playbackPosition(_ sessionID: String) -> String { "quieto.native.audio.position.\(sessionID)" }
     }
 
@@ -148,19 +147,15 @@ final class QuietoPreferences {
         set { defaults.set(newValue, forKey: Key.onboardingStep) }
     }
 
+    /// The goal plan in progress (or finished), nil before one is chosen.
+    var planState: QuietoPlanState? {
+        get { defaults.data(forKey: Key.planState).flatMap { try? JSONDecoder().decode(QuietoPlanState.self, from: $0) } }
+        set { defaults.set(newValue.flatMap { try? JSONEncoder().encode($0) }, forKey: Key.planState) }
+    }
+
     var onboardingAnswers: OnboardingAnswers? {
         get { defaults.data(forKey: Key.onboardingAnswers).flatMap { try? JSONDecoder().decode(OnboardingAnswers.self, from: $0) } }
         set { defaults.set(newValue.flatMap { try? JSONEncoder().encode($0) }, forKey: Key.onboardingAnswers) }
-    }
-
-    var onboardingPlanIDs: [String] {
-        get { defaults.stringArray(forKey: Key.onboardingPlanIDs) ?? [] }
-        set { defaults.set(newValue, forKey: Key.onboardingPlanIDs) }
-    }
-
-    var onboardingPlanTitle: String? {
-        get { defaults.string(forKey: Key.onboardingPlanTitle) }
-        set { defaults.set(newValue, forKey: Key.onboardingPlanTitle) }
     }
 
     /// Profile sent to Louane once subscribed.

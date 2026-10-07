@@ -8,6 +8,50 @@ Dernière mise à jour : **07/10/2026**
 
 > 📁 **Depuis le 26/09/2026, tout Quieto vit dans UN dépôt : `~/Desktop/dev/Quieto`** (GitHub privé `Paul-Oll/Quieto`). Ce journal est `Quieto/docs/JOURNAL-QUIETO.md`. Dans les entrées d'avant le 26/09, lire `QuietoApp/…` = `Quieto/app/…`, `quieto-backend/…` = `Quieto/backend/…`, `cofonde-site/…` = `Quieto/sites/cofonde/…`, `quieto-entreprise-site/…` = `Quieto/sites/entreprise/…`, `quieto-logo/…` = `Quieto/logo/…`.
 
+## 🗺️ 07/10 (après-midi) — Plans par objectif + points ouverts de l'audit
+- **Commits** (branche `refactor/mvvm`) :
+  - `76dc03e` : tout le refactor MVVM et la sécurité, enfin commités.
+  - `a7f945e` : points ouverts de l'audit.
+  - commit des plans.
+- **Audit corrigé** :
+  - **Déconnexion** : l'appel réseau passe avant l'effacement local.
+  - **Louane** :
+    - une carte « ligne d'écoute » s'affiche dès qu'un mot de crise est écrit (jamais trackée) ;
+    - une réponse en cours est annulée quand on change de conversation ;
+    - un 429 signifie « trop rapide », et non plus le plafond du jour.
+  - **Programme** : le bouton d'une séance en cours la met en pause.
+  - **Audio** : URL signées valables 1 h, fichiers téléchargés vérifiés (type et taille).
+  - **Amplitude** : aucune clé en Debug, ni IP ni ville ; manifeste de confidentialité complété (DeviceID, CoarseLocation).
+- **Plans par objectif** (phases 1 et 2 du plan du 06/10) :
+  - **6 plans de 28 jours** dans `Core/Models/QuietoPlan.swift` : sommeil, anxiété, stress, mental, soi, relations. Chaque semaine compte 5 séances guidées et 2 jours libres de respiration. Semaine Découverte en plus pour les débutants. Contenu existant uniquement.
+  - **`PlanRecommender`** : objectif +5, raisons +2, sources couple/famille +2 vers Relations. Ordre fixe en cas d'égalité. La question de sécurité n'entre jamais dans le score.
+  - **Déblocage** : une étape par jour, Doux = 2 jours d'attente. Régulier et Doux ne comptent pas les jours libres (20 étapes), Soutenu les compte (28). Un jour manqué n'est pas pénalisé. Seule l'étape ouverte avance quand on écoute sa séance.
+  - **Versions courtes** pour 2 et 5 min.
+  - **Onboarding** :
+    - la question `goal` a 6 réponses, une par plan ;
+    - l'écran « révélation du plan » affiche « Parce que tu as dit… » et le lien « Ce n'est pas tout à fait ça ? », qui propose 2 alternatives ;
+    - attribut Superwall `plan_id`.
+  - **Programme** : étape du jour avec le mot de Louane de la phase, semaines, rythme, versions courtes, changer de plan, recommencer.
+  - **Accueil** : « Étape N sur M », ou « la suite demain ».
+  - **Louane** : `parcours` rempli depuis le plan.
+  - **Badges** : la progression vient du plan.
+  - **Événements** : `plan_recommended`, `plan_alternative_picked`, `plan_chosen`, `plan_started`, `plan_switched`, `plan_day_completed`, `plan_completed`, `plan_rhythm_changed`.
+  - **Supabase** : migration `20261007120000_goal_plans.sql`.
+    - `programs` : `plan_id`, `plan_version`, `rhythm`, `variant`, `includes_discovery`.
+    - `program_steps` : `day_number`, `available_on`, `kind`.
+    - vue `private.plan_funnel`.
+    - Le plan vit sur l'iPhone et se restaure depuis le compte ; l'ancien plan passe à `abandoned`.
+- **Tests** : 134/134 au vert. Traductions en/es/de/ja/ko ajoutées.
+- **Reste à faire** :
+  - **Déploiement** : `db push` (avec la nouvelle migration).
+  - **Plans** :
+    - bilan stress J0/J14/J28 ;
+    - rappels pilotés par le rythme ;
+    - jours « situation » selon `stressSources` ;
+    - consigne Louane par plan côté serveur ;
+    - graphique `plan_funnel` dans le dashboard.
+  - **Contenu** : 25 à 30 scripts, d'abord Anxiété et Relations, puis leur audio.
+
 ## 🔒 07/10 — Sécurité (app native + Supabase), clé Superwall
 - **Clé publique Superwall** `pk_7IWq…` posée dans `project.yml` et `Info.plist` : l'app se connecte bien à Superwall. Le placement `quieto_hard_paywall` n'affiche encore rien : il faut configurer sa campagne et son paywall dans le dashboard.
 - **App iOS** :

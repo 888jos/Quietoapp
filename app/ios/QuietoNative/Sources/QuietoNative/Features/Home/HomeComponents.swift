@@ -35,6 +35,9 @@ struct TodayHero: View {
 
     private var detail: String {
         guard let session else { return "" }
+        if let opensOn = program?.opensOn {
+            return QuietoLocalization.format("%d min · %@", session.durationMinutes, PlanSchedule.waitLabel(until: opensOn))
+        }
         let context = step.map { QuietoLocalization.format("Étape %d sur %d", $0.current, $0.total) } ?? session.practiceType.rawValue.quietoLocalized
         return QuietoLocalization.format("%d min · %@", session.durationMinutes, context)
     }

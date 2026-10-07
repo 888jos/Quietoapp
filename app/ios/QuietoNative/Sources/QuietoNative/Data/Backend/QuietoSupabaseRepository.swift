@@ -36,10 +36,20 @@ private struct QuietoProgramRow: Codable {
     let title: String
     let status: String
     let rawProgram: [String: String]?
+    let planID: String?
+    let planVersion: Int?
+    let rhythm: String?
+    let variant: String?
+    let includesDiscovery: Bool?
+    let startedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, status
+        case id, title, status, rhythm, variant
         case rawProgram = "raw_program"
+        case planID = "plan_id"
+        case planVersion = "plan_version"
+        case includesDiscovery = "includes_discovery"
+        case startedAt = "started_at"
     }
 }
 
@@ -47,10 +57,12 @@ private struct QuietoProgramStepRow: Codable {
     let sessionID: String
     let stepNumber: Int
     let status: String
+    let completedAt: Date?
     enum CodingKeys: String, CodingKey {
         case sessionID = "session_id"
         case stepNumber = "step_number"
         case status
+        case completedAt = "completed_at"
     }
 }
 
@@ -107,6 +119,9 @@ struct QuietoRemoteProgram: Equatable {
     let sessions: [QuietoSession]
     let completedSessionIDs: Set<String>
     let rhythm: String?
+    /// The goal plan this programme follows; nil for the 7-session programmes
+    /// written before the plans.
+    var plan: QuietoPlanState?
 }
 
 struct QuietoRemotePreferences: Equatable {
@@ -127,25 +142,42 @@ private struct QuietoProgramInsert: Encodable {
     let status: String
     let source: String
     let rawProgram: [String: String]
+    let planID: String
+    let planVersion: Int
+    let rhythm: String
+    let variant: String
+    let includesDiscovery: Bool
+    let startedAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case id, title, status, source
+        case id, title, status, source, rhythm, variant
         case userID = "user_id"
         case rawProgram = "raw_program"
+        case planID = "plan_id"
+        case planVersion = "plan_version"
+        case includesDiscovery = "includes_discovery"
+        case startedAt = "started_at"
     }
 }
 
 private struct QuietoProgramStepInsert: Encodable {
     let programID: UUID
     let stepNumber: Int
+    let dayNumber: Int
     let sessionID: String
+    let kind: String
     let status: String
+    let completedAt: Date?
+    let availableOn: String?
 
     enum CodingKeys: String, CodingKey {
-        case status
+        case status, kind
         case programID = "program_id"
         case stepNumber = "step_number"
+        case dayNumber = "day_number"
         case sessionID = "session_id"
+        case completedAt = "completed_at"
+        case availableOn = "available_on"
     }
 }
 
@@ -248,36 +280,70 @@ extension QuietoSupabaseService {
         guard let client else { throw QuietoBackendError.notConfigured }
         let userID = try await client.auth.session.user.id.quietoUserID
         let rows: [QuietoProgramRow] = try await client.from("programs")
-            .select("id,title,status,raw_program")
+            .select("id,title,status,raw_program,plan_id,plan_version,rhythm,variant,includes_discovery,started_at")
             .eq("user_id", value: userID)
             .eq("status", value: "active")
             .limit(1)
             .execute().value
         guard let program = rows.first else { return nil }
         let steps: [QuietoProgramStepRow] = try await client.from("program_steps")
-            .select("session_id,step_number,status")
+            .select("session_id,step_number,status,completed_at")
             .eq("program_id", value: program.id.uuidString)
             .order("step_number", ascending: true)
             .execute().value
         let sessions = steps.compactMap { step in catalog.sessions.first { $0.id == step.sessionID } }
+        let rhythm = program.rhythm ?? program.rawProgram?["rhythm"]
+        var plan: QuietoPlanState?
+        if let id = program.planID.flatMap(QuietoPlanID.init(rawValue:)) {
+            var state = QuietoPlanState(
+                planID: id,
+                startedAt: program.startedAt ?? .now,
+                rhythm: rhythm.flatMap(ProgramRhythm.init(rawValue:)) ?? .regular,
+                prefersShort: program.variant == "short",
+                includesDiscovery: program.includesDiscovery ?? false
+            )
+            state.version = program.planVersion ?? PlanCatalog.version
+            state.remoteID = program.id
+            for step in steps where step.status == "completed" {
+                state.completions[step.stepNumber] = step.completedAt ?? .now
+            }
+            plan = state
+        }
         return QuietoRemoteProgram(
             id: program.id,
             title: program.title,
             sessions: sessions,
             completedSessionIDs: Set(steps.filter { $0.status == "completed" }.map(\.sessionID)),
-            rhythm: program.rawProgram?["rhythm"]
+            rhythm: rhythm,
+            plan: plan
         )
     }
 
-    func createProgram(title: String, sessionIDs: [String], rhythm: String) async throws -> UUID {
+    /// Writes the plan and all its days. The active programme, if any, is
+    /// marked 'abandoned' first: one active plan at a time.
+    func startPlan(_ state: QuietoPlanState, days: [QuietoPlanDay], title: String) async throws -> UUID {
         guard let client else { throw QuietoBackendError.notConfigured }
         let userID = try await client.auth.session.user.id.quietoUserID
+        try await client.from("programs")
+            .update(["status": "abandoned"])
+            .eq("user_id", value: userID)
+            .eq("status", value: "active")
+            .execute()
         let id = UUID()
-        let program = QuietoProgramInsert(id: id, userID: userID, title: String(title.prefix(120)), status: "active", source: "catalog", rawProgram: ["rhythm": rhythm])
+        let program = QuietoProgramInsert(
+            id: id, userID: userID, title: String(title.prefix(120)), status: "active", source: "catalog",
+            rawProgram: ["rhythm": state.rhythm.rawValue], planID: state.planID.rawValue, planVersion: state.version,
+            rhythm: state.rhythm.rawValue, variant: state.prefersShort ? "short" : "normal",
+            includesDiscovery: state.includesDiscovery, startedAt: state.startedAt
+        )
         try await client.from("programs").insert(program).execute()
         do {
-            let steps = sessionIDs.enumerated().map { index, sessionID in
-                QuietoProgramStepInsert(programID: id, stepNumber: index + 1, sessionID: sessionID, status: index == 0 ? "available" : "planned")
+            let steps = days.map { day in
+                QuietoProgramStepInsert(
+                    programID: id, stepNumber: day.number, dayNumber: day.number, sessionID: day.sessionID,
+                    kind: day.kind.rawValue, status: state.completions[day.number] != nil ? "completed" : (day.number == 1 ? "available" : "planned"),
+                    completedAt: state.completions[day.number], availableOn: nil
+                )
             }
             try await client.from("program_steps").insert(steps).execute()
             return id
@@ -289,7 +355,29 @@ extension QuietoSupabaseService {
 
     func updateProgramRhythm(programID: UUID, rhythm: String) async throws {
         guard let client else { throw QuietoBackendError.notConfigured }
-        try await client.from("programs").update(["raw_program": ["rhythm": rhythm]]).eq("id", value: programID.uuidString).execute()
+        try await client.from("programs").update(["rhythm": rhythm]).eq("id", value: programID.uuidString).execute()
+    }
+
+    func completePlanStep(programID: UUID, dayNumber: Int, completedAt: Date, nextDayNumber: Int?, nextAvailableOn: Date?) async throws {
+        guard let client else { throw QuietoBackendError.notConfigured }
+        try await client.from("program_steps")
+            .update(["status": "completed", "completed_at": ISO8601DateFormatter().string(from: completedAt)])
+            .eq("program_id", value: programID.uuidString)
+            .eq("step_number", value: dayNumber)
+            .execute()
+        if let nextDayNumber, let nextAvailableOn {
+            let day = DateFormatter.quietoDay.string(from: nextAvailableOn)
+            try await client.from("program_steps")
+                .update(["status": "available", "available_on": day])
+                .eq("program_id", value: programID.uuidString)
+                .eq("step_number", value: nextDayNumber)
+                .execute()
+        } else if nextDayNumber == nil {
+            try await client.from("programs")
+                .update(["status": "completed", "completed_at": ISO8601DateFormatter().string(from: completedAt)])
+                .eq("id", value: programID.uuidString)
+                .execute()
+        }
     }
 
     func setFavorite(sessionID: String, favorite: Bool) async throws {
@@ -311,24 +399,8 @@ extension QuietoSupabaseService {
         let event = QuietoListeningEventInsert(userID: userID, sessionID: sessionID, eventType: "completed", positionSeconds: max(0, listenedSeconds), listenedDeltaSeconds: max(0, listenedSeconds), clientEventID: UUID(), occurredAt: now)
         try await client.from("listening_events").insert(event).execute()
 
-        let programs: [QuietoProgramRow] = try await client.from("programs").select("id,title,status,raw_program").eq("user_id", value: userID).eq("status", value: "active").limit(1).execute().value
-        if let program = programs.first {
-            try await client.from("program_steps")
-                .update(["status": "completed", "completed_at": ISO8601DateFormatter().string(from: now)])
-                .eq("program_id", value: program.id.uuidString)
-                .eq("session_id", value: sessionID)
-                .execute()
-            let steps: [QuietoProgramStepRow] = try await client.from("program_steps")
-                .select("session_id,step_number,status")
-                .eq("program_id", value: program.id.uuidString)
-                .order("step_number", ascending: true)
-                .execute().value
-            if !steps.isEmpty && steps.allSatisfy({ $0.status == "completed" || $0.sessionID == sessionID }) {
-                try await client.from("programs").update(["status": "completed", "completed_at": ISO8601DateFormatter().string(from: now)]).eq("id", value: program.id.uuidString).execute()
-            } else if let next = steps.first(where: { $0.status == "planned" }) {
-                try await client.from("program_steps").update(["status": "available"]).eq("program_id", value: program.id.uuidString).eq("step_number", value: next.stepNumber).execute()
-            }
-        }
+        // Plan steps are completed by the plan itself (`completePlanStep`), only
+        // for the step open that day: a listen elsewhere never moves the plan.
     }
 
     func loadPreferences() async throws -> QuietoRemotePreferences? {
@@ -512,4 +584,15 @@ struct QuietoAnalyticsEvent {
     let properties: [String: String]
     var occurredAt = Date.now
     let id = UUID()
+}
+
+extension DateFormatter {
+    /// `yyyy-MM-dd` in the iPhone's time zone, for Postgres `date` columns.
+    static let quietoDay: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
 }

@@ -133,7 +133,7 @@ struct NativeAnalyticsService: QuietoAnalyticsProviding {
 /// Plays a session from its downloaded copy when there is one.
 @MainActor
 final class NativePlaybackService: QuietoPlaybackProviding {
-    private let audioPlayer: QuietoAudioPlayer
+    let audioPlayer: QuietoAudioPlayer
     private let downloads: QuietoDownloadManaging
     init(audioPlayer: QuietoAudioPlayer, downloads: QuietoDownloadManaging) {
         self.audioPlayer = audioPlayer

@@ -63,7 +63,7 @@ struct RootView: View {
             Color.clear
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             TabView(selection: $home.selectedTab) {
-                HomeView(model: home, journey: journey).tag(QuietoTab.home).tabItem { Label("Accueil", systemImage: "house.fill") }
+                HomeView(model: home, journey: journey, celebrations: container.celebrations).tag(QuietoTab.home).tabItem { Label("Accueil", systemImage: "house.fill") }
                 ProgramView(model: container.program, sessionModel: container.sessions, audioPlayer: audioPlayer).tag(QuietoTab.programme).tabItem { Label("Programme", systemImage: "calendar") }
                 SessionsView(model: container.sessions).tag(QuietoTab.sessions).tabItem { Label("Séances", systemImage: "headphones") }
                 LouaneView(model: container.louane).environment(\.quietoMiniPlayerVisible, audioPlayer.currentSession != nil || audioPlayer.selectedAmbience != nil).tag(QuietoTab.louane).tabItem { Label("Louane", systemImage: "message") }
@@ -104,6 +104,14 @@ struct RootView: View {
         .onChange(of: audioPlayer.breathingStarts) { _, _ in BreathingExercisePresenter.present(player: audioPlayer) }
         // A guided session heard to its end asks how the person feels.
         .onChange(of: audioPlayer.guidedCompletions) { _, _ in SessionFeedbackPresenter.present(player: audioPlayer) }
+        #if DEBUG
+        // QUIETO_DEBUG_CELEBRATION=<id>: shows one celebration screen at launch.
+        .task {
+            guard let raw = ProcessInfo.processInfo.environment["QUIETO_DEBUG_CELEBRATION"], let item = CelebrationDebugCase(rawValue: raw) else { return }
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            CelebrationDebug.run(item, center: container.celebrations, player: audioPlayer)
+        }
+        #endif
         .dynamicTypeSize(profile.largerText ? .xLarge ... .accessibility3 : .xSmall ... .accessibility5)
         .transaction { transaction in
             if profile.reduceMotion { transaction.animation = nil }

@@ -37,9 +37,9 @@ struct WeekStrip: View {
     }
 }
 
-private struct WeekDayDot: View {
+struct WeekDayDot: View {
     let day: WeekDayStatus
-    private let size: CGFloat = 34
+    var size: CGFloat = 34
 
     var body: some View {
         ZStack {

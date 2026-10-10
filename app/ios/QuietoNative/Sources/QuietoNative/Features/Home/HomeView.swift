@@ -4,6 +4,11 @@ struct HomeView: View {
     @ObservedObject var model: HomeViewModel
     /// Streak and badges; nil in previews.
     var journey: AchievementsViewModel?
+    /// Home notices (rest day, streak at risk, weekly recap); nil in previews.
+    var celebrations: CelebrationCenter?
+    #if DEBUG
+    @State private var showsCelebrationGallery = false
+    #endif
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -23,6 +28,19 @@ struct HomeView: View {
                     HomeHeader(firstName: model.snapshot.firstName, journey: journey)
                     content
                     #if DEBUG
+                    if let celebrations, let player = (model.services.playback as? NativePlaybackService)?.audioPlayer {
+                        Button { showsCelebrationGallery = true } label: {
+                            Label("Debug · Célébrations", systemImage: "sparkles")
+                                .font(QuietoFont.sans(.callout, weight: .semibold))
+                                .foregroundStyle(QuietoColor.background)
+                                .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                .background(Color.orange, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .sheet(isPresented: $showsCelebrationGallery) {
+                            CelebrationDebugGallery(center: celebrations, player: player)
+                        }
+                    }
                     if let replay = model.onReplayOnboarding {
                         Button(action: replay) {
                             Label("Debug · Revoir l’onboarding", systemImage: "ladybug")
@@ -73,6 +91,7 @@ struct HomeView: View {
             ErrorState(message: errorMessage.quietoLocalized) { Task { await model.refresh() } }
         } else {
             if model.snapshot.isOffline { OfflineBanner() }
+            if let celebrations { HomeNoticeSlot(center: celebrations, model: model, journey: journey) }
             TodayHero(
                 session: model.snapshot.nextSession,
                 program: model.snapshot.program,
@@ -166,6 +185,24 @@ private struct ErrorState: View {
                 Text(message.quietoLocalized).font(QuietoFont.sans(.callout)).foregroundStyle(QuietoColor.textSecondary)
                 QuietoOutlineButton(title: "Réessayer", systemImage: "arrow.clockwise", action: retry)
             }
+        }
+    }
+}
+
+/// The notice of the moment (rest day, streak at risk, weekly recap), if any.
+private struct HomeNoticeSlot: View {
+    @ObservedObject var center: CelebrationCenter
+    let model: HomeViewModel
+    let journey: AchievementsViewModel?
+
+    var body: some View {
+        if let notice = center.notice {
+            HomeNoticeCard(
+                notice: notice,
+                onPlay: { model.play($0, source: "home_notice") },
+                onOpenJourney: { journey?.present() },
+                onDismiss: { withAnimation { center.dismissNotice() } }
+            )
         }
     }
 }

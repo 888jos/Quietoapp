@@ -28,8 +28,9 @@ struct BadgeMedal: View {
                     .foregroundStyle(QuietoColor.textSecondary.opacity(0.7))
             } else if let artwork = badgeArtwork {
                 Image(uiImage: artwork)
-                    .resizable().scaledToFit()
-                    .padding(size * 0.06)
+                    .resizable().scaledToFill()
+                    .frame(width: size * 0.88, height: size * 0.88)
+                    .clipShape(Circle())
                     .saturation(state.isUnlocked ? 1 : 0.18)
                     .opacity(state.isUnlocked ? 1 : 0.48)
             } else {

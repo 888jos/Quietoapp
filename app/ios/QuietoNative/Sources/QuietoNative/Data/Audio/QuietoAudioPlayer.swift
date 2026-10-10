@@ -217,8 +217,9 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     /// `duration` nil keeps the current choice (or plays until stopped).
     func playAmbience(_ ambience: QuietoAmbience, duration: TimeInterval? = nil) {
         do {
-            try configureAudioSession()
             guard let url = ambience.audioURL else { throw QuietoSpeechRenderError.unavailable }
+            // A session that refuses its settings must not keep the sound silent.
+            try? configureAudioSession()
             finishAmbienceListening()
             ambiencePlayer?.pause()
             let player = AVQueuePlayer()
@@ -445,9 +446,12 @@ final class QuietoAudioPlayer: NSObject, ObservableObject {
     private func tickTimer() { guard let left = timerRemaining else { return }; if left <= 1 { pause(); stopAmbience(); setSleepTimer(minutes: nil) } else { timerRemaining = left - 1 } }
 
     private func configureAudioSession() throws {
+        // `.playback` already routes to Bluetooth A2DP and AirPlay. Passing
+        // `.allowBluetoothA2DP` / `.allowAirPlay` (playAndRecord only) makes a real
+        // iPhone reject the category with -50, while the simulator accepts it.
         let audio = AVAudioSession.sharedInstance()
-        try audio.setCategory(.playback, mode: .spokenAudio, options: [.allowBluetoothA2DP, .allowAirPlay])
-        try audio.setPreferredIOBufferDuration(0.023)
+        try audio.setCategory(.playback, mode: .spokenAudio)
+        try? audio.setPreferredIOBufferDuration(0.023)
         try audio.setActive(true)
     }
 

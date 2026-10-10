@@ -105,10 +105,19 @@ final class AchievementsViewModel: ObservableObject {
 
     /// The seven days of the current week for the home: done, missed, today or to come.
     var weekStatuses: [WeekDayStatus] {
-        let today = calendar.startOfDay(for: now())
+        Self.weekStatuses(practiceDays: summary.stats.practiceDays, now: now(), calendar: calendar)
+    }
+
+    /// Also used by the end-of-session screen, with the journal just updated.
+    static func weekStatuses(practiceDays: Set<Date>, now: Date, calendar: Calendar) -> [WeekDayStatus] {
+        var displayCalendar = calendar
+        displayCalendar.locale = QuietoLocalization.locale
+        let today = calendar.startOfDay(for: now)
         let symbols = displayCalendar.veryShortStandaloneWeekdaySymbols
-        return currentWeekDays.map { day in
-            let practiced = summary.stats.practiceDays.contains(day)
+        guard let week = calendar.dateInterval(of: .weekOfYear, for: now) else { return [] }
+        let days = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: week.start) }
+        return days.map { day in
+            let practiced = practiceDays.contains(day)
             let state: WeekDayStatus.State
             if day > today { state = .upcoming }
             else if practiced { state = .done }

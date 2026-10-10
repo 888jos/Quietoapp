@@ -83,8 +83,34 @@ final class AppContainer {
 
     lazy var journey = AchievementsViewModel(center: achievements)
 
+    /// Streak, badges and plan moments: the end-of-session block, the full
+    /// screens and the home notices.
+    lazy var celebrations: CelebrationCenter = {
+        let center = CelebrationCenter(achievements: achievements, program: program, analytics: analytics)
+        CelebrationCenter.live = center
+        center.canPresent = { [unowned self] in onboarding.isCompleted && !root.isLocked }
+        center.present = { [unowned self] moment, done in
+            let closer = CelebrationCloser()
+            let view = moment.view(summary: achievements.summary, actions: celebrationActions) { then in closer(then) }
+            closer.close = CelebrationPresenter.present(view, onDismissed: done)
+        }
+        return center
+    }()
+
+    private var celebrationActions: CelebrationActions {
+        CelebrationActions(
+            openCollection: { [unowned self] in journey.present() },
+            openProgramme: { [unowned self] in home.selectedTab = .programme },
+            choosePlan: { [unowned self] in
+                home.selectedTab = .programme
+                program.isPlanPickerPresented = true
+            }
+        )
+    }
+
+    /// The discreet banner, for the badges that don't get a full screen.
     lazy var celebration: BadgeCelebrationViewModel = {
-        let model = BadgeCelebrationViewModel(unlocks: achievements.unlocks.eraseToAnyPublisher())
+        let model = BadgeCelebrationViewModel(unlocks: celebrations.minorUnlocks.eraseToAnyPublisher())
         model.onShow = { badge in
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             UIAccessibility.post(notification: .announcement, argument: String(format: "Nouveau badge : %@".quietoLocalized, badge.title.quietoLocalized))

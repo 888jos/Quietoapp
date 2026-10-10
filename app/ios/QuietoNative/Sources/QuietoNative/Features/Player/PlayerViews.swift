@@ -611,11 +611,13 @@ struct SessionFeedbackView: View {
     @State private var appeared = false
 
     var body: some View {
-        VStack(spacing: QuietoSpacing.lg) {
-            Spacer(minLength: QuietoSpacing.lg)
+        VStack(spacing: QuietoSpacing.md) {
+            // Scrolls when the streak, plan and badge blocks make it taller than the screen.
+            ScrollView(.vertical) {
+                VStack(spacing: QuietoSpacing.lg) {
             Image(systemName: "checkmark")
-                .font(.system(size: 34, weight: .bold))
-                .quietoPlayCircle(92)
+                .font(.system(size: 30, weight: .bold))
+                .quietoPlayCircle(76)
                 .quietoGlow(radius: 28)
                 .scaleEffect(appeared || reduceMotion ? 1 : 0.6)
                 .opacity(appeared ? 1 : 0)
@@ -628,16 +630,23 @@ struct SessionFeedbackView: View {
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared || reduceMotion ? 0 : 12)
 
+            if let center = CelebrationCenter.live { SessionOutcomeSlot(center: center) }
+
             VStack(spacing: QuietoSpacing.md) {
                 Text("Comment te sens-tu maintenant ?".quietoLocalized).font(QuietoFont.section).multilineTextAlignment(.center)
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                     ForEach(SessionFeeling.allCases) { option in feelingButton(option) }
                 }
             }
-            .padding(.top, QuietoSpacing.md)
+            .padding(.top, QuietoSpacing.sm)
             .opacity(appeared ? 1 : 0)
+                }
+                .padding(.top, QuietoSpacing.xl)
+                .padding(.bottom, QuietoSpacing.md)
+            }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
 
-            Spacer(minLength: QuietoSpacing.lg)
             VStack(spacing: 12) {
                 QuietoPrimaryButton(title: "Terminer", systemImage: nil) { onFinish(feeling) }
                 if let onRestart {
@@ -653,7 +662,10 @@ struct SessionFeedbackView: View {
         .sensoryFeedback(.selection, trigger: feeling)
         .onAppear {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.75).delay(0.1)) { appeared = true }
+            CelebrationCenter.live?.hold()
         }
+        // Full-screen celebrations (milestone, badge, plan) come once this is closed.
+        .onDisappear { CelebrationCenter.live?.release() }
     }
 
     private func feelingButton(_ option: SessionFeeling) -> some View {
@@ -722,5 +734,17 @@ final class SessionFeedbackHostingController: UIHostingController<AnyView> {
     private final class Closer {
         weak var controller: UIViewController?
         func close(then completion: @escaping () -> Void) { controller?.dismiss(animated: true, completion: completion) ?? completion() }
+    }
+}
+
+/// What this session changed (streak, plan step, badges), filled live.
+private struct SessionOutcomeSlot: View {
+    @ObservedObject var center: CelebrationCenter
+
+    var body: some View {
+        if let outcome = center.recentOutcome, outcome.dayAdded || outcome.planStep != nil || !outcome.badges.isEmpty {
+            SessionProgressBlock(outcome: outcome)
+                .transition(.opacity)
+        }
     }
 }
